@@ -81,11 +81,17 @@ def train():
         f = _features_df(df, ro, pe)
         f["date"] = df["date"]
         f = f.iloc[::5]                      # weekly sampling
-        f = f.dropna(subset=FEATURES + ["win"])
+        f = f.dropna(subset=[x for x in FEATURES
+                             if x not in ("roce", "pe")] + ["win"])
         frames.append(f)
     conn.close()
 
     data = pd.concat(frames, ignore_index=True)
+    if data.empty:
+        print("no training rows - check prices_daily")
+        return
+    data["roce"] = data["roce"].fillna(data["roce"].median())
+    data["pe"] = data["pe"].fillna(data["pe"].median())
     data = data.sort_values("date")
     cutoff = data["date"].quantile(0.8)      # time-based split, no lookahead
     tr = data[data["date"] <= cutoff]
