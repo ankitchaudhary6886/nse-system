@@ -134,10 +134,24 @@ def score_symbol(sym):
     avg = conn.execute(
         "SELECT AVG(roce), AVG(pe) FROM fundamentals").fetchone()
     conn.close()
-    if len(rows) < 300:
-        return None
-    df = pd.DataFrame(list(rows), columns=["date", "close", "high",
-                      "low", "volume"])
+    if len(rows) >= 300:
+        df = pd.DataFrame(list(rows), columns=["date", "close", "high",
+                          "low", "volume"])
+    else:
+        try:
+            import yfinance as yf
+            d = yf.Ticker(sym + ".NS").history(period="5y",
+                                               auto_adjust=True)
+        except Exception:
+            return None
+        if d is None or len(d) < 300:
+            return None
+        df = pd.DataFrame({
+            "close": d["Close"].values,
+            "high": d["High"].values,
+            "low": d["Low"].values,
+            "volume": d["Volume"].values,
+        })
     ro, pe = fr if fr else (np.nan, np.nan)
     f = _features_df(df, ro, pe)
     f = f.dropna(subset=[x for x in FEATURES if x not in ("roce", "pe")])
