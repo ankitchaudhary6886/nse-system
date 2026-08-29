@@ -479,3 +479,5 @@ tr:hover {
     height: 360px;
   }
 }
+.view {display: none;}
+.view.active-view {display: block;}
