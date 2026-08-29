@@ -18,7 +18,17 @@ APP_PASS = os.getenv("ADMIN_PASS", "change_this_password")
 
 security = HTTPBasic()
 
-app = FastAPI(title="NSE Intelligence Terminal", version="3.0")
+from contextlib import asynccontextmanager
+import scheduler_bg
+
+@asynccontextmanager
+async def lifespan(app):
+    scheduler_bg.start()
+    yield
+    scheduler_bg.stop()
+
+app = FastAPI(title="NSE Intelligence Terminal", version="3.0",
+              lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
