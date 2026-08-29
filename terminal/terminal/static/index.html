@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>NSE Intelligence Terminal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="/static/style.css" />
+
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">N</div>
+        <div>
+          <div class="brand-title">NSE Intelligence</div>
+          <div class="brand-subtitle">Momentum Terminal</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-section="overview">Overview</button>
+        <button class="nav-btn" data-section="swing">Swing Desk</button>
+        <button class="nav-btn" data-section="radar">Radar</button>
+        <button class="nav-btn" data-section="cockpit">Cockpit</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="mini-label">System</div>
+        <div id="healthStatus" class="mini-value">Checking...</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Trading Terminal</h1>
+          <p>Gabani Stage-2 / VCP Pullback System</p>
+        </div>
+
+        <div class="top-actions">
+          <input id="symbolSearch" placeholder="Search symbol e.g. DIXON" />
+          <button id="loadSymbolBtn">Open</button>
+          <button id="refreshBtn">Refresh</button>
+        </div>
+      </header>
+
+      <section id="regimeBanner" class="regime-card loading">
+        Loading market regime...
+      </section>
+
+      <section class="metric-grid">
+        <div class="metric-card">
+          <span>Total Signals</span>
+          <strong id="mSignals">—</strong>
+        </div>
+        <div class="metric-card">
+          <span>Win Rate</span>
+          <strong id="mWinRate">—</strong>
+        </div>
+        <div class="metric-card">
+          <span>Open / Pending</span>
+          <strong id="mOpen">—</strong>
+        </div>
+        <div class="metric-card">
+          <span>Market Universe</span>
+          <strong id="mUniverse">—</strong>
+        </div>
+      </section>
+
+      <section class="terminal-grid">
+        <div class="panel large" id="chartPanel">
+          <div class="panel-header">
+            <div>
+              <h2 id="chartTitle">Chart Inspector</h2>
+              <p id="chartSubtitle">Select a signal or radar stock</p>
+            </div>
+            <div id="setupBadge" class="badge muted">No setup loaded</div>
+          </div>
+          <div id="chart"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Setup Summary</h2>
+              <p>Trigger, PDL stop, target</p>
+            </div>
+          </div>
+
+          <div id="setupSummary" class="setup-box">
+            Select a stock to inspect setup levels.
+          </div>
+
+          <div class="news-box">
+            <h3>Latest News</h3>
+            <div id="newsList" class="news-list">
+              No symbol selected.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Swing Desk</h2>
+            <p>Forward validation log: trigger / PDL stop / target / outcome</p>
+          </div>
+          <button id="runSwingBtn">Run Swing Scan</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Symbol</th>
+                <th>Trigger</th>
+                <th>Stop</th>
+                <th>Target</th>
+                <th>Risk %</th>
+                <th>PB</th>
+                <th>Impulse</th>
+                <th>Zone</th>
+                <th>Outcome</th>
+              </tr>
+            </thead>
+            <tbody id="swingTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="radar-layout">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Momentum</h2>
+              <p>Strong continuation</p>
+            </div>
+          </div>
+          <div id="radarMomentum" class="card-list"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Volume Spike</h2>
+              <p>Abnormal activity</p>
+            </div>
+          </div>
+          <div id="radarVolume" class="card-list"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Turnaround</h2>
+              <p>Waking up</p>
+            </div>
+          </div>
+          <div id="radarTurn" class="card-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
