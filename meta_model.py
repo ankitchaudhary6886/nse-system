@@ -11,6 +11,14 @@ import db
 
 MODEL_PATH = "data/meta_model.pkl"
 
+_MODEL = None
+
+def get_model():
+    global _MODEL
+    if _MODEL is None:
+        _MODEL = joblib.load(MODEL_PATH)
+    return _MODEL
+
 FEATURES = ["mom1", "mom3", "mom6", "d52", "above200", "slope200",
             "rv", "vc", "pb", "d10", "d20", "atr", "roce", "pe"]
 
@@ -123,8 +131,8 @@ def train():
     print(f"model saved to {MODEL_PATH}")
 
 
-def score_symbol(sym):
-    model = joblib.load(MODEL_PATH)
+def score_symbol(sym, use_yahoo=True):
+    model = get_model()
     conn = db.get_conn()
     rows = conn.execute(
         "SELECT date, close, high, low, volume FROM prices_daily "
@@ -137,7 +145,7 @@ def score_symbol(sym):
     if len(rows) >= 300:
         df = pd.DataFrame(list(rows), columns=["date", "close", "high",
                           "low", "volume"])
-    else:
+    elif use_yahoo:
         try:
             import yfinance as yf
             d = yf.Ticker(sym + ".NS").history(period="5y",
@@ -152,6 +160,8 @@ def score_symbol(sym):
             "low": d["Low"].values,
             "volume": d["Volume"].values,
         })
+            else:
+        return None
     ro, pe = fr if fr else (np.nan, np.nan)
     f = _features_df(df, ro, pe)
     f = f.dropna(subset=[x for x in FEATURES if x not in ("roce", "pe")])
@@ -166,6 +176,14 @@ def score_symbol(sym):
     why = [{"feature": k, "impact": round(float(v), 3)} for k, v in parts]
     return {"symbol": sym, "p_win": round(float(p), 3), "why": why}
 
+def rank_symbols(syms, use_yahoo=False):
+    out = []
+    for s in syms:
+        r = score_symbol(s, use_yahoo=use_yahoo)
+        if r and r.get("p_win") is not None:
+            out.append({"symbol": s, "p_win": r["p_win"]})
+    out.sort(key=lambda x: -x["p_win"])
+    return out
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "train"

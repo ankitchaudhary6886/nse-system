@@ -97,7 +97,7 @@ async function loadSwing() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${s.date}</td>
-      <td><strong>${s.symbol}</strong></td>
+      <td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="outcome PENDING">🧠${(s.p_win * 100).toFixed(0)}%</span>` : ""}</td>
       <td>${fmt(s.trigger)}</td>
       <td>${fmt(s.stop)}</td>
       <td>${fmt(s.target)}</td>
@@ -121,6 +121,7 @@ function createRadarCard(item) {
     <strong>${item.symbol}</strong>
     <span>1M ${fmt(item.perf1m, "%")} · 3M ${fmt(item.perf3m, "%")} · Vol ${fmt(item.relvol, "x")}</span>
     <span>₹${fmt(item.mcap_cr)} cr mcap</span>
+    ${item.p_win != null ? `<span>🧠 P(WIN) ${(item.p_win * 100).toFixed(0)}%</span>` : ""}
   `;
   div.addEventListener("click", () => { setView("overview"); loadSymbol(item.symbol); });
   return div;

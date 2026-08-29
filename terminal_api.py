@@ -140,6 +140,12 @@ def swing_signals(limit: int = 80,
 
     conn.close()
 
+    import meta_model
+    for s in signals:
+        r = meta_model.score_symbol(s["symbol"], use_yahoo=False)
+        s["p_win"] = r["p_win"] if r and r.get("p_win") is not None else None
+    signals.sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
+
     wins = score.get("WIN", 0)
     losses = score.get("LOSS", 0)
     graded = wins + losses
@@ -215,6 +221,13 @@ def radar(user: str = Depends(verify_user)):
         pass
 
     conn.close()
+
+    import meta_model
+    for k in groups:
+        for item in groups[k]:
+            r = meta_model.score_symbol(item["symbol"], use_yahoo=False)
+            item["p_win"] = r["p_win"] if r and r.get("p_win") is not None else None
+        groups[k].sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
 
     return {
         "groups": groups,
