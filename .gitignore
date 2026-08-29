@@ -7,4 +7,5 @@ data/*.pkl
 data/*.log
 data/daily_log.txt
 backtest_trades.csv
+data/gcp_key.json
 .env

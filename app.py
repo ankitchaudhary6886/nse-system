@@ -6,26 +6,44 @@ st.set_page_config(page_title="NSE Intelligence 2.0",
                    layout="wide", page_icon="📈")
 
 CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 <style>
+html, body, [class*="stApp"] {font-family: 'Inter', sans-serif;}
 header, #MainMenu, footer {visibility: hidden;}
-.stApp {background: radial-gradient(1100px 500px at 8% -10%,
- #1e3a5f66, transparent), #0b1220;}
-.kcard {background: rgba(255,255,255,0.05);
- border: 1px solid rgba(255,255,255,0.09); border-radius: 16px;
- padding: 14px 18px; margin-bottom: 10px;}
-.ktitle {font-size: 11px; letter-spacing: 1.5px; color: #8ea2c0;
- text-transform: uppercase;}
-.kvalue {font-size: 24px; font-weight: 700; color: #f1f5f9;
- margin-top: 4px;}
-.ksub {font-size: 12px; color: #7c8db0; margin-top: 2px;}
-.hero {font-size: 30px; font-weight: 800; letter-spacing: -0.5px;
- background: linear-gradient(90deg,#60a5fa,#34d399);
- -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
-.pill {padding: 3px 10px; border-radius: 999px; font-size: 12px;
- font-weight: 600;}
-.evrow {padding: 8px 12px; border-radius: 12px;
- background: rgba(255,255,255,0.04); margin-bottom: 6px;
- font-size: 14px; color: #dbe4f3;}
+.stApp {
+  background:
+    radial-gradient(1200px 600px at 85% -10%, #14315433, transparent),
+    radial-gradient(900px 500px at -10% 110%, #0f3d3322, transparent),
+    #0a0f1c;}
+.kcard {
+  background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 18px;
+  padding: 16px 20px; margin-bottom: 12px;
+  backdrop-filter: blur(8px);
+  transition: transform .15s ease, border-color .15s ease;}
+.kcard:hover {transform: translateY(-2px); border-color: rgba(96,165,250,0.35);}
+.ktitle {font-size: 11px; letter-spacing: 1.6px; color: #7f93b8;
+  text-transform: uppercase; font-weight: 600;}
+.kvalue {font-size: 26px; font-weight: 800; color: #f4f7fc; margin-top: 4px;
+  letter-spacing: -0.5px;}
+.ksub {font-size: 12px; color: #6d7fa3; margin-top: 3px;}
+.hero {font-size: 32px; font-weight: 800; letter-spacing: -1px;
+  background: linear-gradient(90deg,#60a5fa,#34d399);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
+.pill {padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;}
+.evrow {padding: 10px 14px; border-radius: 14px;
+  background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 6px; font-size: 14px; color: #dbe4f3;}
+.stButton>button {
+  background: rgba(255,255,255,0.05); color: #e5ecf8;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+  font-weight: 600; transition: all .15s ease;}
+.stButton>button:hover {background: rgba(96,165,250,0.15);
+  border-color: rgba(96,165,250,0.5); color: #fff;}
+@media (max-width: 640px) {
+  .kvalue {font-size: 20px;} .hero {font-size: 24px;}
+  .evrow {font-size: 13px;}
+}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
