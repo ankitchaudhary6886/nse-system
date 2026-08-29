@@ -1,0 +1,10 @@
+env/
+venv/
+__pycache__/
+*.pyc
+data/*.db
+data/*.pkl
+data/*.log
+data/daily_log.txt
+backtest_trades.csv
+.env
