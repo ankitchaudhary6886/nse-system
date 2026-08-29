@@ -1,6 +1,6 @@
 """
-Setup Meta-Model — learns what winners look like (5y history),
-ranks live candidates by P(WIN), explains via TreeSHAP.
+Setup Meta-Model — learns winners from 5y history, ranks by P(WIN),
+explains via TreeSHAP.
 """
 import sys
 import numpy as np
@@ -88,7 +88,7 @@ def train():
         ro, pe = fund.get(sym, (np.nan, np.nan))
         f = _features_df(df, ro, pe)
         f["date"] = df["date"]
-        f = f.iloc[::5]                      # weekly sampling
+        f = f.iloc[::5]
         f = f.dropna(subset=[x for x in FEATURES
                              if x not in ("roce", "pe")] + ["win"])
         frames.append(f)
@@ -101,7 +101,7 @@ def train():
     data["roce"] = data["roce"].fillna(data["roce"].median())
     data["pe"] = data["pe"].fillna(data["pe"].median())
     data = data.sort_values("date")
-    cutoff = data["date"].quantile(0.8)      # time-based split, no lookahead
+    cutoff = data["date"].quantile(0.8)
     tr = data[data["date"] <= cutoff]
     te = data[data["date"] > cutoff]
 
@@ -113,14 +113,13 @@ def train():
         num_leaves=31, min_child_samples=50, subsample=0.9,
         colsample_bytree=0.9, verbose=-1)
     model.fit(Xtr, ytr, eval_set=[(Xte, yte)],
-              eval_metric="auc", callbacks=[lgb.early_stopping(50, verbose=False)])
+              eval_metric="auc",
+              callbacks=[lgb.early_stopping(50, verbose=False)])
 
     proba = model.predict_proba(Xte)[:, 1]
     base = yte.mean()
     from sklearn.metrics import roc_auc_score
     auc = roc_auc_score(yte, proba)
-
-    # precision in top decile vs base rate
     order = np.argsort(-proba)
     top = int(max(1, len(proba) * 0.10))
     top_rate = yte.iloc[order[:top]].mean()
@@ -142,14 +141,14 @@ def score_symbol(sym, use_yahoo=True):
     avg = conn.execute(
         "SELECT AVG(roce), AVG(pe) FROM fundamentals").fetchone()
     conn.close()
+
     if len(rows) >= 300:
         df = pd.DataFrame(list(rows), columns=["date", "close", "high",
                           "low", "volume"])
     elif use_yahoo:
         try:
             import yfinance as yf
-            d = yf.Ticker(sym + ".NS").history(period="5y",
-                                               auto_adjust=True)
+            d = yf.Ticker(sym + ".NS").history(period="5y", auto_adjust=True)
         except Exception:
             return None
         if d is None or len(d) < 300:
@@ -160,8 +159,9 @@ def score_symbol(sym, use_yahoo=True):
             "low": d["Low"].values,
             "volume": d["Volume"].values,
         })
-            else:
+    else:
         return None
+
     ro, pe = fr if fr else (np.nan, np.nan)
     f = _features_df(df, ro, pe)
     f = f.dropna(subset=[x for x in FEATURES if x not in ("roce", "pe")])
@@ -170,11 +170,13 @@ def score_symbol(sym, use_yahoo=True):
     f = f.tail(1).copy()
     f["roce"] = f["roce"].fillna(avg[0] if avg and avg[0] is not None else 0.0)
     f["pe"] = f["pe"].fillna(avg[1] if avg and avg[1] is not None else 0.0)
+
     p = model.predict_proba(f[FEATURES])[:, 1][0]
     contrib = model.booster_.predict(f[FEATURES], pred_contrib=True)[0]
     parts = sorted(zip(FEATURES, contrib), key=lambda x: -abs(x[1]))[:5]
     why = [{"feature": k, "impact": round(float(v), 3)} for k, v in parts]
     return {"symbol": sym, "p_win": round(float(p), 3), "why": why}
+
 
 def rank_symbols(syms, use_yahoo=False):
     out = []
@@ -184,6 +186,7 @@ def rank_symbols(syms, use_yahoo=False):
             out.append({"symbol": s, "p_win": r["p_win"]})
     out.sort(key=lambda x: -x["p_win"])
     return out
+
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "train"

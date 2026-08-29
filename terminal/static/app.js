@@ -150,10 +150,7 @@ function resetChart() {
 
   chart = LightweightCharts.createChart(el, {
     layout: { background: { color: "transparent" }, textColor: "#9fb0cc" },
-    grid: {
-      vertLines: { color: "rgba(255,255,255,.05)" },
-      horzLines: { color: "rgba(255,255,255,.05)" },
-    },
+    grid: { vertLines: { color: "rgba(255,255,255,.05)" }, horzLines: { color: "rgba(255,255,255,.05)" } },
     rightPriceScale: { borderColor: "rgba(255,255,255,.08)" },
     timeScale: { borderColor: "rgba(255,255,255,.08)" },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
@@ -231,7 +228,6 @@ async function loadSymbol(symbol) {
     `;
   }
 
-  // Machine intuition: P(WIN) + top SHAP drivers
   try {
     const meta = await api(`/api/meta/${symbol}`);
     if (meta && meta.p_win != null) {
