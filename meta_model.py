@@ -131,15 +131,21 @@ def score_symbol(sym):
         "WHERE symbol=? ORDER BY date", (sym,)).fetchall()
     fr = conn.execute("SELECT roce, pe FROM fundamentals WHERE symbol=?",
                       (sym,)).fetchone()
+    avg = conn.execute(
+        "SELECT AVG(roce), AVG(pe) FROM fundamentals").fetchone()
     conn.close()
     if len(rows) < 300:
         return None
     df = pd.DataFrame(list(rows), columns=["date", "close", "high",
                       "low", "volume"])
     ro, pe = fr if fr else (np.nan, np.nan)
-    f = _features_df(df, ro, pe).dropna(subset=FEATURES).tail(1)
+    f = _features_df(df, ro, pe)
+    f = f.dropna(subset=[x for x in FEATURES if x not in ("roce", "pe")])
     if f.empty:
         return None
+    f = f.tail(1).copy()
+    f["roce"] = f["roce"].fillna(avg[0] if avg and avg[0] is not None else 0.0)
+    f["pe"] = f["pe"].fillna(avg[1] if avg and avg[1] is not None else 0.0)
     p = model.predict_proba(f[FEATURES])[:, 1][0]
     contrib = model.booster_.predict(f[FEATURES], pred_contrib=True)[0]
     parts = sorted(zip(FEATURES, contrib), key=lambda x: -abs(x[1]))[:5]
