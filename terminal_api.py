@@ -383,7 +383,16 @@ def cockpit_summary(symbol: str,
         "news": news,
     }
 
-
+@app.get("/api/meta/{symbol}")
+def meta_score(symbol: str, user: str = Depends(verify_user)):
+    import meta_model
+    try:
+        r = meta_model.score_symbol(symbol.upper())
+        return r or {"symbol": symbol, "p_win": None, "why": []}
+    except Exception as e:
+        return {"symbol": symbol, "p_win": None, "why": [],
+                "error": str(e)}
+    
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
