@@ -1,22 +1,10 @@
 """
 Data Quality Monitor for NSE Intelligence.
-
-Checks:
-- stale latest price date
-- missing recent data by symbol
-- duplicate symbol/date rows
-- invalid OHLC values
-- zero/negative prices
-- suspicious one-day jumps
-- universe coverage
-
-Writes results to data_quality_log and sends Telegram alert for critical issues.
+Checks core tables, staleness, duplicates, OHLC integrity,
+tracked-universe coverage, suspicious jumps. Logs + Telegram alert.
 """
-
 import datetime as dt
-import sqlite3
 import db
-
 
 CRITICAL_STALE_DAYS = 5
 WARN_STALE_DAYS = 3
@@ -24,10 +12,8 @@ RECENT_SYMBOL_DAYS = 10
 MAX_MISSING_SYMBOLS_SHOWN = 20
 SUSPICIOUS_JUMP_PCT = 0.35
 
-
 def _today():
     return dt.date.today()
-
 
 def _parse_date(x):
     if x is None:
@@ -37,7 +23,6 @@ def _parse_date(x):
     except Exception:
         return None
 
-
 def _safe_send(text):
     try:
         import swing_alerts
@@ -45,80 +30,59 @@ def _safe_send(text):
     except Exception as e:
         print(f"[DQ] telegram skipped: {e}")
 
-
 def _ensure(conn):
     conn.execute("""
         CREATE TABLE IF NOT EXISTS data_quality_log(
-            run_at TEXT,
-            status TEXT,
-            severity TEXT,
-            check_name TEXT,
-            message TEXT
-        )
+            run_at TEXT, status TEXT, severity TEXT,
+            check_name TEXT, message TEXT)
     """)
-
 
 def _log(conn, rows, severity, check_name, message):
     status = "OK" if severity == "OK" else "ISSUE"
-    rows.append({
-        "run_at": dt.datetime.now().isoformat(timespec="seconds"),
-        "status": status,
-        "severity": severity,
-        "check_name": check_name,
-        "message": message,
-    })
-
+    rows.append({"run_at": dt.datetime.now().isoformat(timespec="seconds"),
+                 "status": status, "severity": severity,
+                 "check_name": check_name, "message": message})
 
 def _table_exists(conn, table):
     r = conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-        (table,),
-    ).fetchone()
+        (table,)).fetchone()
     return r is not None
 
-
 def _get_universe_symbols(conn):
+    """Tracked universe = smallcap band + active core stocks."""
     symbols = set()
-
     if _table_exists(conn, "universe_broad"):
         try:
             rows = conn.execute(
                 "SELECT symbol FROM universe_broad "
-                "WHERE symbol IS NOT NULL AND symbol!=''"
+                "WHERE mcap_cr BETWEEN 1000 AND 8000 "
+                "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %'"
             ).fetchall()
             symbols.update(r[0] for r in rows)
         except Exception:
             pass
-
     if _table_exists(conn, "stocks"):
         try:
             rows = conn.execute(
-                "SELECT symbol FROM stocks "
-                "WHERE symbol IS NOT NULL AND symbol!=''"
-            ).fetchall()
+                "SELECT symbol FROM stocks WHERE active=1").fetchall()
             symbols.update(r[0] for r in rows)
         except Exception:
             pass
-
     return sorted(symbols)
-
 
 def check_stale_price_date(conn, logs):
     if not _table_exists(conn, "prices_daily"):
         _log(conn, logs, "CRITICAL", "prices_daily_exists",
              "prices_daily table does not exist")
         return None
-
     r = conn.execute("SELECT MAX(date) FROM prices_daily").fetchone()
     max_date = _parse_date(r[0] if r else None)
-
     if max_date is None:
         _log(conn, logs, "CRITICAL", "latest_price_date",
              "No valid max(date) found in prices_daily")
         return None
-
     age = (_today() - max_date).days
-
     if age >= CRITICAL_STALE_DAYS:
         _log(conn, logs, "CRITICAL", "latest_price_date",
              f"Latest price date is stale: {max_date} ({age} days old)")
@@ -128,19 +92,14 @@ def check_stale_price_date(conn, logs):
     else:
         _log(conn, logs, "OK", "latest_price_date",
              f"Latest price date OK: {max_date} ({age} days old)")
-
     return max_date
-
 
 def check_duplicate_rows(conn, logs):
     try:
         r = conn.execute("""
             SELECT COUNT(*) FROM (
                 SELECT symbol, date, COUNT(*) AS n
-                FROM prices_daily
-                GROUP BY symbol, date
-                HAVING n > 1
-            )
+                FROM prices_daily GROUP BY symbol, date HAVING n > 1)
         """).fetchone()
         dupes = int(r[0] or 0)
         if dupes:
@@ -153,7 +112,6 @@ def check_duplicate_rows(conn, logs):
         _log(conn, logs, "WARN", "duplicate_prices",
              f"Duplicate check skipped: {e}")
 
-
 def check_invalid_ohlc(conn, logs):
     try:
         invalid = conn.execute("""
@@ -163,74 +121,54 @@ def check_invalid_ohlc(conn, logs):
                OR close > high * 1.02
                OR close < low * 0.98
         """).fetchone()[0]
-
         if invalid:
             _log(conn, logs, "CRITICAL", "invalid_ohlc",
                  f"Invalid OHLC rows found: {invalid}")
         else:
-            _log(conn, logs, "OK", "invalid_ohlc",
-                 "OHLC integrity OK")
+            _log(conn, logs, "OK", "invalid_ohlc", "OHLC integrity OK")
     except Exception as e:
-        _log(conn, logs, "WARN", "invalid_ohlc",
-             f"OHLC check skipped: {e}")
-
+        _log(conn, logs, "WARN", "invalid_ohlc", f"OHLC check skipped: {e}")
 
 def check_missing_recent_symbols(conn, logs, latest_date):
     if latest_date is None:
         return
-
     universe = _get_universe_symbols(conn)
     if not universe:
         _log(conn, logs, "WARN", "universe_coverage",
-             "No universe symbols found")
+             "No tracked universe symbols found")
         return
-
     cutoff = latest_date - dt.timedelta(days=RECENT_SYMBOL_DAYS)
-
     recent_rows = conn.execute(
         "SELECT DISTINCT symbol FROM prices_daily WHERE date>=?",
-        (cutoff.isoformat(),),
-    ).fetchall()
+        (cutoff.isoformat(),)).fetchall()
     recent = set(r[0] for r in recent_rows)
-
     missing = [s for s in universe if s not in recent]
     pct_missing = len(missing) / max(1, len(universe))
-
     if pct_missing > 0.25:
         sev = "CRITICAL"
     elif pct_missing > 0.10:
         sev = "WARN"
     else:
         sev = "OK"
-
     shown = ", ".join(missing[:MAX_MISSING_SYMBOLS_SHOWN])
-    msg = (f"Universe symbols: {len(universe)}, missing recent data: "
+    msg = (f"Tracked symbols: {len(universe)}, missing recent data: "
            f"{len(missing)} ({pct_missing:.1%})")
     if missing:
         msg += f". Examples: {shown}"
-
     _log(conn, logs, sev, "universe_recent_coverage", msg)
 
-
 def check_suspicious_jumps(conn, logs):
-    """
-    Detect huge 1-day close jumps in last 10 rows per symbol.
-    This often catches bad data, missed splits, or corporate-action anomalies.
-    """
     try:
         symbols = _get_universe_symbols(conn)
         bad = []
-
         for sym in symbols[:1500]:
             rows = conn.execute(
                 "SELECT date, close FROM prices_daily "
                 "WHERE symbol=? ORDER BY date DESC LIMIT 12",
-                (sym,),
-            ).fetchall()
+                (sym,)).fetchall()
             rows = list(reversed(rows))
             if len(rows) < 2:
                 continue
-
             for i in range(1, len(rows)):
                 prev = rows[i - 1][1]
                 cur = rows[i][1]
@@ -240,7 +178,6 @@ def check_suspicious_jumps(conn, logs):
                 if jump >= SUSPICIOUS_JUMP_PCT:
                     bad.append((sym, rows[i][0], round(jump * 100, 1)))
                     break
-
         if bad:
             shown = ", ".join([f"{s} {d} {j}%" for s, d, j in bad[:15]])
             sev = "WARN" if len(bad) < 10 else "CRITICAL"
@@ -253,30 +190,19 @@ def check_suspicious_jumps(conn, logs):
         _log(conn, logs, "WARN", "suspicious_price_jumps",
              f"Jump check skipped: {e}")
 
-
 def check_core_tables(conn, logs):
-    required = [
-        "prices_daily",
-        "universe_broad",
-        "swing_signals",
-    ]
-
+    required = ["prices_daily", "universe_broad", "swing_signals"]
     missing = [t for t in required if not _table_exists(conn, t)]
-
     if missing:
         _log(conn, logs, "CRITICAL", "core_tables",
              "Missing core tables: " + ", ".join(missing))
     else:
-        _log(conn, logs, "OK", "core_tables",
-             "Core tables exist")
-
+        _log(conn, logs, "OK", "core_tables", "Core tables exist")
 
 def run(send_alert=True):
     conn = db.get_conn()
     _ensure(conn)
-
     logs = []
-
     check_core_tables(conn, logs)
     latest_date = check_stale_price_date(conn, logs)
     check_duplicate_rows(conn, logs)
@@ -286,11 +212,9 @@ def run(send_alert=True):
 
     conn.execute("DELETE FROM data_quality_log")
     for r in logs:
-        conn.execute(
-            "INSERT INTO data_quality_log VALUES (?,?,?,?,?)",
-            (r["run_at"], r["status"], r["severity"],
-             r["check_name"], r["message"]),
-        )
+        conn.execute("INSERT INTO data_quality_log VALUES (?,?,?,?,?)",
+                     (r["run_at"], r["status"], r["severity"],
+                      r["check_name"], r["message"]))
     conn.commit()
     conn.close()
 
@@ -300,8 +224,7 @@ def run(send_alert=True):
     print("[DQ] DATA QUALITY REPORT")
     for r in logs:
         icon = "✅" if r["severity"] == "OK" else (
-            "⚠️" if r["severity"] == "WARN" else "🛑"
-        )
+            "️" if r["severity"] == "WARN" else "🛑")
         print(f"[DQ] {icon} {r['check_name']}: {r['message']}")
 
     if send_alert and (critical or warns):
@@ -314,16 +237,10 @@ def run(send_alert=True):
             lines.append(f"⚠️ DATA QUALITY WARNINGS: {len(warns)}")
             for r in warns[:5]:
                 lines.append(f"- {r['check_name']}: {r['message'][:180]}")
-
         _safe_send("\n".join(lines))
 
-    return {
-        "critical": len(critical),
-        "warnings": len(warns),
-        "total_checks": len(logs),
-    }
-
+    return {"critical": len(critical), "warnings": len(warns),
+            "total_checks": len(logs)}
 
 if __name__ == "__main__":
-    result = run(send_alert=True)
-    print(result)
+    print(run(send_alert=True))
