@@ -1,6 +1,6 @@
 """
 Swing Desk engine (live, no execution).
-EOD: scan universe -> sector gate -> store signals -> alert Telegram.
+EOD: regime gate + breadth gate + sector gate -> signals -> Telegram.
 Daily: grade pending signals WIN / LOSS / EXPIRED / TIMEOUT.
 """
 import datetime as dt
@@ -10,6 +10,7 @@ from scanner import Screener
 from setup import SetupDetector
 from regime import MarketRegime
 import sector_gate
+import breadth
 
 def universe(conn):
     rows = conn.execute(
@@ -43,8 +44,19 @@ def scan():
         print("defensive regime -> no new signals today")
         return
 
+    try:
+        bok = breadth.breadth_ok(conn)
+    except Exception:
+        bok = True
+    if not bok:
+        conn.commit()
+        conn.close()
+        print("breadth weak -> no new signals today")
+        return
+
     allowed = sector_gate.allowed_sectors()
-    print(f"sector gate (top-{len(allowed)}): {', '.join(sorted(allowed)) or 'n/a'}")
+    print(f"sector gate (top-{len(allowed)}): "
+          f"{', '.join(sorted(allowed)) or 'n/a'}")
 
     n = 0
     for sym in universe(conn):
