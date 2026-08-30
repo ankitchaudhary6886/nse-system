@@ -43,7 +43,6 @@ def _symbols(conn, limit=400):
 
 
 def _fund_map(conn):
-    """Fetch fundamentals: roce, pe, debt_to_equity, promoter_holding."""
     m = {}
     try:
         cols = [r[1] for r in conn.execute("PRAGMA table_info(fundamentals)")]
@@ -79,7 +78,6 @@ def _fund_map(conn):
 
 
 def _sentiment_map(conn):
-    """Average recent news sentiment per symbol (-1..+1)."""
     m = {}
     try:
         rows = conn.execute("""
@@ -104,7 +102,6 @@ def _sentiment_map(conn):
 
 
 def _sector_rs_map(conn):
-    """Percentile rank of each symbol's sector by RS (top sector=1.0)."""
     try:
         import sector_gate
         g = sector_gate.sector_perf(conn)
@@ -155,6 +152,14 @@ def _features_df(df, ctx):
     return out
 
 
+def _coerce_numeric(df):
+    """Force every feature column to float dtype."""
+    for col in FEATURES:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
 def train():
     conn = db.get_conn()
     fund = _fund_map(conn)
@@ -191,12 +196,13 @@ def train():
         print("no training rows - check prices_daily")
         return
 
-    # Fill missing context features with median (or 0)
     for f in CONTEXT_FEATS:
         if f in data.columns:
+            data[f] = pd.to_numeric(data[f], errors="coerce")
             med = data[f].median()
             data[f] = data[f].fillna(med if pd.notna(med) else 0.0)
 
+    data = _coerce_numeric(data)
     data = data.sort_values("date")
     cutoff = data["date"].quantile(0.8)
     tr = data[data["date"] <= cutoff]
@@ -271,6 +277,7 @@ def score_symbol(sym, use_yahoo=True):
     if feat.empty:
         return None
     feat = feat.tail(1).copy()
+    feat = _coerce_numeric(feat)
     for col in CONTEXT_FEATS:
         if col in feat.columns and pd.isna(feat[col].iloc[0]):
             feat[col] = 0.0
