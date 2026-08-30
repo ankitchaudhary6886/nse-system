@@ -1,6 +1,6 @@
 """
 Swing Desk engine (live, no execution).
-EOD: scan universe -> store signals (trigger/stop/target/risk).
+EOD: scan universe -> store signals -> alert Telegram.
 Daily: grade pending signals WIN / LOSS / EXPIRED / TIMEOUT.
 """
 import datetime as dt
@@ -51,10 +51,6 @@ def scan():
         df = pd.DataFrame(list(rows), columns=["date", "Close",
                           "High", "Low", "Volume"]).set_index("date")
         df.index = pd.to_datetime(df.index)
-        df.index = pd.to_datetime(df.index)
-        df.index = pd.to_datetime(df.index)
-        df.index = pd.to_datetime(df.index)
-        df.index = pd.to_datetime(df.index)
         sc = Screener.evaluate(df, sym)
         if not sc.passed:
             continue
@@ -72,6 +68,11 @@ def scan():
         print(f"  ✅ {sym} trigger ₹{st.entry_price}  "
               f"SL ₹{st.stop_loss}  TGT ₹{st.target_price}  "
               f"risk {risk_pct:.1%}  zone {st.ema_proximity}")
+        try:
+            import swing_alerts
+            swing_alerts.notify_setup(st)
+        except Exception as e:
+            print(f"  alert skipped: {e}")
     conn.commit()
     conn.close()
     print(f"swing signals today: {n}")
@@ -144,10 +145,6 @@ def backfill(step=10, max_stocks=600):
             continue
         df = pd.DataFrame(list(rows), columns=["date", "Close",
                           "High", "Low", "Volume"]).set_index("date")
-        df.index = pd.to_datetime(df.index)
-        df.index = pd.to_datetime(df.index)
-        df.index = pd.to_datetime(df.index)
-        df.index = pd.to_datetime(df.index)
         df.index = pd.to_datetime(df.index)
         conn = db.get_conn()
         for i in range(280, len(df), step):
