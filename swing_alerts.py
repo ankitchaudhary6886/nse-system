@@ -1,42 +1,29 @@
-"""Telegram alerts — auto-discovers bot credentials."""
+"""Telegram alerts for swing setups — delegates to telegram_alerts."""
 import os
-import requests
-
-def _creds():
-    token = None
-    chat = None
-    try:
-        import telegram_alerts as ta
-        for name in dir(ta):
-            if name.startswith("__"):
-                continue
-            val = getattr(ta, name)
-            if not isinstance(val, str):
-                continue
-            up = name.upper()
-            if token is None and "TOKEN" in up:
-                token = val
-            if chat is None and ("CHAT" in up or "USER_ID" in up):
-                chat = val
-    except Exception:
-        pass
-    token = token or os.getenv("TELEGRAM_TOKEN")
-    chat = chat or os.getenv("TELEGRAM_CHAT_ID")
-    return token, chat
 
 def send(text):
-    token, chat = _creds()
-    if not token or not chat:
-        print("[ALERT] telegram creds missing")
-        return False
+    # Primary: existing telegram_alerts (hardcoded bot + data/tg_secret.txt)
     try:
+        import telegram_alerts
+        telegram_alerts.send(text)
+        return True
+    except Exception as e:
+        print(f"[ALERT] telegram_alerts failed: {e}")
+
+    # Fallback: env-based
+    try:
+        import requests
+        from dotenv import load_dotenv
+        load_dotenv()
+        token = os.getenv("TELEGRAM_TOKEN")
+        chat = os.getenv("TELEGRAM_CHAT_ID")
+        if not token or not chat:
+            print("[ALERT] telegram creds missing")
+            return False
         r = requests.post(
             f"https://api.telegram.org/bot{token}/sendMessage",
             json={"chat_id": chat, "text": text}, timeout=10)
-        ok = r.status_code == 200
-        if not ok:
-            print(f"[ALERT] telegram HTTP {r.status_code}: {r.text[:120]}")
-        return ok
+        return r.status_code == 200
     except Exception as e:
         print(f"[ALERT] send failed: {e}")
         return False
@@ -54,4 +41,4 @@ def notify_setup(st):
 
 if __name__ == "__main__":
     ok = send("🟢 NSE Intelligence Terminal — alert channel test")
-    print("sent" if ok else "FAILED")
+    print("sent" if ok else "check logs above")
