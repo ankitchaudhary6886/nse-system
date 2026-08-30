@@ -214,6 +214,7 @@ async function loadSymbol(symbol) {
       <div class="level"><span>Pullback</span><strong>${(setup.pullback * 100).toFixed(1)}%</strong></div>
       <div class="level"><span>Impulse</span><strong>${(setup.impulse * 100).toFixed(1)}%</strong></div>
       <div class="level"><span>EMA Zone</span><strong>${setup.zone}</strong></div>
+      <div class="level"><span>Shape score</span><strong>${setup.shape ?? "—"}/100</strong></div>
       ${trancheLadder(setup)}
     `;
   } else {

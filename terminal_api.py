@@ -2,6 +2,7 @@ import os
 import datetime as dt
 import pandas as pd
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -10,6 +11,7 @@ from fastapi.responses import FileResponse
 import secrets
 
 import db
+import scheduler_bg
 
 load_dotenv()
 
@@ -18,14 +20,13 @@ APP_PASS = os.getenv("ADMIN_PASS", "change_this_password")
 
 security = HTTPBasic()
 
-from contextlib import asynccontextmanager
-import scheduler_bg
 
 @asynccontextmanager
 async def lifespan(app):
     scheduler_bg.start()
     yield
     scheduler_bg.stop()
+
 
 app = FastAPI(title="NSE Intelligence Terminal", version="3.0",
               lifespan=lifespan)
@@ -241,7 +242,8 @@ def cockpit_chart(symbol: str, user: str = Depends(verify_user)):
         if st.triggered:
             swing = {"trigger": st.entry_price, "stop": st.stop_loss,
                      "target": st.target_price, "pullback": st.pullback_depth,
-                     "impulse": st.impulse_pct, "zone": st.ema_proximity}
+                     "impulse": st.impulse_pct, "zone": st.ema_proximity,
+                     "shape": st.shape_score}
     except Exception:
         swing = None
 

@@ -1,7 +1,7 @@
 """
-Hiren Gabani Master Pullback — OFFICIAL v3.
-v2 rules + pattern may have completed within the last 3 sessions
-(a trader keeps the buy-stop live for a few days).
+Hiren Gabani Master Pullback — OFFICIAL v3 + shape score.
+6-point checklist + mother-candle trigger + PDL stop + 5% rule
++ 3-session recency + pullback orderliness grade (0-100).
 """
 from dataclasses import dataclass, field
 from typing import List
@@ -23,6 +23,7 @@ class Setup:
     mother_bar_low: float
     impulse_pct: float
     ema_proximity: str
+    shape_score: int = 0
     reasons: List[str] = field(default_factory=list)
 
 class SetupDetector:
@@ -109,6 +110,17 @@ class SetupDetector:
             if base and (base - l[i]) / base >= cls.CRASH_MAX_PCT:
                 return None
 
+        # --- Shape score: orderliness of the pullback (0-100) ---
+        pseg = c[swing_high_idx:]
+        shape = 0
+        if len(pseg) > 4:
+            rts = np.diff(pseg) / np.maximum(pseg[:-1], 1e-9)
+            max_drop = float(np.min(rts))
+            vol = float(np.std(rts))
+            s_drop = max(0.0, min(1.0, 1 - abs(max_drop) / 0.08))
+            s_vol = max(0.0, min(1.0, 1 - vol / 0.03))
+            shape = int(100 * (0.5 * s_drop + 0.5 * s_vol))
+
         # --- 4. Tighten at 10/20 EMA ---
         near10 = abs(current_low - ema10[-1]) / ema10[-1] <= cls.EMA_TOUCH_MULT
         near20 = abs(current_low - ema20[-1]) / ema20[-1] <= cls.EMA_TOUCH_MULT
@@ -172,5 +184,6 @@ class SetupDetector:
             mother_bar_low=round(mother_bar_low, 2),
             impulse_pct=round(impulse_pct, 3),
             ema_proximity=ema_proximity,
+            shape_score=shape,
             reasons=["OFFICIAL v3: pattern within last 3 sessions, "
                      "SL=PDL, risk<=5%"])
