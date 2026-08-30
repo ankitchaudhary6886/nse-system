@@ -1,6 +1,7 @@
 """
-Setup Meta-Model — learns winners from 5y history, ranks by P(WIN),
-explains via TreeSHAP.
+Setup Meta-Model — expanded feature set (C3).
+Features: momentum + structure + volume + fundamentals + sentiment + sector strength.
+Weekly auto-retrain.
 """
 import sys
 import numpy as np
@@ -19,8 +20,16 @@ def get_model():
         _MODEL = joblib.load(MODEL_PATH)
     return _MODEL
 
-FEATURES = ["mom1", "mom3", "mom6", "d52", "above200", "slope200",
-            "rv", "vc", "pb", "d10", "d20", "atr", "roce", "pe"]
+FEATURES = [
+    "mom1", "mom3", "mom6", "d52",
+    "above200", "slope200", "pb", "d10", "d20", "atr",
+    "rv", "vc",
+    "roce", "pe", "debt_eq", "promoter",
+    "sector_rs", "sentiment",
+]
+
+CONTEXT_FEATS = {"roce", "pe", "debt_eq", "promoter", "sector_rs", "sentiment"}
+PRICE_FEATS = [f for f in FEATURES if f not in CONTEXT_FEATS]
 
 
 def _symbols(conn, limit=400):
@@ -34,17 +43,87 @@ def _symbols(conn, limit=400):
 
 
 def _fund_map(conn):
+    """Fetch fundamentals: roce, pe, debt_to_equity, promoter_holding."""
     m = {}
     try:
-        for s, ro, pe in conn.execute(
-                "SELECT symbol, roce, pe FROM fundamentals"):
-            m[s] = (ro, pe)
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(fundamentals)")]
+    except Exception:
+        return m
+
+    pick = {}
+    for want, aliases in [
+        ("roce", ["roce"]),
+        ("pe", ["pe", "pe_ttm"]),
+        ("debt_eq", ["debt_to_equity", "debt_equity", "de_ratio", "de"]),
+        ("promoter", ["promoter_holding", "promoter_pct", "promoter"]),
+    ]:
+        for a in aliases:
+            if a in cols:
+                pick[want] = a
+                break
+
+    if not pick:
+        return m
+
+    sel = ", ".join(pick.values())
+    try:
+        rows = conn.execute(
+            f"SELECT symbol, {sel} FROM fundamentals").fetchall()
+        for row in rows:
+            sym = row[0]
+            vals = [row[i + 1] for i in range(len(pick))]
+            m[sym] = dict(zip(pick.keys(), vals))
     except Exception:
         pass
     return m
 
 
-def _features_df(df, roce, pe):
+def _sentiment_map(conn):
+    """Average recent news sentiment per symbol (-1..+1)."""
+    m = {}
+    try:
+        rows = conn.execute("""
+            SELECT symbol, AVG(
+                CASE LOWER(label)
+                    WHEN 'positive' THEN 1.0
+                    WHEN 'bullish' THEN 1.0
+                    WHEN 'negative' THEN -1.0
+                    WHEN 'bearish' THEN -1.0
+                    ELSE 0.0
+                END) as sent
+            FROM sentiment_headlines
+            WHERE age_days <= 30
+            GROUP BY symbol
+        """).fetchall()
+        for sym, sent in rows:
+            if sent is not None:
+                m[sym] = float(sent)
+    except Exception:
+        pass
+    return m
+
+
+def _sector_rs_map(conn):
+    """Percentile rank of each symbol's sector by RS (top sector=1.0)."""
+    try:
+        import sector_gate
+        g = sector_gate.sector_perf(conn)
+        if g.empty:
+            return {}
+        n = len(g)
+        ranks = {}
+        for i, (_, row) in enumerate(g.iterrows()):
+            ranks[row["sector"]] = 1.0 - (i / max(1, n - 1))
+        sym_sector = {}
+        for sym, sec in conn.execute(
+                "SELECT symbol, sector FROM stocks WHERE sector IS NOT NULL"):
+            sym_sector[sym] = sec
+        return {sym: ranks.get(sec, 0.5) for sym, sec in sym_sector.items()}
+    except Exception:
+        return {}
+
+
+def _features_df(df, ctx):
     c = df["close"]; h = df["high"]; l = df["low"]; v = df["volume"]
     e10 = c.ewm(span=10, adjust=False).mean()
     e20 = c.ewm(span=20, adjust=False).mean()
@@ -66,8 +145,12 @@ def _features_df(df, roce, pe):
     out["d10"] = c / e10 - 1
     out["d20"] = c / e20 - 1
     out["atr"] = tr.rolling(14).mean() / c
-    out["roce"] = roce
-    out["pe"] = pe
+    out["roce"] = ctx.get("roce")
+    out["pe"] = ctx.get("pe")
+    out["debt_eq"] = ctx.get("debt_eq")
+    out["promoter"] = ctx.get("promoter")
+    out["sector_rs"] = ctx.get("sector_rs")
+    out["sentiment"] = ctx.get("sentiment")
     out["win"] = ((fut_max / c - 1) >= 0.10).astype(float)
     return out
 
@@ -75,6 +158,9 @@ def _features_df(df, roce, pe):
 def train():
     conn = db.get_conn()
     fund = _fund_map(conn)
+    sent = _sentiment_map(conn)
+    srs = _sector_rs_map(conn)
+
     frames = []
     for sym in _symbols(conn):
         rows = conn.execute(
@@ -85,21 +171,32 @@ def train():
         df = pd.DataFrame(list(rows), columns=["date", "close", "high",
                           "low", "volume"])
         df["date"] = pd.to_datetime(df["date"])
-        ro, pe = fund.get(sym, (np.nan, np.nan))
-        f = _features_df(df, ro, pe)
-        f["date"] = df["date"]
-        f = f.iloc[::5]
-        f = f.dropna(subset=[x for x in FEATURES
-                             if x not in ("roce", "pe")] + ["win"])
-        frames.append(f)
+
+        f = fund.get(sym, {})
+        ctx = {
+            "roce": f.get("roce"), "pe": f.get("pe"),
+            "debt_eq": f.get("debt_eq"), "promoter": f.get("promoter"),
+            "sector_rs": srs.get(sym), "sentiment": sent.get(sym),
+        }
+
+        feat = _features_df(df, ctx)
+        feat["date"] = df["date"]
+        feat = feat.iloc[::5]
+        feat = feat.dropna(subset=PRICE_FEATS + ["win"])
+        frames.append(feat)
     conn.close()
 
     data = pd.concat(frames, ignore_index=True)
     if data.empty:
         print("no training rows - check prices_daily")
         return
-    data["roce"] = data["roce"].fillna(data["roce"].median())
-    data["pe"] = data["pe"].fillna(data["pe"].median())
+
+    # Fill missing context features with median (or 0)
+    for f in CONTEXT_FEATS:
+        if f in data.columns:
+            med = data[f].median()
+            data[f] = data[f].fillna(med if pd.notna(med) else 0.0)
+
     data = data.sort_values("date")
     cutoff = data["date"].quantile(0.8)
     tr = data[data["date"] <= cutoff]
@@ -109,7 +206,7 @@ def train():
     Xte, yte = te[FEATURES], te["win"]
 
     model = lgb.LGBMClassifier(
-        n_estimators=400, learning_rate=0.05, max_depth=6,
+        n_estimators=500, learning_rate=0.05, max_depth=6,
         num_leaves=31, min_child_samples=50, subsample=0.9,
         colsample_bytree=0.9, verbose=-1)
     model.fit(Xtr, ytr, eval_set=[(Xte, yte)],
@@ -127,6 +224,7 @@ def train():
     joblib.dump(model, MODEL_PATH)
     print(f"rows {len(data)} | winners {data['win'].mean():.1%}")
     print(f"test AUC {auc:.3f} | base win {base:.1%} | top-10% win {top_rate:.1%}")
+    print(f"features: {len(FEATURES)} (incl. fundamentals + sentiment + sector)")
     print(f"model saved to {MODEL_PATH}")
 
 
@@ -136,10 +234,6 @@ def score_symbol(sym, use_yahoo=True):
     rows = conn.execute(
         "SELECT date, close, high, low, volume FROM prices_daily "
         "WHERE symbol=? ORDER BY date", (sym,)).fetchall()
-    fr = conn.execute("SELECT roce, pe FROM fundamentals WHERE symbol=?",
-                      (sym,)).fetchone()
-    avg = conn.execute(
-        "SELECT AVG(roce), AVG(pe) FROM fundamentals").fetchone()
     conn.close()
 
     if len(rows) >= 300:
@@ -154,25 +248,35 @@ def score_symbol(sym, use_yahoo=True):
         if d is None or len(d) < 300:
             return None
         df = pd.DataFrame({
-            "close": d["Close"].values,
-            "high": d["High"].values,
-            "low": d["Low"].values,
-            "volume": d["Volume"].values,
+            "close": d["Close"].values, "high": d["High"].values,
+            "low": d["Low"].values, "volume": d["Volume"].values,
         })
     else:
         return None
 
-    ro, pe = fr if fr else (np.nan, np.nan)
-    f = _features_df(df, ro, pe)
-    f = f.dropna(subset=[x for x in FEATURES if x not in ("roce", "pe")])
-    if f.empty:
-        return None
-    f = f.tail(1).copy()
-    f["roce"] = f["roce"].fillna(avg[0] if avg and avg[0] is not None else 0.0)
-    f["pe"] = f["pe"].fillna(avg[1] if avg and avg[1] is not None else 0.0)
+    conn2 = db.get_conn()
+    fund = _fund_map(conn2)
+    sent = _sentiment_map(conn2)
+    srs = _sector_rs_map(conn2)
+    conn2.close()
+    f = fund.get(sym, {})
+    ctx = {
+        "roce": f.get("roce"), "pe": f.get("pe"),
+        "debt_eq": f.get("debt_eq"), "promoter": f.get("promoter"),
+        "sector_rs": srs.get(sym), "sentiment": sent.get(sym),
+    }
 
-    p = model.predict_proba(f[FEATURES])[:, 1][0]
-    contrib = model.booster_.predict(f[FEATURES], pred_contrib=True)[0]
+    feat = _features_df(df, ctx)
+    feat = feat.dropna(subset=PRICE_FEATS)
+    if feat.empty:
+        return None
+    feat = feat.tail(1).copy()
+    for col in CONTEXT_FEATS:
+        if col in feat.columns and pd.isna(feat[col].iloc[0]):
+            feat[col] = 0.0
+
+    p = model.predict_proba(feat[FEATURES])[:, 1][0]
+    contrib = model.booster_.predict(feat[FEATURES], pred_contrib=True)[0]
     parts = sorted(zip(FEATURES, contrib), key=lambda x: -abs(x[1]))[:5]
     why = [{"feature": k, "impact": round(float(v), 3)} for k, v in parts]
     return {"symbol": sym, "p_win": round(float(p), 3), "why": why}
