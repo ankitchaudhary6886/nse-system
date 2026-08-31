@@ -1,0 +1,32 @@
+
+### 📋 MASTER ROADMAP
+
+**A0 · Infrastructure**
+*   ⬜ Custom domain + HTTPS (`https://yourname.in`)
+
+**A · FETCHING**
+*   ⬜ **A1** Fundamentals refresh — weekly / on-call (not quarterly)
+*   ⬜ **A2** Delivery-volume % + bulk/block deals (NSE bhavcopy)
+*   ⬜ **A3** FII/DII daily cash-flow macro layer
+*   ⬜ **A4** Market-breadth regime (% above 20/50/200 EMA, advance-decline)
+
+**B · LAYERING**
+*   ⬜ **B1** Sector-momentum gate (only top-3 sectors by RS)
+*   ✅ **B2** Pullback shape score (0–100 orderliness grade) *(Done)*
+
+**C · MACHINE LEARNING & INTUITION**
+*   ✅ **C1** Setup meta-model → rank candidates by predicted P(WIN) *(Done)*
+*   ✅ **C2** SHAP explainability (plain-English "why this ranks #1") *(Done)*
+*   ⬜ **C3** Feature expansion (fundamentals + sentiment + breadth into ML)
+*   ✅ **C4** Drift detection + weekly auto-retrain (scheduler live) *(Done)*
+*   ✅ **C5** Train on 5-year historical winners + live graded signals *(Done)*
+
+**D · CORRECTNESS**
+*   ⬜ **D1** Data-quality monitor + alerts (stale/missing/anomaly)
+
+**E · AUTOMATION / UX**
+*   ✅ **E1** Telegram alerts on new setup (trigger/stop/target/shape text) *(Done)*
+
+---
+
+

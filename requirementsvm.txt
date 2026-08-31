@@ -1,0 +1,11 @@
+streamlit
+pandas
+numpy
+yfinance
+requests
+feedparser
+plotly
+scikit-learn
+lightgbm
+joblib
+python-dotenv
