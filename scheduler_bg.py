@@ -1,4 +1,4 @@
-"""Background scheduler — dq + daily + swing + weekly retrain + weekly fundamentals."""
+"""Background scheduler — dq + daily + swing + institutional + weekly jobs."""
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
@@ -34,6 +34,15 @@ def _swing_job():
         print("[SCHEDULER] swing scan complete")
     except Exception as e:
         print(f"[SCHEDULER] swing scan failed: {e}")
+
+def _institutional_job():
+    print("[SCHEDULER] institutional refresh started")
+    try:
+        import institutional
+        institutional.refresh()
+        print("[SCHEDULER] institutional refresh complete")
+    except Exception as e:
+        print(f"[SCHEDULER] institutional refresh failed: {e}")
 
 def _fundamentals_job():
     print("[SCHEDULER] weekly fundamentals refresh started")
@@ -96,6 +105,9 @@ def start():
     _scheduler.add_job(_swing_job,
         CronTrigger(hour=16, minute=15, timezone=IST),
         id="swing_scan", replace_existing=True)
+    _scheduler.add_job(_institutional_job,
+        CronTrigger(hour=16, minute=45, timezone=IST),
+        id="institutional", replace_existing=True)
     _scheduler.add_job(_fundamentals_job,
         CronTrigger(day_of_week="sat", hour=8, minute=0, timezone=IST),
         id="fundamentals_refresh", replace_existing=True)
@@ -104,7 +116,7 @@ def start():
         id="meta_retrain", replace_existing=True)
     _scheduler.start()
     print("[SCHEDULER] started — dq@15:30, daily@15:45, swing@16:15, "
-          "fund@Sat 08:00, retrain@Sat 09:00 IST")
+          "inst@16:45, fund@Sat08:00, retrain@Sat09:00 IST")
 
 def stop():
     global _scheduler
