@@ -90,6 +90,16 @@ def regime(user: str = Depends(verify_user)):
         return {"ok": False, "stance": "UNAVAILABLE", "error": str(e)}
 
 
+@app.get("/api/toppicks")
+def toppicks(user: str = Depends(verify_user)):
+    import top_picks
+    try:
+        top_picks.compute()
+    except Exception as e:
+        print(f"[TOPPICKS] compute failed: {e}")
+    return {"picks": top_picks.top(15)}
+
+
 @app.get("/api/swing/signals")
 def swing_signals(limit: int = 80, user: str = Depends(verify_user)):
     import swing_live
