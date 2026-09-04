@@ -32,9 +32,9 @@ function setView(name) {
   if (el) el.classList.add("active-view");
   document.querySelectorAll(".nav-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.view === name));
-  const titles = { overview: "Overview", swing: "Swing Desk", radar: "Radar" };
+  const titles = { picks: "Top Picks", overview: "Overview", swing: "Swing Desk", radar: "Radar" };
   const t = $("viewTitle");
-  if (t) t.textContent = titles[name] || "Overview";
+  if (t) t.textContent = titles[name] || "Top Picks";
   if (name === "overview" && chart) setTimeout(() => chart.timeScale().fitContent(), 50);
 }
 
@@ -67,6 +67,27 @@ async function loadRegime() {
     box.classList.add("defensive");
     box.innerHTML = "⚠️ Regime API unavailable.";
   }
+}
+
+function createPickCard(item, rank) {
+  const div = document.createElement("div");
+  div.className = "stock-card";
+  div.innerHTML = `
+    <strong>#${rank} ${item.symbol} ${item.setup ? '<span class="outcome WIN">🏄 LIVE SETUP</span>' : ""}</strong>
+    <span>Composite ${(item.composite * 100).toFixed(0)} · 🧠 P(WIN) ${(item.p_win * 100).toFixed(0)}% · 🏦 accum ${item.accum.toFixed(2)}</span>
+    <span>${item.sector || "Unknown sector"} · sector RS ${(item.sector_rs * 100).toFixed(0)}</span>
+  `;
+  div.addEventListener("click", () => { setView("overview"); loadSymbol(item.symbol); });
+  return div;
+}
+
+async function loadTopPicks() {
+  try {
+    const data = await api("/api/toppicks");
+    const box = $("picksList");
+    box.innerHTML = "";
+    (data.picks || []).forEach((x, i) => box.appendChild(createPickCard(x, i + 1)));
+  } catch (e) { /* picks optional */ }
 }
 
 function trancheLadder(setup) {
@@ -274,6 +295,7 @@ async function runSwingScan() {
 async function refreshAll() {
   await loadHealth();
   await loadRegime();
+  await loadTopPicks();
   await loadSwing();
   await loadRadar();
 }

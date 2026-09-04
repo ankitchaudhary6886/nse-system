@@ -19,7 +19,8 @@
       </div>
 
       <nav class="nav">
-        <button class="nav-btn active" data-view="overview">Overview</button>
+        <button class="nav-btn active" data-view="picks">Top Picks</button>
+        <button class="nav-btn" data-view="overview">Overview</button>
         <button class="nav-btn" data-view="swing">Swing Desk</button>
         <button class="nav-btn" data-view="radar">Radar</button>
       </nav>
@@ -33,7 +34,7 @@
     <main class="main">
       <header class="topbar">
         <div>
-          <h1 id="viewTitle">Overview</h1>
+          <h1 id="viewTitle">Top Picks</h1>
           <p>Gabani Stage-2 / VCP Pullback System</p>
         </div>
         <div class="top-actions">
@@ -45,8 +46,21 @@
 
       <section id="regimeBanner" class="regime-card loading">Loading market regime...</section>
 
+      <!-- TOP PICKS -->
+      <section id="view-picks" class="view active-view">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Today's Top Picks</h2>
+              <p>50% ML P(WIN) + 30% accumulation + 20% sector leadership (+ live-setup bonus)</p>
+            </div>
+          </div>
+          <div id="picksList" class="card-list"></div>
+        </section>
+      </section>
+
       <!-- OVERVIEW -->
-      <section id="view-overview" class="view active-view">
+      <section id="view-overview" class="view">
         <section class="metric-grid">
           <div class="metric-card"><span>Total Signals</span><strong id="mSignals">—</strong></div>
           <div class="metric-card"><span>Win Rate</span><strong id="mWinRate">—</strong></div>
