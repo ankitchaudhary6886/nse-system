@@ -90,6 +90,18 @@ def regime(user: str = Depends(verify_user)):
         return {"ok": False, "stance": "UNAVAILABLE", "error": str(e)}
 
 
+@app.get("/api/macro")
+def macro_flow(user: str = Depends(verify_user)):
+    import macro
+    try:
+        data = macro.latest()
+        if data:
+            return data
+    except Exception as e:
+        print(f"[MACRO] api failed: {e}")
+    return {"fii_net": None, "dii_net": None, "net_flow": None}
+
+
 @app.get("/api/toppicks")
 def toppicks(user: str = Depends(verify_user)):
     import top_picks

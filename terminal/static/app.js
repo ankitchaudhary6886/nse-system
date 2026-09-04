@@ -52,17 +52,34 @@ async function loadRegime() {
   try {
     const r = await api("/api/regime");
     box.classList.remove("loading", "bull", "defensive");
+    
+    let regimeHtml = "";
     if (r.stance === "BULLISH") {
       box.classList.add("bull");
-      box.innerHTML = `🟢 <strong>BULLISH / AGGRESSIVE</strong> — ${r.symbol} ` +
+      regimeHtml = `🟢 <strong>BULLISH / AGGRESSIVE</strong> — ${r.symbol} ` +
         `close ${r.index_close} > EMA10 ${r.ema10}. New long setups allowed.`;
     } else if (r.stance === "DEFENSIVE") {
       box.classList.add("defensive");
-      box.innerHTML = `🛑 <strong>DEFENSIVE / CASH</strong> — ${r.symbol} ` +
+      regimeHtml = `🛑 <strong>DEFENSIVE / CASH</strong> — ${r.symbol} ` +
         `close ${r.index_close} < EMA10 ${r.ema10}. No new long entries.`;
     } else {
-      box.innerHTML = `⚠️ Regime unavailable: ${r.error || ""}`;
+      regimeHtml = `⚠️ Regime unavailable: ${r.error || ""}`;
     }
+
+    // Fetch Macro Flow (A3)
+    let macroHtml = "";
+    try {
+      const m = await api("/api/macro");
+      if (m && m.fii_net !== null && m.dii_net !== null) {
+        const net = m.fii_net + m.dii_net;
+        const icon = net >= 0 ? "🟢" : "🛑";
+        macroHtml = `<div style="margin-top:8px; font-size:14px; opacity:0.9;">` +
+          `${icon} Smart Money Flow: FII ${m.fii_net > 0 ? "+" : ""}${m.fii_net.toFixed(0)}Cr / ` +
+          `DII ${m.dii_net > 0 ? "+" : ""}${m.dii_net.toFixed(0)}Cr (Net: ${net > 0 ? "+" : ""}${net.toFixed(0)}Cr)</div>`;
+      }
+    } catch (e) { /* macro optional */ }
+
+    box.innerHTML = regimeHtml + macroHtml;
   } catch (e) {
     box.classList.add("defensive");
     box.innerHTML = "⚠️ Regime API unavailable.";
