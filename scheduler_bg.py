@@ -4,7 +4,9 @@ from apscheduler.triggers.cron import CronTrigger
 import pytz
 
 IST = pytz.timezone("Asia/Kolkata")
+
 _scheduler = None
+
 
 def _data_quality_job():
     print("[SCHEDULER] data quality started")
@@ -15,6 +17,7 @@ def _data_quality_job():
     except Exception as e:
         print(f"[SCHEDULER] data quality failed: {e}")
 
+
 def _daily_job():
     print("[SCHEDULER] daily update started")
     try:
@@ -23,6 +26,7 @@ def _daily_job():
         print("[SCHEDULER] daily update complete")
     except Exception as e:
         print(f"[SCHEDULER] daily update failed: {e}")
+
 
 def _swing_job():
     print("[SCHEDULER] swing scan started")
@@ -35,6 +39,7 @@ def _swing_job():
     except Exception as e:
         print(f"[SCHEDULER] swing scan failed: {e}")
 
+
 def _institutional_job():
     print("[SCHEDULER] institutional refresh started")
     try:
@@ -43,6 +48,7 @@ def _institutional_job():
         print("[SCHEDULER] institutional refresh complete")
     except Exception as e:
         print(f"[SCHEDULER] institutional refresh failed: {e}")
+
 
 def _macro_job():
     print("[SCHEDULER] macro FII/DII fetch started")
@@ -53,6 +59,7 @@ def _macro_job():
     except Exception as e:
         print(f"[SCHEDULER] macro fetch failed: {e}")
 
+
 def _fundamentals_job():
     print("[SCHEDULER] weekly fundamentals refresh started")
     try:
@@ -61,6 +68,7 @@ def _fundamentals_job():
         print("[SCHEDULER] weekly fundamentals refresh complete")
     except Exception as e:
         print(f"[SCHEDULER] fundamentals refresh failed: {e}")
+
 
 def _retrain_job():
     print("[SCHEDULER] weekly meta retrain started")
@@ -72,9 +80,11 @@ def _retrain_job():
     except Exception as e:
         print(f"[SCHEDULER] retrain failed: {e}")
 
+
 def _drift_check():
     try:
-        conn = __import__("db").get_conn()
+        import db
+        conn = db.get_conn()
         rows = conn.execute(
             "SELECT outcome FROM swing_signals "
             "WHERE outcome IN ('WIN','LOSS') "
@@ -100,35 +110,39 @@ def _drift_check():
     except Exception as e:
         print(f"[DRIFT] check skipped: {e}")
 
+
 def start():
     global _scheduler
     if _scheduler is not None:
         return
     _scheduler = BackgroundScheduler(timezone=IST)
     _scheduler.add_job(_data_quality_job,
-        CronTrigger(hour=15, minute=30, timezone=IST),
-        id="data_quality", replace_existing=True)
+                       CronTrigger(hour=15, minute=30, timezone=IST),
+                       id="data_quality", replace_existing=True)
     _scheduler.add_job(_daily_job,
-        CronTrigger(hour=15, minute=45, timezone=IST),
-        id="daily_update", replace_existing=True)
+                       CronTrigger(hour=15, minute=45, timezone=IST),
+                       id="daily_update", replace_existing=True)
     _scheduler.add_job(_swing_job,
-        CronTrigger(hour=16, minute=15, timezone=IST),
-        id="swing_scan", replace_existing=True)
+                       CronTrigger(hour=16, minute=15, timezone=IST),
+                       id="swing_scan", replace_existing=True)
     _scheduler.add_job(_institutional_job,
-        CronTrigger(hour=16, minute=45, timezone=IST),
-        id="institutional", replace_existing=True)
+                       CronTrigger(hour=16, minute=45, timezone=IST),
+                       id="institutional", replace_existing=True)
     _scheduler.add_job(_macro_job,
-        CronTrigger(hour=17, minute=30, timezone=IST),
-        id="macro_flow", replace_existing=True)
+                       CronTrigger(hour=17, minute=30, timezone=IST),
+                       id="macro_flow", replace_existing=True)
     _scheduler.add_job(_fundamentals_job,
-        CronTrigger(day_of_week="sat", hour=8, minute=0, timezone=IST),
-        id="fundamentals_refresh", replace_existing=True)
+                       CronTrigger(day_of_week="sat", hour=8, minute=0,
+                                   timezone=IST),
+                       id="fundamentals_refresh", replace_existing=True)
     _scheduler.add_job(_retrain_job,
-        CronTrigger(day_of_week="sat", hour=9, minute=0, timezone=IST),
-        id="meta_retrain", replace_existing=True)
+                       CronTrigger(day_of_week="sat", hour=9, minute=0,
+                                   timezone=IST),
+                       id="meta_retrain", replace_existing=True)
     _scheduler.start()
     print("[SCHEDULER] started — dq@15:30, daily@15:45, swing@16:15, "
           "inst@16:45, macro@17:30, fund@Sat08:00, retrain@Sat09:00 IST")
+
 
 def stop():
     global _scheduler

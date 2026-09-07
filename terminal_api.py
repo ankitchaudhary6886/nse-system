@@ -3,23 +3,19 @@ import datetime as dt
 import pandas as pd
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import secrets
-
 import db
 import scheduler_bg
 
 load_dotenv()
-
 APP_USER = os.getenv("ADMIN_USER", "ankit")
 APP_PASS = os.getenv("ADMIN_PASS", "change_this_password")
-
+API_HOST = os.getenv("API_HOST", "127.0.0.1")
 security = HTTPBasic()
-
 
 @asynccontextmanager
 async def lifespan(app):
@@ -27,55 +23,39 @@ async def lifespan(app):
     yield
     scheduler_bg.stop()
 
-
-app = FastAPI(title="NSE Intelligence Terminal", version="3.0",
-              lifespan=lifespan)
-
-app.mount("/static", StaticFiles(directory="terminal/static"),
-          name="static")
-
+app = FastAPI(title="NSE Intelligence Terminal", version="4.0", lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="terminal/static"), name="static")
 
 def verify_user(credentials: HTTPBasicCredentials = Depends(security)):
     user_ok = secrets.compare_digest(credentials.username, APP_USER)
     pass_ok = secrets.compare_digest(credentials.password, APP_PASS)
     if not (user_ok and pass_ok):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid login",
-            headers={"WWW-Authenticate": "Basic"},
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid login",
+                            headers={"WWW-Authenticate": "Basic"})
     return credentials.username
-
 
 def safe_float(v, nd=2):
     try:
-        if v is None:
-            return None
+        if v is None: return None
         return round(float(v), nd)
     except Exception:
         return None
 
-
 def get_conn():
     return db.get_conn()
-
 
 @app.get("/")
 def root(user: str = Depends(verify_user)):
     return FileResponse("terminal/static/index.html")
 
-
 @app.get("/api/health")
 def health(user: str = Depends(verify_user)):
     conn = get_conn()
-    try:
-        n = conn.execute("SELECT COUNT(*) FROM prices_daily").fetchone()[0]
-    except Exception:
-        n = 0
+    try: n = conn.execute("SELECT COUNT(*) FROM prices_daily").fetchone()[0]
+    except Exception: n = 0
     conn.close()
-    return {"ok": True, "prices_rows": n,
-            "time": dt.datetime.now().isoformat()}
-
+    return {"ok": True, "prices_rows": n, "time": dt.datetime.now().isoformat()}
 
 @app.get("/api/regime")
 def regime(user: str = Depends(verify_user)):
@@ -84,79 +64,57 @@ def regime(user: str = Depends(verify_user)):
         rg = MarketRegime.compute()
         return {"ok": True, "is_bullish": rg.is_bullish,
                 "stance": "BULLISH" if rg.is_bullish else "DEFENSIVE",
-                "symbol": rg.symbol, "index_close": rg.index_close,
-                "ema10": rg.ema10}
+                "symbol": rg.symbol, "index_close": rg.index_close, "ema10": rg.ema10}
     except Exception as e:
         return {"ok": False, "stance": "UNAVAILABLE", "error": str(e)}
-
 
 @app.get("/api/macro")
 def macro_flow(user: str = Depends(verify_user)):
     import macro
     try:
         data = macro.latest()
-        if data:
-            return data
+        if data: return data
     except Exception as e:
         print(f"[MACRO] api failed: {e}")
     return {"fii_net": None, "dii_net": None, "net_flow": None}
 
-
 @app.get("/api/toppicks")
 def toppicks(user: str = Depends(verify_user)):
     import top_picks
-    try:
-        top_picks.compute()
-    except Exception as e:
-        print(f"[TOPPICKS] compute failed: {e}")
+    try: top_picks.compute()
+    except Exception as e: print(f"[TOPPICKS] compute failed: {e}")
     return {"picks": top_picks.top(15)}
 
+@app.post("/api/pwin/refresh")
+def pwin_refresh(bg: BackgroundTasks, user: str = Depends(verify_user)):
+    import pwin_cache
+    bg.add_task(pwin_cache.refresh_all)
+    return {"started": True}
 
 @app.get("/api/swing/signals")
 def swing_signals(limit: int = 80, user: str = Depends(verify_user)):
-    import swing_live
+    import swing_live, pwin_cache
     conn = get_conn()
     swing_live.ensure(conn)
-
     rows = conn.execute(
         "SELECT signal_date, symbol, entry_trigger, stop, target, "
         "risk_pct, pullback, impulse, ema_zone, outcome "
-        "FROM swing_signals ORDER BY signal_date DESC LIMIT ?",
-        (limit,)).fetchall()
-
-    signals = []
-    for r in rows:
-        signals.append({
-            "date": r[0], "symbol": r[1],
-            "trigger": safe_float(r[2]), "stop": safe_float(r[3]),
-            "target": safe_float(r[4]), "risk_pct": safe_float(r[5]),
-            "pullback": safe_float(r[6], 3), "impulse": safe_float(r[7], 3),
-            "ema_zone": r[8], "outcome": r[9], "p_win": None,
-        })
-
-    score = {}
-    for outcome, n in conn.execute(
-            "SELECT outcome, COUNT(*) FROM swing_signals "
-            "GROUP BY outcome").fetchall():
-        score[outcome] = n
+        "FROM swing_signals ORDER BY signal_date DESC LIMIT ?", (limit,)).fetchall()
+    signals = [{"date": r[0], "symbol": r[1], "trigger": safe_float(r[2]), 
+                "stop": safe_float(r[3]), "target": safe_float(r[4]), 
+                "risk_pct": safe_float(r[5]), "pullback": safe_float(r[6], 3), 
+                "impulse": safe_float(r[7], 3), "ema_zone": r[8], 
+                "outcome": r[9], "p_win": None} for r in rows]
+    score = {r[0]: r[1] for r in conn.execute(
+        "SELECT outcome, COUNT(*) FROM swing_signals GROUP BY outcome").fetchall()}
+    pw = pwin_cache.get_map(conn)
     conn.close()
-
-    try:
-        import meta_model
-        for s in signals:
-            r = meta_model.score_symbol(s["symbol"], use_yahoo=False)
-            s["p_win"] = r["p_win"] if r and r.get("p_win") is not None else None
-        signals.sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
-    except Exception:
-        pass
-
+    for s in signals: s["p_win"] = pw.get(s["symbol"])
+    signals.sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
     wins = score.get("WIN", 0)
-    losses = score.get("LOSS", 0)
-    graded = wins + losses
-
+    graded = wins + score.get("LOSS", 0)
     return {"signals": signals, "scorecard": score,
             "win_rate": round(100 * wins / graded, 1) if graded else None}
-
 
 @app.post("/api/swing/scan")
 def run_swing_scan(bg: BackgroundTasks, user: str = Depends(verify_user)):
@@ -165,120 +123,74 @@ def run_swing_scan(bg: BackgroundTasks, user: str = Depends(verify_user)):
     bg.add_task(swing_live.scan)
     return {"started": True}
 
-
 @app.get("/api/radar")
 def radar(user: str = Depends(verify_user)):
+    import pwin_cache
     conn = get_conn()
     rows = conn.execute(
         "SELECT symbol, perf1m, perf3m, relvol, mcap_cr "
         "FROM universe_broad ORDER BY mcap_cr DESC").fetchall()
-
     groups = {"Momentum": [], "Volume Spike": [], "Turnaround": []}
     for sym, p1, p3, rv, mc in rows:
-        p1v = p1 or 0
-        p3v = p3 or 0
-        rvv = rv or 0
-        item = {"symbol": sym, "perf1m": safe_float(p1v),
-                "perf3m": safe_float(p3v), "relvol": safe_float(rvv),
-                "mcap_cr": safe_float(mc), "p_win": None}
-        if rvv >= 2:
-            groups["Volume Spike"].append(item)
-        elif p1v >= 10 and p3v >= 8:
-            groups["Momentum"].append(item)
-        elif p1v >= 7 and p3v <= 0:
-            groups["Turnaround"].append(item)
-
-    for k in groups:
-        groups[k] = groups[k][:40]
-
+        p1v, p3v, rvv = p1 or 0, p3 or 0, rv or 0
+        item = {"symbol": sym, "perf1m": safe_float(p1v), "perf3m": safe_float(p3v),
+                "relvol": safe_float(rvv), "mcap_cr": safe_float(mc), "p_win": None}
+        if rvv >= 2: groups["Volume Spike"].append(item)
+        elif p1v >= 10 and p3v >= 8: groups["Momentum"].append(item)
+        elif p1v >= 7 and p3v <= 0: groups["Turnaround"].append(item)
+    for k in groups: groups[k] = groups[k][:40]
     events = []
     try:
-        erows = conn.execute(
-            "SELECT kind, symbol, text FROM events "
-            "WHERE date=(SELECT MAX(date) FROM events) LIMIT 30").fetchall()
-        for kind, sym, text in erows:
-            events.append({"kind": kind, "symbol": sym, "text": text})
-    except Exception:
-        pass
-
+        erows = conn.execute("SELECT kind, symbol, text FROM events "
+                             "WHERE date=(SELECT MAX(date) FROM events) LIMIT 30").fetchall()
+        for kind, sym, text in erows: events.append({"kind": kind, "symbol": sym, "text": text})
+    except Exception: pass
+    pw = pwin_cache.get_map(conn)
     conn.close()
-
-    try:
-        import meta_model
-        for k in groups:
-            for item in groups[k]:
-                r = meta_model.score_symbol(item["symbol"], use_yahoo=False)
-                item["p_win"] = r["p_win"] if r and r.get("p_win") is not None else None
-            groups[k].sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
-    except Exception:
-        pass
-
+    for k in groups:
+        for item in groups[k]: item["p_win"] = pw.get(item["symbol"])
+        groups[k].sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
     return {"groups": groups, "events": events, "total": len(rows)}
-
 
 @app.get("/api/cockpit/{symbol}/chart")
 def cockpit_chart(symbol: str, user: str = Depends(verify_user)):
     sym = symbol.upper()
     conn = get_conn()
-    rows = conn.execute(
-        "SELECT date, open, high, low, close, volume FROM prices_daily "
-        "WHERE symbol=? ORDER BY date", (sym,)).fetchall()
+    rows = conn.execute("SELECT date, open, high, low, close, volume FROM prices_daily "
+                        "WHERE symbol=? ORDER BY date", (sym,)).fetchall()
     conn.close()
-
-    if not rows:
-        return {"symbol": sym, "candles": [], "ema10": [], "ema20": [],
-                "ema50": [], "ema200": [], "swing": None}
-
-    df = pd.DataFrame(list(rows),
-                      columns=["date", "open", "high", "low", "close", "volume"])
+    if not rows: return {"symbol": sym, "candles": [], "ema10": [], "ema20": [], "ema50": [], "ema200": [], "swing": None}
+    df = pd.DataFrame(list(rows), columns=["date", "open", "high", "low", "close", "volume"])
     df["date"] = pd.to_datetime(df["date"])
-    for col in ["open", "high", "low", "close", "volume"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+    for col in ["open", "high", "low", "close", "volume"]: df[col] = pd.to_numeric(df[col], errors="coerce")
     df = df.dropna(subset=["open", "high", "low", "close"]).tail(420).copy()
-
     df["ema10"] = df["close"].ewm(span=10, adjust=False).mean()
     df["ema20"] = df["close"].ewm(span=20, adjust=False).mean()
     df["ema50"] = df["close"].ewm(span=50, adjust=False).mean()
     df["ema200"] = df["close"].ewm(span=200, adjust=False).mean()
-
-    candles = [{"time": r["date"].strftime("%Y-%m-%d"),
-                "open": safe_float(r["open"]), "high": safe_float(r["high"]),
-                "low": safe_float(r["low"]), "close": safe_float(r["close"])}
-               for _, r in df.iterrows()]
-
+    candles = [{"time": r["date"].strftime("%Y-%m-%d"), "open": safe_float(r["open"]), 
+                "high": safe_float(r["high"]), "low": safe_float(r["low"]), 
+                "close": safe_float(r["close"])} for _, r in df.iterrows()]
     def line(col):
-        out = []
-        for _, r in df.iterrows():
-            val = safe_float(r[col])
-            if val is not None:
-                out.append({"time": r["date"].strftime("%Y-%m-%d"), "value": val})
-        return out
-
+        return [{"time": r["date"].strftime("%Y-%m-%d"), "value": safe_float(r[col])} 
+                for _, r in df.iterrows() if safe_float(r[col]) is not None]
     swing = None
     try:
         from setup import SetupDetector
-        raw = df.rename(columns={"close": "Close", "high": "High",
-                                 "low": "Low", "volume": "Volume"})
-        raw = raw.set_index("date")
+        raw = df.rename(columns={"close": "Close", "high": "High", "low": "Low", "volume": "Volume"}).set_index("date")
         st = SetupDetector.detect(raw, sym)
         if st.triggered:
-            swing = {"trigger": st.entry_price, "stop": st.stop_loss,
-                     "target": st.target_price, "pullback": st.pullback_depth,
-                     "impulse": st.impulse_pct, "zone": st.ema_proximity,
-                     "shape": st.shape_score}
-    except Exception:
-        swing = None
-
-    return {"symbol": sym, "candles": candles, "ema10": line("ema10"),
-            "ema20": line("ema20"), "ema50": line("ema50"),
-            "ema200": line("ema200"), "swing": swing}
-
+            swing = {"trigger": st.entry_price, "stop": st.stop_loss, "target": st.target_price, 
+                     "pullback": st.pullback_depth, "impulse": st.impulse_pct, 
+                     "zone": st.ema_proximity, "shape": st.shape_score}
+    except Exception: pass
+    return {"symbol": sym, "candles": candles, "ema10": line("ema10"), "ema20": line("ema20"), 
+            "ema50": line("ema50"), "ema200": line("ema200"), "swing": swing}
 
 @app.get("/api/cockpit/{symbol}/summary")
 def cockpit_summary(symbol: str, user: str = Depends(verify_user)):
     sym = symbol.upper()
     conn = get_conn()
-
     sector = mcap = fund_score = status = None
     r = conn.execute("SELECT sector FROM stocks WHERE symbol=?", (sym,)).fetchone()
     if r: sector = r[0]
@@ -289,21 +201,14 @@ def cockpit_summary(symbol: str, user: str = Depends(verify_user)):
     if r: fund_score = safe_float(r[0])
     r = conn.execute("SELECT status FROM pipeline WHERE symbol=?", (sym,)).fetchone()
     if r: status = r[0]
-
     news = []
     try:
-        nrows = conn.execute(
-            "SELECT title, age_days, label FROM sentiment_headlines "
-            "WHERE symbol=? ORDER BY age_days LIMIT 8", (sym,)).fetchall()
-        for title, age, label in nrows:
-            news.append({"title": title, "age_days": age, "label": label})
-    except Exception:
-        pass
+        nrows = conn.execute("SELECT title, age_days, label FROM sentiment_headlines "
+                             "WHERE symbol=? ORDER BY age_days LIMIT 8", (sym,)).fetchall()
+        for title, age, label in nrows: news.append({"title": title, "age_days": age, "label": label})
+    except Exception: pass
     conn.close()
-
-    return {"symbol": sym, "sector": sector, "mcap_cr": mcap,
-            "fund_score": fund_score, "status": status, "news": news}
-
+    return {"symbol": sym, "sector": sector, "mcap_cr": mcap, "fund_score": fund_score, "status": status, "news": news}
 
 @app.get("/api/meta/{symbol}")
 def meta_score(symbol: str, user: str = Depends(verify_user)):
@@ -314,7 +219,31 @@ def meta_score(symbol: str, user: str = Depends(verify_user)):
     except Exception as e:
         return {"symbol": symbol, "p_win": None, "why": [], "error": str(e)}
 
+@app.get("/api/ledger/stats")
+def ledger_stats(user: str = Depends(verify_user)):
+    import ledger
+    return ledger.compute_stats() or {"total_trades": 0}
+
+@app.get("/api/ledger/trades")
+def ledger_trades(limit: int = 100, user: str = Depends(verify_user)):
+    import ledger
+    return {"trades": ledger.get_trades(limit)}
+
+@app.get("/api/screener/scan")
+def screener_scan(limit: int = 40, user: str = Depends(verify_user)):
+    import screener_engine
+    try:
+        hits = screener_engine.screen_universe(limit=min(max(limit, 10), 100), show=False)
+        return {"scanned": min(max(limit, 10), 100), "hits": hits}
+    except Exception as e:
+        return {"scanned": 0, "hits": [], "error": str(e)}
+
+@app.get("/api/screener/{symbol}")
+def screener_check(symbol: str, user: str = Depends(verify_user)):
+    import screener_engine
+    try: return screener_engine.evaluate_stock(symbol.upper())
+    except Exception as e: return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("terminal_api:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("terminal_api:app", host=API_HOST, port=8000, reload=True)

@@ -1,11 +1,19 @@
-env/
-venv/
+# python
 __pycache__/
 *.pyc
+*.pyo
+env/
+venv/
+.env
+
+# per-machine data (handoff §4.9) — never in git
 data/*.db
 data/*.pkl
-data/*.log
-data/daily_log.txt
-backtest_trades.csv
 data/gcp_key.json
-.env
+data/daily_log.txt
+data/uploaded_fundamentals.csv
+
+# local artifacts
+project_dump.txt
+terminal.log
+backtest_trades.csv

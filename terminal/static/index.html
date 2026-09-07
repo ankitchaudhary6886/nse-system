@@ -1,139 +1,44 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>NSE Intelligence Terminal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/static/style.css" />
-  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE Intelligence Terminal</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">N</div>
-        <div>
-          <div class="brand-title">NSE Intelligence</div>
-          <div class="brand-subtitle">Momentum Terminal</div>
-        </div>
-      </div>
-
-      <nav class="nav">
-        <button class="nav-btn active" data-view="picks">Top Picks</button>
-        <button class="nav-btn" data-view="overview">Overview</button>
-        <button class="nav-btn" data-view="swing">Swing Desk</button>
-        <button class="nav-btn" data-view="radar">Radar</button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="mini-label">System</div>
-        <div id="healthStatus" class="mini-value">Checking...</div>
-      </div>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <h1 id="viewTitle">Top Picks</h1>
-          <p>Gabani Stage-2 / VCP Pullback System</p>
-        </div>
-        <div class="top-actions">
-          <input id="symbolSearch" placeholder="Search symbol e.g. DIXON" />
-          <button id="loadSymbolBtn">Open</button>
-          <button id="refreshBtn">Refresh</button>
-        </div>
-      </header>
-
-      <section id="regimeBanner" class="regime-card loading">Loading market regime...</section>
-
-      <!-- TOP PICKS -->
-      <section id="view-picks" class="view active-view">
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>Today's Top Picks</h2>
-              <p>50% ML P(WIN) + 30% accumulation + 20% sector leadership (+ live-setup bonus)</p>
-            </div>
-          </div>
-          <div id="picksList" class="card-list"></div>
-        </section>
-      </section>
-
-      <!-- OVERVIEW -->
-      <section id="view-overview" class="view">
-        <section class="metric-grid">
-          <div class="metric-card"><span>Total Signals</span><strong id="mSignals">—</strong></div>
-          <div class="metric-card"><span>Win Rate</span><strong id="mWinRate">—</strong></div>
-          <div class="metric-card"><span>Open / Pending</span><strong id="mOpen">—</strong></div>
-          <div class="metric-card"><span>Market Universe</span><strong id="mUniverse">—</strong></div>
-        </section>
-
-        <section class="terminal-grid">
-          <div class="panel large">
-            <div class="panel-header">
-              <div>
-                <h2 id="chartTitle">Chart Inspector</h2>
-                <p id="chartSubtitle">Select a signal or radar stock</p>
-              </div>
-              <div id="setupBadge" class="badge muted">No setup loaded</div>
-            </div>
-            <div id="chart"></div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <div><h2>Setup & Tranche Plan</h2><p>Trigger, PDL stop, lifecycle</p></div>
-            </div>
-            <div id="setupSummary" class="setup-box">Select a stock to inspect setup levels.</div>
-            <div class="news-box">
-              <h3>Latest News</h3>
-              <div id="newsList" class="news-list">No symbol selected.</div>
-            </div>
-          </div>
-        </section>
-      </section>
-
-      <!-- SWING DESK -->
-      <section id="view-swing" class="view">
-        <section class="panel">
-          <div class="panel-header">
-            <div><h2>Swing Desk</h2><p>Forward validation log</p></div>
-            <button id="runSwingBtn">Run Swing Scan</button>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th>
-                  <th>Risk %</th><th>PB</th><th>Impulse</th><th>Zone</th><th>Outcome</th>
-                </tr>
-              </thead>
-              <tbody id="swingTable"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <!-- RADAR -->
-      <section id="view-radar" class="view">
-        <section class="radar-layout">
-          <div class="panel">
-            <div class="panel-header"><div><h2>Momentum</h2><p>Strong continuation</p></div></div>
-            <div id="radarMomentum" class="card-list"></div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><div><h2>Volume Spike</h2><p>Abnormal activity</p></div></div>
-            <div id="radarVolume" class="card-list"></div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><div><h2>Turnaround</h2><p>Waking up</p></div></div>
-            <div id="radarTurn" class="card-list"></div>
-          </div>
-        </section>
-      </section>
-    </main>
-  </div>
-
-  <script src="/static/app.js"></script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">N</div><div><div class="brand-title">NSE Intelligence</div><div class="brand-subtitle">Momentum Terminal</div></div></div>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="picks">Top Picks</button>
+      <button class="nav-btn" data-view="overview">Overview</button>
+      <button class="nav-btn" data-view="screener">Screener</button>
+      <button class="nav-btn" data-view="swing">Swing Desk</button>
+      <button class="nav-btn" data-view="ledger">Ledger</button>
+      <button class="nav-btn" data-view="radar">Radar</button>
+    </nav>
+    <div class="sidebar-footer"><div class="mini-label">System</div><div class="mini-value" id="healthStatus">Checking...</div></div>
+  </aside>
+  <main class="main">
+    <div class="topbar"><div><h1 id="viewTitle">Top Picks</h1><p>Gabani Stage-2 / VCP Pullback System</p></div><div class="top-actions"><input id="symbolSearch" placeholder="Symbol e.g. DIXON" /><button id="loadSymbolBtn">Open</button><button id="refreshBtn">Refresh</button></div></div>
+    <div class="regime-card loading" id="regimeBanner">Loading market regime...</div>
+    <div class="metric-grid"><div class="metric-card"><span>Total Signals</span><strong id="mSignals">—</strong></div><div class="metric-card"><span>Win Rate</span><strong id="mWinRate">—</strong></div><div class="metric-card"><span>Open / Pending</span><strong id="mOpen">—</strong></div><div class="metric-card"><span>Market Universe</span><strong id="mUniverse">—</strong></div></div>
+    
+    <section id="view-picks" class="view active-view"><div class="panel"><div class="panel-header"><div><h2>Today's Top Picks</h2><p>50% ML P(WIN) + 30% accumulation + 20% sector leadership (+ live-setup bonus)</p></div></div><div class="radar-layout" id="picksList"></div></div></section>
+    
+    <section id="view-overview" class="view"><div class="terminal-grid"><div class="panel large"><div class="panel-header"><div><h2 id="chartTitle">Chart Inspector</h2><p id="chartSubtitle">Select a signal or radar stock</p></div><span class="badge muted" id="setupBadge">No setup loaded</span></div><div id="chart"></div></div><div class="panel"><div class="panel-header"><div><h2>Setup & Tranche Plan</h2><p>Trigger, PDL stop, lifecycle</p></div></div><div class="setup-box" id="setupSummary"><p>Select a stock to inspect setup levels.</p></div><div class="news-box"><h3>Latest News</h3><div class="news-list" id="newsList">No symbol selected.</div></div></div></div></section>
+    
+    <section id="view-screener" class="view"><div class="terminal-grid"><div class="panel"><div class="panel-header"><div><h2>On-Demand Screener</h2><p>Baseline (Stage-2 + momentum + volume) + VCP checks — any symbol, DB-first</p></div><button id="runScreenerBtn">Run Screener</button></div><div class="setup-box" id="screenerMetrics"><p>Type a symbol in the top search box, then press Run Screener.</p></div></div><div class="panel"><div class="panel-header"><div><h2>Check Breakdown</h2><p>All gates must align for a live signal</p></div><span class="badge muted" id="screenerBadge">—</span></div><div class="setup-box" id="screenerChecks"><p>No scan yet.</p></div></div></div><div class="panel" style="margin-top:18px"><div class="panel-header"><div><h2>Whole-Band Scan</h2><p>Full baseline+VCP engine over the top smallcap band (DB-only, seconds)</p></div><button id="scanBandBtn">Scan Whole Band</button></div><div class="card-list" id="bandHits"><p>No band scan yet.</p></div></div></section>
+    
+    <section id="view-swing" class="view"><div class="panel"><div class="panel-header"><div><h2>Swing Desk</h2><p>Forward validation log</p></div><button id="runSwingBtn">Run Swing Scan</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Risk %</th><th>PB</th><th>Impulse</th><th>Zone</th><th>Outcome</th></tr></thead><tbody id="swingTable"></tbody></table></div></div></section>
+    
+    <section id="view-ledger" class="view"><div class="terminal-grid"><div class="panel"><div class="panel-header"><div><h2>System Performance</h2><p>Graded swing signals (WIN/LOSS/TIMEOUT)</p></div></div><div class="setup-box" id="ledgerStats"><p>Loading stats...</p></div></div><div class="panel"><div class="panel-header"><div><h2>Trade Log</h2><p>Forward validation history</p></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Outcome</th></tr></thead><tbody id="ledgerTable"></tbody></table></div></div></div></section>
+    
+    <section id="view-radar" class="view"><div class="radar-layout"><div class="panel"><div class="panel-header"><div><h2>Momentum</h2><p>Strong continuation</p></div></div><div class="card-list" id="radarMomentum"></div></div><div class="panel"><div class="panel-header"><div><h2>Volume Spike</h2><p>Abnormal activity</p></div></div><div class="card-list" id="radarVolume"></div></div><div class="panel"><div class="panel-header"><div><h2>Turnaround</h2><p>Waking up</p></div></div><div class="card-list" id="radarTurn"></div></div></div></section>
+  </main>
+</div>
+<script src="/static/app.js"></script>
 </body>
 </html>

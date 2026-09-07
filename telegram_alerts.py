@@ -1,20 +1,31 @@
+"""Telegram alerts — token loaded from data/tg_secret.txt (never hardcoded)."""
+import os
 import sys
 import requests
 import db
 
 SECRET = "data/tg_secret.txt"
 
+
 def load():
+    """Return (token, chat_id): env vars if set, else the secret file."""
+    token = os.getenv("TELEGRAM_TOKEN")
+    chat = os.getenv("TELEGRAM_CHAT_ID")
+    if token and chat:
+        return token, chat
     with open(SECRET, "r") as f:
         lines = [l.strip() for l in f if l.strip()]
     return lines[0], lines[1]
 
+
 def send(text):
     token, chat = load()
-    url = f"https://api.telegram.org/bot8650331001:AAH1_cuflQijQHf3W-1_XMXXOx4COuX-jx8/sendMessage"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
     r = requests.post(url, json={"chat_id": chat, "text": text},
                       timeout=20)
     print("telegram:", r.status_code)
+    return r.status_code == 200
+
 
 def report():
     conn = db.get_conn()
@@ -37,6 +48,7 @@ def report():
                  ", ".join(f"{s} {v:.0f}" for s, v in top))
     send("\n".join(lines))
     conn.close()
+
 
 if len(sys.argv) > 1:
     if sys.argv[1] == "test":

@@ -1,6 +1,29 @@
+# Core
 pandas>=2.2
 numpy>=1.26
 requests>=2.31
 yfinance>=0.2.40
+python-dotenv
+
+# Dashboards
 streamlit>=1.36
 plotly>=5.20
+fastapi
+uvicorn
+
+# Scheduling
+apscheduler
+pytz
+
+# ML
+scikit-learn
+lightgbm
+joblib
+
+# News / sentiment
+feedparser
+transformers
+torch
+
+# Google Sheets
+gspread

@@ -1,32 +1,48 @@
+### 📋 MASTER ROADMAP — refreshed
 
-### 📋 MASTER ROADMAP
+**P0 · SECURITY**
+*   ✅ S1 telegram_alerts.py — token no longer hardcoded (reads tg_secret.txt / env)
+*   ⬜ S2 ROTATE Telegram bot token via @BotFather -> update data/tg_secret.txt   [HUMAN]
+*   ⬜ S3 ROTATE GCP service-account key (IAM -> new key, delete old)             [HUMAN]
+*   ⬜ S4 .env with real ADMIN_USER / ADMIN_PASS for terminal_api                 [HUMAN]
 
-**A0 · Infrastructure**
-*   ⬜ Custom domain + HTTPS (`https://yourname.in`)
+**P1 · CRASH FIXES**
+*   ✅ F1 scheduler_bg.py — _drift_check import fixed
+*   ✅ F2 macro.py — rewritten (auto-fetch + manual set + latest)
+*   ✅ F3 screener_engine.py — fixed, DB-first, exposed at /api/screener/{symbol}
+*   ✅ F4 daily_update.bat — path fixed
+
+**P2 · HOUSEKEEPING**
+*   ✅ H1 requirements.txt unified (requirementsvm.txt now obsolete — delete it)
+*   ✅ H2 this file refreshed
+*   ⬜ H3 end-to-end terminal boot test after S4
 
 **A · FETCHING**
-*   ⬜ **A1** Fundamentals refresh — weekly / on-call (not quarterly)
-*   ⬜ **A2** Delivery-volume % + bulk/block deals (NSE bhavcopy)
-*   ⬜ **A3** FII/DII daily cash-flow macro layer
-*   ⬜ **A4** Market-breadth regime (% above 20/50/200 EMA, advance-decline)
+*   ✅ A1 Fundamentals refresh weekly/on-call (fundamentals_refresh.py, Sat 08:00)
+*   ✅ A2 Accumulation score live; NSE delivery % best-effort (institutional.py)
+*   ✅ A3 FII/DII macro layer (macro.py + /api/macro + banner in UI)
+*   ✅ A4 Breadth regime (breadth.py gates the swing scan)
 
 **B · LAYERING**
-*   ⬜ **B1** Sector-momentum gate (only top-3 sectors by RS)
-*   ✅ **B2** Pullback shape score (0–100 orderliness grade) *(Done)*
+*   ✅ B1 Sector-momentum gate (sector_gate.py, top-3)
+*   ✅ B2 Pullback shape score (0-100)
 
-**C · MACHINE LEARNING & INTUITION**
-*   ✅ **C1** Setup meta-model → rank candidates by predicted P(WIN) *(Done)*
-*   ✅ **C2** SHAP explainability (plain-English "why this ranks #1") *(Done)*
-*   ⬜ **C3** Feature expansion (fundamentals + sentiment + breadth into ML)
-*   ✅ **C4** Drift detection + weekly auto-retrain (scheduler live) *(Done)*
-*   ✅ **C5** Train on 5-year historical winners + live graded signals *(Done)*
+**C · ML**
+*   ✅ C1 Meta-model P(WIN) ranking
+*   ✅ C2 SHAP-style "why" (top-5 contributions)
+*   ✅ C3 Feature expansion (fundamentals + sentiment + sector RS)
+*   ✅ C4 Drift detection + weekly auto-retrain (Sat 09:00)
+*   ✅ C5 5y history + live graded signals
 
 **D · CORRECTNESS**
-*   ⬜ **D1** Data-quality monitor + alerts (stale/missing/anomaly)
+*   ✅ D1 Data-quality monitor + Telegram alerts (15:30 daily)
 
 **E · AUTOMATION / UX**
-*   ✅ **E1** Telegram alerts on new setup (trigger/stop/target/shape text) *(Done)*
+*   ✅ E1 Telegram setup alerts
+*   ✅ E2 Web terminal with on-demand Screener view
+*   ⬜ A0 Custom domain + HTTPS
 
----
-
-
+**NEXT UP**
+*   ⬜ N1 "Scan whole band" button (screen_universe endpoint + UI)
+*   ⬜ N2 Delivery % auto-ingest when NSE unblocks (use_nse=True)
+*   ⬜ N3 Paper-trade ledger -> monthly stats

@@ -6,6 +6,7 @@ import ml_predict
 import events
 import swing_live
 
+
 def _safe(name, fn):
     print(f"... {name}")
     try:
@@ -14,24 +15,41 @@ def _safe(name, fn):
     except Exception as e:
         print(f"skip {name}: {e}")
 
+
 def _telegram():
     import telegram_alerts
     telegram_alerts.report()
 
+
 def _sheets():
     import sheets_sync
     sheets_sync.sync()
+
+
+def _pwin():
+    import pwin_cache
+    pwin_cache.refresh_all()
+
+
+def _toppicks():
+    import top_picks
+    top_picks.compute(force=True)
+
 
 def run():
     _safe("prices", lambda: ingest_prices.run(show_every=0))
     _safe("technicals", technicals.compute_all)
     _safe("scan", scan.run)
     _safe("ml", ml_predict.predict_all)
+    _safe("pwin", _pwin)
+    _safe("toppicks", _toppicks)
     _safe("events", events.detect)
-    _safe("swing", lambda: (swing_live.update_outcomes(), swing_live.scan()))
+    _safe("swing",
+          lambda: (swing_live.update_outcomes(), swing_live.scan()))
     _safe("telegram", _telegram)
     _safe("sheets", _sheets)
     print("DAILY UPDATE COMPLETE")
+
 
 if len(sys.argv) > 1 and sys.argv[1] == "run":
     run()
