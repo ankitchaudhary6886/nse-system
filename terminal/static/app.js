@@ -140,6 +140,56 @@ async function loadBandScan() {
   btn.textContent = "Scan Whole Band";
 }
 
+function capitalEditor(cap) {
+  return `<div class="level"><span>Set capital</span><strong style="display:flex;gap:6px;"><input id="capitalInput" style="min-width:110px;padding:6px 8px;" type="number" value="${cap || 1000000}"/><button id="saveCapitalBtn" style="padding:6px 10px;">Save</button></strong></div>`;
+}
+
+function renderSizing(sz) {
+  let box = $("sizingBox");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "sizingBox";
+    box.className = "setup-box";
+    box.style.marginTop = "14px";
+    const panel = $("setupSummary").parentElement;
+    panel.appendChild(box);
+  }
+  let html = `<h3 style="margin:0;font-size:15px;">💰 Position Sizing (half-Kelly)</h3>`;
+  if (sz.error) {
+    html += `<div class="level"><span>Capital</span><strong>₹${(sz.capital || 0).toLocaleString()}</strong></div><div class="level"><span>Sizing</span><strong>unavailable yet</strong></div>` + capitalEditor(sz.capital);
+    box.innerHTML = html;
+    bindCapitalSave();
+    return;
+  }
+  html += `<div class="level"><span>Capital</span><strong>₹${sz.capital.toLocaleString()}</strong></div>
+    <div class="level"><span>Win prob (${sz.basis})</span><strong>${(sz.p_win * 100).toFixed(0)}%</strong></div>
+    <div class="level"><span>Kelly / Half-Kelly</span><strong>${sz.kelly_pct}% / ${sz.half_kelly_pct}%</strong></div>
+    <div class="level"><span>Alloc cap applied</span><strong>${sz.alloc_pct}%</strong></div>`;
+  if (sz.shares !== undefined) {
+    html += `<div class="level"><span>Suggested position</span><strong>₹${sz.suggested_value.toLocaleString()}</strong></div>
+      <div class="level"><span>Qty @ trigger</span><strong>${sz.shares} shares</strong></div>
+      <div class="level"><span>Max loss at stop</span><strong>₹${sz.risk_amount.toLocaleString()} (${sz.risk_pct}%)</strong></div>
+      <div class="level"><span>Binding cap</span><strong>${sz.binding_cap}</strong></div>`;
+  }
+  html += capitalEditor(sz.capital);
+  box.innerHTML = html;
+  bindCapitalSave();
+}
+
+function bindCapitalSave() {
+  const btn = $("saveCapitalBtn");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    const v = parseFloat($("capitalInput").value);
+    if (!v || v <= 0) { alert("Enter a valid capital amount"); return; }
+    try {
+      await api("/api/sizing/capital", { method: "POST", body: JSON.stringify({ capital: v }) });
+      const sym = $("chartTitle").textContent.split(" ")[0];
+      if (sym) loadSymbol(sym);
+    } catch (e) { alert("Save failed: " + e.message); }
+  });
+}
+
 function resetChart() {
   const el = $("chart"); el.innerHTML = "";
   chart = LightweightCharts.createChart(el, { layout: { background: { color: "transparent" }, textColor: "#9fb0cc" }, grid: { vertLines: { color: "rgba(255,255,255,.05)" }, horzLines: { color: "rgba(255,255,255,.05)" } }, rightPriceScale: { borderColor: "rgba(255,255,255,.08)" }, timeScale: { borderColor: "rgba(255,255,255,.08)" }, crosshair: { mode: LightweightCharts.CrosshairMode.Normal } });
@@ -166,9 +216,17 @@ async function loadSymbol(symbol) {
     candleSeries.createPriceLine({ price: setup.stop, color: "#fb7185", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: "PDL Stop" });
     candleSeries.createPriceLine({ price: setup.target, color: "#60a5fa", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "Target" });
     $("setupSummary").innerHTML = `<div class="level"><span>Trigger</span><strong>${setup.trigger}</strong></div><div class="level"><span>PDL Stop</span><strong>${setup.stop}</strong></div><div class="level"><span>Target (2R)</span><strong>${setup.target}</strong></div><div class="level"><span>Pullback</span><strong>${(setup.pullback * 100).toFixed(1)}%</strong></div><div class="level"><span>Impulse</span><strong>${(setup.impulse * 100).toFixed(1)}%</strong></div><div class="level"><span>EMA Zone</span><strong>${setup.zone}</strong></div><div class="level"><span>Shape score</span><strong>${setup.shape ?? "—"}/100</strong></div>${trancheLadder(setup)}`;
+    try {
+      const sz = await api(`/api/sizing/${symbol}?trigger=${setup.trigger}&stop=${setup.stop}`);
+      renderSizing(sz);
+    } catch (e) { /* sizing optional */ }
   } else {
     $("setupBadge").className = "badge muted"; $("setupBadge").textContent = "No live setup";
     $("setupSummary").innerHTML = `<div class="level"><span>Symbol</span><strong>${symbol}</strong></div><div class="level"><span>Status</span><strong>${summary.status || "—"}</strong></div><div class="level"><span>Fund Score</span><strong>${fmt(summary.fund_score)}</strong></div><div class="level"><span>Mcap</span><strong>₹${fmt(summary.mcap_cr)} cr</strong></div>`;
+    try {
+      const sz = await api(`/api/sizing/${symbol}`);
+      renderSizing(sz);
+    } catch (e) { /* sizing optional */ }
   }
   try {
     const meta = await api(`/api/meta/${symbol}`);

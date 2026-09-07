@@ -23,7 +23,7 @@ async def lifespan(app):
     yield
     scheduler_bg.stop()
 
-app = FastAPI(title="NSE Intelligence Terminal", version="4.0", lifespan=lifespan)
+app = FastAPI(title="NSE Intelligence Terminal", version="5.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"), name="static")
 
 def verify_user(credentials: HTTPBasicCredentials = Depends(security)):
@@ -100,10 +100,10 @@ def swing_signals(limit: int = 80, user: str = Depends(verify_user)):
         "SELECT signal_date, symbol, entry_trigger, stop, target, "
         "risk_pct, pullback, impulse, ema_zone, outcome "
         "FROM swing_signals ORDER BY signal_date DESC LIMIT ?", (limit,)).fetchall()
-    signals = [{"date": r[0], "symbol": r[1], "trigger": safe_float(r[2]), 
-                "stop": safe_float(r[3]), "target": safe_float(r[4]), 
-                "risk_pct": safe_float(r[5]), "pullback": safe_float(r[6], 3), 
-                "impulse": safe_float(r[7], 3), "ema_zone": r[8], 
+    signals = [{"date": r[0], "symbol": r[1], "trigger": safe_float(r[2]),
+                "stop": safe_float(r[3]), "target": safe_float(r[4]),
+                "risk_pct": safe_float(r[5]), "pullback": safe_float(r[6], 3),
+                "impulse": safe_float(r[7], 3), "ema_zone": r[8],
                 "outcome": r[9], "p_win": None} for r in rows]
     score = {r[0]: r[1] for r in conn.execute(
         "SELECT outcome, COUNT(*) FROM swing_signals GROUP BY outcome").fetchall()}
@@ -168,11 +168,11 @@ def cockpit_chart(symbol: str, user: str = Depends(verify_user)):
     df["ema20"] = df["close"].ewm(span=20, adjust=False).mean()
     df["ema50"] = df["close"].ewm(span=50, adjust=False).mean()
     df["ema200"] = df["close"].ewm(span=200, adjust=False).mean()
-    candles = [{"time": r["date"].strftime("%Y-%m-%d"), "open": safe_float(r["open"]), 
-                "high": safe_float(r["high"]), "low": safe_float(r["low"]), 
+    candles = [{"time": r["date"].strftime("%Y-%m-%d"), "open": safe_float(r["open"]),
+                "high": safe_float(r["high"]), "low": safe_float(r["low"]),
                 "close": safe_float(r["close"])} for _, r in df.iterrows()]
     def line(col):
-        return [{"time": r["date"].strftime("%Y-%m-%d"), "value": safe_float(r[col])} 
+        return [{"time": r["date"].strftime("%Y-%m-%d"), "value": safe_float(r[col])}
                 for _, r in df.iterrows() if safe_float(r[col]) is not None]
     swing = None
     try:
@@ -180,11 +180,11 @@ def cockpit_chart(symbol: str, user: str = Depends(verify_user)):
         raw = df.rename(columns={"close": "Close", "high": "High", "low": "Low", "volume": "Volume"}).set_index("date")
         st = SetupDetector.detect(raw, sym)
         if st.triggered:
-            swing = {"trigger": st.entry_price, "stop": st.stop_loss, "target": st.target_price, 
-                     "pullback": st.pullback_depth, "impulse": st.impulse_pct, 
+            swing = {"trigger": st.entry_price, "stop": st.stop_loss, "target": st.target_price,
+                     "pullback": st.pullback_depth, "impulse": st.impulse_pct,
                      "zone": st.ema_proximity, "shape": st.shape_score}
-    except Exception: pass
-    return {"symbol": sym, "candles": candles, "ema10": line("ema10"), "ema20": line("ema20"), 
+    except Exception: swing = None
+    return {"symbol": sym, "candles": candles, "ema10": line("ema10"), "ema20": line("ema20"),
             "ema50": line("ema50"), "ema200": line("ema200"), "swing": swing}
 
 @app.get("/api/cockpit/{symbol}/summary")
@@ -228,6 +228,26 @@ def ledger_stats(user: str = Depends(verify_user)):
 def ledger_trades(limit: int = 100, user: str = Depends(verify_user)):
     import ledger
     return {"trades": ledger.get_trades(limit)}
+
+@app.get("/api/sizing/{symbol}")
+def sizing(symbol: str, trigger: float = None, stop: float = None,
+           user: str = Depends(verify_user)):
+    import sizing as sz
+    try:
+        return sz.suggest(symbol.upper(), trigger=trigger, stop=stop)
+    except Exception as e:
+        return {"symbol": symbol, "error": str(e)}
+
+@app.post("/api/sizing/capital")
+def sizing_capital(payload: dict, user: str = Depends(verify_user)):
+    import sizing as sz
+    try:
+        v = float(payload.get("capital", 0))
+        if v <= 0:
+            raise ValueError("capital must be > 0")
+        return {"capital": sz.set_capital(v)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/screener/scan")
 def screener_scan(limit: int = 40, user: str = Depends(verify_user)):
