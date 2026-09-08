@@ -1,4 +1,5 @@
 import os
+import json
 import datetime as dt
 import pandas as pd
 from dotenv import load_dotenv
@@ -23,7 +24,7 @@ async def lifespan(app):
     yield
     scheduler_bg.stop()
 
-app = FastAPI(title="NSE Intelligence Terminal", version="5.0", lifespan=lifespan)
+app = FastAPI(title="NSE Intelligence Terminal", version="6.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"), name="static")
 
 def verify_user(credentials: HTTPBasicCredentials = Depends(security)):
@@ -228,6 +229,25 @@ def ledger_stats(user: str = Depends(verify_user)):
 def ledger_trades(limit: int = 100, user: str = Depends(verify_user)):
     import ledger
     return {"trades": ledger.get_trades(limit)}
+
+@app.get("/api/validate/latest")
+def validate_latest(user: str = Depends(verify_user)):
+    conn = get_conn()
+    try:
+        rows = conn.execute(
+            "SELECT mode, run_date, payload FROM validation_log "
+            "ORDER BY run_date DESC").fetchall()
+    except Exception:
+        rows = []
+    conn.close()
+    out = {}
+    for mode, d, payload in rows:
+        if mode not in out:
+            try:
+                out[mode] = dict(json.loads(payload), run_date=d)
+            except Exception:
+                out[mode] = {"run_date": d}
+    return out
 
 @app.get("/api/sizing/{symbol}")
 def sizing(symbol: str, trigger: float = None, stop: float = None,

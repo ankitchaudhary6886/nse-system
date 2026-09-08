@@ -160,3 +160,5 @@ python sectors_refresh.py · python swing_alerts.py (test message)
 2026-08: 2.0 Streamlit system → VM bootstrap → FastAPI modern terminal → meta-model (C1/C2/C5) →
 gates (B1/B2/A4) → monitors (D1) → alerts (E1) → fetching (A1/A2/A3) → Top Picks UI → handoff doc.
 (append new entries below this line)
+
+2026-09-07c: N3 ledger live + half-Kelly position sizing (sizing.py, /api/sizing/*, Overview panel).
