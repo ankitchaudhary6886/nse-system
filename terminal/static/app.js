@@ -109,6 +109,47 @@ async function loadValidation() {
   }
 }
 
+async function loadModelRuns() {
+  const statsBox = $("ledgerStats");
+  if (!statsBox) return;
+  let box = $("modelRunsBox");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "modelRunsBox";
+    box.className = "setup-box";
+    box.style.marginTop = "14px";
+    statsBox.parentElement.appendChild(box);
+  }
+  try {
+    const data = await api("/api/model/runs?n=8");
+    const runs = data.runs || [];
+    let html = `<h3 style="margin:0;font-size:15px;">🧠 Model Runs — AUC history + C3 lift</h3>`;
+    if (!runs.length) {
+      html += `<div class="level"><span>Status</span><strong>no runs recorded yet</strong></div>
+        <div class="level"><span>To seed</span><strong>VM: python model_report.py lift</strong></div>`;
+      box.innerHTML = html;
+      return;
+    }
+    const lift = runs.find(r => r.note === "c3_lift");
+    const train = runs.find(r => r.note !== "c3_lift") || runs[0];
+    html += `<div class="level"><span>Last retrain (${train.run_date})</span><strong>AUC ${train.auc == null ? "—" : train.auc} · top10 ${train.top10_win == null ? "—" : (train.top10_win * 100).toFixed(0) + "%"}</strong></div>
+      <div class="level"><span>Rows / base win</span><strong>${train.rows || "—"} / ${train.base_win == null ? "—" : (train.base_win * 100).toFixed(1) + "%"}</strong></div>`;
+    if (lift && lift.price_only_auc != null) {
+      const d = lift.delta_auc;
+      const verdict = d > 0.005 ? "context features ADD value" : (d < -0.005 ? "context features HURT — review C3" : "context features neutral");
+      html += `<div class="level"><span>C3 lift (${lift.run_date})</span><strong>${verdict}</strong></div>
+        <div class="level"><span>Full vs price-only AUC</span><strong>${lift.auc} vs ${lift.price_only_auc} (Δ ${d > 0 ? "+" : ""}${d})</strong></div>
+        <div class="level"><span>Top10 Δ</span><strong>${lift.delta_top10 > 0 ? "+" : ""}${lift.delta_top10}</strong></div>`;
+    } else {
+      html += `<div class="level"><span>C3 lift</span><strong>not run yet — VM: python model_report.py lift</strong></div>`;
+    }
+    html += `<div class="level"><span>History (last 5)</span><strong>${runs.slice(0, 5).map(r => `${r.run_date.slice(5)}:${r.auc ?? "-"}`).join(" · ")}</strong></div>`;
+    box.innerHTML = html;
+  } catch (e) {
+    box.innerHTML = `<h3 style="margin:0;font-size:15px;">🧠 Model Runs</h3><div class="level"><span>Status</span><strong>endpoint unavailable (deploy terminal_api v7)</strong></div>`;
+  }
+}
+
 async function loadLedger() {
   try {
     const stats = await api("/api/ledger/stats");
@@ -126,6 +167,7 @@ async function loadLedger() {
       tbody.appendChild(tr);
     });
     loadValidation();
+    loadModelRuns();
   } catch (e) { $("ledgerStats").innerHTML = `<p>Error loading ledger: ${e.message}</p>`; }
 }
 
