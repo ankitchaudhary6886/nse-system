@@ -68,6 +68,47 @@ async function loadSwing() {
   if (signals.length > 0) loadSymbol(signals[0].symbol);
 }
 
+async function loadValidation() {
+  const statsBox = $("ledgerStats");
+  if (!statsBox) return;
+  let box = $("validationBox");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "validationBox";
+    box.className = "setup-box";
+    box.style.marginTop = "14px";
+    statsBox.parentElement.appendChild(box);
+  }
+  try {
+    const v = await api("/api/validate/latest");
+    let html = `<h3 style="margin:0;font-size:15px;">🔬 Validation — is the edge real?</h3>`;
+    const mc = v.mc, wf = v.wf;
+    if (!mc && !wf) {
+      html += `<div class="level"><span>Status</span><strong>no validation runs yet</strong></div><div class="level"><span>To seed</span><strong>VM: python validate.py all</strong></div>`;
+    }
+    if (mc) {
+      if (mc.error) {
+        html += `<div class="level"><span>Monte-Carlo</span><strong>${mc.error}</strong></div>`;
+      } else {
+        html += `<div class="level"><span>MC (${mc.run_date})</span><strong>${mc.n_trades} trades · ${mc.n_sim} sims</strong></div>
+          <div class="level"><span>Win rate p5 / p50 / p95</span><strong>${(mc.win_rate.p5 * 100).toFixed(0)}% / ${(mc.win_rate.p50 * 100).toFixed(0)}% / ${(mc.win_rate.p95 * 100).toFixed(0)}%</strong></div>
+          <div class="level"><span>Expectancy (p50)</span><strong>${mc.expectancy_r.p50} R per trade</strong></div>
+          <div class="level"><span>Total R (p5 .. p95)</span><strong>${mc.total_r.p5} .. ${mc.total_r.p95}</strong></div>
+          <div class="level"><span>Max drawdown (p95)</span><strong>${mc.max_dd_r.p95} R</strong></div>
+          <div class="level"><span>P(negative total)</span><strong>${(mc.p_negative_total * 100).toFixed(0)}%</strong></div>`;
+      }
+    }
+    if (wf && wf.verdict) {
+      html += `<div class="level"><span>WF (${wf.run_date})</span><strong>${wf.verdict}</strong></div>
+        <div class="level"><span>In-sample WR</span><strong>${wf.in_sample.win_rate == null ? "—" : (wf.in_sample.win_rate * 100).toFixed(0) + "%"} (${wf.in_sample.wins}W/${wf.in_sample.losses}L)</strong></div>
+        <div class="level"><span>Out-of-sample WR</span><strong>${wf.out_sample.win_rate == null ? "—" : (wf.out_sample.win_rate * 100).toFixed(0) + "%"} (${wf.out_sample.wins}W/${wf.out_sample.losses}L)</strong></div>`;
+    }
+    box.innerHTML = html;
+  } catch (e) {
+    box.innerHTML = `<h3 style="margin:0;font-size:15px;">🔬 Validation</h3><div class="level"><span>Status</span><strong>endpoint unavailable (deploy validate batch)</strong></div>`;
+  }
+}
+
 async function loadLedger() {
   try {
     const stats = await api("/api/ledger/stats");
@@ -84,6 +125,7 @@ async function loadLedger() {
       tr.addEventListener("click", () => { setView("overview"); loadSymbol(t.symbol); });
       tbody.appendChild(tr);
     });
+    loadValidation();
   } catch (e) { $("ledgerStats").innerHTML = `<p>Error loading ledger: ${e.message}</p>`; }
 }
 
