@@ -24,7 +24,7 @@ async def lifespan(app):
     yield
     scheduler_bg.stop()
 
-app = FastAPI(title="NSE Intelligence Terminal", version="6.0", lifespan=lifespan)
+app = FastAPI(title="NSE Intelligence Terminal", version="7.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"), name="static")
 
 def verify_user(credentials: HTTPBasicCredentials = Depends(security)):
@@ -220,6 +220,11 @@ def meta_score(symbol: str, user: str = Depends(verify_user)):
     except Exception as e:
         return {"symbol": symbol, "p_win": None, "why": [], "error": str(e)}
 
+@app.get("/api/model/runs")
+def model_runs(n: int = 10, user: str = Depends(verify_user)):
+    import model_report
+    return {"runs": model_report.history(n)}
+
 @app.get("/api/ledger/stats")
 def ledger_stats(user: str = Depends(verify_user)):
     import ledger
@@ -234,19 +239,16 @@ def ledger_trades(limit: int = 100, user: str = Depends(verify_user)):
 def validate_latest(user: str = Depends(verify_user)):
     conn = get_conn()
     try:
-        rows = conn.execute(
-            "SELECT mode, run_date, payload FROM validation_log "
-            "ORDER BY run_date DESC").fetchall()
+        rows = conn.execute("SELECT mode, run_date, payload FROM validation_log "
+                            "ORDER BY run_date DESC").fetchall()
     except Exception:
         rows = []
     conn.close()
     out = {}
     for mode, d, payload in rows:
         if mode not in out:
-            try:
-                out[mode] = dict(json.loads(payload), run_date=d)
-            except Exception:
-                out[mode] = {"run_date": d}
+            try: out[mode] = dict(json.loads(payload), run_date=d)
+            except Exception: out[mode] = {"run_date": d}
     return out
 
 @app.get("/api/sizing/{symbol}")

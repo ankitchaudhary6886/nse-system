@@ -1,9 +1,10 @@
 """
 Setup Meta-Model — expanded feature set (C3).
 Features: momentum + structure + volume + fundamentals + sentiment + sector strength.
-Weekly auto-retrain.
+Weekly auto-retrain. Every train/lift-test records metrics to model_runs.
 """
 import sys
+import json
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
@@ -11,14 +12,15 @@ import joblib
 import db
 
 MODEL_PATH = "data/meta_model.pkl"
-
 _MODEL = None
+
 
 def get_model():
     global _MODEL
     if _MODEL is None:
         _MODEL = joblib.load(MODEL_PATH)
     return _MODEL
+
 
 FEATURES = [
     "mom1", "mom3", "mom6", "d52",
@@ -27,8 +29,8 @@ FEATURES = [
     "roce", "pe", "debt_eq", "promoter",
     "sector_rs", "sentiment",
 ]
-
-CONTEXT_FEATS = {"roce", "pe", "debt_eq", "promoter", "sector_rs", "sentiment"}
+CONTEXT_FEATS = {"roce", "pe", "debt_eq", "promoter",
+                 "sector_rs", "sentiment"}
 PRICE_FEATS = [f for f in FEATURES if f not in CONTEXT_FEATS]
 
 
@@ -45,25 +47,25 @@ def _symbols(conn, limit=400):
 def _fund_map(conn):
     m = {}
     try:
-        cols = [r[1] for r in conn.execute("PRAGMA table_info(fundamentals)")]
+        cols = [r[1] for r in conn.execute(
+            "PRAGMA table_info(fundamentals)")]
     except Exception:
         return m
-
     pick = {}
     for want, aliases in [
         ("roce", ["roce"]),
         ("pe", ["pe", "pe_ttm"]),
-        ("debt_eq", ["debt_to_equity", "debt_equity", "de_ratio", "de"]),
-        ("promoter", ["promoter_holding", "promoter_pct", "promoter"]),
+        ("debt_eq", ["debt_to_equity", "debt_equity",
+                     "de_ratio", "de"]),
+        ("promoter", ["promoter_holding", "promoter_pct",
+                      "promoter"]),
     ]:
         for a in aliases:
             if a in cols:
                 pick[want] = a
                 break
-
     if not pick:
         return m
-
     sel = ", ".join(pick.values())
     try:
         rows = conn.execute(
@@ -101,7 +103,7 @@ def _sentiment_map(conn):
     return m
 
 
-def _sector_rs_map(conn):
+def sector_rs_map(conn):
     try:
         import sector_gate
         g = sector_gate.sector_perf(conn)
@@ -113,22 +115,26 @@ def _sector_rs_map(conn):
             ranks[row["sector"]] = 1.0 - (i / max(1, n - 1))
         sym_sector = {}
         for sym, sec in conn.execute(
-                "SELECT symbol, sector FROM stocks WHERE sector IS NOT NULL"):
+                "SELECT symbol, sector FROM stocks "
+                "WHERE sector IS NOT NULL"):
             sym_sector[sym] = sec
-        return {sym: ranks.get(sec, 0.5) for sym, sec in sym_sector.items()}
+        return {sym: ranks.get(sec, 0.5)
+                for sym, sec in sym_sector.items()}
     except Exception:
         return {}
 
 
 def _features_df(df, ctx):
-    c = df["close"]; h = df["high"]; l = df["low"]; v = df["volume"]
+    c = df["close"]
+    h = df["high"]
+    l = df["low"]
+    v = df["volume"]
     e10 = c.ewm(span=10, adjust=False).mean()
     e20 = c.ewm(span=20, adjust=False).mean()
     e200 = c.ewm(span=200, adjust=False).mean()
-    tr = pd.concat([h - l, (h - c.shift()).abs(), (l - c.shift()).abs()],
-                   axis=1).max(axis=1)
+    tr = pd.concat([h - l, (h - c.shift()).abs(),
+                    (l - c.shift()).abs()], axis=1).max(axis=1)
     fut_max = h.iloc[::-1].rolling(20, min_periods=1).max().iloc[::-1].shift(-1)
-
     out = pd.DataFrame(index=df.index)
     out["mom1"] = c / c.shift(21) - 1
     out["mom3"] = c / c.shift(63) - 1
@@ -153,19 +159,16 @@ def _features_df(df, ctx):
 
 
 def _coerce_numeric(df):
-    """Force every feature column to float dtype."""
     for col in FEATURES:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     return df
 
 
-def train():
-    conn = db.get_conn()
+def build_train_data(conn):
     fund = _fund_map(conn)
     sent = _sentiment_map(conn)
-    srs = _sector_rs_map(conn)
-
+    srs = sector_rs_map(conn)
     frames = []
     for sym in _symbols(conn):
         rows = conn.execute(
@@ -173,65 +176,129 @@ def train():
             "WHERE symbol=? ORDER BY date", (sym,)).fetchall()
         if len(rows) < 300:
             continue
-        df = pd.DataFrame(list(rows), columns=["date", "close", "high",
-                          "low", "volume"])
+        df = pd.DataFrame(list(rows),
+                          columns=["date", "close", "high",
+                                   "low", "volume"])
         df["date"] = pd.to_datetime(df["date"])
-
         f = fund.get(sym, {})
-        ctx = {
-            "roce": f.get("roce"), "pe": f.get("pe"),
-            "debt_eq": f.get("debt_eq"), "promoter": f.get("promoter"),
-            "sector_rs": srs.get(sym), "sentiment": sent.get(sym),
-        }
-
+        ctx = {"roce": f.get("roce"), "pe": f.get("pe"),
+               "debt_eq": f.get("debt_eq"),
+               "promoter": f.get("promoter"),
+               "sector_rs": srs.get(sym),
+               "sentiment": sent.get(sym)}
         feat = _features_df(df, ctx)
         feat["date"] = df["date"]
         feat = feat.iloc[::5]
         feat = feat.dropna(subset=PRICE_FEATS + ["win"])
         frames.append(feat)
-    conn.close()
-
+    if not frames:
+        return None
     data = pd.concat(frames, ignore_index=True)
-    if data.empty:
-        print("no training rows - check prices_daily")
-        return
-
     for f in CONTEXT_FEATS:
         if f in data.columns:
             data[f] = pd.to_numeric(data[f], errors="coerce")
             med = data[f].median()
             data[f] = data[f].fillna(med if pd.notna(med) else 0.0)
-
     data = _coerce_numeric(data)
-    data = data.sort_values("date")
-    cutoff = data["date"].quantile(0.8)
-    tr = data[data["date"] <= cutoff]
-    te = data[data["date"] > cutoff]
+    return data.sort_values("date")
 
-    Xtr, ytr = tr[FEATURES], tr["win"]
-    Xte, yte = te[FEATURES], te["win"]
 
+def _fit(tr, te, feats):
     model = lgb.LGBMClassifier(
         n_estimators=500, learning_rate=0.05, max_depth=6,
         num_leaves=31, min_child_samples=50, subsample=0.9,
         colsample_bytree=0.9, verbose=-1)
-    model.fit(Xtr, ytr, eval_set=[(Xte, yte)],
+    model.fit(tr[feats], tr["win"], eval_set=[(te[feats], te["win"])],
               eval_metric="auc",
               callbacks=[lgb.early_stopping(50, verbose=False)])
+    return model
 
-    proba = model.predict_proba(Xte)[:, 1]
-    base = yte.mean()
+
+def _eval(model, te, feats):
     from sklearn.metrics import roc_auc_score
-    auc = roc_auc_score(yte, proba)
+    proba = model.predict_proba(te[feats])[:, 1]
+    auc = float(roc_auc_score(te["win"], proba))
     order = np.argsort(-proba)
     top = int(max(1, len(proba) * 0.10))
-    top_rate = yte.iloc[order[:top]].mean()
+    top_rate = float(te["win"].iloc[order[:top]].mean())
+    return auc, top_rate
 
+
+def train():
+    conn = db.get_conn()
+    data = build_train_data(conn)
+    conn.close()
+    if data is None or data.empty:
+        print("no training rows - check prices_daily")
+        return None
+    cutoff = data["date"].quantile(0.8)
+    tr = data[data["date"] <= cutoff]
+    te = data[data["date"] > cutoff]
+    model = _fit(tr, te, FEATURES)
+    auc, top_rate = _eval(model, te, FEATURES)
+    base = float(te["win"].mean())
     joblib.dump(model, MODEL_PATH)
-    print(f"rows {len(data)} | winners {data['win'].mean():.1%}")
-    print(f"test AUC {auc:.3f} | base win {base:.1%} | top-10% win {top_rate:.1%}")
-    print(f"features: {len(FEATURES)} (incl. fundamentals + sentiment + sector)")
+    metrics = {"rows": int(len(data)), "winners": round(base, 4),
+               "auc": round(auc, 4), "base_win": round(base, 4),
+               "top10_win": round(top_rate, 4),
+               "n_features": len(FEATURES),
+               "note": "weekly retrain (full C3 features)"}
+    print(f"rows {len(data)} | winners {base:.1%}")
+    print(f"test AUC {auc:.3f} | base win {base:.1%} | "
+          f"top-10% win {top_rate:.1%}")
+    print(f"features: {len(FEATURES)} (incl. fundamentals + "
+          f"sentiment + sector)")
     print(f"model saved to {MODEL_PATH}")
+    try:
+        import model_report
+        model_report.record(metrics)
+    except Exception as e:
+        print(f"[META] model_run record skipped: {e}")
+    return metrics
+
+
+def lift_test():
+    """C3 lift: full 18-feature model vs price-only 12-feature model,
+    same data, same time split. Answers: do context features help?"""
+    conn = db.get_conn()
+    data = build_train_data(conn)
+    conn.close()
+    if data is None or data.empty:
+        return {"error": "no training data"}
+    cutoff = data["date"].quantile(0.8)
+    tr = data[data["date"] <= cutoff]
+    te = data[data["date"] > cutoff]
+    results = {}
+    for name, feats in [("full", FEATURES),
+                        ("price_only", PRICE_FEATS)]:
+        model = _fit(tr, te, feats)
+        auc, top_rate = _eval(model, te, feats)
+        results[name] = {"auc": round(auc, 4),
+                         "top10_win": round(top_rate, 4)}
+        print(f"   {name}: AUC {auc:.4f} | top10 {top_rate:.1%}")
+    delta_auc = round(results["full"]["auc"] -
+                      results["price_only"]["auc"], 4)
+    delta_top = round(results["full"]["top10_win"] -
+                      results["price_only"]["top10_win"], 4)
+    metrics = {"rows": int(len(data)),
+               "auc": results["full"]["auc"],
+               "base_win": round(float(te["win"].mean()), 4),
+               "top10_win": results["full"]["top10_win"],
+               "n_features": len(FEATURES),
+               "price_only_auc": results["price_only"]["auc"],
+               "delta_auc": delta_auc,
+               "delta_top10": delta_top,
+               "note": (f"C3 lift: full AUC {results['full']['auc']} "
+                        f"vs price-only {results['price_only']['auc']} "
+                        f"(d {delta_auc:+.4f}); "
+                        f"top10 d {delta_top:+.4f}")}
+    print(json.dumps(metrics, indent=1))
+    try:
+        import model_report
+        model_report.record(metrics, note="c3_lift")
+    except Exception as e:
+        print(f"[META] lift record skipped: {e}")
+    return metrics
 
 
 def score_symbol(sym, use_yahoo=True):
@@ -241,14 +308,15 @@ def score_symbol(sym, use_yahoo=True):
         "SELECT date, close, high, low, volume FROM prices_daily "
         "WHERE symbol=? ORDER BY date", (sym,)).fetchall()
     conn.close()
-
     if len(rows) >= 300:
-        df = pd.DataFrame(list(rows), columns=["date", "close", "high",
-                          "low", "volume"])
+        df = pd.DataFrame(list(rows),
+                          columns=["date", "close", "high",
+                                   "low", "volume"])
     elif use_yahoo:
         try:
             import yfinance as yf
-            d = yf.Ticker(sym + ".NS").history(period="5y", auto_adjust=True)
+            d = yf.Ticker(sym + ".NS").history(period="5y",
+                                               auto_adjust=True)
         except Exception:
             return None
         if d is None or len(d) < 300:
@@ -259,19 +327,15 @@ def score_symbol(sym, use_yahoo=True):
         })
     else:
         return None
-
     conn2 = db.get_conn()
     fund = _fund_map(conn2)
     sent = _sentiment_map(conn2)
-    srs = _sector_rs_map(conn2)
+    srs = sector_rs_map(conn2)
     conn2.close()
     f = fund.get(sym, {})
-    ctx = {
-        "roce": f.get("roce"), "pe": f.get("pe"),
-        "debt_eq": f.get("debt_eq"), "promoter": f.get("promoter"),
-        "sector_rs": srs.get(sym), "sentiment": sent.get(sym),
-    }
-
+    ctx = {"roce": f.get("roce"), "pe": f.get("pe"),
+           "debt_eq": f.get("debt_eq"), "promoter": f.get("promoter"),
+           "sector_rs": srs.get(sym), "sentiment": sent.get(sym)}
     feat = _features_df(df, ctx)
     feat = feat.dropna(subset=PRICE_FEATS)
     if feat.empty:
@@ -281,11 +345,13 @@ def score_symbol(sym, use_yahoo=True):
     for col in CONTEXT_FEATS:
         if col in feat.columns and pd.isna(feat[col].iloc[0]):
             feat[col] = 0.0
-
     p = model.predict_proba(feat[FEATURES])[:, 1][0]
-    contrib = model.booster_.predict(feat[FEATURES], pred_contrib=True)[0]
-    parts = sorted(zip(FEATURES, contrib), key=lambda x: -abs(x[1]))[:5]
-    why = [{"feature": k, "impact": round(float(v), 3)} for k, v in parts]
+    contrib = model.booster_.predict(feat[FEATURES],
+                                     pred_contrib=True)[0]
+    parts = sorted(zip(FEATURES, contrib),
+                   key=lambda x: -abs(x[1]))[:5]
+    why = [{"feature": k, "impact": round(float(v), 3)}
+           for k, v in parts]
     return {"symbol": sym, "p_win": round(float(p), 3), "why": why}
 
 
@@ -303,5 +369,7 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "train"
     if cmd == "train":
         train()
+    elif cmd == "lift":
+        lift_test()
     else:
         print(score_symbol(cmd))
