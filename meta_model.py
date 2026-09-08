@@ -1,7 +1,8 @@
 """
-Setup Meta-Model — expanded feature set (C3).
-Features: momentum + structure + volume + fundamentals + sentiment + sector strength.
-Weekly auto-retrain. Every train/lift-test records metrics to model_runs.
+Setup Meta-Model — expanded feature set (C3 + Secret Sauce).
+Features: momentum + structure + volume + fundamentals + sentiment
++ sector strength + volume-contraction-ratio + return-volatility
++ 52-week-high distance. Weekly auto-retrain, metrics auto-recorded.
 """
 import sys
 import json
@@ -28,6 +29,7 @@ FEATURES = [
     "rv", "vc",
     "roce", "pe", "debt_eq", "promoter",
     "sector_rs", "sentiment",
+    "vcr", "ret_std20", "below52",
 ]
 CONTEXT_FEATS = {"roce", "pe", "debt_eq", "promoter",
                  "sector_rs", "sentiment"}
@@ -154,6 +156,11 @@ def _features_df(df, ctx):
     out["promoter"] = ctx.get("promoter")
     out["sector_rs"] = ctx.get("sector_rs")
     out["sentiment"] = ctx.get("sentiment")
+    # --- Secret Sauce (Phase 1) ---
+    out["vcr"] = (v.rolling(5).mean() /
+                  v.rolling(50).mean().replace(0, np.nan))
+    out["ret_std20"] = c.pct_change().rolling(20).std()
+    out["below52"] = 1.0 - (c / h.rolling(252).max())
     out["win"] = ((fut_max / c - 1) >= 0.10).astype(float)
     return out
 
@@ -242,12 +249,11 @@ def train():
                "auc": round(auc, 4), "base_win": round(base, 4),
                "top10_win": round(top_rate, 4),
                "n_features": len(FEATURES),
-               "note": "weekly retrain (full C3 features)"}
+               "note": "retrain (C3 + secret-sauce features)"}
     print(f"rows {len(data)} | winners {base:.1%}")
     print(f"test AUC {auc:.3f} | base win {base:.1%} | "
           f"top-10% win {top_rate:.1%}")
-    print(f"features: {len(FEATURES)} (incl. fundamentals + "
-          f"sentiment + sector)")
+    print(f"features: {len(FEATURES)} (incl. vcr, ret_std20, below52)")
     print(f"model saved to {MODEL_PATH}")
     try:
         import model_report
@@ -258,8 +264,7 @@ def train():
 
 
 def lift_test():
-    """C3 lift: full 18-feature model vs price-only 12-feature model,
-    same data, same time split. Answers: do context features help?"""
+    """C3 lift: full feature set vs price-only, same data/split."""
     conn = db.get_conn()
     data = build_train_data(conn)
     conn.close()
@@ -342,7 +347,7 @@ def score_symbol(sym, use_yahoo=True):
         return None
     feat = feat.tail(1).copy()
     feat = _coerce_numeric(feat)
-    for col in CONTEXT_FEATS:
+    for col in FEATURES:
         if col in feat.columns and pd.isna(feat[col].iloc[0]):
             feat[col] = 0.0
     p = model.predict_proba(feat[FEATURES])[:, 1][0]
