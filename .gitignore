@@ -12,6 +12,7 @@ data/*.pkl
 data/gcp_key.json
 data/daily_log.txt
 data/uploaded_fundamentals.csv
+data/charts/
 
 # local artifacts
 project_dump.txt

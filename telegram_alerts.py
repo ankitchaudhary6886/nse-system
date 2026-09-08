@@ -1,4 +1,4 @@
-"""Telegram alerts — token loaded from data/tg_secret.txt (never hardcoded)."""
+"""Telegram alerts — token from data/tg_secret.txt or env (never hardcoded)."""
 import os
 import sys
 import requests
@@ -24,6 +24,18 @@ def send(text):
     r = requests.post(url, json={"chat_id": chat, "text": text},
                       timeout=20)
     print("telegram:", r.status_code)
+    return r.status_code == 200
+
+
+def send_photo(path, caption=""):
+    """Send an image with caption. Returns True on success."""
+    token, chat = load()
+    url = f"https://api.telegram.org/bot{token}/sendPhoto"
+    with open(path, "rb") as f:
+        r = requests.post(url,
+                          data={"chat_id": chat, "caption": caption},
+                          files={"photo": f}, timeout=30)
+    print("telegram photo:", r.status_code)
     return r.status_code == 200
 
 

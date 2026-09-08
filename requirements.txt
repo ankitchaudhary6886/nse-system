@@ -25,5 +25,8 @@ feedparser
 transformers
 torch
 
+# Telegram chart snapshots
+matplotlib
+
 # Google Sheets
 gspread
