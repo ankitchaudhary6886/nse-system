@@ -14,11 +14,12 @@ function setView(name) {
   const el = $("view-" + name);
   if (el) el.classList.add("active-view");
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.view === name));
-  const titles = { picks: "Top Picks", overview: "Overview", screener: "Screener", swing: "Swing Desk", ledger: "Ledger", radar: "Radar" };
+  const titles = { picks: "Top Picks", overview: "Overview", screener: "Screener", swing: "Swing Desk", patterns: "Patterns", ledger: "Ledger", radar: "Radar" };
   const t = $("viewTitle");
   if (t) t.textContent = titles[name] || "Top Picks";
   if (name === "overview" && chart) setTimeout(() => chart.timeScale().fitContent(), 50);
   if (name === "ledger") loadLedger();
+  if (name === "patterns") loadPatterns();
 }
 
 async function loadHealth() { try { const h = await api("/api/health"); $("healthStatus").textContent = `${h.prices_rows.toLocaleString()} price rows`; } catch (e) { $("healthStatus").textContent = "Offline"; } }
@@ -66,6 +67,70 @@ async function loadSwing() {
     tbody.appendChild(tr);
   }
   if (signals.length > 0) loadSymbol(signals[0].symbol);
+}
+
+function dirBadge(d) {
+  return d === "BULLISH" ? '<span class="outcome WIN">BULLISH</span>' : '<span class="outcome LOSS">BEARISH</span>';
+}
+function statusBadge(s) {
+  if (s === "BREAKOUT") return '<span class="outcome WIN">BREAKOUT</span>';
+  if (s === "READY") return '<span class="outcome OPEN">READY</span>';
+  if (s === "BREAKDOWN") return '<span class="outcome LOSS">BREAKDOWN</span>';
+  if (s === "WARNING") return '<span class="outcome TIMEOUT">WARNING</span>';
+  return '<span class="outcome PENDING">FORMING</span>';
+}
+function sauceLine(p) {
+  const ss = (p && p.params && p.params.secret_sauce) || (p && p.secret_sauce) || {};
+  const bits = [];
+  if (ss.vcr != null) bits.push(`vcr ${Number(ss.vcr).toFixed(2)}`);
+  if (ss.ret_std20 != null) bits.push(`vol-std ${(Number(ss.ret_std20) * 100).toFixed(1)}%`);
+  if (ss.below52 != null) bits.push(`${(Number(ss.below52) * 100).toFixed(0)}% below 52w high`);
+  return bits.join(" · ");
+}
+
+async function loadPatterns() {
+  const list = $("patternList");
+  const st = $("patternStatus");
+  if (!list) return;
+  try {
+    const data = await api("/api/patterns/latest?limit=60");
+    const rows = data.patterns || [];
+    if (st) st.innerHTML = `<span>Stored formations</span><strong>${rows.length}${rows.length ? " · latest " + rows[0].date : ""}</strong>`;
+    list.innerHTML = "";
+    if (!rows.length) {
+      list.innerHTML = "<p>No stored patterns yet. Press Run Full Scan above (or wait for the 18:05 IST nightly job), then Refresh.</p>";
+      return;
+    }
+    rows.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "stock-card";
+      const sauce = sauceLine(p);
+      div.innerHTML = `<strong>${p.symbol} · ${(p.pattern || "").replace(/_/g, " ")}</strong>
+        <span>${dirBadge(p.direction)} ${statusBadge(p.status)} · conf ${p.confidence}</span>
+        <span>Breakout ₹${p.breakout_level ?? "—"} · Stop ₹${p.stop_level ?? "—"} · Target ₹${p.target_level ?? "—"}</span>
+        ${sauce ? `<span>${sauce}</span>` : ""}
+        <span>${p.notes || ""}</span>`;
+      div.addEventListener("click", () => { setView("overview"); loadSymbol(p.symbol); });
+      list.appendChild(div);
+    });
+  } catch (e) {
+    if (st) st.innerHTML = `<span>Status</span><strong>pattern endpoint unavailable</strong>`;
+    list.innerHTML = `<p>Pattern endpoint error: ${e.message}</p>`;
+  }
+}
+
+async function runPatternScan() {
+  const btn = $("runPatternScan");
+  const st = $("patternStatus");
+  btn.textContent = "Scan queued…";
+  try {
+    await api("/api/patterns/scan", { method: "POST" });
+    if (st) st.innerHTML = `<span>Status</span><strong>scan running in background (a few minutes) — click Refresh afterwards</strong>`;
+    setTimeout(loadPatterns, 60000);
+  } catch (e) {
+    if (st) st.innerHTML = `<span>Status</span><strong>scan start failed: ${e.message}</strong>`;
+  }
+  btn.textContent = "Run Full Scan";
 }
 
 async function loadValidation() {
@@ -146,7 +211,7 @@ async function loadModelRuns() {
     html += `<div class="level"><span>History (last 5)</span><strong>${runs.slice(0, 5).map(r => `${r.run_date.slice(5)}:${r.auc ?? "-"}`).join(" · ")}</strong></div>`;
     box.innerHTML = html;
   } catch (e) {
-    box.innerHTML = `<h3 style="margin:0;font-size:15px;">🧠 Model Runs</h3><div class="level"><span>Status</span><strong>endpoint unavailable (deploy terminal_api v7)</strong></div>`;
+    box.innerHTML = `<h3 style="margin:0;font-size:15px;">🧠 Model Runs</h3><div class="level"><span>Status</span><strong>endpoint unavailable (deploy terminal_api v7+)</strong></div>`;
   }
 }
 
@@ -331,7 +396,7 @@ async function runSwingScan() {
   catch (e) { $("runSwingBtn").textContent = "Run Swing Scan"; alert("Swing scan failed: " + e.message); }
 }
 
-async function refreshAll() { await Promise.all([loadHealth(), loadRegime(), loadTopPicks(), loadSwing(), loadRadar()]); }
+async function refreshAll() { await Promise.all([loadHealth(), loadRegime(), loadTopPicks(), loadSwing(), loadRadar(), loadPatterns()]); }
 
 document.addEventListener("DOMContentLoaded", () => {
   $("refreshBtn").addEventListener("click", refreshAll);
@@ -340,6 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("runSwingBtn").addEventListener("click", runSwingScan);
   $("runScreenerBtn").addEventListener("click", () => { setView("screener"); loadScreener($("symbolSearch").value); });
   $("scanBandBtn").addEventListener("click", loadBandScan);
+  $("runPatternScan").addEventListener("click", runPatternScan);
   document.querySelectorAll(".nav-btn").forEach(btn => { btn.addEventListener("click", () => setView(btn.dataset.view)); });
   refreshAll();
 });
