@@ -1,5 +1,6 @@
 """Background scheduler — dq + daily + delivery + swing (+veto purge) +
-macro + patterns + templates + weekly/monthly jobs. No intraday layers."""
+macro + patterns + templates + fundamentals (TV) + value radar +
+weekly/monthly jobs. No intraday layers."""
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
@@ -45,7 +46,6 @@ def _swing_job():
 
 
 def _purge_vetoed():
-    """Remove today's signals for fundamentally vetoed symbols."""
     try:
         import db
         import fund_veto
@@ -124,10 +124,10 @@ def _template_job():
 
 
 def _fundamentals_job():
-    log.info("weekly fundamentals refresh started")
+    log.info("weekly fundamentals refresh (TradingView) started")
     try:
-        import fundamentals_refresh
-        fundamentals_refresh.auto()
+        import fundamentals_tv
+        fundamentals_tv.run()
         log.info("weekly fundamentals refresh complete")
     except Exception as e:
         log.exception(f"fundamentals refresh failed: {e}")
@@ -143,15 +143,6 @@ def _retrain_job():
     except Exception as e:
         log.exception(f"retrain failed: {e}")
 
-
-def _value_radar_job():
-    log.info("value radar started")
-    try:
-        import value_radar
-        value_radar.report()
-        log.info("value radar complete")
-    except Exception as e:
-        log.exception(f"value radar failed: {e}")
 
 def _validate_mc_job():
     log.info("weekly monte-carlo started")
@@ -171,6 +162,16 @@ def _validate_wf_job():
         log.info("walk-forward complete")
     except Exception as e:
         log.exception(f"walk-forward failed: {e}")
+
+
+def _value_radar_job():
+    log.info("value radar started")
+    try:
+        import value_radar
+        value_radar.report()
+        log.info("value radar complete")
+    except Exception as e:
+        log.exception(f"value radar failed: {e}")
 
 
 def _drift_check():
@@ -240,14 +241,14 @@ def start():
                        CronTrigger(day_of_week="sat", hour=9, minute=0,
                                    timezone=IST),
                        id="meta_retrain", replace_existing=True)
-    _scheduler.add_job(_validate_mc_job,
-                       CronTrigger(day_of_week="mon", hour=8, minute=0,
-                                   timezone=IST),
-                       id="validate_mc", replace_existing=True)
     _scheduler.add_job(_value_radar_job,
                        CronTrigger(day_of_week="sun", hour=9, minute=0,
                                    timezone=IST),
                        id="value_radar", replace_existing=True)
+    _scheduler.add_job(_validate_mc_job,
+                       CronTrigger(day_of_week="mon", hour=8, minute=0,
+                                   timezone=IST),
+                       id="validate_mc", replace_existing=True)
     _scheduler.add_job(_validate_wf_job,
                        CronTrigger(day=1, hour=10, minute=0,
                                    timezone=IST),
@@ -256,7 +257,8 @@ def start():
     log.info("scheduler started — dq@15:30, daily@15:45, delivery@16:00, "
              "swing@16:15(+veto purge), inst@16:45, macro@17:30, "
              "patterns@18:05, templates@18:35, fund@Sat08:00, "
-             "retrain@Sat09:00, mc@Mon08:00, wf@1st10:00 IST")
+             "retrain@Sat09:00, valueRadar@Sun09:00, mc@Mon08:00, "
+             "wf@1st10:00 IST")
 
 
 def stop():
