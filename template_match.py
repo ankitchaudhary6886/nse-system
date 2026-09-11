@@ -1,16 +1,17 @@
 """
-Template Sequence Matching (DTW) — the quant way.
+Template Sequence Matching (DTW) v2 — adds historical backfill.
 Compares the live price shape against ideal pattern templates using
 Dynamic Time Warping. Pure numpy, no extra dependencies.
 
 Templates: VCP, HIGH_TIGHT_FLAG, BULL_FLAG, DOUBLE_BOTTOM.
 Score: similarity 0-100 (higher = closer shape match).
-Stores best matches in template_scores(date, symbol, template, similarity).
+Stores matches in template_scores(date, symbol, template, similarity).
 
 Usage:
-  python template_match.py SYMBOL     -> sims for one symbol
-  python template_match.py run [N]    -> scan band, store matches
-  python template_match.py top [N]    -> show latest stored matches
+  python template_match.py SYMBOL          -> sims for one symbol
+  python template_match.py run [N]         -> scan band today, store
+  python template_match.py backfill [S] [N]-> store HISTORY (one-time)
+  python template_match.py top [N]         -> show latest stored matches
 """
 import sys
 import math
@@ -83,6 +84,15 @@ def _ensure(conn):
         PRIMARY KEY(date, symbol, template))""")
 
 
+def _symbols(conn, limit=600):
+    rows = conn.execute(
+        "SELECT symbol FROM universe_broad "
+        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
+        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
+        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()
+    return [r[0] for r in rows]
+
+
 def scan_symbol(symbol, conn=None, lookback=LOOKBACK):
     own = conn is None
     if own:
@@ -111,11 +121,7 @@ def scan_symbol(symbol, conn=None, lookback=LOOKBACK):
 def run(limit=600, min_sim=MIN_SIM_TO_STORE):
     conn = db.get_conn()
     _ensure(conn)
-    syms = [r[0] for r in conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()]
+    syms = _symbols(conn, limit)
     today = dt.date.today().isoformat()
     now = dt.datetime.now().isoformat(timespec="seconds")
     saved = 0
@@ -143,6 +149,57 @@ def run(limit=600, min_sim=MIN_SIM_TO_STORE):
     return saved
 
 
+def backfill(step=10, limit=300, min_sim=MIN_SIM_TO_STORE):
+    """One-time: store HISTORICAL template scores every `step` days
+    so the meta-model can learn dtw_sim as a feature."""
+    conn = db.get_conn()
+    _ensure(conn)
+    syms = _symbols(conn, limit)
+    conn.close()
+    now = dt.datetime.now().isoformat(timespec="seconds")
+    total = len(syms)
+    saved = 0
+    print(f"[TEMPLATE-BF] backfilling {total} symbols (step={step})")
+    for i, sym in enumerate(syms, 1):
+        conn = db.get_conn()
+        rows = conn.execute(
+            "SELECT date, close FROM prices_daily WHERE symbol=? "
+            "ORDER BY date", (sym,)).fetchall()
+        conn.close()
+        if len(rows) < 150:
+            continue
+        dates = [str(r[0])[:10] for r in rows]
+        closes = [r[1] for r in rows]
+        batch = []
+        for j in range(120, len(rows) + 1, step):
+            d = dates[j - 1]
+            win = closes[max(0, j - 90):j]
+            shape = _shape(win)
+            if shape is None:
+                continue
+            for name, tpl in TEMPLATES.items():
+                sim = _sim(_dtw(shape, tpl))
+                if sim >= min_sim:
+                    batch.append((d, sym, name, round(sim, 1), now))
+        if batch:
+            conn = db.get_conn()
+            existing = {r[0] for r in conn.execute(
+                "SELECT date FROM template_scores WHERE symbol=?",
+                (sym,)).fetchall()}
+            todo = [b for b in batch if b[0] not in existing]
+            if todo:
+                conn.executemany(
+                    "INSERT OR REPLACE INTO template_scores "
+                    "VALUES (?,?,?,?,?)", todo)
+                conn.commit()
+                saved += len(todo)
+            conn.close()
+        if i % 25 == 0:
+            print(f"[TEMPLATE-BF] {i}/{total} symbols, saved {saved}")
+    print(f"[TEMPLATE-BF] complete: saved {saved} historical scores")
+    return saved
+
+
 def top(n=20):
     conn = db.get_conn()
     _ensure(conn)
@@ -165,6 +222,10 @@ if __name__ == "__main__":
     if cmd == "run":
         lim = int(sys.argv[2]) if len(sys.argv) > 2 else 600
         run(limit=lim)
+    elif cmd == "backfill":
+        st = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+        lm = int(sys.argv[3]) if len(sys.argv) > 3 else 300
+        backfill(step=st, limit=lm)
     elif cmd == "top":
         n = int(sys.argv[2]) if len(sys.argv) > 2 else 20
         top(n)

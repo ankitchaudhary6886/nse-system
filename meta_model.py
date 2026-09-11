@@ -1,8 +1,8 @@
 """
-Setup Meta-Model — C3 + Secret Sauce + Pattern flags.
-Features (28): momentum + structure + volume + fundamentals +
-sentiment + sector strength + vcr/ret_std20/below52 +
-7 pattern flags learned from pattern_tags history.
+Setup Meta-Model v5 — C3 + Secret Sauce + Pattern flags + DTW shape sim.
+Features (29): momentum + structure + volume + fundamentals + sentiment
++ sector strength + vcr/ret_std20/below52 + 7 pattern flags + dtw_sim
+(best template similarity in a 12-day window, 0-1).
 Weekly auto-retrain. Metrics auto-recorded to model_runs.
 """
 import sys
@@ -34,6 +34,7 @@ FEATURES = [
     "vcr", "ret_std20", "below52",
     "pat_htf", "pat_tri", "pat_db", "pat_flag",
     "pat_ihs", "pat_bear", "pat_any",
+    "dtw_sim",
 ]
 CONTEXT_FEATS = {"roce", "pe", "debt_eq", "promoter",
                  "sector_rs", "sentiment"}
@@ -48,11 +49,10 @@ PAT_MAP = {
 PAT_FEATS = ["pat_htf", "pat_tri", "pat_db", "pat_flag",
              "pat_ihs", "pat_bear", "pat_any"]
 PRICE_FEATS = [f for f in FEATURES if f not in CONTEXT_FEATS]
+DTW_WINDOW_DAYS = 12
 
 
 def _pattern_flags(tags, dates):
-    """tags: list of (datestr, pattern, direction).
-    dates: list of Timestamp/date. Flag = tag within last 6 days."""
     parsed = []
     for dstr, pat, dirn in tags:
         try:
@@ -60,7 +60,6 @@ def _pattern_flags(tags, dates):
         except Exception:
             continue
         parsed.append((d, pat, dirn))
-
     out = {k: [] for k in PAT_FEATS}
     for x in dates:
         xd = x.date() if hasattr(x, "date") else x
@@ -77,6 +76,36 @@ def _pattern_flags(tags, dates):
         flags["pat_any"] = anyb
         for k in PAT_FEATS:
             out[k].append(flags[k])
+    return out
+
+
+def _dtw_map(conn, sym):
+    """date_iso -> best template similarity (0-100) for the symbol."""
+    try:
+        rows = conn.execute(
+            "SELECT date, similarity FROM template_scores "
+            "WHERE symbol=?", (sym,)).fetchall()
+    except Exception:
+        return {}
+    m = {}
+    for d, s in rows:
+        key = str(d)[:10]
+        if key not in m or s > m[key]:
+            m[key] = s
+    return m
+
+
+def _dtw_series(tmap, dates):
+    out = []
+    for x in dates:
+        xd = x.date() if hasattr(x, "date") else x
+        val = 0.0
+        for off in range(DTW_WINDOW_DAYS + 1):
+            key = (xd - dt.timedelta(days=off)).isoformat()
+            if key in tmap:
+                val = tmap[key] / 100.0
+                break
+        out.append(val)
     return out
 
 
@@ -248,6 +277,8 @@ def build_train_data(conn):
         fl = _pattern_flags(tags, feat["date"].tolist())
         for k in PAT_FEATS:
             feat[k] = fl[k]
+        tmap = _dtw_map(conn, sym)
+        feat["dtw_sim"] = _dtw_series(tmap, feat["date"].tolist())
         feat = feat.dropna(subset=PRICE_FEATS + ["win"])
         frames.append(feat)
     if not frames:
@@ -301,11 +332,11 @@ def train():
                "auc": round(auc, 4), "base_win": round(base, 4),
                "top10_win": round(top_rate, 4),
                "n_features": len(FEATURES),
-               "note": "retrain (C3 + sauce + pattern flags)"}
+               "note": "retrain (C3 + sauce + patterns + dtw_sim)"}
     print(f"rows {len(data)} | winners {base:.1%}")
     print(f"test AUC {auc:.3f} | base win {base:.1%} | "
           f"top-10% win {top_rate:.1%}")
-    print(f"features: {len(FEATURES)} (incl. sauce + pattern flags)")
+    print(f"features: {len(FEATURES)} (incl. sauce + patterns + dtw)")
     print(f"model saved to {MODEL_PATH}")
     try:
         import model_report
@@ -316,7 +347,6 @@ def train():
 
 
 def lift_test():
-    """Full feature set vs price-only, same data/split."""
     conn = db.get_conn()
     data = build_train_data(conn)
     conn.close()
@@ -395,6 +425,7 @@ def score_symbol(sym, use_yahoo=True):
             "WHERE symbol=?", (sym,)).fetchall()
     except Exception:
         tags = []
+    tmap = _dtw_map(conn2, sym)
     conn2.close()
     f = fund.get(sym, {})
     ctx = {"roce": f.get("roce"), "pe": f.get("pe"),
@@ -413,6 +444,7 @@ def score_symbol(sym, use_yahoo=True):
     fl = _pattern_flags(tags, [dt.date.today()])
     for k in PAT_FEATS:
         feat[k] = fl[k][0]
+    feat["dtw_sim"] = _dtw_series(tmap, [dt.date.today()])[0]
     p = model.predict_proba(feat[FEATURES])[:, 1][0]
     contrib = model.booster_.predict(feat[FEATURES],
                                      pred_contrib=True)[0]
