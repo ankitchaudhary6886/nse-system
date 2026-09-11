@@ -1,8 +1,10 @@
 """
-Rule-Based Pattern Scanner v2.
+Rule-Based Pattern Scanner v3.
 
 Detects early chart-pattern formations, tags them in DB, backfills
-historical tags so the ML model can learn from them.
+historical tags so the ML model can learn from them, and respects
+the empirical hit-rate gate (pattern_grader): only ENABLED patterns
+are stored by the nightly scan.
 
 Patterns:
 - HIGH_TIGHT_FLAG
@@ -834,17 +836,28 @@ def run(limit=DEFAULT_SYMBOL_LIMIT):
     conn = db.get_conn()
     _ensure(conn)
 
+    try:
+        import pattern_grader
+        enabled = pattern_grader.enabled_patterns(conn)
+    except Exception:
+        enabled = None
+
     today = dt.date.today().isoformat()
     symbols = _symbols(conn, limit=limit)
 
     total = len(symbols)
     saved = 0
     hit_symbols = 0
+    filtered = 0
 
     print(f"[PATTERN] scanning {total} symbols")
 
     for i, sym in enumerate(symbols, 1):
         rows = detect_symbol(sym, conn=conn)
+        if enabled is not None and rows:
+            before = len(rows)
+            rows = [h for h in rows if h["pattern"] in enabled]
+            filtered += before - len(rows)
         if rows:
             hit_symbols += 1
             saved += len(rows)
@@ -866,14 +879,23 @@ def run(limit=DEFAULT_SYMBOL_LIMIT):
 
     print(
         f"[PATTERN] complete: symbols={total}, "
-        f"hit_symbols={hit_symbols}, tags_saved={saved}"
+        f"hit_symbols={hit_symbols}, tags_saved={saved}, "
+        f"gate_filtered={filtered}"
     )
+
+    try:
+        import pattern_grader
+        pattern_grader.grade_all()
+        pattern_grader.report()
+    except Exception as e:
+        print(f"[PATTERN] grading skipped: {e}")
 
     return {
         "date": today,
         "symbols": total,
         "hit_symbols": hit_symbols,
         "tags_saved": saved,
+        "gate_filtered": filtered,
     }
 
 
