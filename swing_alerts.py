@@ -80,10 +80,13 @@ def notify_all_weather(sym, st):
     risk = st["risk_pct"] * 100
     text = (f"🌧️ ALL-WEATHER SETUP {sym}\n"
             f"Pattern: {st['pattern']}\n"
+            f"Quality: {st.get('tier', 'UNK')}  "
+            f"(fund {st.get('fund_score') or '—'} · "
+            f"roce {st.get('roce') or '—'})\n"
             f"Trigger  ₹{st['entry']}\n"
             f"Stop     ₹{st['stop']}\n"
             f"Target   ₹{st['target']} (2R)\n"
-            f"Risk {risk:.1f}% · Fund score {st.get('fund_score', '—')}\n"
+            f"Risk {risk:.1f}%\n"
             f"⚠️ DEFENSIVE regime — use HALF position size")
     ok = send(text)
     try:

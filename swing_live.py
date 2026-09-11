@@ -75,11 +75,12 @@ def _scan_all_weather(conn, today):
         "AND mode='ALL_WEATHER'", (today,))
 
     cands = all_weather.candidates(conn)
-    print(f"[AW] {len(cands)} candidates (fund>=70 & >=25% below 52w high)")
+    print(f"[AW] {len(cands)} candidates (>=25% below 52w high, "
+          f"within 15% of 52w low)")
 
     n = 0
-    for sym, df, fs in cands:
-        st = all_weather.detect(sym, df, fs)
+    for sym, df, fs, roce, tier in cands:
+        st = all_weather.detect(sym, df, fs, roce, tier)
         if not st:
             continue
         bad, why = _is_vetoed(sym, conn)

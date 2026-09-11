@@ -1,15 +1,19 @@
 """
 All-Weather Swing Mode — high-conviction setups during DEFENSIVE regime.
-Authorized 2026-09-12.
+Authorized 2026-09-12. v2 (2026-09-12) — quality tier becomes soft bonus
+instead of hard gate, so AW works even when fundamentals are sparse.
 
 When Nifty is below its EMA10, the main swing scan holds new entries.
-But downturns are when quality names get cheap. This module finds a
-strict subset:
-  - Fundamental score >= 70 (quality)
+But downturns are when quality names get cheap. This module finds:
   - Price >= 25% below 52-week high (deep discount)
-  - Price within 10% of 52-week low (capitulation zone)
+  - Price within 15% of 52-week low (capitulation zone)
   - Reversal candle today: hammer OR bullish engulfing
   - Risk (entry-stop)/entry <= 5% (same rule as main system)
+
+Quality tier (soft, shown in alert, not filtered):
+  HIGH   -> fundamental_score >= 70  OR  roce >= 15
+  MED    -> fundamental_score >= 50  OR  roce >= 10
+  UNK    -> neither available
 
 Entry  = today's high + tick
 Stop   = min(today low, yesterday low) * 0.99
@@ -24,27 +28,44 @@ import numpy as np
 import pandas as pd
 import db
 
-FUND_MIN = 70
 BELOW_52W_MIN = 0.25       # >= 25% below 52w high
-NEAR_LOW_MAX = 0.10        # within 10% of 52w low
+NEAR_LOW_MAX = 0.15        # within 15% of 52w low (relaxed from 10%)
 MAX_RISK_PCT = 0.05
 TARGET_R = 2.0
 TICK = 0.05
 
 
-def _fund_scores(conn):
-    """symbol -> fundamental_score from latest scan."""
-    out = {}
+def _quality_maps(conn):
+    """Return (fund_scores, roce_map) from latest scan_results + fundamentals."""
+    fund = {}
     try:
         rows = conn.execute(
             "SELECT symbol, fundamental_score FROM scan_results "
             "WHERE scan_date=(SELECT MAX(scan_date) FROM scan_results) "
             "AND fundamental_score IS NOT NULL").fetchall()
         for s, sc in rows:
-            out[s] = sc
+            fund[s] = sc
     except Exception:
         pass
-    return out
+    roce = {}
+    try:
+        for s, r in conn.execute(
+                "SELECT symbol, roce FROM fundamentals "
+                "WHERE roce IS NOT NULL").fetchall():
+            roce[s] = r
+    except Exception:
+        pass
+    return fund, roce
+
+
+def _tier(fund_score, roce):
+    if (fund_score is not None and fund_score >= 70) or \
+       (roce is not None and roce >= 15):
+        return "HIGH"
+    if (fund_score is not None and fund_score >= 50) or \
+       (roce is not None and roce >= 10):
+        return "MED"
+    return "UNK"
 
 
 def _candle_pattern(o, h, l, c, po, pc):
@@ -56,12 +77,10 @@ def _candle_pattern(o, h, l, c, po, pc):
     lower_wick = min(o, c) - l
     upper_wick = h - max(o, c)
 
-    # Hammer: small body, long lower wick, small upper wick
     if (body / rng < 0.35 and lower_wick / rng > 0.55
             and upper_wick / rng < 0.15):
         return "HAMMER"
 
-    # Bullish engulfing: prev red, current green, current engulfs prev
     if pc < po and c > o and c >= po and o <= pc:
         return "BULLISH_ENGULFING"
 
@@ -69,8 +88,8 @@ def _candle_pattern(o, h, l, c, po, pc):
 
 
 def candidates(conn, limit=600):
-    """Stocks with fund>=70 AND >=25% below 52w high AND near 52w low."""
-    fund = _fund_scores(conn)
+    """Deep-discount candidates near 52w low. Quality is tagged, not filtered."""
+    fund, roce = _quality_maps(conn)
     syms = [r[0] for r in conn.execute(
         "SELECT symbol FROM universe_broad "
         "WHERE mcap_cr BETWEEN 1000 AND 8000 "
@@ -78,8 +97,6 @@ def candidates(conn, limit=600):
         "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()]
     out = []
     for sym in syms:
-        if fund.get(sym, 0) < FUND_MIN:
-            continue
         rows = conn.execute(
             "SELECT date, open, high, low, close, volume "
             "FROM prices_daily WHERE symbol=? "
@@ -105,12 +122,13 @@ def candidates(conn, limit=600):
         df = pd.DataFrame(rows,
                           columns=["date", "Open", "High", "Low",
                                    "Close", "Volume"]).set_index("date")
-        out.append((sym, df, fund.get(sym)))
+        tier = _tier(fund.get(sym), roce.get(sym))
+        out.append((sym, df, fund.get(sym), roce.get(sym), tier))
     return out
 
 
-def detect(sym, df, fund_score=None):
-    """Return dict(entry, stop, target, pattern, ...) or None."""
+def detect(sym, df, fund_score=None, roce=None, tier="UNK"):
+    """Return dict(entry, stop, target, pattern, tier, ...) or None."""
     if len(df) < 60:
         return None
     o = df["Open"].values
@@ -143,6 +161,8 @@ def detect(sym, df, fund_score=None):
         "pb_depth": round(pb_depth, 3),
         "impulse": 0.0,
         "fund_score": fund_score,
+        "roce": roce,
+        "tier": tier,
     }
 
 
@@ -152,10 +172,9 @@ def scan(conn=None):
     if own:
         conn = db.get_conn()
     setups = []
-    for sym, df, fs in candidates(conn):
-        s = detect(sym, df, fs)
+    for sym, df, fs, roce, tier in candidates(conn):
+        s = detect(sym, df, fs, roce, tier)
         if s:
-            s["fund_score"] = fs
             setups.append(s)
     if own:
         conn.close()
@@ -167,6 +186,7 @@ if __name__ == "__main__":
     print(f"[AW] {len(rows)} all-weather setups")
     for s in rows:
         print(f"  {s['symbol']:<12} {s['pattern']:<18} "
+              f"tier {s['tier']:<4} "
               f"entry {s['entry']} stop {s['stop']} "
               f"target {s['target']} risk {s['risk_pct']*100:.1f}% "
-              f"fund {s['fund_score']}")
+              f"fund {s['fund_score']} roce {s['roce']}")
