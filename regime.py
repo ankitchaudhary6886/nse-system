@@ -4,8 +4,10 @@ Only allows new long entries when benchmark close > EMA(close, 10).
 Tries smallcap indices first; falls back to Nifty 50.
 """
 from dataclasses import dataclass
+import datetime as dt
 import yfinance as yf
 import pandas as pd
+
 
 @dataclass
 class RegimeState:
@@ -15,6 +17,7 @@ class RegimeState:
     symbol: str = ""
     breadth_above_20ema: float = None
 
+
 class MarketRegime:
     INDEX_CANDIDATES = ["^CNXSMALLCAP", "^CNXSC",
                         "NIFTY_SMALLCAP_100.NS", "^NSEI"]
@@ -22,10 +25,14 @@ class MarketRegime:
 
     @classmethod
     def _fetch(cls, days_back):
+        end = dt.date.today()
+        start = end - dt.timedelta(days=days_back)
         for sym in cls.INDEX_CANDIDATES:
             try:
                 df = yf.Ticker(sym).history(
-                    period=f"{days_back}d", auto_adjust=True)
+                    start=start.isoformat(),
+                    end=end.isoformat(),
+                    auto_adjust=True)
                 if df is not None and len(df) > 30:
                     return df, sym
             except Exception:
