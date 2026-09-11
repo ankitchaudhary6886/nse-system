@@ -2,6 +2,10 @@
 Hiren Gabani Master Pullback — OFFICIAL v3 + shape score.
 6-point checklist + mother-candle trigger + PDL stop + 5% rule
 + 3-session recency + pullback orderliness grade (0-100).
+
+v3.1 (2026-09-12) — FIX: impulse calculation used mixed
+negative/positive indexing, inflating impulse_pct by 10-30x.
+Now uses positive indices throughout.
 """
 from dataclasses import dataclass, field
 from typing import List
@@ -57,7 +61,7 @@ class SetupDetector:
             res = cls._eval(df.iloc[:n], symbol)
             if res is not None:
                 return res
-        return Setup(symbol, False, "", 0, 0, 0, 0, 0, 0, 0, 0, "",
+        return Setup(symbol, False, "", 0, 0, 0, 0, 0, 0, 0, 0, "", 0,
                      ["no completed pattern in last 3 sessions"])
 
     @classmethod
@@ -66,35 +70,42 @@ class SetupDetector:
         h = df["High"].values.astype(float)
         l = df["Low"].values.astype(float)
         v = df["Volume"].values.astype(float)
+        n = len(c)
 
         ema10 = pd.Series(c).ewm(span=cls.EMA10, adjust=False).mean().values
         ema20 = pd.Series(c).ewm(span=cls.EMA20, adjust=False).mean().values
         vol_sma20 = pd.Series(v).rolling(cls.VOL_SMA_DAYS).mean().values
 
         trs = []
-        for i in range(1, len(c)):
+        for i in range(1, n):
             trs.append(max(h[i] - l[i], abs(h[i] - c[i - 1]),
                            abs(l[i] - c[i - 1])))
         atr14 = float(np.mean(trs[-14:])) if len(trs) >= 14 else None
 
         # --- 1. Impulse 25-50%, clean above 10 EMA ---
-        impulse_end_idx = -cls.PB_LOOKBACK
-        seg = h[impulse_end_idx - cls.IMPULSE_LOOKBACK:impulse_end_idx]
-        swing_high = float(np.max(seg))
-        swing_high_idx = (int(np.argmax(seg)) + impulse_end_idx
-                          - cls.IMPULSE_LOOKBACK)
-        swing_low_before = float(np.min(
-            l[max(0, swing_high_idx - 40):swing_high_idx + 1]))
+        # Window = IMPULSE_LOOKBACK bars, ending PB_LOOKBACK bars before today.
+        win_end = n - cls.PB_LOOKBACK           # positive index
+        win_start = win_end - cls.IMPULSE_LOOKBACK
+        if win_start < 0:
+            return None
+        seg_h = h[win_start:win_end]
+        sh_local = int(np.argmax(seg_h))
+        swing_high = float(seg_h[sh_local])
+        swing_high_idx = win_start + sh_local   # positive index in full array
+        low_start = max(0, swing_high_idx - 40)
+        swing_low_before = float(np.min(l[low_start:swing_high_idx + 1]))
+        if swing_low_before <= 0:
+            return None
         impulse_pct = (swing_high - swing_low_before) / swing_low_before
         if not (cls.IMPULSE_MIN_PCT <= impulse_pct <= cls.IMPULSE_MAX_PCT):
             return None
-        ic = c[swing_high_idx:impulse_end_idx + 1]
-        ie = ema10[swing_high_idx:impulse_end_idx + 1]
+        ic = c[swing_high_idx:win_end + 1]
+        ie = ema10[swing_high_idx:win_end + 1]
         if int(np.sum(ic < ie)) > max(2, int(0.25 * len(ic))):
             return None
 
         # --- 2. Pullback 12-20% ---
-        pb_window = h[impulse_end_idx:]
+        pb_window = h[win_end:]
         recent_high = float(np.max(pb_window))
         current_low = float(l[-1])
         pb_depth = (recent_high - current_low) / recent_high
@@ -185,5 +196,5 @@ class SetupDetector:
             impulse_pct=round(impulse_pct, 3),
             ema_proximity=ema_proximity,
             shape_score=shape,
-            reasons=["OFFICIAL v3: pattern within last 3 sessions, "
+            reasons=["OFFICIAL v3.1: impulse bug fixed, "
                      "SL=PDL, risk<=5%"])

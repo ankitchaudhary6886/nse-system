@@ -18,3 +18,4 @@ data/charts/
 project_dump.txt
 terminal.log
 backtest_trades.csv
+data/logs/
