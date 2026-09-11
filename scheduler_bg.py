@@ -1,4 +1,5 @@
-"""Background scheduler — dq + daily + swing + macro + patterns + templates + delivery."""
+"""Background scheduler — dq + daily + delivery + swing + macro +
+patterns + templates + weekly/monthly jobs. (No intraday layers.)"""
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
