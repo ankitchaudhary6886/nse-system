@@ -1,32 +1,27 @@
-# Core
+# =====================================================================
+# CORE — required on every machine (laptop + VM)
+# =====================================================================
 pandas>=2.2
 numpy>=1.26
 requests>=2.31
 yfinance>=0.2.40
 python-dotenv
 
-# Dashboards
-streamlit>=1.36
-plotly>=5.20
+# Web terminal (FastAPI)
 fastapi
 uvicorn
 
-# Scheduling
+# Scheduler
 apscheduler
 pytz
 
-# ML
+# ML (meta-model + ml_train)
 scikit-learn
 lightgbm
 joblib
 
-# News / sentiment
-feedparser
-transformers
-torch
-
-# Telegram chart snapshots
-matplotlib
-
-# Google Sheets
-gspread
+# =====================================================================
+# Optional extras — see requirements-optional.txt
+# (streamlit, plotly, transformers, torch, feedparser,
+#  matplotlib, gspread)
+# =====================================================================

@@ -3,43 +3,45 @@ macro + patterns + templates + weekly/monthly jobs. No intraday layers."""
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
+from log_utils import get_logger
 
 IST = pytz.timezone("Asia/Kolkata")
+log = get_logger("scheduler")
 
 _scheduler = None
 
 
 def _data_quality_job():
-    print("[SCHEDULER] data quality started")
+    log.info("data quality started")
     try:
         import data_quality
         data_quality.run(send_alert=True)
-        print("[SCHEDULER] data quality complete")
+        log.info("data quality complete")
     except Exception as e:
-        print(f"[SCHEDULER] data quality failed: {e}")
+        log.exception(f"data quality failed: {e}")
 
 
 def _daily_job():
-    print("[SCHEDULER] daily update started")
+    log.info("daily update started")
     try:
         import daily_update
         daily_update.run()
-        print("[SCHEDULER] daily update complete")
+        log.info("daily update complete")
     except Exception as e:
-        print(f"[SCHEDULER] daily update failed: {e}")
+        log.exception(f"daily update failed: {e}")
 
 
 def _swing_job():
-    print("[SCHEDULER] swing scan started")
+    log.info("swing scan started")
     try:
         import swing_live
         swing_live.update_outcomes()
         swing_live.scan()
         _purge_vetoed()
         _drift_check()
-        print("[SCHEDULER] swing scan complete")
+        log.info("swing scan complete")
     except Exception as e:
-        print(f"[SCHEDULER] swing scan failed: {e}")
+        log.exception(f"swing scan failed: {e}")
 
 
 def _purge_vetoed():
@@ -65,101 +67,101 @@ def _purge_vetoed():
         conn.commit()
         conn.close()
         if killed:
-            print(f"[VETO] purged {len(killed)} of today's signals: "
-                  f"{', '.join(killed)}")
+            log.info(f"[VETO] purged {len(killed)} of today's signals: "
+                     f"{', '.join(killed)}")
     except Exception as e:
-        print(f"[VETO] purge skipped: {e}")
+        log.warning(f"[VETO] purge skipped: {e}")
 
 
 def _institutional_job():
-    print("[SCHEDULER] institutional refresh started")
+    log.info("institutional refresh started")
     try:
         import institutional
         institutional.refresh()
-        print("[SCHEDULER] institutional refresh complete")
+        log.info("institutional refresh complete")
     except Exception as e:
-        print(f"[SCHEDULER] institutional refresh failed: {e}")
+        log.exception(f"institutional refresh failed: {e}")
 
 
 def _macro_job():
-    print("[SCHEDULER] macro FII/DII fetch started")
+    log.info("macro FII/DII fetch started")
     try:
         import macro
         macro.refresh()
-        print("[SCHEDULER] macro fetch complete")
+        log.info("macro fetch complete")
     except Exception as e:
-        print(f"[SCHEDULER] macro fetch failed: {e}")
+        log.exception(f"macro fetch failed: {e}")
 
 
 def _delivery_job():
-    print("[SCHEDULER] delivery fetch started")
+    log.info("delivery fetch started")
     try:
         import delivery
         delivery.fetch()
-        print("[SCHEDULER] delivery fetch complete")
+        log.info("delivery fetch complete")
     except Exception as e:
-        print(f"[SCHEDULER] delivery fetch failed: {e}")
+        log.exception(f"delivery fetch failed: {e}")
 
 
 def _pattern_job():
-    print("[SCHEDULER] pattern scan started")
+    log.info("pattern scan started")
     try:
         import patterns
         patterns.run()
-        print("[SCHEDULER] pattern scan complete")
+        log.info("pattern scan complete")
     except Exception as e:
-        print(f"[SCHEDULER] pattern scan failed: {e}")
+        log.exception(f"pattern scan failed: {e}")
 
 
 def _template_job():
-    print("[SCHEDULER] DTW template scan started")
+    log.info("DTW template scan started")
     try:
         import template_match
         template_match.run()
-        print("[SCHEDULER] DTW template scan complete")
+        log.info("DTW template scan complete")
     except Exception as e:
-        print(f"[SCHEDULER] DTW template scan failed: {e}")
+        log.exception(f"DTW template scan failed: {e}")
 
 
 def _fundamentals_job():
-    print("[SCHEDULER] weekly fundamentals refresh started")
+    log.info("weekly fundamentals refresh started")
     try:
         import fundamentals_refresh
         fundamentals_refresh.auto()
-        print("[SCHEDULER] weekly fundamentals refresh complete")
+        log.info("weekly fundamentals refresh complete")
     except Exception as e:
-        print(f"[SCHEDULER] fundamentals refresh failed: {e}")
+        log.exception(f"fundamentals refresh failed: {e}")
 
 
 def _retrain_job():
-    print("[SCHEDULER] weekly meta retrain started")
+    log.info("weekly meta retrain started")
     try:
         import meta_model
         meta_model.train()
         meta_model._MODEL = None
-        print("[SCHEDULER] weekly meta retrain complete")
+        log.info("weekly meta retrain complete")
     except Exception as e:
-        print(f"[SCHEDULER] retrain failed: {e}")
+        log.exception(f"retrain failed: {e}")
 
 
 def _validate_mc_job():
-    print("[SCHEDULER] weekly monte-carlo started")
+    log.info("weekly monte-carlo started")
     try:
         import validate
         validate.run_mode("mc")
-        print("[SCHEDULER] monte-carlo complete")
+        log.info("monte-carlo complete")
     except Exception as e:
-        print(f"[SCHEDULER] monte-carlo failed: {e}")
+        log.exception(f"monte-carlo failed: {e}")
 
 
 def _validate_wf_job():
-    print("[SCHEDULER] monthly walk-forward started")
+    log.info("monthly walk-forward started")
     try:
         import validate
         validate.run_mode("wf")
-        print("[SCHEDULER] walk-forward complete")
+        log.info("walk-forward complete")
     except Exception as e:
-        print(f"[SCHEDULER] walk-forward failed: {e}")
+        log.exception(f"walk-forward failed: {e}")
 
 
 def _drift_check():
@@ -172,24 +174,24 @@ def _drift_check():
             "ORDER BY signal_date DESC LIMIT 40").fetchall()
         conn.close()
         if len(rows) < 15:
-            print("[DRIFT] not enough graded trades yet")
+            log.info("[DRIFT] not enough graded trades yet")
             return
         wins = sum(1 for r in rows if r[0] == "WIN")
         live_wr = wins / len(rows)
         if live_wr < 0.35:
             msg = (f"[DRIFT] ⚠️ live win-rate {live_wr:.0%} over last "
                    f"{len(rows)} graded — review setup quality")
-            print(msg)
+            log.warning(msg)
             try:
                 import swing_alerts
                 swing_alerts.send(msg)
             except Exception:
                 pass
         else:
-            print(f"[DRIFT] ok — live win-rate {live_wr:.0%} "
-                  f"({len(rows)} graded)")
+            log.info(f"[DRIFT] ok — live win-rate {live_wr:.0%} "
+                     f"({len(rows)} graded)")
     except Exception as e:
-        print(f"[DRIFT] check skipped: {e}")
+        log.warning(f"[DRIFT] check skipped: {e}")
 
 
 def start():
@@ -238,10 +240,10 @@ def start():
                                    timezone=IST),
                        id="validate_wf", replace_existing=True)
     _scheduler.start()
-    print("[SCHEDULER] started — dq@15:30, daily@15:45, delivery@16:00, "
-          "swing@16:15(+veto purge), inst@16:45, macro@17:30, "
-          "patterns@18:05, templates@18:35, fund@Sat08:00, "
-          "retrain@Sat09:00, mc@Mon08:00, wf@1st10:00 IST")
+    log.info("scheduler started — dq@15:30, daily@15:45, delivery@16:00, "
+             "swing@16:15(+veto purge), inst@16:45, macro@17:30, "
+             "patterns@18:05, templates@18:35, fund@Sat08:00, "
+             "retrain@Sat09:00, mc@Mon08:00, wf@1st10:00 IST")
 
 
 def stop():
@@ -249,3 +251,4 @@ def stop():
     if _scheduler:
         _scheduler.shutdown(wait=False)
         _scheduler = None
+        log.info("scheduler stopped")

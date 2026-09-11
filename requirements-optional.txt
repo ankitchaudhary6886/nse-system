@@ -1,0 +1,19 @@
+# =====================================================================
+# OPTIONAL — install only if you use that feature.
+# On a free Oracle VM these are heavy (torch ~2 GB). Prefer skipping.
+# =====================================================================
+
+# Legacy Streamlit UI (app.py)
+streamlit>=1.36
+plotly>=5.20
+
+# Sentiment (sentiment.py — FinBERT)
+feedparser
+transformers
+torch
+
+# Telegram chart snapshots (chart_img.py)
+matplotlib
+
+# Google Sheets sync (sheets_sync.py)
+gspread
