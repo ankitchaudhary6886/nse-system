@@ -1,18 +1,15 @@
 """Telegram alerts for swing setups — text + chart snapshot.
-v3: fundamental veto gate — vetoed symbols get a 🚫 notice instead
-of a tradeable setup alert."""
+v4: adds ALL-WEATHER setup alert (half size, DEFENSIVE regime)."""
 import os
 
 
 def send(text):
-    # Primary: existing telegram_alerts (secret file / env)
     try:
         import telegram_alerts
         telegram_alerts.send(text)
         return True
     except Exception as e:
         print(f"[ALERT] telegram_alerts failed: {e}")
-    # Fallback: env-based
     try:
         import requests
         from dotenv import load_dotenv
@@ -66,6 +63,42 @@ def notify_setup(st):
                 path, caption=f"📊 {st.symbol} setup chart")
     except Exception as e:
         print(f"[ALERT] chart snapshot skipped: {e}")
+    return ok
+
+
+def notify_all_weather(sym, st):
+    """Alert for ALL-WEATHER setups (DEFENSIVE regime, half position size)."""
+    try:
+        import fund_veto
+        bad, why = fund_veto.vetoed(sym)
+        if bad:
+            send(f"🚫 AW VETO {sym} — {why}")
+            return False
+    except Exception:
+        pass
+
+    risk = st["risk_pct"] * 100
+    text = (f"🌧️ ALL-WEATHER SETUP {sym}\n"
+            f"Pattern: {st['pattern']}\n"
+            f"Trigger  ₹{st['entry']}\n"
+            f"Stop     ₹{st['stop']}\n"
+            f"Target   ₹{st['target']} (2R)\n"
+            f"Risk {risk:.1f}% · Fund score {st.get('fund_score', '—')}\n"
+            f"⚠️ DEFENSIVE regime — use HALF position size")
+    ok = send(text)
+    try:
+        import chart_img
+        import telegram_alerts
+        path = chart_img.render(
+            sym,
+            setup={"trigger": st["entry"],
+                   "stop": st["stop"],
+                   "target": st["target"]})
+        if path:
+            telegram_alerts.send_photo(
+                path, caption=f"📊 {sym} ALL-WEATHER chart")
+    except Exception as e:
+        print(f"[ALERT] AW chart skipped: {e}")
     return ok
 
 

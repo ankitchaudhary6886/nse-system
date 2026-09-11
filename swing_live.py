@@ -1,6 +1,8 @@
 """
 Swing Desk engine (live, no execution).
 EOD: regime gate + breadth gate + sector gate + fund veto -> signals -> Telegram.
+When regime is DEFENSIVE, falls back to ALL-WEATHER mode (stricter filters,
+half position size).
 Daily: grade pending signals WIN / LOSS / EXPIRED / TIMEOUT.
 """
 import datetime as dt
@@ -30,6 +32,15 @@ def ensure(conn):
         stop REAL, target REAL, risk_pct REAL, pullback REAL,
         impulse REAL, ema_zone TEXT, outcome TEXT,
         updated_at TEXT)""")
+    # safe migration: add 'mode' column if missing
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(swing_signals)")]
+    if "mode" not in cols:
+        try:
+            conn.execute(
+                "ALTER TABLE swing_signals "
+                "ADD COLUMN mode TEXT DEFAULT 'SWING'")
+        except Exception:
+            pass
 
 
 def _is_vetoed(sym, conn):
@@ -40,6 +51,61 @@ def _is_vetoed(sym, conn):
         return False, None
 
 
+def _scan_all_weather(conn, today):
+    """High-conviction setups during DEFENSIVE regime. Half size."""
+    try:
+        import all_weather
+    except Exception as e:
+        print(f"[AW] module missing: {e}")
+        return 0
+
+    # Relaxed breadth: only above50 >= 0.35
+    try:
+        b = breadth.compute(conn)
+        if b["above50"] < 0.35:
+            print(f"[AW] breadth too weak: above50={b['above50']:.2f} "
+                  f"< 0.35 -> skip")
+            return 0
+        print(f"[AW] breadth ok for AW mode: above50={b['above50']:.2f}")
+    except Exception as e:
+        print(f"[AW] breadth check skipped: {e}")
+
+    conn.execute(
+        "DELETE FROM swing_signals WHERE signal_date=? "
+        "AND mode='ALL_WEATHER'", (today,))
+
+    cands = all_weather.candidates(conn)
+    print(f"[AW] {len(cands)} candidates (fund>=70 & >=25% below 52w high)")
+
+    n = 0
+    for sym, df, fs in cands:
+        st = all_weather.detect(sym, df, fs)
+        if not st:
+            continue
+        bad, why = _is_vetoed(sym, conn)
+        if bad:
+            print(f"  [AW] {sym} vetoed: {why}")
+            continue
+        conn.execute(
+            "INSERT INTO swing_signals(signal_date, symbol, entry_trigger, "
+            "stop, target, risk_pct, pullback, impulse, ema_zone, outcome, "
+            "updated_at, mode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (today, sym, st["entry"], st["stop"], st["target"],
+             round(st["risk_pct"] * 100, 2), st["pb_depth"], st["impulse"],
+             st["pattern"], "PENDING",
+             dt.datetime.now().isoformat(), "ALL_WEATHER"))
+        n += 1
+        print(f"  [AW] {sym:<12} {st['pattern']:<18} entry {st['entry']} "
+              f"stop {st['stop']} target {st['target']} fund {fs}")
+        try:
+            import swing_alerts
+            swing_alerts.notify_all_weather(sym, st)
+        except Exception as e:
+            print(f"  [AW] alert skipped: {e}")
+    print(f"[AW] all-weather signals stored: {n}")
+    return n
+
+
 def scan():
     conn = db.get_conn()
     ensure(conn)
@@ -47,12 +113,16 @@ def scan():
     today = dt.date.today().isoformat()
     print(f"regime: {'BULLISH' if reg.is_bullish else 'DEFENSIVE'} "
           f"({reg.symbol})")
-    conn.execute("DELETE FROM swing_signals WHERE signal_date=?",
-                 (today,))
+    conn.execute(
+        "DELETE FROM swing_signals WHERE signal_date=? AND mode='SWING'",
+        (today,))
+
     if not reg.is_bullish:
+        print("defensive regime -> running ALL-WEATHER scan")
+        n_aw = _scan_all_weather(conn, today)
         conn.commit()
         conn.close()
-        print("defensive regime -> no new signals today")
+        print(f"all-weather signals today: {n_aw}")
         return
 
     try:
@@ -102,11 +172,13 @@ def scan():
 
         risk_pct = (st.entry_price - st.stop_loss) / st.entry_price
         conn.execute(
-            "INSERT INTO swing_signals VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO swing_signals(signal_date, symbol, entry_trigger, "
+            "stop, target, risk_pct, pullback, impulse, ema_zone, outcome, "
+            "updated_at, mode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (today, sym, st.entry_price, st.stop_loss,
              st.target_price, round(risk_pct * 100, 2),
              st.pullback_depth, st.impulse_pct, st.ema_proximity,
-             "PENDING", dt.datetime.now().isoformat()))
+             "PENDING", dt.datetime.now().isoformat(), "SWING"))
         n += 1
         print(f"  OK {sym} trigger Rs {st.entry_price}  "
               f"SL Rs {st.stop_loss}  TGT Rs {st.target_price}  "
@@ -172,6 +244,11 @@ def report():
             "SELECT outcome, COUNT(*) FROM swing_signals "
             "GROUP BY outcome ORDER BY outcome"):
         print(f"   {r[0]:<8} {r[1]}")
+    print("BY MODE:")
+    for r in conn.execute(
+            "SELECT mode, COUNT(*) FROM swing_signals "
+            "GROUP BY mode ORDER BY mode"):
+        print(f"   {r[0] or 'SWING':<12} {r[1]}")
     conn.close()
 
 
@@ -208,13 +285,15 @@ def backfill(step=10, max_stocks=600):
                 continue
             risk_pct = (st.entry_price - st.stop_loss) / st.entry_price
             conn.execute(
-                "INSERT INTO swing_signals VALUES "
-                "(?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO swing_signals(signal_date, symbol, "
+                "entry_trigger, stop, target, risk_pct, pullback, "
+                "impulse, ema_zone, outcome, updated_at, mode) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                 (d, sym, st.entry_price, st.stop_loss,
                  st.target_price, round(risk_pct * 100, 2),
                  st.pullback_depth, st.impulse_pct,
                  st.ema_proximity, "PENDING",
-                 dt.datetime.now().isoformat()))
+                 dt.datetime.now().isoformat(), "SWING"))
             n += 1
         conn.commit()
         conn.close()
@@ -228,6 +307,14 @@ if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "daily"
     if mode == "backfill":
         backfill()
+    elif mode == "aw":
+        conn = db.get_conn()
+        ensure(conn)
+        today = dt.date.today().isoformat()
+        n = _scan_all_weather(conn, today)
+        conn.commit()
+        conn.close()
+        print(f"all-weather signals: {n}")
     else:
         update_outcomes()
         scan()
