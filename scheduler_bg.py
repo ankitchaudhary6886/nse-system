@@ -1,4 +1,4 @@
-"""Background scheduler — dq + daily + swing + macro + patterns + templates."""
+"""Background scheduler — dq + daily + swing + macro + patterns + templates + delivery."""
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
@@ -58,6 +58,16 @@ def _macro_job():
         print("[SCHEDULER] macro fetch complete")
     except Exception as e:
         print(f"[SCHEDULER] macro fetch failed: {e}")
+
+
+def _delivery_job():
+    print("[SCHEDULER] delivery fetch started")
+    try:
+        import delivery
+        delivery.fetch()
+        print("[SCHEDULER] delivery fetch complete")
+    except Exception as e:
+        print(f"[SCHEDULER] delivery fetch failed: {e}")
 
 
 def _pattern_job():
@@ -162,6 +172,9 @@ def start():
     _scheduler.add_job(_daily_job,
                        CronTrigger(hour=15, minute=45, timezone=IST),
                        id="daily_update", replace_existing=True)
+    _scheduler.add_job(_delivery_job,
+                       CronTrigger(hour=16, minute=0, timezone=IST),
+                       id="delivery_fetch", replace_existing=True)
     _scheduler.add_job(_swing_job,
                        CronTrigger(hour=16, minute=15, timezone=IST),
                        id="swing_scan", replace_existing=True)
@@ -194,9 +207,10 @@ def start():
                                    timezone=IST),
                        id="validate_wf", replace_existing=True)
     _scheduler.start()
-    print("[SCHEDULER] started — dq@15:30, daily@15:45, swing@16:15, "
-          "inst@16:45, macro@17:30, patterns@18:05, templates@18:35, "
-          "fund@Sat08:00, retrain@Sat09:00, mc@Mon08:00, wf@1st10:00 IST")
+    print("[SCHEDULER] started — dq@15:30, daily@15:45, delivery@16:00, "
+          "swing@16:15, inst@16:45, macro@17:30, patterns@18:05, "
+          "templates@18:35, fund@Sat08:00, retrain@Sat09:00, "
+          "mc@Mon08:00, wf@1st10:00 IST")
 
 
 def stop():
