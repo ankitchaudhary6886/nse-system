@@ -1,11 +1,13 @@
 """
-Setup Meta-Model — expanded feature set (C3 + Secret Sauce).
-Features: momentum + structure + volume + fundamentals + sentiment
-+ sector strength + volume-contraction-ratio + return-volatility
-+ 52-week-high distance. Weekly auto-retrain, metrics auto-recorded.
+Setup Meta-Model — C3 + Secret Sauce + Pattern flags.
+Features (28): momentum + structure + volume + fundamentals +
+sentiment + sector strength + vcr/ret_std20/below52 +
+7 pattern flags learned from pattern_tags history.
+Weekly auto-retrain. Metrics auto-recorded to model_runs.
 """
 import sys
 import json
+import datetime as dt
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
@@ -30,10 +32,52 @@ FEATURES = [
     "roce", "pe", "debt_eq", "promoter",
     "sector_rs", "sentiment",
     "vcr", "ret_std20", "below52",
+    "pat_htf", "pat_tri", "pat_db", "pat_flag",
+    "pat_ihs", "pat_bear", "pat_any",
 ]
 CONTEXT_FEATS = {"roce", "pe", "debt_eq", "promoter",
                  "sector_rs", "sentiment"}
+PAT_MAP = {
+    "HIGH_TIGHT_FLAG": "pat_htf",
+    "ASCENDING_TRIANGLE": "pat_tri",
+    "DOUBLE_BOTTOM": "pat_db",
+    "BULL_FLAG": "pat_flag",
+    "INVERSE_HEAD_SHOULDERS": "pat_ihs",
+    "HEAD_SHOULDERS_TOP_WARNING": "pat_bear",
+}
+PAT_FEATS = ["pat_htf", "pat_tri", "pat_db", "pat_flag",
+             "pat_ihs", "pat_bear", "pat_any"]
 PRICE_FEATS = [f for f in FEATURES if f not in CONTEXT_FEATS]
+
+
+def _pattern_flags(tags, dates):
+    """tags: list of (datestr, pattern, direction).
+    dates: list of Timestamp/date. Flag = tag within last 6 days."""
+    parsed = []
+    for dstr, pat, dirn in tags:
+        try:
+            d = dt.date.fromisoformat(str(dstr)[:10])
+        except Exception:
+            continue
+        parsed.append((d, pat, dirn))
+
+    out = {k: [] for k in PAT_FEATS}
+    for x in dates:
+        xd = x.date() if hasattr(x, "date") else x
+        flags = {k: 0.0 for k in PAT_FEATS}
+        anyb = 0.0
+        for d, pat, dirn in parsed:
+            delta = (xd - d).days
+            if 0 <= delta <= 6:
+                col = PAT_MAP.get(pat)
+                if col:
+                    flags[col] = 1.0
+                    if dirn == "BULLISH":
+                        anyb = 1.0
+        flags["pat_any"] = anyb
+        for k in PAT_FEATS:
+            out[k].append(flags[k])
+    return out
 
 
 def _symbols(conn, limit=400):
@@ -156,7 +200,6 @@ def _features_df(df, ctx):
     out["promoter"] = ctx.get("promoter")
     out["sector_rs"] = ctx.get("sector_rs")
     out["sentiment"] = ctx.get("sentiment")
-    # --- Secret Sauce (Phase 1) ---
     out["vcr"] = (v.rolling(5).mean() /
                   v.rolling(50).mean().replace(0, np.nan))
     out["ret_std20"] = c.pct_change().rolling(20).std()
@@ -196,6 +239,15 @@ def build_train_data(conn):
         feat = _features_df(df, ctx)
         feat["date"] = df["date"]
         feat = feat.iloc[::5]
+        try:
+            tags = conn.execute(
+                "SELECT date, pattern, direction FROM pattern_tags "
+                "WHERE symbol=?", (sym,)).fetchall()
+        except Exception:
+            tags = []
+        fl = _pattern_flags(tags, feat["date"].tolist())
+        for k in PAT_FEATS:
+            feat[k] = fl[k]
         feat = feat.dropna(subset=PRICE_FEATS + ["win"])
         frames.append(feat)
     if not frames:
@@ -249,11 +301,11 @@ def train():
                "auc": round(auc, 4), "base_win": round(base, 4),
                "top10_win": round(top_rate, 4),
                "n_features": len(FEATURES),
-               "note": "retrain (C3 + secret-sauce features)"}
+               "note": "retrain (C3 + sauce + pattern flags)"}
     print(f"rows {len(data)} | winners {base:.1%}")
     print(f"test AUC {auc:.3f} | base win {base:.1%} | "
           f"top-10% win {top_rate:.1%}")
-    print(f"features: {len(FEATURES)} (incl. vcr, ret_std20, below52)")
+    print(f"features: {len(FEATURES)} (incl. sauce + pattern flags)")
     print(f"model saved to {MODEL_PATH}")
     try:
         import model_report
@@ -264,7 +316,7 @@ def train():
 
 
 def lift_test():
-    """C3 lift: full feature set vs price-only, same data/split."""
+    """Full feature set vs price-only, same data/split."""
     conn = db.get_conn()
     data = build_train_data(conn)
     conn.close()
@@ -336,10 +388,18 @@ def score_symbol(sym, use_yahoo=True):
     fund = _fund_map(conn2)
     sent = _sentiment_map(conn2)
     srs = sector_rs_map(conn2)
+    tags = []
+    try:
+        tags = conn2.execute(
+            "SELECT date, pattern, direction FROM pattern_tags "
+            "WHERE symbol=?", (sym,)).fetchall()
+    except Exception:
+        tags = []
     conn2.close()
     f = fund.get(sym, {})
     ctx = {"roce": f.get("roce"), "pe": f.get("pe"),
-           "debt_eq": f.get("debt_eq"), "promoter": f.get("promoter"),
+           "debt_eq": f.get("debt_eq"),
+           "promoter": f.get("promoter"),
            "sector_rs": srs.get(sym), "sentiment": sent.get(sym)}
     feat = _features_df(df, ctx)
     feat = feat.dropna(subset=PRICE_FEATS)
@@ -347,9 +407,12 @@ def score_symbol(sym, use_yahoo=True):
         return None
     feat = feat.tail(1).copy()
     feat = _coerce_numeric(feat)
-    for col in FEATURES:
+    for col in CONTEXT_FEATS:
         if col in feat.columns and pd.isna(feat[col].iloc[0]):
             feat[col] = 0.0
+    fl = _pattern_flags(tags, [dt.date.today()])
+    for k in PAT_FEATS:
+        feat[k] = fl[k][0]
     p = model.predict_proba(feat[FEATURES])[:, 1][0]
     contrib = model.booster_.predict(feat[FEATURES],
                                      pred_contrib=True)[0]
