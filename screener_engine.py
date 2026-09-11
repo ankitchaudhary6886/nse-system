@@ -66,18 +66,23 @@ def fetch_stock_data(ticker, period_days=550, allow_yahoo=True):
     return df
 
 
-def fetch_index_data(index_ticker="^NSESMALLCAP"):
-    """Benchmark data for the global regime filter."""
-    try:
-        df = yf.download(index_ticker, period="1mo",
-                         interval="1d", progress=False)
-        if df is None or df.empty:
-            return None
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        return df
-    except Exception:
-        return None
+def fetch_index_data(index_ticker=None):
+    """Benchmark data for the global regime filter.
+    Tries multiple index candidates if none specified."""
+    candidates = ([index_ticker] if index_ticker else
+                  ["^CNXSMALLCAP", "^CNXSC",
+                   "NIFTY_SMALLCAP_100.NS", "^NSEI"])
+    for sym in candidates:
+        try:
+            df = yf.download(sym, period="1mo",
+                             interval="1d", progress=False)
+            if df is not None and not df.empty:
+                if isinstance(df.columns, pd.MultiIndex):
+                    df.columns = df.columns.get_level_values(0)
+                return df
+        except Exception:
+            continue
+    return None
 
 
 # ==========================================

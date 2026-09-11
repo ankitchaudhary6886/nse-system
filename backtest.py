@@ -4,6 +4,8 @@ Optimized + corrected backtester.
 - O(1) prefilter; setup detector only on survivors
 - Pending buy-stop orders (enter at trigger, not close)
 - PDL stop + 5% rule enforced
+- Only signals whose pattern completed on the CURRENT bar are taken
+  (no stale entries from earlier sessions).
 """
 from dataclasses import dataclass, field
 from typing import List
@@ -15,6 +17,7 @@ import yfinance as yf
 import db
 from regime import MarketRegime
 from setup import SetupDetector
+
 
 @dataclass
 class Trade:
@@ -30,6 +33,7 @@ class Trade:
     holding_days: int
     exit_reason: str
 
+
 @dataclass
 class BacktestResult:
     trades: List[Trade] = field(default_factory=list)
@@ -40,13 +44,16 @@ class BacktestResult:
     max_pending_orders: int = 20
 
     @property
-    def total_trades(self): return len(self.trades)
+    def total_trades(self):
+        return len(self.trades)
 
     @property
-    def wins(self): return sum(1 for t in self.trades if t.pnl_pct > 0)
+    def wins(self):
+        return sum(1 for t in self.trades if t.pnl_pct > 0)
 
     @property
-    def losses(self): return sum(1 for t in self.trades if t.pnl_pct <= 0)
+    def losses(self):
+        return sum(1 for t in self.trades if t.pnl_pct <= 0)
 
     @property
     def win_rate(self):
@@ -109,12 +116,14 @@ class BacktestResult:
             f"  Avg Holding Days  : {self.avg_holding_days:.1f}\n"
             f"{'='*60}")
 
+
 def _naive_index(df):
     try:
         df.index = pd.to_datetime(df.index.date)
     except Exception:
         df.index = pd.to_datetime(df.index)
     return df
+
 
 class Backtester:
     HOLD_DAYS_MAX = 30
@@ -132,7 +141,8 @@ class Backtester:
         rows = conn.execute(
             "SELECT date, open, high, low, close, volume "
             "FROM prices_daily WHERE symbol=? AND date>=? "
-            "AND date<=? ORDER BY date", (db_sym, start, end)).fetchall()
+            "AND date<=? ORDER BY date",
+            (db_sym, start, end)).fetchall()
         conn.close()
         if len(rows) >= 260:
             df = pd.DataFrame(list(rows), columns=["date", "Open",
@@ -192,8 +202,11 @@ class Backtester:
         open_positions = {}
         pending_orders = {}
         prefilter_hits = 0
+        stale_signals = 0
 
         for date in all_dates:
+            date_str = str(date.date())
+
             # ---- manage open positions ----
             to_close = []
             for sym, pos in list(open_positions.items()):
@@ -296,6 +309,11 @@ class Backtester:
                 st = SetupDetector.detect(df_slice, sym)
                 if not st.triggered:
                     continue
+                # Staleness check: only accept signals whose pattern
+                # completed on the CURRENT bar.
+                if st.signal_date != date_str:
+                    stale_signals += 1
+                    continue
                 trig = st.entry_price + self.TICK_SIZE
                 risk_pct = (trig - st.stop_loss) / trig
                 if risk_pct <= 0 or risk_pct > 0.05:
@@ -320,4 +338,5 @@ class Backtester:
                 (ld - pos["entry_date"]).days, "EOD_CLOSE"))
 
         print(f"   prefilter hits: {prefilter_hits}")
+        print(f"   stale signals skipped: {stale_signals}")
         return self.result

@@ -89,6 +89,11 @@ def scan():
         if not st.triggered:
             continue
 
+        # Staleness check: only accept patterns completed on the last bar
+        last_bar_date = str(df.index[-1].date())
+        if st.signal_date != last_bar_date:
+            continue
+
         bad, why = _is_vetoed(sym, conn)
         if bad:
             veto_skipped += 1
