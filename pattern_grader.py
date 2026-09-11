@@ -1,23 +1,27 @@
 """
-Pattern Hit-Rate Gate (empirical, no literature faith).
-Grades every historical pattern_tags entry as a trade:
-  trigger = breakout_level (must hit within 3 bars, else EXPIRED)
-  stop    = stop_level (checked first each bar -> LOSS)
-  target  = breakout + 2R (-> WIN)
-  30 bars without either -> TIMEOUT
+Pattern Hit-Rate Gate v2 (RETUNED grading).
+Grading rule (literature-compatible, stop-first):
+  trigger  = breakout_level, must hit within 3 bars else EXPIRED
+  LOSS     = low <= stop_level before win
+  WIN      = high >= breakout + 1R   (R = breakout - stop)
+  TIMEOUT  = neither within 45 bars
 Gate rules (stored in settings.pattern_gate):
   graded >= 30 : ENABLED only if win-rate >= 60%
   graded >= 15 : PROVISIONAL, kept if win-rate >= 55%
   graded <  15 : PROVISIONAL (kept, not enough evidence)
 Usage:
-  python pattern_grader.py grade    -> grade all pending tags + report
-  python pattern_grader.py report   -> print/save gate report only
+  python pattern_grader.py grade     -> grade pending tags + report
+  python pattern_grader.py regrade   -> clear grades, regrade all, report
+  python pattern_grader.py report    -> print/save gate report only
+  python pattern_grader.py stats     -> print raw per-pattern stats
 """
 import sys
 import json
 import datetime as dt
 import db
 
+HOLD_BARS = 45
+WIN_R = 1.0
 MIN_GRADES_FOR_GATE = 30
 MIN_WINRATE = 0.60
 PROVISIONAL_GRADES = 15
@@ -34,11 +38,12 @@ def _ensure(conn):
 def _grade_one(conn, tag_date, symbol, breakout, stop):
     if not breakout or not stop or breakout <= stop:
         return None
-    target = breakout + 2.0 * (breakout - stop)
+    risk = breakout - stop
+    target = breakout + WIN_R * risk
     rows = conn.execute(
         "SELECT date, high, low FROM prices_daily "
-        "WHERE symbol=? AND date>? ORDER BY date LIMIT 35",
-        (symbol, tag_date)).fetchall()
+        "WHERE symbol=? AND date>? ORDER BY date LIMIT ?",
+        (symbol, tag_date, HOLD_BARS + 5)).fetchall()
     trig_idx = None
     for i in range(min(3, len(rows))):
         if rows[i][1] >= breakout:
@@ -60,12 +65,12 @@ def _grade_one(conn, tag_date, symbol, breakout, stop):
             exit_date = d
             break
     if out == "OPEN":
-        if len(rows) >= 30:
+        if len(rows) >= HOLD_BARS:
             out = "TIMEOUT"
             exit_date = rows[-1][0]
         else:
             return None
-    r = {"WIN": 2.0, "LOSS": -1.0,
+    r = {"WIN": 1.0, "LOSS": -1.0,
          "TIMEOUT": 0.0, "EXPIRED": 0.0}[out]
     return (out, exit_date, r)
 
@@ -105,18 +110,18 @@ def grade_all():
     return done
 
 
-def report(save_gate=True):
+def stats():
     conn = db.get_conn()
     _ensure(conn)
     rows = conn.execute(
         "SELECT pattern, outcome, COUNT(*) FROM pattern_grades "
         "GROUP BY pattern, outcome").fetchall()
     conn.close()
-    stats = {}
+    raw = {}
     for pat, out, n in rows:
-        s = stats.setdefault(pat, {"wins": 0, "losses": 0,
-                                   "expired": 0, "timeout": 0,
-                                   "n": 0})
+        s = raw.setdefault(pat, {"wins": 0, "losses": 0,
+                                 "expired": 0, "timeout": 0,
+                                 "n": 0})
         s["n"] += n
         if out == "WIN":
             s["wins"] += n
@@ -126,9 +131,8 @@ def report(save_gate=True):
             s["expired"] += n
         else:
             s["timeout"] += n
-    gate = {}
-    lines = []
-    for pat, s in sorted(stats.items()):
+    out = {}
+    for pat, s in raw.items():
         gl = s["wins"] + s["losses"]
         wr = s["wins"] / gl if gl else 0.0
         if gl >= MIN_GRADES_FOR_GATE:
@@ -140,16 +144,22 @@ def report(save_gate=True):
         else:
             enabled = True
             status = "PROVISIONAL"
-        gate[pat] = {"enabled": enabled,
-                     "win_rate": round(wr, 3),
-                     "graded": gl, "status": status}
-        lines.append(f"{pat:<28} n={s['n']:<6} "
-                     f"W/L={s['wins']}/{s['losses']}  "
-                     f"WR={wr:.1%}  -> {status}")
-    print("[PATTERN GATE] hit rates (WIN at 2R vs LOSS, stop-first):")
-    for l in lines:
-        print("   " + l)
-    if not lines:
+        out[pat] = {"wins": s["wins"], "losses": s["losses"],
+                    "expired": s["expired"], "timeout": s["timeout"],
+                    "graded": gl, "win_rate": round(wr, 3),
+                    "enabled": enabled, "status": status}
+    return out
+
+
+def report(save_gate=True):
+    st = stats()
+    print("[PATTERN GATE] hit rates (WIN at +1R vs LOSS, stop-first, "
+          f"{HOLD_BARS}-bar window):")
+    for pat, s in sorted(st.items()):
+        print(f"   {pat:<28} n={s['n']:<6} "
+              f"W/L={s['wins']}/{s['losses']}  "
+              f"WR={s['win_rate']:.1%}  -> {s['status']}")
+    if not st:
         print("   (no graded patterns yet)")
     if save_gate:
         conn = db.get_conn()
@@ -157,10 +167,21 @@ def report(save_gate=True):
             "INSERT OR REPLACE INTO settings(key,value) "
             "VALUES('pattern_gate',?)",
             (json.dumps({"date": dt.date.today().isoformat(),
-                         "gate": gate}),))
+                         "gate": st}),))
         conn.commit()
         conn.close()
-    return gate
+    return st
+
+
+def regrade():
+    conn = db.get_conn()
+    _ensure(conn)
+    conn.execute("DELETE FROM pattern_grades")
+    conn.commit()
+    conn.close()
+    print("[GRADE] cleared old grades, regrading with retuned rules")
+    grade_all()
+    return report()
 
 
 def enabled_patterns(conn=None):
@@ -187,5 +208,9 @@ if __name__ == "__main__":
     if cmd == "grade":
         grade_all()
         report()
+    elif cmd == "regrade":
+        regrade()
+    elif cmd == "stats":
+        print(json.dumps(stats(), indent=1))
     else:
         report()

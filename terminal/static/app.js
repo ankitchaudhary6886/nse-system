@@ -79,6 +79,11 @@ function statusBadge(s) {
   if (s === "WARNING") return '<span class="outcome TIMEOUT">WARNING</span>';
   return '<span class="outcome PENDING">FORMING</span>';
 }
+function gateBadge(g) {
+  if (!g) return '<span class="outcome PENDING">HR n/a</span>';
+  const cls = g.status === "ENABLED" ? "WIN" : (g.status === "DISABLED" ? "LOSS" : "TIMEOUT");
+  return `<span class="outcome ${cls}">HR ${(g.win_rate * 100).toFixed(0)}% · ${g.status}</span>`;
+}
 function sauceLine(p) {
   const ss = (p && p.params && p.params.secret_sauce) || (p && p.secret_sauce) || {};
   const bits = [];
@@ -95,7 +100,13 @@ async function loadPatterns() {
   try {
     const data = await api("/api/patterns/latest?limit=60");
     const rows = data.patterns || [];
-    if (st) st.innerHTML = `<span>Stored formations</span><strong>${rows.length}${rows.length ? " · latest " + rows[0].date : ""}</strong>`;
+    let gate = {};
+    try { const gs = await api("/api/patterns/stats"); gate = gs.stats || {}; } catch (e) { gate = {}; }
+    const vals = Object.values(gate);
+    const en = vals.filter(v => v.status === "ENABLED").length;
+    const pr = vals.filter(v => v.status === "PROVISIONAL").length;
+    const di = vals.filter(v => v.status === "DISABLED").length;
+    if (st) st.innerHTML = `<span>Stored formations</span><strong>${rows.length}${rows.length ? " · latest " + rows[0].date : ""} · gate: ${en} ON / ${pr} PROV / ${di} OFF</strong>`;
     list.innerHTML = "";
     if (!rows.length) {
       list.innerHTML = "<p>No stored patterns yet. Press Run Full Scan above (or wait for the 18:05 IST nightly job), then Refresh.</p>";
@@ -106,7 +117,7 @@ async function loadPatterns() {
       div.className = "stock-card";
       const sauce = sauceLine(p);
       div.innerHTML = `<strong>${p.symbol} · ${(p.pattern || "").replace(/_/g, " ")}</strong>
-        <span>${dirBadge(p.direction)} ${statusBadge(p.status)} · conf ${p.confidence}</span>
+        <span>${dirBadge(p.direction)} ${statusBadge(p.status)} ${gateBadge(gate[p.pattern])}</span>
         <span>Breakout ₹${p.breakout_level ?? "—"} · Stop ₹${p.stop_level ?? "—"} · Target ₹${p.target_level ?? "—"}</span>
         ${sauce ? `<span>${sauce}</span>` : ""}
         <span>${p.notes || ""}</span>`;
