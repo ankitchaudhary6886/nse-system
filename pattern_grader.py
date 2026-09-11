@@ -1,5 +1,5 @@
 """
-Pattern Hit-Rate Gate v3 (RETUNED grading, report fixed).
+Pattern Hit-Rate Gate v4.
 Grading rule (literature-compatible, stop-first):
   trigger  = breakout_level, must hit within 3 bars else EXPIRED
   LOSS     = low <= stop_level before win
@@ -9,6 +9,8 @@ Gate rules (stored in settings.pattern_gate):
   graded >= 30 : ENABLED only if win-rate >= 60%
   graded >= 15 : PROVISIONAL, kept if win-rate >= 55%
   graded <  15 : PROVISIONAL (kept, not enough evidence)
+  v4: patterns with NO grades yet stay enabled (provisional),
+      so rare patterns (e.g. H&S top warning) keep flowing.
 Usage:
   python pattern_grader.py grade     -> grade pending tags + report
   python pattern_grader.py regrade   -> clear grades, regrade all, report
@@ -26,6 +28,15 @@ MIN_GRADES_FOR_GATE = 30
 MIN_WINRATE = 0.60
 PROVISIONAL_GRADES = 15
 PROVISIONAL_WINRATE = 0.55
+
+ALL_PATTERNS = [
+    "HIGH_TIGHT_FLAG",
+    "ASCENDING_TRIANGLE",
+    "DOUBLE_BOTTOM",
+    "BULL_FLAG",
+    "INVERSE_HEAD_SHOULDERS",
+    "HEAD_SHOULDERS_TOP_WARNING",
+]
 
 
 def _ensure(conn):
@@ -186,7 +197,8 @@ def regrade():
 
 
 def enabled_patterns(conn=None):
-    """None = no gate yet (allow all). Else set of enabled names."""
+    """All known patterns EXCEPT explicitly disabled ones.
+    Patterns with no grades yet stay enabled (provisional)."""
     own = conn is None
     if own:
         conn = db.get_conn()
@@ -195,13 +207,18 @@ def enabled_patterns(conn=None):
     ).fetchone()
     if own:
         conn.close()
-    if not row:
-        return None
-    try:
-        g = json.loads(row[0]).get("gate", {})
-    except Exception:
-        return None
-    return {p for p, v in g.items() if v.get("enabled", True)}
+    gate = {}
+    if row:
+        try:
+            gate = json.loads(row[0]).get("gate", {})
+        except Exception:
+            gate = {}
+    return {p for p in ALL_PATTERNS
+            if gate.get(p, {}).get("enabled", True)}
+
+
+def disabled_patterns(conn=None):
+    return set(ALL_PATTERNS) - enabled_patterns(conn)
 
 
 if __name__ == "__main__":
