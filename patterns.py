@@ -1,5 +1,8 @@
 """
-Rule-Based Pattern Scanner v4.
+Rule-Based Pattern Scanner v5.
+BULL_FLAG KILLED 2026-09-17 by evidence (rescue experiment:
+current 54.6%, tight_v1 53.0%, tight_v2 55.9%, tight_v3 54.9% —
+all below the 60% gate bar). Detector removed.
 Detects early chart-pattern formations, tags them in DB, backfills
 historical tags, respects the empirical hit-rate gate AND the
 fundamental veto gate (BULLISH formations on vetoed symbols are
@@ -9,7 +12,6 @@ Patterns:
 - HIGH_TIGHT_FLAG
 - ASCENDING_TRIANGLE
 - DOUBLE_BOTTOM
-- BULL_FLAG
 - INVERSE_HEAD_SHOULDERS
 - HEAD_SHOULDERS_TOP_WARNING
 
@@ -63,16 +65,6 @@ PATTERN_PARAMS = {
         "min_separation_days": 15,
         "max_separation_days": 95,
         "max_distance_to_neckline": 0.16,
-    },
-    "BULL_FLAG": {
-        "lookback": 90,
-        "pole_min_gain": 0.20,
-        "pole_max_days": 45,
-        "flag_min_days": 4,
-        "flag_max_days": 28,
-        "flag_min_pullback": 0.04,
-        "flag_max_pullback": 0.25,
-        "max_vcr": 1.00,
     },
     "INVERSE_HEAD_SHOULDERS": {
         "lookback": 190,
@@ -518,78 +510,6 @@ def detect_double_bottom(symbol, df, sauce):
                min(score, 90), neckline, stop, notes, p)
 
 
-def detect_bull_flag(symbol, df, sauce):
-    p = PATTERN_PARAMS["BULL_FLAG"]
-    look = df.tail(p["lookback"]).copy().reset_index(drop=True)
-    if len(look) < 55:
-        return None
-
-    close = float(look["close"].iloc[-1])
-    high_vals = look["high"].values
-    low_vals = look["low"].values
-
-    recent_high_idx = int(np.argmax(high_vals[-35:])) + len(look) - 35
-    recent_high = float(high_vals[recent_high_idx])
-    flag_days = len(look) - 1 - recent_high_idx
-
-    if flag_days < p["flag_min_days"] or flag_days > p["flag_max_days"]:
-        return None
-
-    pole_start = max(0, recent_high_idx - p["pole_max_days"])
-    pole_low = float(np.nanmin(low_vals[pole_start:recent_high_idx]))
-    if pole_low <= 0:
-        return None
-
-    pole_gain = recent_high / pole_low - 1.0
-    if pole_gain < p["pole_min_gain"]:
-        return None
-
-    flag_low = float(np.nanmin(low_vals[recent_high_idx:]))
-    pullback = recent_high / flag_low - 1.0
-
-    if pullback < p["flag_min_pullback"]:
-        return None
-    if pullback > p["flag_max_pullback"]:
-        return None
-
-    vcr = sauce.get("vcr")
-    ret_std20 = sauce.get("ret_std20")
-
-    score = 56.0
-
-    if pole_gain >= 0.40:
-        score += 12
-    elif pole_gain >= 0.30:
-        score += 8
-    else:
-        score += 4
-
-    if 0.06 <= pullback <= 0.18:
-        score += 12
-    else:
-        score += 5
-
-    if vcr is not None and vcr <= p["max_vcr"]:
-        score += 10
-
-    if ret_std20 is not None and ret_std20 < 0.04:
-        score += 4
-
-    breakout = recent_high
-    stop = flag_low
-    status = _status(close, breakout)
-
-    if vcr is not None:
-        notes = (f"Bull flag pole {pole_gain:.0%}, flag pullback "
-                 f"{pullback:.0%}, flag days {flag_days}, vcr {vcr:.2f}")
-    else:
-        notes = (f"Bull flag pole {pole_gain:.0%}, flag pullback "
-                 f"{pullback:.0%}, flag days {flag_days}")
-
-    return _mk(symbol, "BULL_FLAG", "BULLISH", status,
-               min(score, 90), breakout, stop, notes, p)
-
-
 def detect_inverse_head_shoulders(symbol, df, sauce):
     p = PATTERN_PARAMS["INVERSE_HEAD_SHOULDERS"]
     look = df.tail(p["lookback"]).copy().reset_index(drop=True)
@@ -783,7 +703,6 @@ def detect_symbol(symbol, conn=None, df=None):
         detect_high_tight_flag,
         detect_ascending_triangle,
         detect_double_bottom,
-        detect_bull_flag,
         detect_inverse_head_shoulders,
         detect_head_shoulders_top,
     ]
