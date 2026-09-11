@@ -4,7 +4,7 @@ import datetime as dt
 import pandas as pd
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Header
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -24,7 +24,7 @@ async def lifespan(app):
     yield
     scheduler_bg.stop()
 
-app = FastAPI(title="NSE Intelligence Terminal", version="9.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="10.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -207,6 +207,75 @@ def patterns_for_symbol(symbol: str, limit: int = 50,
     return {"symbol": symbol.upper(),
             "patterns": patterns.for_symbol(symbol.upper(), limit=limit),
             "live_detect": patterns.detect_symbol(symbol.upper())}
+
+@app.get("/api/templates/latest")
+def templates_latest(limit: int = 30, user: str = Depends(verify_user)):
+    conn = get_conn()
+    try:
+        rows = conn.execute(
+            "SELECT date, symbol, template, similarity "
+            "FROM template_scores "
+            "WHERE date=(SELECT MAX(date) FROM template_scores) "
+            "ORDER BY similarity DESC LIMIT ?", (limit,)).fetchall()
+    except Exception:
+        rows = []
+    conn.close()
+    return {"matches": [{"date": r[0], "symbol": r[1],
+                         "template": r[2],
+                         "similarity": r[3]} for r in rows]}
+
+@app.post("/api/webhook/ingest")
+def webhook_ingest(payload: dict,
+                   x_webhook_token: str = Header(default="")):
+    """Free webhook-ready ingest endpoint.
+    Any external source that can POST JSON can ping the system
+    (future free TradingView workarounds, mail-hooks, custom Pine
+    scripts via free runners, etc.).
+    Auth: header X-Webhook-Token (or body "token") must equal env
+    WEBHOOK_TOKEN or settings.webhook_token. Not configured = 503.
+    No Basic auth here — the token IS the auth."""
+    token = os.getenv("WEBHOOK_TOKEN")
+    if not token:
+        conn = get_conn()
+        row = conn.execute(
+            "SELECT value FROM settings WHERE key='webhook_token'"
+        ).fetchone()
+        conn.close()
+        token = row[0] if row else None
+    if not token:
+        raise HTTPException(
+            status_code=503,
+            detail="webhook not configured (set WEBHOOK_TOKEN in .env "
+                   "or settings.webhook_token)")
+    got_hdr = x_webhook_token or ""
+    got_body = str(payload.get("token", ""))
+    ok = (secrets.compare_digest(got_hdr, token) or
+          secrets.compare_digest(got_body, token))
+    if not ok:
+        raise HTTPException(status_code=401, detail="bad webhook token")
+    conn = get_conn()
+    conn.execute("""CREATE TABLE IF NOT EXISTS webhook_events(
+        created_at TEXT, source TEXT, symbol TEXT, kind TEXT,
+        price REAL, payload TEXT)""")
+    conn.execute(
+        "INSERT INTO webhook_events VALUES (?,?,?,?,?,?)",
+        (dt.datetime.now().isoformat(timespec="seconds"),
+         str(payload.get("source", "unknown"))[:40],
+         str(payload.get("symbol", "")).upper()[:20],
+         str(payload.get("kind", "alert"))[:40],
+         safe_float(payload.get("price")),
+         json.dumps(payload, default=str)[:2000]))
+    conn.commit()
+    conn.close()
+    try:
+        import telegram_alerts
+        telegram_alerts.send(
+            f"📡 WEBHOOK {payload.get('source')} "
+            f"{str(payload.get('symbol', '')).upper()} "
+            f"{payload.get('kind')} @ {payload.get('price')}")
+    except Exception:
+        pass
+    return {"stored": True}
 
 @app.get("/api/cockpit/{symbol}/chart")
 def cockpit_chart(symbol: str, user: str = Depends(verify_user)):

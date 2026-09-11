@@ -110,20 +110,38 @@ async function loadPatterns() {
     list.innerHTML = "";
     if (!rows.length) {
       list.innerHTML = "<p>No stored patterns yet. Press Run Full Scan above (or wait for the 18:05 IST nightly job), then Refresh.</p>";
-      return;
+    } else {
+      rows.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "stock-card";
+        const sauce = sauceLine(p);
+        div.innerHTML = `<strong>${p.symbol} · ${(p.pattern || "").replace(/_/g, " ")}</strong>
+          <span>${dirBadge(p.direction)} ${statusBadge(p.status)} ${gateBadge(gate[p.pattern])}</span>
+          <span>Breakout ₹${p.breakout_level ?? "—"} · Stop ₹${p.stop_level ?? "—"} · Target ₹${p.target_level ?? "—"}</span>
+          ${sauce ? `<span>${sauce}</span>` : ""}
+          <span>${p.notes || ""}</span>`;
+        div.addEventListener("click", () => { setView("overview"); loadSymbol(p.symbol); });
+        list.appendChild(div);
+      });
     }
-    rows.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "stock-card";
-      const sauce = sauceLine(p);
-      div.innerHTML = `<strong>${p.symbol} · ${(p.pattern || "").replace(/_/g, " ")}</strong>
-        <span>${dirBadge(p.direction)} ${statusBadge(p.status)} ${gateBadge(gate[p.pattern])}</span>
-        <span>Breakout ₹${p.breakout_level ?? "—"} · Stop ₹${p.stop_level ?? "—"} · Target ₹${p.target_level ?? "—"}</span>
-        ${sauce ? `<span>${sauce}</span>` : ""}
-        <span>${p.notes || ""}</span>`;
-      div.addEventListener("click", () => { setView("overview"); loadSymbol(p.symbol); });
-      list.appendChild(div);
-    });
+    let tmatch = [];
+    try { const td = await api("/api/templates/latest?limit=12"); tmatch = td.matches || []; } catch (e) { tmatch = []; }
+    let tbox = $("templateBox");
+    if (!tbox) {
+      tbox = document.createElement("div");
+      tbox.id = "templateBox";
+      tbox.style.marginTop = "18px";
+      list.parentElement.appendChild(tbox);
+    }
+    if (tmatch.length) {
+      tbox.innerHTML = `<h3 style="margin:0 0 10px;font-size:15px;">🧬 DTW Shape Matches (template similarity)</h3>` +
+        tmatch.map(m => `<div class="stock-card" data-sym="${m.symbol}" style="margin-bottom:8px;"><strong>${m.symbol} · ${(m.template || "").replace(/_/g, " ")}</strong><span>shape similarity ${m.similarity}% · ${m.date}</span></div>`).join("");
+      tbox.querySelectorAll(".stock-card").forEach(card => {
+        card.addEventListener("click", () => { setView("overview"); loadSymbol(card.dataset.sym); });
+      });
+    } else {
+      tbox.innerHTML = `<h3 style="margin:0 0 10px;font-size:15px;">🧬 DTW Shape Matches</h3><p>No template matches stored yet (nightly 18:35 IST job, or VM: python template_match.py run 300).</p>`;
+    }
   } catch (e) {
     if (st) st.innerHTML = `<span>Status</span><strong>pattern endpoint unavailable</strong>`;
     list.innerHTML = `<p>Pattern endpoint error: ${e.message}</p>`;
