@@ -391,6 +391,15 @@ def meta_score(symbol: str, user: str = Depends(verify_user)):
         return {"symbol": symbol, "p_win": None, "why": [],
                 "error": str(e)}
 
+@app.get("/api/value-radar")
+def value_radar_api(n: int = 25, tier: str = None,
+                    user: str = Depends(verify_user)):
+    import value_radar
+    try:
+        return {"picks": value_radar.top(n, tier=tier)}
+    except Exception as e:
+        return {"picks": [], "error": str(e)}
+
 @app.get("/api/model/runs")
 def model_runs(n: int = 10, user: str = Depends(verify_user)):
     import model_report

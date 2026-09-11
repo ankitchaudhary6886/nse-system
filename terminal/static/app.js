@@ -273,6 +273,37 @@ function createRadarCard(item) {
   div.addEventListener("click", () => { setView("overview"); loadSymbol(item.symbol); });
   return div;
 }
+async function loadValueRadar() {
+  const box = $("valueRadarList");
+  const badge = $("valueRadarBadge");
+  if (!box) return;
+  try {
+    const data = await api("/api/value-radar?n=15");
+    const picks = data.picks || [];
+    if (!picks.length) {
+      box.innerHTML = "<p>No value candidates this week.</p>";
+      if (badge) badge.textContent = "empty";
+      return;
+    }
+    if (badge) badge.textContent = `${picks.length} candidates`;
+    box.innerHTML = "";
+    picks.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "stock-card";
+      const tierClass = p.tier === "A" ? "WIN" : (p.tier === "B" ? "OPEN" : "PENDING");
+      div.innerHTML = `<strong>${p.symbol} <span class="outcome ${tierClass}">TIER ${p.tier}</span></strong>
+        <span>₹${p.last_price} · ${(p.below_52w * 100).toFixed(0)}% off high · PE ${p.pe ?? "—"} vs sector ${p.sector_pe ? p.sector_pe.toFixed(1) : "—"}</span>
+        <span>Quality ${p.quality_score}/100 · Value ${p.value_score}/100 · Composite ${p.composite}</span>
+        <span>${p.notes || ""}</span>`;
+      div.addEventListener("click", () => { setView("overview"); loadSymbol(p.symbol); });
+      box.appendChild(div);
+    });
+  } catch (e) {
+    box.innerHTML = `<p>Value Radar error: ${e.message}</p>`;
+    if (badge) badge.textContent = "unavailable";
+  }
+}
+
 async function loadRadar() {
   const data = await api("/api/radar");
   const mu = $("mUniverse"); if (mu) mu.textContent = data.total || "—";
@@ -455,7 +486,7 @@ async function runSwingScan() {
   catch (e) { $("runSwingBtn").textContent = "Run Swing Scan"; alert("Swing scan failed: " + e.message); }
 }
 
-async function refreshAll() { await Promise.all([loadHealth(), loadRegime(), loadTopPicks(), loadSwing(), loadRadar(), loadPatterns()]); }
+async function refreshAll() { await Promise.all([loadHealth(), loadRegime(), loadTopPicks(), loadSwing(), loadRadar(), loadPatterns(), loadValueRadar()]); }
 
 document.addEventListener("DOMContentLoaded", () => {
   $("refreshBtn").addEventListener("click", refreshAll);

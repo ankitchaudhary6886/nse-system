@@ -144,6 +144,15 @@ def _retrain_job():
         log.exception(f"retrain failed: {e}")
 
 
+def _value_radar_job():
+    log.info("value radar started")
+    try:
+        import value_radar
+        value_radar.report()
+        log.info("value radar complete")
+    except Exception as e:
+        log.exception(f"value radar failed: {e}")
+
 def _validate_mc_job():
     log.info("weekly monte-carlo started")
     try:
@@ -235,6 +244,10 @@ def start():
                        CronTrigger(day_of_week="mon", hour=8, minute=0,
                                    timezone=IST),
                        id="validate_mc", replace_existing=True)
+    _scheduler.add_job(_value_radar_job,
+                       CronTrigger(day_of_week="sun", hour=9, minute=0,
+                                   timezone=IST),
+                       id="value_radar", replace_existing=True)
     _scheduler.add_job(_validate_wf_job,
                        CronTrigger(day=1, hour=10, minute=0,
                                    timezone=IST),
