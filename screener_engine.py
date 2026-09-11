@@ -8,6 +8,7 @@ Usage:
 """
 import sys
 import json
+import datetime as dt
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -39,9 +40,13 @@ def _from_db(ticker):
     return df.dropna(subset=["Close"])
 
 
-def _from_yahoo(ticker, period="18mo"):
+def _from_yahoo(ticker, period_days=550):
     try:
-        df = yf.download(f"{ticker}.NS", period=period,
+        end = dt.date.today()
+        start = end - dt.timedelta(days=period_days)
+        df = yf.download(f"{ticker}.NS",
+                         start=start.isoformat(),
+                         end=end.isoformat(),
                          interval="1d", progress=False)
         if df is None or df.empty or len(df) < 240:
             return None
@@ -53,11 +58,11 @@ def _from_yahoo(ticker, period="18mo"):
         return None
 
 
-def fetch_stock_data(ticker, period="18mo", allow_yahoo=True):
-    """18 months ensures enough history for EMA200 + 52W high."""
+def fetch_stock_data(ticker, period_days=550, allow_yahoo=True):
+    """18 months (~550 days) ensures enough history for EMA200 + 52W high."""
     df = _from_db(ticker)
     if df is None and allow_yahoo:
-        df = _from_yahoo(ticker, period)
+        df = _from_yahoo(ticker, period_days=period_days)
     return df
 
 
