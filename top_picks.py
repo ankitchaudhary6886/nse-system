@@ -2,7 +2,7 @@
 Top Picks — daily shortlist (fast: reads pwin_daily cache).
 Composite = 45% ML P(WIN) + 25% accumulation + 15% sector RS
           + 15% delivery conviction (+10% live-setup bonus).
-Delivery conviction = 10-day avg delivery% mapped 30%->0.0, 80%->1.0.
+v4: fundamentally vetoed symbols are skipped entirely.
 """
 import datetime as dt
 import pandas as pd
@@ -130,8 +130,22 @@ def compute(force=False):
     symbol_rs, symbol_sector = _sector_rs_map(conn)
     accum_map = _latest_accumulation_map(conn)
     deliv_map = _delivery_map(conn)
+    try:
+        import fund_veto
+        veto_on = True
+    except Exception:
+        veto_on = False
+    veto_skips = 0
     rows = []
     for sym in _universe(conn, limit=600):
+        if veto_on:
+            try:
+                bad, why = fund_veto.vetoed(sym, conn=conn)
+            except Exception:
+                bad = False
+            if bad:
+                veto_skips += 1
+                continue
         p_win = pwin.get(sym)
         if p_win is None:
             continue
@@ -154,7 +168,8 @@ def compute(force=False):
         "INSERT INTO top_picks VALUES (?,?,?,?,?,?,?,?,?)", top50)
     conn.commit()
     conn.close()
-    print(f"[TOPPICKS] stored {len(top50)} (from {len(rows)} cached)")
+    print(f"[TOPPICKS] stored {len(top50)} "
+          f"(from {len(rows)} cached, {veto_skips} veto-skipped)")
 
 
 def top(n=15):

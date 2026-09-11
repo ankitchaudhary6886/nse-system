@@ -1,10 +1,9 @@
 """
-Rule-Based Pattern Scanner v3.
-
+Rule-Based Pattern Scanner v4.
 Detects early chart-pattern formations, tags them in DB, backfills
-historical tags so the ML model can learn from them, and respects
-the empirical hit-rate gate (pattern_grader): only ENABLED patterns
-are stored by the nightly scan.
+historical tags, respects the empirical hit-rate gate AND the
+fundamental veto gate (BULLISH formations on vetoed symbols are
+dropped; bearish warnings are kept).
 
 Patterns:
 - HIGH_TIGHT_FLAG
@@ -842,6 +841,12 @@ def run(limit=DEFAULT_SYMBOL_LIMIT):
     except Exception:
         enabled = None
 
+    try:
+        import fund_veto
+        veto_on = True
+    except Exception:
+        veto_on = False
+
     today = dt.date.today().isoformat()
     symbols = _symbols(conn, limit=limit)
 
@@ -849,6 +854,7 @@ def run(limit=DEFAULT_SYMBOL_LIMIT):
     saved = 0
     hit_symbols = 0
     filtered = 0
+    veto_filtered = 0
 
     print(f"[PATTERN] scanning {total} symbols")
 
@@ -858,6 +864,20 @@ def run(limit=DEFAULT_SYMBOL_LIMIT):
             before = len(rows)
             rows = [h for h in rows if h["pattern"] in enabled]
             filtered += before - len(rows)
+        if veto_on and rows:
+            kept = []
+            for h in rows:
+                if h["direction"] == "BULLISH":
+                    try:
+                        bad, why = fund_veto.vetoed(h["symbol"],
+                                                    conn=conn)
+                    except Exception:
+                        bad = False
+                    if bad:
+                        veto_filtered += 1
+                        continue
+                kept.append(h)
+            rows = kept
         if rows:
             hit_symbols += 1
             saved += len(rows)
@@ -880,7 +900,7 @@ def run(limit=DEFAULT_SYMBOL_LIMIT):
     print(
         f"[PATTERN] complete: symbols={total}, "
         f"hit_symbols={hit_symbols}, tags_saved={saved}, "
-        f"gate_filtered={filtered}"
+        f"gate_filtered={filtered}, veto_filtered={veto_filtered}"
     )
 
     try:
@@ -896,6 +916,7 @@ def run(limit=DEFAULT_SYMBOL_LIMIT):
         "hit_symbols": hit_symbols,
         "tags_saved": saved,
         "gate_filtered": filtered,
+        "veto_filtered": veto_filtered,
     }
 
 
