@@ -1,5 +1,5 @@
 """
-Pattern Hit-Rate Gate v2 (RETUNED grading).
+Pattern Hit-Rate Gate v3 (RETUNED grading, report fixed).
 Grading rule (literature-compatible, stop-first):
   trigger  = breakout_level, must hit within 3 bars else EXPIRED
   LOSS     = low <= stop_level before win
@@ -146,7 +146,8 @@ def stats():
             status = "PROVISIONAL"
         out[pat] = {"wins": s["wins"], "losses": s["losses"],
                     "expired": s["expired"], "timeout": s["timeout"],
-                    "graded": gl, "win_rate": round(wr, 3),
+                    "n": s["n"], "graded": gl,
+                    "win_rate": round(wr, 3),
                     "enabled": enabled, "status": status}
     return out
 
@@ -156,7 +157,7 @@ def report(save_gate=True):
     print("[PATTERN GATE] hit rates (WIN at +1R vs LOSS, stop-first, "
           f"{HOLD_BARS}-bar window):")
     for pat, s in sorted(st.items()):
-        print(f"   {pat:<28} n={s['n']:<6} "
+        print(f"   {pat:<28} n={s['graded']:<6} "
               f"W/L={s['wins']}/{s['losses']}  "
               f"WR={s['win_rate']:.1%}  -> {s['status']}")
     if not st:
