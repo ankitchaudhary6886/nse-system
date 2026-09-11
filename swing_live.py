@@ -1,6 +1,6 @@
 """
 Swing Desk engine (live, no execution).
-EOD: regime gate + breadth gate + sector gate -> signals -> Telegram.
+EOD: regime gate + breadth gate + sector gate + fund veto -> signals -> Telegram.
 Daily: grade pending signals WIN / LOSS / EXPIRED / TIMEOUT.
 """
 import datetime as dt
@@ -12,6 +12,7 @@ from regime import MarketRegime
 import sector_gate
 import breadth
 
+
 def universe(conn):
     rows = conn.execute(
         "SELECT symbol FROM universe_broad "
@@ -22,12 +23,22 @@ def universe(conn):
         "SELECT symbol FROM stocks WHERE active=1")]
     return sorted(set([r[0] for r in rows]) | set(core))
 
+
 def ensure(conn):
     conn.execute("""CREATE TABLE IF NOT EXISTS swing_signals(
         signal_date TEXT, symbol TEXT, entry_trigger REAL,
         stop REAL, target REAL, risk_pct REAL, pullback REAL,
         impulse REAL, ema_zone TEXT, outcome TEXT,
         updated_at TEXT)""")
+
+
+def _is_vetoed(sym, conn):
+    try:
+        import fund_veto
+        return fund_veto.vetoed(sym, conn=conn)
+    except Exception:
+        return False, None
+
 
 def scan():
     conn = db.get_conn()
@@ -59,6 +70,7 @@ def scan():
           f"{', '.join(sorted(allowed)) or 'n/a'}")
 
     n = 0
+    veto_skipped = 0
     for sym in universe(conn):
         if not sector_gate.passes(sym, allowed):
             continue
@@ -76,6 +88,13 @@ def scan():
         st = SetupDetector.detect(df, sym)
         if not st.triggered:
             continue
+
+        bad, why = _is_vetoed(sym, conn)
+        if bad:
+            veto_skipped += 1
+            print(f"  [VETO] {sym} skipped — {why}")
+            continue
+
         risk_pct = (st.entry_price - st.stop_loss) / st.entry_price
         conn.execute(
             "INSERT INTO swing_signals VALUES (?,?,?,?,?,?,?,?,?,?,?)",
@@ -84,8 +103,8 @@ def scan():
              st.pullback_depth, st.impulse_pct, st.ema_proximity,
              "PENDING", dt.datetime.now().isoformat()))
         n += 1
-        print(f"  ✅ {sym} trigger ₹{st.entry_price}  "
-              f"SL ₹{st.stop_loss}  TGT ₹{st.target_price}  "
+        print(f"  OK {sym} trigger Rs {st.entry_price}  "
+              f"SL Rs {st.stop_loss}  TGT Rs {st.target_price}  "
               f"risk {risk_pct:.1%}  zone {st.ema_proximity}")
         try:
             import swing_alerts
@@ -94,7 +113,8 @@ def scan():
             print(f"  alert skipped: {e}")
     conn.commit()
     conn.close()
-    print(f"swing signals today: {n}")
+    print(f"swing signals today: {n}  (veto-skipped: {veto_skipped})")
+
 
 def update_outcomes():
     conn = db.get_conn()
@@ -138,6 +158,7 @@ def update_outcomes():
     conn.commit()
     conn.close()
 
+
 def report():
     conn = db.get_conn()
     ensure(conn)
@@ -147,6 +168,7 @@ def report():
             "GROUP BY outcome ORDER BY outcome"):
         print(f"   {r[0]:<8} {r[1]}")
     conn.close()
+
 
 def backfill(step=10, max_stocks=600):
     conn = db.get_conn()
@@ -194,6 +216,7 @@ def backfill(step=10, max_stocks=600):
     print(f"backfilled signals: {n}")
     update_outcomes()
     report()
+
 
 if __name__ == "__main__":
     import sys
