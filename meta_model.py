@@ -16,13 +16,57 @@ import db
 
 MODEL_PATH = "data/meta_model.pkl"
 _MODEL = None
+_WARNED_OLD = False
 
 
 def get_model():
-    global _MODEL
-    if _MODEL is None:
-        _MODEL = joblib.load(MODEL_PATH)
+    """Load model. Returns the LGBM model, or None if incompatible."""
+    global _MODEL, _WARNED_OLD
+    if _MODEL is not None:
+        return _MODEL
+    try:
+        loaded = joblib.load(MODEL_PATH)
+    except FileNotFoundError:
+        print(f"[META] model not found at {MODEL_PATH} — run train first")
+        return None
+    except Exception as e:
+        print(f"[META] failed to load model: {e}")
+        return None
+
+    # New bundle format
+    if isinstance(loaded, dict) and "model" in loaded:
+        model = loaded["model"]
+        feats = loaded.get("features", [])
+        if feats and feats != FEATURES:
+            print(f"[META] model feature mismatch: "
+                  f"model has {len(feats)}, code expects {len(FEATURES)}. "
+                  f"Retrain required.")
+            return None
+        _MODEL = model
+        return _MODEL
+
+    # Old format: raw LGBMClassifier
+    if not _WARNED_OLD:
+        print("[META] loaded legacy model (no feature list). "
+              "Retrain to enable feature compatibility checks.")
+        _WARNED_OLD = True
+    try:
+        n = loaded.booster_.num_feature()
+    except Exception:
+        n = None
+    if n is not None and n != len(FEATURES):
+        print(f"[META] legacy model has {n} features, "
+              f"code expects {len(FEATURES)} — refusing to score. "
+              f"Retrain required.")
+        return None
+    _MODEL = loaded
     return _MODEL
+
+
+def reload_model():
+    global _MODEL
+    _MODEL = None
+    return get_model()
 
 
 FEATURES = [
@@ -82,7 +126,6 @@ def _pattern_flags(tags, dates):
 
 
 def _dtw_map(conn, sym):
-    """date_iso -> best template similarity (0-100) for the symbol."""
     try:
         rows = conn.execute(
             "SELECT date, similarity FROM template_scores "
@@ -112,7 +155,6 @@ def _dtw_series(tmap, dates):
 
 
 def _delivery_map(conn, sym):
-    """date_iso -> delivery_pct (>0 only)."""
     try:
         rows = conn.execute(
             "SELECT date, delivery_pct FROM delivery_daily "
@@ -124,8 +166,6 @@ def _delivery_map(conn, sym):
 
 
 def _delivery_series(pmap, dates):
-    """0-1 conviction from nearest delivery_pct within 10 days;
-    0.5 (neutral) when no data."""
     out = []
     for x in dates:
         xd = x.date() if hasattr(x, "date") else x
@@ -360,7 +400,9 @@ def train():
     model = _fit(tr, te, FEATURES)
     auc, top_rate = _eval(model, te, FEATURES)
     base = float(te["win"].mean())
-    joblib.dump(model, MODEL_PATH)
+    joblib.dump({"model": model, "features": FEATURES,
+                 "version": "v6"},
+                MODEL_PATH)
     metrics = {"rows": int(len(data)), "winners": round(base, 4),
                "auc": round(auc, 4), "base_win": round(base, 4),
                "top10_win": round(top_rate, 4),
@@ -376,6 +418,7 @@ def train():
         model_report.record(metrics)
     except Exception as e:
         print(f"[META] model_run record skipped: {e}")
+    reload_model()
     return metrics
 
 
@@ -423,6 +466,8 @@ def lift_test():
 
 def score_symbol(sym, use_yahoo=True):
     model = get_model()
+    if model is None:
+        return None
     conn = db.get_conn()
     rows = conn.execute(
         "SELECT date, close, high, low, volume FROM prices_daily "
