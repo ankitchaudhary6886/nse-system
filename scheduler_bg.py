@@ -1,5 +1,5 @@
-"""Background scheduler — dq + daily + delivery + swing + macro +
-patterns + templates + weekly/monthly jobs. (No intraday layers.)"""
+"""Background scheduler — dq + daily + delivery + swing (+veto purge) +
+macro + patterns + templates + weekly/monthly jobs. No intraday layers."""
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
@@ -35,10 +35,40 @@ def _swing_job():
         import swing_live
         swing_live.update_outcomes()
         swing_live.scan()
+        _purge_vetoed()
         _drift_check()
         print("[SCHEDULER] swing scan complete")
     except Exception as e:
         print(f"[SCHEDULER] swing scan failed: {e}")
+
+
+def _purge_vetoed():
+    """Remove today's signals for fundamentally vetoed symbols."""
+    try:
+        import db
+        import fund_veto
+        import datetime as dt
+        conn = db.get_conn()
+        today = dt.date.today().isoformat()
+        rows = conn.execute(
+            "SELECT symbol FROM swing_signals WHERE signal_date=?",
+            (today,)).fetchall()
+        killed = []
+        for (sym,) in rows:
+            bad, why = fund_veto.vetoed(sym, conn=conn)
+            if bad:
+                conn.execute(
+                    "DELETE FROM swing_signals "
+                    "WHERE signal_date=? AND symbol=?",
+                    (today, sym))
+                killed.append(f"{sym} ({why})")
+        conn.commit()
+        conn.close()
+        if killed:
+            print(f"[VETO] purged {len(killed)} of today's signals: "
+                  f"{', '.join(killed)}")
+    except Exception as e:
+        print(f"[VETO] purge skipped: {e}")
 
 
 def _institutional_job():
@@ -209,9 +239,9 @@ def start():
                        id="validate_wf", replace_existing=True)
     _scheduler.start()
     print("[SCHEDULER] started — dq@15:30, daily@15:45, delivery@16:00, "
-          "swing@16:15, inst@16:45, macro@17:30, patterns@18:05, "
-          "templates@18:35, fund@Sat08:00, retrain@Sat09:00, "
-          "mc@Mon08:00, wf@1st10:00 IST")
+          "swing@16:15(+veto purge), inst@16:45, macro@17:30, "
+          "patterns@18:05, templates@18:35, fund@Sat08:00, "
+          "retrain@Sat09:00, mc@Mon08:00, wf@1st10:00 IST")
 
 
 def stop():

@@ -1,5 +1,6 @@
-"""Telegram alerts for swing setups — text first, chart snapshot second.
-Chart layer is optional: if it fails, the text alert still goes out."""
+"""Telegram alerts for swing setups — text + chart snapshot.
+v3: fundamental veto gate — vetoed symbols get a 🚫 notice instead
+of a tradeable setup alert."""
 import os
 
 
@@ -31,6 +32,18 @@ def send(text):
 
 
 def notify_setup(st):
+    try:
+        import fund_veto
+        bad, why = fund_veto.vetoed(st.symbol)
+        if bad:
+            send(f"🚫 FUND VETO {st.symbol} — setup suppressed\n"
+                 f"reason: {why}\n"
+                 f"(not tradeable under fundamental gate)")
+            print(f"[ALERT] {st.symbol} vetoed: {why}")
+            return False
+    except Exception as e:
+        print(f"[ALERT] veto check skipped: {e}")
+
     risk = ((st.entry_price - st.stop_loss) / st.entry_price) * 100 \
         if st.entry_price else 0
     text = (f"🏄 NEW SETUP {st.symbol}\n"
