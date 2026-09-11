@@ -33,7 +33,6 @@ def get_model():
         print(f"[META] failed to load model: {e}")
         return None
 
-    # New bundle format
     if isinstance(loaded, dict) and "model" in loaded:
         model = loaded["model"]
         feats = loaded.get("features", [])
@@ -45,7 +44,6 @@ def get_model():
         _MODEL = model
         return _MODEL
 
-    # Old format: raw LGBMClassifier
     if not _WARNED_OLD:
         print("[META] loaded legacy model (no feature list). "
               "Retrain to enable feature compatibility checks.")
@@ -464,6 +462,18 @@ def lift_test():
     return metrics
 
 
+def _attach_extra_feats(feat, tags, tmap, dmap):
+    """Attach pattern flags, dtw_sim, delivery_sim to a feature frame.
+    Must run BEFORE any dropna on PRICE_FEATS."""
+    dates = feat.index.tolist()
+    fl = _pattern_flags(tags, dates)
+    for k in PAT_FEATS:
+        feat[k] = fl[k]
+    feat["dtw_sim"] = _dtw_series(tmap, dates)
+    feat["delivery_sim"] = _delivery_series(dmap, dates)
+    return feat
+
+
 def score_symbol(sym, use_yahoo=True):
     model = get_model()
     if model is None:
@@ -492,11 +502,14 @@ def score_symbol(sym, use_yahoo=True):
         })
     else:
         return None
+
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.set_index("date")
+
     conn2 = db.get_conn()
     fund = _fund_map(conn2)
     sent = _sentiment_map(conn2)
     srs = sector_rs_map(conn2)
-    tags = []
     try:
         tags = conn2.execute(
             "SELECT date, pattern, direction FROM pattern_tags "
@@ -506,26 +519,35 @@ def score_symbol(sym, use_yahoo=True):
     tmap = _dtw_map(conn2, sym)
     dmap = _delivery_map(conn2, sym)
     conn2.close()
+
     f = fund.get(sym, {})
     ctx = {"roce": f.get("roce"), "pe": f.get("pe"),
            "debt_eq": f.get("debt_eq"),
            "promoter": f.get("promoter"),
            "sector_rs": srs.get(sym), "sentiment": sent.get(sym)}
+
+    # 1. Build base feature frame (all rows)
     feat = _features_df(df, ctx)
+    if feat.empty:
+        return None
+
+    # 2. Attach pattern flags, dtw_sim, delivery_sim BEFORE dropna
+    feat = _attach_extra_feats(feat, tags, tmap, dmap)
+
+    # 3. Coerce + fill context features
+    feat = _coerce_numeric(feat)
+    for col in CONTEXT_FEATS:
+        if col in feat.columns:
+            med = feat[col].median()
+            feat[col] = feat[col].fillna(med if pd.notna(med) else 0.0)
+
+    # 4. Now dropna on PRICE_FEATS (all present)
     feat = feat.dropna(subset=PRICE_FEATS)
     if feat.empty:
         return None
-    feat = feat.tail(1).copy()
-    feat = _coerce_numeric(feat)
-    for col in CONTEXT_FEATS:
-        if col in feat.columns and pd.isna(feat[col].iloc[0]):
-            feat[col] = 0.0
-    fl = _pattern_flags(tags, [dt.date.today()])
-    for k in PAT_FEATS:
-        feat[k] = fl[k][0]
-    feat["dtw_sim"] = _dtw_series(tmap, [dt.date.today()])[0]
-    feat["delivery_sim"] = _delivery_series(dmap,
-                                            [dt.date.today()])[0]
+
+    # 5. Score the last row
+    feat = feat.tail(1)
     p = model.predict_proba(feat[FEATURES])[:, 1][0]
     contrib = model.booster_.predict(feat[FEATURES],
                                      pred_contrib=True)[0]
