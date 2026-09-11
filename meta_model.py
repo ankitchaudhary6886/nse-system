@@ -503,8 +503,11 @@ def score_symbol(sym, use_yahoo=True):
     else:
         return None
 
-    df["date"] = pd.to_datetime(df["date"])
-    df = df.set_index("date")
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.set_index("date")
+    elif not isinstance(df.index, pd.DatetimeIndex):
+        df.index = pd.to_datetime(df.index)
 
     conn2 = db.get_conn()
     fund = _fund_map(conn2)
