@@ -42,7 +42,8 @@ async function loadRegime() {
 function createPickCard(item, rank) {
   const div = document.createElement("div");
   div.className = "stock-card";
-  div.innerHTML = `<strong>#${rank} ${item.symbol} ${item.setup ? '<span class="outcome WIN">🏄 LIVE SETUP</span>' : ""}</strong><span>Composite ${(item.composite * 100).toFixed(0)} · 🧠 P(WIN) ${(item.p_win * 100).toFixed(0)}% · 🏦 accum ${item.accum.toFixed(2)}</span><span>${item.sector || "Unknown sector"} · sector RS ${(item.sector_rs * 100).toFixed(0)}</span>`;
+  const del = item.delivery != null ? ` · 📦 ${(item.delivery * 100).toFixed(0)}` : "";
+  div.innerHTML = `<strong>#${rank} ${item.symbol} ${item.setup ? '<span class="outcome WIN">🏄 LIVE SETUP</span>' : ""}</strong><span>Composite ${(item.composite * 100).toFixed(0)} · 🧠 P(WIN) ${(item.p_win * 100).toFixed(0)}% · 🏦 accum ${item.accum.toFixed(2)}${del}</span><span>${item.sector || "Unknown sector"} · sector RS ${(item.sector_rs * 100).toFixed(0)}</span>`;
   div.addEventListener("click", () => { setView("overview"); loadSymbol(item.symbol); });
   return div;
 }
@@ -368,6 +369,34 @@ function bindCapitalSave() {
   });
 }
 
+async function loadDelivery(symbol) {
+  const panel = $("setupSummary") ? $("setupSummary").parentElement : null;
+  if (!panel) return;
+  let box = $("deliveryBox");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "deliveryBox";
+    box.className = "setup-box";
+    box.style.marginTop = "14px";
+    panel.appendChild(box);
+  }
+  try {
+    const dv = await api(`/api/delivery/${symbol}`);
+    const hist = dv.history || [];
+    const last = hist[0];
+    if (last || dv.score != null) {
+      box.innerHTML = `<h3 style="margin:0;font-size:15px;">📦 Delivery % (institutional conviction)</h3>
+        <div class="level"><span>Latest (${last ? last.date : "—"})</span><strong>${last ? last.delivery_pct + "%" : "—"}</strong></div>
+        <div class="level"><span>10-day conviction score</span><strong>${dv.score != null ? (dv.score * 100).toFixed(0) + "/100" : "—"}</strong></div>
+        <div class="level"><span>Traded / Deliverable</span><strong>${last ? (last.traded_qty / 100000).toFixed(1) + "L / " + (last.deliverable_qty / 100000).toFixed(1) + "L" : "—"}</strong></div>`;
+    } else {
+      box.innerHTML = `<h3 style="margin:0;font-size:15px;">📦 Delivery %</h3><div class="level"><span>Status</span><strong>no data yet (VM: python delivery.py backfill 30)</strong></div>`;
+    }
+  } catch (e) {
+    box.innerHTML = `<h3 style="margin:0;font-size:15px;">📦 Delivery %</h3><div class="level"><span>Status</span><strong>endpoint unavailable (deploy delivery batch)</strong></div>`;
+  }
+}
+
 function resetChart() {
   const el = $("chart"); el.innerHTML = "";
   chart = LightweightCharts.createChart(el, { layout: { background: { color: "transparent" }, textColor: "#9fb0cc" }, grid: { vertLines: { color: "rgba(255,255,255,.05)" }, horzLines: { color: "rgba(255,255,255,.05)" } }, rightPriceScale: { borderColor: "rgba(255,255,255,.08)" }, timeScale: { borderColor: "rgba(255,255,255,.08)" }, crosshair: { mode: LightweightCharts.CrosshairMode.Normal } });
@@ -413,6 +442,7 @@ async function loadSymbol(symbol) {
       $("setupSummary").innerHTML += `<div class="level"><span>🧠 Machine P(WIN)</span><strong>${(meta.p_win * 100).toFixed(0)}%</strong></div>` + why;
     }
   } catch (e) {}
+  loadDelivery(symbol);
   const newsBox = $("newsList"); newsBox.innerHTML = "";
   if (summary.news && summary.news.length) { summary.news.forEach(n => { const div = document.createElement("div"); div.className = "news-item"; div.textContent = `[${n.age_days}d] ${n.label || "neutral"} — ${n.title}`; newsBox.appendChild(div); }); }
   else { newsBox.textContent = "No stored news."; }

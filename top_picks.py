@@ -1,6 +1,8 @@
 """
 Top Picks — daily shortlist (fast: reads pwin_daily cache).
-Composite = 50% P(WIN) + 30% accum + 20% sector RS (+10% live setup).
+Composite = 45% ML P(WIN) + 25% accumulation + 15% sector RS
+          + 15% delivery conviction (+10% live-setup bonus).
+Delivery conviction = 10-day avg delivery% mapped 30%->0.0, 80%->1.0.
 """
 import datetime as dt
 import pandas as pd
@@ -14,8 +16,13 @@ def _ensure(conn):
     conn.execute("""
     CREATE TABLE IF NOT EXISTS top_picks(
     date TEXT, symbol TEXT, p_win REAL, accum REAL,
-    sector_rs REAL, sector TEXT, setup INTEGER, composite REAL)
+    sector_rs REAL, sector TEXT, setup INTEGER,
+    composite REAL, delivery REAL)
     """)
+    try:
+        conn.execute("ALTER TABLE top_picks ADD COLUMN delivery REAL")
+    except Exception:
+        pass
 
 
 def _sector_rs_map(conn):
@@ -72,6 +79,28 @@ def _latest_accumulation_map(conn):
     return acc
 
 
+def _delivery_map(conn):
+    """symbol -> 0..1 conviction from last 10 sessions' avg delivery%."""
+    m = {}
+    try:
+        rows = conn.execute("""
+            SELECT symbol, AVG(delivery_pct) FROM (
+                SELECT symbol, delivery_pct,
+                       ROW_NUMBER() OVER (PARTITION BY symbol
+                                          ORDER BY date DESC) rn
+                FROM delivery_daily
+                WHERE delivery_pct > 0
+            ) WHERE rn <= 10
+            GROUP BY symbol
+        """).fetchall()
+        for sym, avg in rows:
+            if avg is not None:
+                m[sym] = round(max(0.0, min(1.0, (avg - 30.0) / 50.0)), 3)
+    except Exception as e:
+        print(f"[TOPPICKS] delivery map skipped: {e}")
+    return m
+
+
 def _universe(conn, limit=600):
     rows = conn.execute(
         "SELECT symbol FROM universe_broad "
@@ -100,6 +129,7 @@ def compute(force=False):
     conn.execute("DELETE FROM top_picks WHERE date=?", (today,))
     symbol_rs, symbol_sector = _sector_rs_map(conn)
     accum_map = _latest_accumulation_map(conn)
+    deliv_map = _delivery_map(conn)
     rows = []
     for sym in _universe(conn, limit=600):
         p_win = pwin.get(sym)
@@ -107,10 +137,12 @@ def compute(force=False):
             continue
         accum = accum_map.get(sym, 0.5)
         sector_rs = symbol_rs.get(sym, 0.5)
-        composite = (0.50 * p_win + 0.30 * accum + 0.20 * sector_rs)
+        delivery = deliv_map.get(sym, 0.5)
+        composite = (0.45 * p_win + 0.25 * accum +
+                     0.15 * sector_rs + 0.15 * delivery)
         rows.append([today, sym, round(p_win, 3), round(accum, 3),
                      round(sector_rs, 3), symbol_sector.get(sym), 0,
-                     round(composite, 3)])
+                     round(composite, 3), round(delivery, 3)])
     rows.sort(key=lambda x: -x[7])
     top50 = rows[:50]
     for row in top50:
@@ -118,8 +150,8 @@ def compute(force=False):
             row[6] = 1
             row[7] = round(row[7] + 0.10, 3)
     top50.sort(key=lambda x: -x[7])
-    conn.executemany("INSERT INTO top_picks VALUES (?,?,?,?,?,?,?,?)",
-                     top50)
+    conn.executemany(
+        "INSERT INTO top_picks VALUES (?,?,?,?,?,?,?,?,?)", top50)
     conn.commit()
     conn.close()
     print(f"[TOPPICKS] stored {len(top50)} (from {len(rows)} cached)")
@@ -130,19 +162,22 @@ def top(n=15):
     _ensure(conn)
     rows = conn.execute(
         "SELECT symbol, p_win, accum, sector_rs, sector, setup, "
-        "composite FROM top_picks "
+        "composite, delivery FROM top_picks "
         "WHERE date=(SELECT MAX(date) FROM top_picks) "
         "ORDER BY composite DESC LIMIT ?", (n,)).fetchall()
     conn.close()
     return [{"symbol": s, "p_win": p, "accum": a, "sector_rs": sr,
-             "sector": sec, "setup": bool(st), "composite": c}
-            for s, p, a, sr, sec, st, c in rows]
+             "sector": sec, "setup": bool(st), "composite": c,
+             "delivery": d}
+            for s, p, a, sr, sec, st, c, d in rows]
 
 
 if __name__ == "__main__":
     compute(force=True)
     for r in top(15):
         tag = " 🏄" if r["setup"] else ""
+        dl = f" | del {r['delivery']:.2f}" \
+            if r["delivery"] is not None else ""
         print(f"{r['symbol']:<14} comp {r['composite']:.2f} | "
               f"P {r['p_win']:.0%} | acc {r['accum']:.2f} | "
-              f"{r['sector'] or '?'}{tag}")
+              f"{r['sector'] or '?'}{dl}{tag}")
