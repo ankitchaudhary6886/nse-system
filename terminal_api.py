@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="21.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="22.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -123,6 +123,12 @@ def deployment_check(user: str = Depends(verify_user)):
         add(False, "strategy_runs", str(e))
 
     try:
+        n = conn.execute("SELECT COUNT(*) FROM setup_pool").fetchone()[0]
+        add(n > 0, "setup_pool", f"{n} setups")
+    except Exception as e:
+        add(False, "setup_pool", str(e))
+
+    try:
         iso = today.isoformat()
         n = conn.execute(
             "SELECT COUNT(*) FROM swing_signals WHERE signal_date=?",
@@ -180,7 +186,7 @@ def macro_flow(user: str = Depends(verify_user)):
 
 
 # ============================================================
-# Strategies — ORDER MATTERS (static prefixes first)
+# Strategies
 # ============================================================
 @app.get("/api/strategies")
 def list_strategies(user: str = Depends(verify_user)):
@@ -269,7 +275,7 @@ def backtest_strategy_api(name: str, years: int = 2, step: int = 5,
 
 
 # ============================================================
-# Research endpoints
+# Research
 # ============================================================
 @app.get("/api/research/{symbol}")
 def research_api(symbol: str, user: str = Depends(verify_user)):
@@ -309,6 +315,53 @@ def research_cache_clear(symbol: str = None,
         return {"cleared": True, "symbol": symbol}
     except Exception as e:
         return {"cleared": False, "error": str(e)}
+
+
+# ============================================================
+# Patterns — ORDER MATTERS (latest/stats/history before {symbol})
+# ============================================================
+@app.get("/api/patterns/latest")
+def patterns_latest(limit: int = 100, user: str = Depends(verify_user)):
+    import patterns
+    return {"patterns": patterns.latest(limit=limit)}
+
+
+@app.get("/api/patterns/stats")
+def patterns_stats(user: str = Depends(verify_user)):
+    import pattern_grader
+    try:
+        return {"stats": pattern_grader.stats()}
+    except Exception as e:
+        return {"stats": {}, "error": str(e)}
+
+
+@app.get("/api/patterns/history/{symbol}")
+def patterns_history(symbol: str, limit: int = 500,
+                     user: str = Depends(verify_user)):
+    """ID49 — compact signal+outcome rows for chart markers."""
+    import patterns
+    try:
+        return {"symbol": symbol.upper(),
+                "signals": patterns.history_for_symbol(
+                    symbol.upper(), limit=limit)}
+    except Exception as e:
+        return {"symbol": symbol.upper(), "signals": [], "error": str(e)}
+
+
+@app.post("/api/patterns/scan")
+def patterns_scan(bg: BackgroundTasks, user: str = Depends(verify_user)):
+    import patterns
+    bg.add_task(patterns.run)
+    return {"started": True}
+
+
+@app.get("/api/patterns/{symbol}")
+def patterns_for_symbol(symbol: str, limit: int = 50,
+                        user: str = Depends(verify_user)):
+    import patterns
+    return {"symbol": symbol.upper(),
+            "patterns": patterns.for_symbol(symbol.upper(), limit=limit),
+            "live_detect": patterns.detect_symbol(symbol.upper())}
 
 
 # ============================================================
@@ -426,37 +479,6 @@ def trend_scan(bg: BackgroundTasks, user: str = Depends(verify_user)):
     import trend_scanner
     bg.add_task(trend_scanner.compute)
     return {"started": True}
-
-
-@app.get("/api/patterns/latest")
-def patterns_latest(limit: int = 100, user: str = Depends(verify_user)):
-    import patterns
-    return {"patterns": patterns.latest(limit=limit)}
-
-
-@app.get("/api/patterns/stats")
-def patterns_stats(user: str = Depends(verify_user)):
-    import pattern_grader
-    try:
-        return {"stats": pattern_grader.stats()}
-    except Exception as e:
-        return {"stats": {}, "error": str(e)}
-
-
-@app.post("/api/patterns/scan")
-def patterns_scan(bg: BackgroundTasks, user: str = Depends(verify_user)):
-    import patterns
-    bg.add_task(patterns.run)
-    return {"started": True}
-
-
-@app.get("/api/patterns/{symbol}")
-def patterns_for_symbol(symbol: str, limit: int = 50,
-                        user: str = Depends(verify_user)):
-    import patterns
-    return {"symbol": symbol.upper(),
-            "patterns": patterns.for_symbol(symbol.upper(), limit=limit),
-            "live_detect": patterns.detect_symbol(symbol.upper())}
 
 
 @app.get("/api/templates/latest")

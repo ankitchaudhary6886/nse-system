@@ -9,7 +9,6 @@ async function api(path, options = {}) {
 function fmt(v, suffix = "") { return (v === null || v === undefined || Number.isNaN(v)) ? "—" : `${v}${suffix}`; }
 function outcomeBadge(v) { return `<span class="outcome ${v || "PENDING"}">${v || "PENDING"}</span>`; }
 
-// Remap legacy "overview" → "research" so external scripts don't break
 function _normalizeView(name) {
   if (name === "overview") return "research";
   return name;
@@ -84,69 +83,7 @@ async function loadRegime() {
 }
 
 // ============================================================
-// Unified stock card — one layout used everywhere
-// ============================================================
-function renderUnifiedCard(item) {
-  // item may have: symbol, sector, mcap_cr, fund_score, p_win,
-  // setup flag, n_setups, p_1r, p_2r, median_mfe_r, notes
-  const sym = item.symbol || "—";
-  const sector = item.sector || "";
-  const mcap = item.mcap_cr != null ? `₹${Number(item.mcap_cr).toFixed(0)}cr` : "";
-  const fund = item.fund_score != null ? `Fund ${Number(item.fund_score).toFixed(0)}` : "";
-  const pwin = item.p_win != null ? `P(WIN) ${(item.p_win * 100).toFixed(0)}%` : "";
-  const setupBadge = item.setup ? `<span class="outcome WIN">LIVE SETUP</span>` : "";
-  const n = item.n_setups;
-  const nPill = n != null ? `<span class="rel-pill ${n>=10?"rel-strong":n>=5?"rel-mod":n>=1?"rel-thin":"rel-none"}">n=${n}</span>` : "";
-  const hits = (item.p_1r != null || item.p_2r != null)
-    ? `+1R ${item.p_1r != null ? (item.p_1r*100).toFixed(0)+"%" : "—"} · +2R ${item.p_2r != null ? (item.p_2r*100).toFixed(0)+"%" : "—"}`
-    : "";
-  const mfe = item.median_mfe_r != null ? `MFE ${Number(item.median_mfe_r).toFixed(2)}R` : "";
-  const line1 = [sector, mcap, fund].filter(Boolean).join(" · ");
-  const line2 = [pwin, hits, mfe, nPill].filter(Boolean).join(" · ");
-  return `<div class="unified-card" data-sym="${sym}">
-    <div class="uc-head">
-      <span class="uc-symbol">${sym}</span>
-      ${setupBadge}
-    </div>
-    ${line1 ? `<div class="uc-line">${line1}</div>` : ""}
-    ${line2 ? `<div class="uc-line uc-dim">${line2}</div>` : ""}
-    ${item.notes ? `<div class="uc-line uc-note">${item.notes}</div>` : ""}
-  </div>`;
-}
-
-function _bindUnifiedCards(container) {
-  container.querySelectorAll(".unified-card").forEach(card => {
-    card.addEventListener("click", () => {
-      const sym = card.dataset.sym;
-      if (!sym) return;
-      setView("research");
-      loadSymbol(sym);
-      if (window.loadResearch) setTimeout(() => window.loadResearch(sym), 500);
-    });
-  });
-}
-
-// ============================================================
-// Progressive disclosure
-// ============================================================
-function _toggleDetails(targetId) {
-  const el = document.getElementById(targetId);
-  if (!el) return;
-  el.classList.toggle("hidden");
-}
-
-// Global handler: any .toggle-btn with data-target toggles that panel
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".toggle-btn");
-  if (btn) {
-    e.preventDefault();
-    const target = btn.dataset.target;
-    if (target) _toggleDetails(target);
-  }
-});
-
-// ============================================================
-// Top Picks (featured, in Funda tab)
+// Top Picks
 // ============================================================
 async function loadTopPicks() {
   try {
@@ -199,7 +136,7 @@ async function loadSwing() {
 }
 
 // ============================================================
-// Patterns (Research tab)
+// Patterns — cards with checks checklist
 // ============================================================
 function dirBadge(d) {
   return d === "BULLISH" ? '<span class="outcome WIN">BULLISH</span>' : '<span class="outcome LOSS">BEARISH</span>';
@@ -225,6 +162,24 @@ function sauceLine(p) {
   return bits.join(" · ");
 }
 
+function _checksHtml(checks) {
+  if (!checks || !checks.length) {
+    return `<p style="color:#7f8da9; font-size:11px; margin:6px 0 0 0;">Conditions not recorded (older tag, before transparency update).</p>`;
+  }
+  let html = `<div class="checks-list" style="margin-top:8px;">`;
+  checks.forEach(c => {
+    const icon = c.ok ? "✓" : "✗";
+    const colour = c.ok ? "#34d399" : "#fb7185";
+    html += `<div class="check-row" style="padding:4px 0; font-size:11px;">
+      <span style="color:${colour}; font-weight:bold; min-width:16px; display:inline-block;">${icon}</span>
+      <span style="margin-left:6px;">${c.name || c.field || ""}</span>
+      <strong style="color:#9fb0cc; float:right; font-weight:400;">${c.got || ""}</strong>
+    </div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
 async function loadPatterns() {
   const list = $("patternList");
   const st = $("patternStatus");
@@ -243,20 +198,30 @@ async function loadPatterns() {
     if (!rows.length) {
       list.innerHTML = "<p>No stored patterns yet. Press Run Full Scan above (or wait for the 18:05 IST nightly job), then Refresh.</p>";
     } else {
-      rows.forEach(p => {
+      rows.forEach((p, idx) => {
         const div = document.createElement("div");
         div.className = "stock-card";
         const sauce = sauceLine(p);
+        const hasChecks = p.checks && p.checks.length;
+        const checkId = `checks-${idx}-${_safeId(p.symbol)}-${_safeId(p.pattern)}`;
         div.innerHTML = `<strong>${p.symbol} · ${(p.pattern || "").replace(/_/g, " ")}</strong>
           <span>${dirBadge(p.direction)} ${statusBadge(p.status)} ${gateBadge(gate[p.pattern])}</span>
           <span>Breakout ₹${p.breakout_level ?? "—"} · Stop ₹${p.stop_level ?? "—"} · Target ₹${p.target_level ?? "—"}</span>
           ${sauce ? `<span>${sauce}</span>` : ""}
-          <span>${p.notes || ""}</span>`;
-        div.addEventListener("click", () => { setView("research"); loadSymbol(p.symbol); });
+          <span>${p.notes || ""}</span>
+          ${hasChecks ? `<button class="toggle-btn" data-target="${checkId}">Show conditions (${p.checks.length})</button>
+            <div id="${checkId}" class="details-panel hidden">${_checksHtml(p.checks)}</div>`
+            : _checksHtml(p.checks)}`;
+        // Clicking the card body (not the toggle) opens the symbol
+        div.addEventListener("click", (e) => {
+          if (e.target.classList.contains("toggle-btn")) return;
+          setView("research");
+          loadSymbol(p.symbol);
+        });
         list.appendChild(div);
       });
     }
-    // DTW template card
+    // DTW templates
     let tmatch = [];
     try { const td = await api("/api/templates/latest?limit=12"); tmatch = td.matches || []; } catch (e) {}
     let tbox = $("templateBox");
@@ -284,13 +249,17 @@ async function loadPatterns() {
   }
 }
 
+function _safeId(s) {
+  return String(s).replace(/[^A-Za-z0-9_-]/g, "_");
+}
+
 async function runPatternScan() {
   const btn = $("runPatternScan");
   const st = $("patternStatus");
   if (btn) btn.textContent = "Scan queued…";
   try {
     await api("/api/patterns/scan", { method: "POST" });
-    if (st) st.innerHTML = `<span>Status</span><strong>scan running in background (a few minutes) — click Refresh afterwards</strong>`;
+    if (st) st.innerHTML = `<span>Status</span><strong>scan running in background — click Refresh afterwards</strong>`;
     setTimeout(loadPatterns, 60000);
   } catch (e) {
     if (st) st.innerHTML = `<span>Status</span><strong>scan start failed: ${e.message}</strong>`;
@@ -299,7 +268,7 @@ async function runPatternScan() {
 }
 
 // ============================================================
-// Radar / Screener (kept for legacy use)
+// Radar / Legacy
 // ============================================================
 function createRadarCard(item) {
   const div = document.createElement("div");
@@ -356,7 +325,7 @@ async function loadLedger() {
 }
 
 // ============================================================
-// Deployment (System tab)
+// Deployment (System)
 // ============================================================
 async function loadDeployment() {
   const box = $("deploymentBox");
@@ -388,7 +357,7 @@ async function loadDeployment() {
 }
 
 // ============================================================
-// Cockpit / Inspector (Research tab)
+// Chart / Cockpit
 // ============================================================
 function resetChart() {
   const el = $("chart");
@@ -408,6 +377,47 @@ function resetChart() {
   ema200 = chart.addLineSeries({ color: "#94a3b8", lineWidth: 1 });
 }
 
+// ID49 — pattern markers on chart
+async function _applyPatternMarkers(symbol) {
+  if (!candleSeries) return;
+  try {
+    const h = await api(`/api/patterns/history/${symbol}?limit=500`);
+    const sigs = (h && h.signals) || [];
+    if (!sigs.length) {
+      candleSeries.setMarkers([]);
+      return;
+    }
+    // Map each signal to a marker. Only include signals that fall within
+    // the displayed candle window (lightweight-charts handles out-of-range
+    // silently, but trim to keep payload small).
+    const markers = sigs.map(s => {
+      const d = String(s.date).slice(0, 10);
+      let color = "#fbbf24";  // unknown / timeout
+      let position = "aboveBar";
+      let shape = "circle";
+      let text = s.pattern ? s.pattern.slice(0, 6) : "";
+      if (s.outcome === "WIN") { color = "#34d399"; shape = "arrowUp"; position = "belowBar"; }
+      else if (s.outcome === "LOSS") { color = "#fb7185"; shape = "arrowDown"; position = "aboveBar"; }
+      else if (s.outcome === "EXPIRED" || s.outcome === "TIMEOUT") { color = "#fbbf24"; shape = "circle"; }
+      else { color = "#60a5fa"; shape = "square"; }  // OPEN / undefined
+      // Direction override: bearish patterns get downward marker
+      if (s.direction === "BEARISH") {
+        shape = "arrowDown";
+        position = "aboveBar";
+        if (s.outcome === "LOSS") color = "#34d399";  // bearish loss = good for bears
+      }
+      return {
+        time: d, position, color, shape,
+        text: text,
+        size: 0.8,
+      };
+    });
+    candleSeries.setMarkers(markers);
+  } catch (e) {
+    // silent
+  }
+}
+
 async function loadSymbol(symbol) {
   symbol = (symbol || "").trim().toUpperCase();
   if (!symbol) return;
@@ -415,7 +425,6 @@ async function loadSymbol(symbol) {
   const subEl = $("chartSubtitle");
   if (titleEl) titleEl.textContent = `${symbol} — Inspector`;
   if (subEl) subEl.textContent = "Loading chart...";
-
   let chartData, summary;
   try {
     chartData = await api(`/api/cockpit/${symbol}/chart`);
@@ -439,7 +448,6 @@ async function loadSymbol(symbol) {
   const setup = chartData.swing;
   const setupBadge = $("setupBadge");
   const setupSummary = $("setupSummary");
-
   if (setup) {
     if (setupBadge) { setupBadge.className = "badge good"; setupBadge.textContent = "Valid setup"; }
     candleSeries.createPriceLine({ price: setup.trigger, color: "#34d399", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: "Trigger" });
@@ -477,7 +485,6 @@ async function loadSymbol(symbol) {
     } catch (e) {}
   }
 
-  // Machine P(WIN) with progressive disclosure
   try {
     const meta = await api(`/api/meta/${symbol}`);
     if (meta && meta.p_win != null && setupSummary) {
@@ -509,11 +516,15 @@ async function loadSymbol(symbol) {
       newsBox.textContent = "No stored news.";
     }
   }
+
+  // ID49 — pattern markers
+  await _applyPatternMarkers(symbol);
+
   if (chart) chart.timeScale().fitContent();
 }
 
 // ============================================================
-// Sizing — progressive disclosure
+// Sizing / Delivery (progressive disclosure)
 // ============================================================
 function renderSizing(sz) {
   let box = $("sizingBox");
@@ -525,8 +536,6 @@ function renderSizing(sz) {
     const panel = $("setupSummary") ? $("setupSummary").parentElement : null;
     if (panel) panel.appendChild(box);
   }
-
-  // Build the compact answer first
   let compact, details;
   if (sz.error) {
     compact = `<div class="level"><span>Sizing</span><strong>unavailable yet</strong></div>`;
@@ -550,7 +559,6 @@ function renderSizing(sz) {
       <div class="level"><span>Regime (${sz.regime_level})</span><strong>×${sz.regime_mult}</strong></div>
       <div class="level"><span>Quality (shape ${sz.shape_score ?? "—"})</span><strong>×${sz.quality_mult}</strong></div>`;
   }
-
   const html = `
     <h3 style="margin:0;font-size:15px;">💰 Position Sizing</h3>
     ${compact}
@@ -569,7 +577,6 @@ function capitalEditor(cap) {
     <button id="saveCapitalBtn" style="padding:6px 10px;">Save</button>
   </strong></div>`;
 }
-
 function bindCapitalSave() {
   const btn = $("saveCapitalBtn");
   if (!btn) return;
@@ -585,9 +592,6 @@ function bindCapitalSave() {
   });
 }
 
-// ============================================================
-// Delivery — progressive disclosure
-// ============================================================
 async function loadDelivery(symbol) {
   const panel = $("setupSummary") ? $("setupSummary").parentElement : null;
   if (!panel) return;
@@ -623,47 +627,20 @@ async function loadDelivery(symbol) {
 }
 
 // ============================================================
-// Screener (still on Research tab sidebar)
+// Global click handler for toggle buttons
 // ============================================================
-async function loadScreener(symbol) {
-  symbol = (symbol || "").trim().toUpperCase();
-  if (!symbol) { alert("Enter a symbol in the search box first."); return; }
-  const badge = $("screenerBadge"), checksBox = $("screenerChecks"), metricsBox = $("screenerMetrics");
-  if (!badge) return;
-  badge.className = "badge muted"; badge.textContent = "Scanning...";
-  try {
-    const r = await api(`/api/screener/${symbol}`);
-    if (r.error) { badge.textContent = "Error"; checksBox.innerHTML = `<p>${r.error}</p>`; return; }
-    const ok = !!r.overall_signal;
-    badge.className = ok ? "badge good" : "badge muted"; badge.textContent = ok ? "✅ LIVE SIGNAL" : "No signal";
-    metricsBox.innerHTML = `
-      <div class="level"><span>Symbol</span><strong>${r.ticker}</strong></div>
-      <div class="level"><span>Price</span><strong>₹${r.current_price}</strong></div>
-      <div class="level"><span>EMA200</span><strong>${r.ema_200}</strong></div>
-      <div class="level"><span>Momentum 1M / 3M</span><strong>${r.momentum_1m} / ${r.momentum_3m}</strong></div>
-      <div class="level"><span>vs 52W High</span><strong>${r.proximity_52w}</strong></div>
-      <div class="level"><span>Impulse Gain</span><strong>${r.impulse_gain}</strong></div>
-      <div class="level"><span>Pullback Depth</span><strong>${r.pullback_depth}</strong></div>
-      <div class="level"><span>Days Since High</span><strong>${r.days_since_high}</strong></div>
-      <div class="level"><span>3-Day Tightness</span><strong>${r.tightness_pct}</strong></div>`;
-    checksBox.innerHTML = Object.entries(r.checks || {}).map(([k, v]) => `<div class="level"><span>${v ? "✅" : "❌"} ${k}</span><strong>${v ? "PASS" : "FAIL"}</strong></div>`).join("");
-  } catch (e) { badge.textContent = "API error"; checksBox.innerHTML = `<p>${e.message}</p>`; }
-}
-
-async function runSwingScan() {
-  const btn = $("runSwingBtn");
-  if (btn) btn.textContent = "Running...";
-  try {
-    await api("/api/swing/scan", { method: "POST" });
-    setTimeout(async () => {
-      await loadSwing();
-      if (btn) btn.textContent = "Run Swing Scan";
-    }, 4000);
-  } catch (e) {
-    if (btn) btn.textContent = "Run Swing Scan";
-    alert("Swing scan failed: " + e.message);
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".toggle-btn");
+  if (btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    const target = btn.dataset.target;
+    if (target) {
+      const el = document.getElementById(target);
+      if (el) el.classList.toggle("hidden");
+    }
   }
-}
+});
 
 // ============================================================
 // Init
@@ -686,13 +663,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const ss = $("symbolSearch");
   if (ss) ss.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { setView("research"); loadSymbol(ss.value); }
-  });
-  const rsb = $("runSwingBtn");
-  if (rsb) rsb.addEventListener("click", runSwingScan);
-  const rsc = $("runScreenerBtn");
-  if (rsc) rsc.addEventListener("click", () => {
-    setView("research");
-    loadScreener($("symbolSearch").value);
   });
   const rps = $("runPatternScan");
   if (rps) rps.addEventListener("click", runPatternScan);

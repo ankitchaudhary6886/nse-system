@@ -402,6 +402,31 @@ route fix, editor, backtest sandbox.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 ---
+### #055 · Signature matching (ID46) — VERIFIED
+- Result: initial 1,300 setups across 166 symbols. Pool scales with
+  symbol count — 200 was a scoping choice.
+### #056 · Weekly setup_pool rebuild scheduler job — VERIFIED
+- Job: `poolRebuild@Sun06:00` with 800 symbols.
+
+### #057 · Pattern transparency + chart markers (ID48 + ID49)
+- Files: `patterns.py`, `terminal_api.py`, `terminal/static/app.js`
+- What:
+  - **ID48** — every detector in `patterns.py` now builds a `checks`
+    list. `_save()` stores it in `pattern_tags.params` JSON. UI
+    renders an expandable "Show conditions (N)" toggle on each
+    pattern card in the Research tab.
+  - **ID49** — new endpoint `/api/patterns/history/{symbol}` returns
+    compact signal+outcome rows (joins pattern_tags with
+    pattern_grades). Research cockpit chart now overlays markers
+    at every historical signal: green up arrow (WIN), red down
+    arrow (LOSS), yellow circle (TIMEOUT/EXPIRED), blue square
+    (OPEN/undefined). Bearish patterns use downward arrow shape.
+  - Route ordering: `/api/patterns/latest`, `/api/patterns/stats`,
+    `/api/patterns/history/{symbol}` all registered before the
+    generic `/api/patterns/{symbol}`.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
 
 ---
 

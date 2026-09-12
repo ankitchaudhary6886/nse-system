@@ -9,7 +9,6 @@
 ---
 
 ## A. RULES  (always active)
-
 - **R1**–**R27** as previously logged.
 
 ---
@@ -23,14 +22,13 @@ I1–I7.
 I8–I34.
 
 ### Session 2 (continued) — 2026-09-12 (evening)
-- **I35** Fundamentals fix step 1: TV probe.
-- **I36** Step 2: rewrite fetcher, quality-only Multibagger.
-- **I37** Score outlier fix — percentile scoring.
-- **I38** Proceed with Phase 3 + Phase 4. Start Phase 3 with ID47.
-- **I39** ID47 verified. Proceed with ID46 (signature matching).
-- **I40** Add weekly setup_pool rebuild job (Sunday 06:00 IST, 800
-          symbols, step=5). Also prompted question re: 200 vs full
-          universe.
+I35–I40 as logged.
+
+### Session 3 — 2026-09-13
+- **I41** Add weekly setup_pool rebuild job (Sunday 06:00 IST, 800
+          symbols, step=5). Shipped.
+- **I42** Proceed with ID48 + ID49 (pattern transparency + chart
+          markers).
 
 ---
 
@@ -42,9 +40,16 @@ D1–D6 as previously logged.
 ## D. IDEAS
 
 ### ID1–ID47 as previously logged.
-### ID48 — Pattern condition transparency · **NEXT (Phase 3)**
-### ID49 — Time-machine chart markers · **PLANNED (Phase 3)**
-### ID50 — Compare mode · **PLANNED (Phase 3)**
+### ID48 — Pattern condition transparency · **DONE this batch**
+Every pattern detector now records a `checks` list of conditions
+(name + got + ok). Stored in `pattern_tags.params` JSON. UI shows
+expandable "Show conditions (N)" toggle on each pattern card.
+### ID49 — Time-machine chart markers · **DONE this batch**
+New endpoint `/api/patterns/history/{symbol}`. Research cockpit chart
+now overlays markers at every historical pattern signal — green up
+arrow (WIN), red down arrow (LOSS), yellow circle (TIMEOUT/EXPIRED),
+blue square (OPEN/undefined). Bearish patterns get downward arrow.
+### ID50 — Compare mode · **NEXT (Phase 3)**
 ### ID51 — Unified stock card · **PLANNED (Phase 3)**
 ### ID52 — Data source plugins · **PLANNED (Phase 4)**
 
@@ -56,7 +61,8 @@ IM1–IM6 as previously logged.
 ---
 
 ## F. FEATURES COMPLETED
-Prior list + **FPB** (weekly pool rebuild scheduler job).
+Prior list + **FPT** (pattern transparency) + **FTM** (time-machine
+chart markers).
 
 ---
 
@@ -65,14 +71,14 @@ Prior list + **FPB** (weekly pool rebuild scheduler job).
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R27 | Rules                    | Active       |
-| I1–I40 | Instructions             | Applied      |
+| I1–I42 | Instructions             | Applied      |
 | ID44  | Fundamentals fix          | DONE         |
 | ID45  | Score normalization       | DONE         |
 | ID46  | Signature matching        | DONE         |
 | ID47  | Candle behaviour          | DONE         |
-| ID48  | Pattern transparency      | NEXT         |
-| ID49  | Time-machine markers      | PLANNED P3   |
-| ID50  | Compare mode              | PLANNED P3   |
+| ID48  | Pattern transparency      | DONE         |
+| ID49  | Time-machine markers      | DONE         |
+| ID50  | Compare mode              | NEXT         |
 | ID51  | Unified stock card        | PLANNED P3   |
 | ID52  | Data source plugins       | PLANNED P4   |
 
@@ -81,9 +87,7 @@ Prior list + **FPB** (weekly pool rebuild scheduler job).
 ## H. REMAINING / LEFT
 
 ### Phase 3
-- ID48 Pattern transparency — NEXT
-- ID49 Time-machine chart markers
-- ID50 Compare mode
+- ID50 Compare mode — NEXT
 - ID51 Unified stock card
 
 ### Phase 4
