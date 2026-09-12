@@ -1,11 +1,13 @@
 """
-Screener v2 — official Phase 1.
-Stage-2 baseline + liquidity + >=1 momentum trigger + impulse volume proof.
-IPOs (<200 sessions) routed to a separate watchlist, never rejected.
+Screener v2 — Stage-2 baseline + liquidity + momentum + impulse volume.
+Reads thresholds from strategy_config.SCREENER.
 """
 from dataclasses import dataclass
 import numpy as np
 import pandas as pd
+
+from strategy_config import SCREENER as CFG
+
 
 @dataclass
 class ScreenerResult:
@@ -21,16 +23,17 @@ class ScreenerResult:
     ipo_watch: bool = False
     reason: str = ""
 
+
 class Screener:
-    EMA200 = 200
-    MIN_HISTORY = 220
-    MOM_1M_MIN = 0.20
-    MOM_3M_MIN = 0.30
-    HIGH_52WK_MIN_RATIO = 0.75
-    VOL_EXPLOSION_MULT = 2.5
-    VOL_LOOKBACK = 60
-    LIQ_DAYS = 20
-    MIN_AVG_TURNOVER = 2e7   # ₹2 cr average daily turnover
+    EMA200 = CFG["EMA200"]
+    MIN_HISTORY = CFG["MIN_HISTORY"]
+    MOM_1M_MIN = CFG["MOM_1M_MIN"]
+    MOM_3M_MIN = CFG["MOM_3M_MIN"]
+    HIGH_52WK_MIN_RATIO = CFG["HIGH_52WK_MIN_RATIO"]
+    VOL_EXPLOSION_MULT = CFG["VOL_EXPLOSION_MULT"]
+    VOL_LOOKBACK = CFG["VOL_LOOKBACK"]
+    LIQ_DAYS = CFG["LIQ_DAYS"]
+    MIN_AVG_TURNOVER = CFG["MIN_AVG_TURNOVER"]
 
     @classmethod
     def evaluate(cls, df: pd.DataFrame, symbol: str) -> ScreenerResult:

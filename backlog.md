@@ -32,13 +32,26 @@
           that only works on one window is overfit.
 - **R18** When two approaches give statistically equivalent PF/expectancy
           but one is more complex, keep the simpler one.
+- **R19** **System identifies. Owner decides.** No prescribed exits,
+          targets, sizing, or signals. The tool presents data.
+- **R20** Log every owner expectation/instruction in BACKLOG immediately,
+          even mid-conversation.
+- **R21** Every candidate presented with the full picture — predictability,
+          potential, historical hit rate at multiple R levels, candle
+          behaviour, sector context.
+- **R22** All tunable parameters live in `strategy_config.py`. Edit one
+          file to change behavior.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
-I1–I17 (see EXECUTION_LOG)
-I18 Reject tranche exits (PF identical, DD worse).
+I1–I18 (see EXECUTION_LOG)
+I19 Central config migration (this batch).
+I20 After ID19 → do ID21 (production deployment).
+I21 For every setup shown, present everything the owner needs to judge:
+     predictability, potential, historical hit rate at multiple R levels,
+     candle behaviour, sector context.
 
 ---
 
@@ -53,38 +66,36 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 ### ID11 — Signal sparsity fix · **DONE** (0.4% → 8.0%)
 ### ID12 — Alt setup patterns · **FUTURE**
 ### ID13 — Fast validation · **DONE**
-### ID14 — Meta-model plateau · **OPEN**
-### ID15 — Target sweep · **DONE** (3R adopted)
-### ID16 — Sizing quality multiplier · **DONE** (v4)
-### ID17 — Robustness check · **DONE**
-Multi-window WF: PF 1.73 (2y) / 1.43 (3y) / 1.16 (4y). Regime-dependent,
-positive everywhere. Conservative baseline: 20-25% CAGR / ~18% DD.
+### ID14 — Meta-model plateau · **OPEN** (AUC 0.629 stable)
+### ID15 — Target sweep · **DONE** (3R as default reference)
+### ID16 — Sizing quality multiplier · **DONE**
+### ID17 — Robustness check · **DONE** (PF 1.73 / 1.43 / 1.16 across windows)
+### ID18 — Hybrid tranche exits · **REJECTED** (per R16/R18)
+### ID19 — Central strategy config · **DONE this batch**
+All tunable parameters in `strategy_config.py`. Migrated modules:
+setup, backtest, scanner, sizing, all_weather.
 
-### ID18 — Hybrid tranche exits · **REJECTED**
-Tested 2026-09-12. PF identical to full-exit (1.45 vs 1.43). Return worse
-by 65pp. DD worse by 7.3pp. Positions hold 2.3 days longer, blocking
-concurrent slots. Per R16/R18, keep full-exit. Code remains in backtest.py
-behind `TRANCHES_ENABLED = False` flag for future testing.
+### ID20 — Strategy runs dashboard · **DONE**
+### ID21 — Production deployment · **NEXT**
+Final consolidated sweep across windows, lock reference params,
+fresh full scan, verify first real signals land.
 
-### ID19 — Central strategy config · **FUTURE**
-Move SetupDetector thresholds + TARGET_R + regime thresholds into one
-`strategy_config.py`. Enables single-file sweeps.
-
-### ID20 — Strategy runs dashboard · **DONE this batch**
-- `/api/strategy-runs?n=20` endpoint
-- `/api/strategy-summary` endpoint
-- `terminal/static/strategy_runs.js` renders table + summary
-- Ledger view now shows "Strategy Runs" panel
-
-### ID21 — Deployment to production · **NEXT**
-After all code is settled: final sweep across windows, lock params,
-run weekly retrain + fresh scan, verify first real signals land.
+### ID22 — Research cockpit: full presentation · **PLANNED**
+For every setup shown, present the full picture:
+- Historical hit rate at +1R / +2R / +3R / +4R (from similar past setups)
+- Median time-to-target at each R level
+- Max favorable / adverse excursion distribution
+- Candle behaviour at signal (mother bar, tightness, volume profile)
+- Sector context (sector RS, similar sectors in same state)
+- Predictability score (from meta-model, decomposed)
+- Potential score (distance to 52w high, momentum alignment)
+Owner decides which to look at; system does not rank or recommend.
 
 ---
 
 ## E. IMAGINATIONS
 IM1 Multi-strategy quant terminal · IM2 Bear-market accumulation ·
-IM3 Self-documenting system.
+IM3 Self-documenting system · IM4 Research cockpit (ID22).
 
 ---
 
@@ -92,7 +103,7 @@ IM3 Self-documenting system.
 
 ### FC Regime Spectrum · DONE
 ### FP Fundamentals Pipeline · DONE (863 symbols)
-### FS Sizing with quality multiplier · DONE (v4)
+### FS Sizing with quality multiplier · DONE
 ### FA Unified Alerts · DONE
 ### FU Canonical Universe · DONE
 ### FT Trend Scanner v3 · DONE
@@ -100,9 +111,10 @@ IM3 Self-documenting system.
 ### FV Value Radar v2 · DONE
 ### FM Meta-Model v7 · DONE (AUC 0.629)
 ### FVAL Fast Validation · DONE
-### FSP Setup v3.4 · DONE (3R full-exit)
-### FWF Walk-forward v4 · DONE (PF 1.43 / 1.73 / 1.16)
+### FSP Setup v3.5 · DONE (config-driven)
+### FWF Walk-forward v5 · DONE (config-driven)
 ### FSR Strategy Runs ledger + UI · DONE
+### FCONF Central Config · DONE this batch
 
 ---
 
@@ -110,7 +122,7 @@ IM3 Self-documenting system.
 
 | ID   | Item                      | Status       |
 |------|---------------------------|--------------|
-| R1–R18 | Rules                   | Active       |
+| R1–R22 | Rules                   | Active       |
 | ID1  | All-weather swing         | DONE         |
 | ID2  | Value Radar v2            | DONE         |
 | ID3a | Positional scanner        | DONE         |
@@ -130,9 +142,10 @@ IM3 Self-documenting system.
 | ID16 | Sizing quality multiplier | DONE         |
 | ID17 | Robustness check          | DONE         |
 | ID18 | Hybrid tranche exits      | REJECTED     |
-| ID19 | Central strategy config   | FUTURE       |
+| ID19 | Central strategy config   | DONE         |
 | ID20 | Strategy runs dashboard   | DONE         |
 | ID21 | Production deployment     | NEXT         |
+| ID22 | Research cockpit          | PLANNED      |
 
 ---
 

@@ -1,12 +1,7 @@
 """
-Optimized backtester.
-- Precomputed indicators
-- Pending buy-stop orders (enter at trigger, not close)
-- PDL stop + 5% rule enforced
-- Only signals whose pattern completed on the CURRENT bar are taken
-- TARGET_R = 3.0 default (full-exit mode)
-- TRANCHES_ENABLED = True switches to 1/3 @ 2R, 1/3 @ 3R, remainder
-  trails EMA10. Stop moves to breakeven after 2R.
+Optimized backtester. All parameters in strategy_config.BACKTEST.
+
+v5 (2026-09-12): migrated to central config.
 """
 from dataclasses import dataclass, field
 from typing import List
@@ -18,6 +13,7 @@ import yfinance as yf
 import db
 from regime import MarketRegime
 from setup import SetupDetector
+from strategy_config import BACKTEST as CFG
 
 
 @dataclass
@@ -39,11 +35,11 @@ class Trade:
 @dataclass
 class BacktestResult:
     trades: List[Trade] = field(default_factory=list)
-    initial_capital: float = 1_000_000
-    slippage_pct: float = 0.001
-    commission_pct: float = 0.0005
-    max_positions: int = 5
-    max_pending_orders: int = 20
+    initial_capital: float = CFG["INITIAL_CAPITAL"]
+    slippage_pct: float = CFG["SLIPPAGE_PCT"]
+    commission_pct: float = CFG["COMMISSION_PCT"]
+    max_positions: int = CFG["MAX_POSITIONS"]
+    max_pending_orders: int = CFG["MAX_PENDING_ORDERS"]
 
     @property
     def total_trades(self):
@@ -113,17 +109,16 @@ def _naive_index(df):
 
 
 class Backtester:
-    HOLD_DAYS_MAX = 30
-    ORDER_EXPIRY_BARS = 3
-    TICK_SIZE = 0.05
-    TARGET_R = 3.0
-    TRANCHES_ENABLED = False
-    # tranche spec
-    T_LEVEL_1 = 2.0
-    T_LEVEL_2 = 3.0
-    T_PCT_1 = 0.33
-    T_PCT_2 = 0.33
-    TRAIL_EMA = 10
+    HOLD_DAYS_MAX = CFG["HOLD_DAYS_MAX"]
+    ORDER_EXPIRY_BARS = CFG["ORDER_EXPIRY_BARS"]
+    TICK_SIZE = CFG["TICK_SIZE"]
+    TARGET_R = CFG["TARGET_R"]
+    TRANCHES_ENABLED = CFG["TRANCHES_ENABLED"]
+    T_LEVEL_1 = CFG["T_LEVEL_1"]
+    T_LEVEL_2 = CFG["T_LEVEL_2"]
+    T_PCT_1 = CFG["T_PCT_1"]
+    T_PCT_2 = CFG["T_PCT_2"]
+    TRAIL_EMA = CFG["TRAIL_EMA"]
 
     def __init__(self, result: BacktestResult = None):
         self.result = result or BacktestResult()
@@ -232,7 +227,6 @@ class Backtester:
         for date in all_dates:
             date_str = str(date.date())
 
-            # ---- manage open positions ----
             to_close = []
             for sym, pos in list(open_positions.items()):
                 if date not in data[sym].index:
@@ -243,7 +237,6 @@ class Backtester:
                 if i is None:
                     continue
 
-                # 1. hard stop check (always first)
                 if row["Low"] <= pos["stop"]:
                     self._close_tranche(pos, date, pos["stop"],
                                         pos["remaining_pct"], "STOP")
@@ -252,11 +245,9 @@ class Backtester:
                     to_close.append(sym)
                     continue
 
-                # 2. tranche partial exits
                 if self.TRANCHES_ENABLED:
                     risk = pos["entry_price"] - pos["initial_stop"]
                     if risk > 0:
-                        # 2R tranche
                         if not pos["t1_done"]:
                             t1_price = pos["entry_price"] + \
                                 self.T_LEVEL_1 * risk
@@ -265,10 +256,8 @@ class Backtester:
                                                     self.T_PCT_1, "T2R")
                                 pos["t1_done"] = True
                                 pos["remaining_pct"] -= self.T_PCT_1
-                                # move stop to breakeven
                                 if pos["entry_price"] > pos["stop"]:
                                     pos["stop"] = pos["entry_price"]
-                        # 3R tranche
                         if not pos["t2_done"] and pos["t1_done"]:
                             t2_price = pos["entry_price"] + \
                                 self.T_LEVEL_2 * risk
@@ -278,7 +267,6 @@ class Backtester:
                                 pos["t2_done"] = True
                                 pos["remaining_pct"] -= self.T_PCT_2
                                 pos["trail_active"] = True
-                    # trailing EMA10 on remainder
                     if pos["trail_active"] and \
                             pos["remaining_pct"] > 0.001:
                         ema = p["e10"][i]
@@ -291,7 +279,6 @@ class Backtester:
                             to_close.append(sym)
                             continue
                 else:
-                    # full-exit mode: single target
                     if row["High"] >= pos["target_r"]:
                         self._close_tranche(pos, date, pos["target_r"],
                                             pos["remaining_pct"],
@@ -301,7 +288,6 @@ class Backtester:
                         to_close.append(sym)
                         continue
 
-                # 3. time stop
                 held = (date - pos["entry_date"]).days
                 if held >= self.HOLD_DAYS_MAX:
                     self._close_tranche(pos, date, row["Close"],
@@ -314,7 +300,6 @@ class Backtester:
             for sym in to_close:
                 open_positions.pop(sym, None)
 
-            # ---- pending buy-stop orders ----
             to_rm = []
             for sym, od in list(pending_orders.items()):
                 if date <= od["signal_date"]:
@@ -351,7 +336,6 @@ class Backtester:
             if len(open_positions) >= self.result.max_positions:
                 continue
 
-            # ---- EOD scan ----
             for sym, p in P.items():
                 if sym in open_positions or sym in pending_orders:
                     continue
@@ -392,7 +376,6 @@ class Backtester:
                 if len(pending_orders) >= self.result.max_pending_orders:
                     break
 
-        # force-close anything still open
         for sym, pos in list(open_positions.items()):
             if data[sym].empty:
                 continue

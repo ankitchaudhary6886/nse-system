@@ -1,17 +1,15 @@
 """
-Hiren Gabani Master Pullback — OFFICIAL v3.4.
-6-point checklist + mother-candle trigger + PDL stop + 5% rule.
+Hiren Gabani Master Pullback — reads all thresholds from
+strategy_config.SETUP. Change values there, not here.
 
-v3.1 — impulse indexing bug fix.
-v3.2 — widened impulse 25-50% -> 18-75%, PB 12-20% -> 8-25%.
-v3.3 — EMA10-break tolerance 0.35 -> 0.45; PB floor 8% -> 6%.
-v3.4 — TARGET_R_MULTIPLE 2.0 -> 3.0 after walk-forward sweep:
-       3R PF 1.43 vs 2R PF 1.21, expectancy 0.276R vs 0.126R.
+v3.5 (2026-09-12): thresholds migrated to central config.
 """
 from dataclasses import dataclass, field
 from typing import List
 import numpy as np
 import pandas as pd
+
+from strategy_config import SETUP as CFG
 
 
 @dataclass
@@ -34,27 +32,27 @@ class Setup:
 
 
 class SetupDetector:
-    IMPULSE_LOOKBACK = 90
-    IMPULSE_MIN_PCT = 0.18
-    IMPULSE_MAX_PCT = 0.75
-    EMA10_BREAK_TOL = 0.45
-    PB_LOOKBACK = 25
-    PB_MIN_PCT = 0.06
-    PB_MAX_PCT = 0.25
-    PB_MIN_DAYS = 6
-    PB_MAX_DAYS = 20
-    CRASH_WINDOW = 3
-    CRASH_MAX_PCT = 0.15
-    EMA10 = 10
-    EMA20 = 20
-    EMA_TOUCH_MULT = 0.03
-    VOL_SMA_DAYS = 20
-    TIGHT_ATR_MULT = 0.9
-    TIGHT_MAX_RUN_BACK = 4
-    TIGHT_MIN = 2
-    MAX_STOP_PCT = 0.05
-    TARGET_R_MULTIPLE = 3.0       # was 2.0 (WF sweep 2026-09-12)
-    MAX_SHIFT = 2
+    IMPULSE_LOOKBACK = CFG["IMPULSE_LOOKBACK"]
+    IMPULSE_MIN_PCT = CFG["IMPULSE_MIN_PCT"]
+    IMPULSE_MAX_PCT = CFG["IMPULSE_MAX_PCT"]
+    EMA10_BREAK_TOL = CFG["EMA10_BREAK_TOL"]
+    PB_LOOKBACK = CFG["PB_LOOKBACK"]
+    PB_MIN_PCT = CFG["PB_MIN_PCT"]
+    PB_MAX_PCT = CFG["PB_MAX_PCT"]
+    PB_MIN_DAYS = CFG["PB_MIN_DAYS"]
+    PB_MAX_DAYS = CFG["PB_MAX_DAYS"]
+    CRASH_WINDOW = CFG["CRASH_WINDOW"]
+    CRASH_MAX_PCT = CFG["CRASH_MAX_PCT"]
+    EMA10 = CFG["EMA10"]
+    EMA20 = CFG["EMA20"]
+    EMA_TOUCH_MULT = CFG["EMA_TOUCH_MULT"]
+    VOL_SMA_DAYS = CFG["VOL_SMA_DAYS"]
+    TIGHT_ATR_MULT = CFG["TIGHT_ATR_MULT"]
+    TIGHT_MAX_RUN_BACK = CFG["TIGHT_MAX_RUN_BACK"]
+    TIGHT_MIN = CFG["TIGHT_MIN"]
+    MAX_STOP_PCT = CFG["MAX_STOP_PCT"]
+    TARGET_R_MULTIPLE = CFG["TARGET_R_MULTIPLE"]
+    MAX_SHIFT = CFG["MAX_SHIFT"]
 
     @classmethod
     def detect(cls, df: pd.DataFrame, symbol: str) -> Setup:
@@ -191,4 +189,4 @@ class SetupDetector:
             impulse_pct=round(impulse_pct, 3),
             ema_proximity=ema_proximity,
             shape_score=shape,
-            reasons=["OFFICIAL v3.4: 3R target (WF-validated)"])
+            reasons=["thresholds from strategy_config.SETUP"])

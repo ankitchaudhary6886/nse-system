@@ -1,42 +1,23 @@
 """
 All-Weather Swing Mode — high-conviction setups during DEFENSIVE regime.
-Authorized 2026-09-12. v2 (2026-09-12) — quality tier becomes soft bonus
-instead of hard gate, so AW works even when fundamentals are sparse.
-
-When Nifty is below its EMA10, the main swing scan holds new entries.
-But downturns are when quality names get cheap. This module finds:
-  - Price >= 25% below 52-week high (deep discount)
-  - Price within 15% of 52-week low (capitulation zone)
-  - Reversal candle today: hammer OR bullish engulfing
-  - Risk (entry-stop)/entry <= 5% (same rule as main system)
-
-Quality tier (soft, shown in alert, not filtered):
-  HIGH   -> fundamental_score >= 70  OR  roce >= 15
-  MED    -> fundamental_score >= 50  OR  roce >= 10
-  UNK    -> neither available
-
-Entry  = today's high + tick
-Stop   = min(today low, yesterday low) * 0.99
-Target = 2R
-
-Signals are stored in swing_signals with mode='ALL_WEATHER'.
-Position size must be HALVED (owner rule).
+Reads from strategy_config.ALL_WEATHER.
+v3 (2026-09-12): migrated to central config.
 """
 import sys
 import datetime as dt
 import numpy as np
 import pandas as pd
 import db
+from strategy_config import ALL_WEATHER as CFG
 
-BELOW_52W_MIN = 0.25       # >= 25% below 52w high
-NEAR_LOW_MAX = 0.15        # within 15% of 52w low (relaxed from 10%)
-MAX_RISK_PCT = 0.05
-TARGET_R = 2.0
-TICK = 0.05
+BELOW_52W_MIN = CFG["BELOW_52W_MIN"]
+NEAR_LOW_MAX = CFG["NEAR_LOW_MAX"]
+MAX_RISK_PCT = CFG["MAX_RISK_PCT"]
+TARGET_R = CFG["TARGET_R"]
+TICK = CFG["TICK"]
 
 
 def _quality_maps(conn):
-    """Return (fund_scores, roce_map) from latest scan_results + fundamentals."""
     fund = {}
     try:
         rows = conn.execute(
@@ -69,26 +50,21 @@ def _tier(fund_score, roce):
 
 
 def _candle_pattern(o, h, l, c, po, pc):
-    """Return 'HAMMER' | 'BULLISH_ENGULFING' | None for latest bar."""
     body = abs(c - o)
     rng = h - l
     if rng <= 0:
         return None
     lower_wick = min(o, c) - l
     upper_wick = h - max(o, c)
-
     if (body / rng < 0.35 and lower_wick / rng > 0.55
             and upper_wick / rng < 0.15):
         return "HAMMER"
-
     if pc < po and c > o and c >= po and o <= pc:
         return "BULLISH_ENGULFING"
-
     return None
 
 
 def candidates(conn, limit=600):
-    """Deep-discount candidates near 52w low. Quality is tagged, not filtered."""
     fund, roce = _quality_maps(conn)
     syms = [r[0] for r in conn.execute(
         "SELECT symbol FROM universe_broad "
@@ -128,7 +104,6 @@ def candidates(conn, limit=600):
 
 
 def detect(sym, df, fund_score=None, roce=None, tier="UNK"):
-    """Return dict(entry, stop, target, pattern, tier, ...) or None."""
     if len(df) < 60:
         return None
     o = df["Open"].values
@@ -167,7 +142,6 @@ def detect(sym, df, fund_score=None, roce=None, tier="UNK"):
 
 
 def scan(conn=None):
-    """Top-level scan. Returns list of setups."""
     own = conn is None
     if own:
         conn = db.get_conn()

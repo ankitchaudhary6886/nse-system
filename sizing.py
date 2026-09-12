@@ -1,32 +1,15 @@
 """
-Position sizing — half-Kelly with beginner-safe caps.
-v4 (2026-09-12): adds shape-score quality multiplier.
-                 - shape_score 80-100  -> 1.20x
-                 - shape_score 60-79   -> 1.00x
-                 - shape_score 40-59   -> 0.80x
-                 - shape_score 0-39    -> 0.60x
-                 - no shape (from pwin only) -> 1.00x
-                 Absolute cap raised to 25% (from 20%).
-Regime multiplier applied on top (from regime.py).
-
-Basis:
-  W = meta-model P(WIN) for the symbol (fallback: graded system win-rate,
-      then conservative 0.35 if neither available)
-  b = payoff ratio 3.0 (2R stop / 3R target as of v3.4)
-  Kelly f* = (b*W - (1-W)) / b ; half-Kelly = f*/2
-Caps:
-  MAX_ALLOC      = 25% of capital per position (before quality/regime)
-  RISK_PER_TRADE = 1% of capital max loss at stop
-Suggested value = min(half-kelly value, risk-based value, max-alloc value)
-                  * regime_mult * quality_mult
+Position sizing — half-Kelly with caps. Reads from strategy_config.SIZING.
+v5 (2026-09-12): migrated to central config.
 """
 import db
+from strategy_config import SIZING as CFG
 
-B_PAYOFF = 3.0
-MAX_ALLOC = 0.25
-RISK_PER_TRADE = 0.01
-DEFAULT_CAPITAL = 1_000_000
-FALLBACK_WINRATE = 0.35
+B_PAYOFF = CFG["B_PAYOFF"]
+MAX_ALLOC = CFG["MAX_ALLOC"]
+RISK_PER_TRADE = CFG["RISK_PER_TRADE"]
+DEFAULT_CAPITAL = CFG["DEFAULT_CAPITAL"]
+FALLBACK_WINRATE = CFG["FALLBACK_WINRATE"]
 
 
 def get_capital(conn=None):
@@ -82,20 +65,17 @@ def _regime_scale():
 
 
 def _quality_mult(shape_score):
-    """Shape score 0-100 -> capital multiplier 0.60x - 1.20x."""
+    """shape_score -> multiplier. First match wins (descending)."""
     if shape_score is None:
         return 1.0
     try:
         s = float(shape_score)
     except (TypeError, ValueError):
         return 1.0
-    if s >= 80:
-        return 1.20
-    if s >= 60:
-        return 1.00
-    if s >= 40:
-        return 0.80
-    return 0.60
+    for threshold, mult in CFG["QUALITY_TIERS"]:
+        if s >= threshold:
+            return mult
+    return 1.0
 
 
 def kelly_fraction(w, b=B_PAYOFF):
@@ -107,14 +87,8 @@ def kelly_fraction(w, b=B_PAYOFF):
 def suggest(symbol, trigger=None, stop=None, capital=None,
             shape_score=None, conn=None):
     """
-    Suggest a position size for `symbol`.
-
-    Args:
-      symbol:       NSE symbol
-      trigger:      entry trigger price (optional)
-      stop:         stop loss price (optional)
-      capital:      override capital (optional; else reads from settings)
-      shape_score:  0-100 setup quality from SetupDetector (optional)
+    Suggest a position size for `symbol`. All parameters from
+    strategy_config.SIZING unless overridden.
     """
     own = conn is None
     if own:
