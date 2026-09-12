@@ -8,6 +8,7 @@ Entry points:
   sector_aggregate()           — pool setups across symbols, by sector
 
 Cache table: research_cache(symbol, computed_at, payload_json)
+Payload carries CACHE_VERSION; a version mismatch invalidates the row.
 """
 import sys
 import time
@@ -19,6 +20,7 @@ import db
 from setup import SetupDetector
 
 
+CACHE_VERSION = 2
 HISTORY_DAYS = 5 * 365
 STEP = 5
 MIN_BARS = 280
@@ -52,13 +54,17 @@ def _get_cached(conn, sym, max_age_days=CACHE_TTL_DAYS):
         d = dt.date.fromisoformat(str(row[0])[:10])
         if (dt.date.today() - d).days > max_age_days:
             return None
-        return json.loads(row[1])
+        payload = json.loads(row[1])
+        if payload.get("cache_version") != CACHE_VERSION:
+            return None
+        return payload
     except Exception:
         return None
 
 
 def _put_cache(conn, sym, payload):
     _ensure_cache(conn)
+    payload["cache_version"] = CACHE_VERSION
     conn.execute(
         "INSERT OR REPLACE INTO research_cache VALUES (?,?,?)",
         (sym, dt.date.today().isoformat(),
@@ -384,7 +390,7 @@ def sector_aggregate(max_symbols=200):
     today = dt.date.today().isoformat()
     symbols = _today_symbols(conn)
 
-    buckets = {}   # sector -> list of cached payloads
+    buckets = {}
     missing = []
     for sym in list(symbols.keys())[:max_symbols]:
         cached = _get_cached(conn, sym)
@@ -440,13 +446,15 @@ def warm_cache(max_symbols=200, force=False):
         print(f"[WARM] all {len(symbols)} symbols already cached")
         return 0
 
-    print(f"[WARM] computing {len(todo)} of {len(symbols)} symbols")
+    print(f"[WARM] computing {len(todo)} of {len(symbols)} symbols "
+          f"(force={force})")
     t0 = time.time()
     done = 0
     failed = 0
     for i, sym in enumerate(todo, 1):
         try:
-            r = analyze_symbol(sym, use_cache=True)
+            # When force=True, bypass cache entirely so we recompute + store
+            r = analyze_symbol(sym, use_cache=not force)
             if "error" in r:
                 failed += 1
                 print(f"  [{i}/{len(todo)}] {sym}: {r['error']}")
@@ -540,7 +548,7 @@ def _print_sector(out):
     print(f"  {out['n_sectors']} sectors · {out['n_symbols_cached']} "
           f"symbols cached · {out['n_symbols_missing']} missing")
     print("=" * 100)
-    print(f"{'SECTOR':<20} {'syms':<5} {'n':<5} {'trig':<5} "
+    print(f"{'SECTOR':<22} {'syms':<5} {'n':<5} {'trig':<5} "
           f"{'P1R':<6} {'P2R':<6} {'P3R':<6} "
           f"{'MFE':<6} {'MAE':<6}")
     for r in out["sectors"]:
@@ -552,7 +560,7 @@ def _print_sector(out):
             if v is None:
                 return "—"
             return f"{v*100:.0f}%"
-        print(f"{(r['sector'] or 'Unknown'):<20} "
+        print(f"{(r['sector'] or 'Unknown'):<22} "
               f"{r['n_symbols']:<5} "
               f"{(r['n_setups'] or 0):<5} "
               f"{(r['n_triggered'] or 0):<5} "
