@@ -9,39 +9,22 @@
 
 ## A. RULES  (always active)
 
-- **R1**  Whole files only. No patches. Ever.
-- **R2**  Plain English. Ask for screenshots when useful.
-- **R3**  VS Code (Windows) + Oracle Cloud VM via SSH.
-- **R4**  Every change = full file + 1 laptop block + 1 VM block.
-- **R5**  Batch related commands into one block per machine.
-- **R6**  Skip credential / HTTPS / ops tasks unless asked.
-- **R7**  Every new idea → auto-add to BACKLOG.
-- **R8**  Instructions tagged with `#` prefix.
-- **R9**  Every execution logged in EXECUTION_LOG.md.
-- **R10** No pausing; keep momentum.
-- **R11** 3-4 file edits per response when possible.
-- **R12** Execute new ideas only AFTER the machine is functionally complete.
-- **R13** Fast feedback loops (~5s), not multi-minute waits.
-- **R14** Verdicts are PF-driven.
-- **R15** Parameters are swept, not picked.
-- **R16** Non-monotonic sweeps = noise. Prefer simpler parameter.
-- **R17** Multi-window WF is ground truth.
-- **R18** Equivalent results → simpler wins.
-- **R19** System identifies. Owner decides. No prescribed exits,
-          targets, sizing, or signals.
-- **R20** Log every owner instruction in BACKLOG immediately.
-- **R21** Every candidate presented with full picture — predictability,
-          potential, historical hit rate at multiple R levels, candle
-          behaviour, sector context.
-- **R22** All tunable parameters in strategy_config.py.
-- **R23** Optional integrations skip gracefully if creds/files missing.
+- **R1**–**R23** unchanged (see previous entries). Summary:
+  whole files · plain English · VS Code + Oracle VM · laptop push / VM pull ·
+  batched blocks · skip ops unless asked · auto-backlog new ideas ·
+  log every execution · no pausing · 3-4 edits/response ·
+  execute after machine complete · fast feedback loops (~5s) ·
+  PF-driven verdicts · sweep parameters · prefer simpler on ties ·
+  multi-window WF · system identifies, owner decides ·
+  log every instruction immediately · full picture per candidate ·
+  central config · graceful skips for optional integrations.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
-I1–I22 (see EXECUTION_LOG)
-I23 ID22 (research cockpit v1) — shipped this batch.
+I1–I23 (see EXECUTION_LOG)
+I24 ID22b shipped — research universe view.
 
 ---
 
@@ -54,25 +37,31 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 
 ### ID1–ID21 · DONE / partial (see EXECUTION_LOG)
 
-### ID22 — Research Cockpit · **v1 DONE this batch**
-For any symbol:
-- Historical setups on that symbol (5y, step=5 bars)
-- P(trigger), P(+1R / +2R / +3R / +4R | triggered)
-- Median bars to each R level
-- MFE/MAE distributions (p5 / median / p95)
-- Outcome mix (WIN/LOSS/TIMEOUT/EXPIRED)
-- Today's setup (if any) side by side
-- Recent 5 historical setups tabulated
-Files: research_cockpit.py, /api/research/{symbol}, research.js, Overview panel.
+### ID22 — Research Cockpit v1 · **DONE**
+Per-symbol 5y analysis. Cached 7 days. CLI + API + UI.
 
-### ID22b — Cross-symbol similarity · **NEXT**
-Extend cockpit: when analysing a symbol, compare its setup to *other
-symbols' historical setups* with similar dimensions (impulse %, pullback %,
-shape score, sector). Batch table + cached. Not real-time.
+### ID22b — Research Universe · **DONE this batch**
+Today's setups (SWING + ALL_WEATHER + top TREND) joined with cached
+per-symbol stats. Cached per symbol, refreshed on demand.
+Endpoint: `/api/research-universe`
+Cache table: `research_cache(symbol, computed_at, payload)`.
+UI panel: "Research Universe" in Overview tab.
+Shows: n setups, n triggered, P(+1R / +2R / +3R), median MFE/MAE.
+Owner scans the table, picks what interests them.
+
+### ID22c — Auto-warm cache nightly · **NEXT**
+Scheduler job after swing scan: for each symbol with a signal today,
+compute research stats and cache them. Then universe view is always
+instant. Currently cold-cache items show "miss".
 
 ### ID23 — Sector-level research · **FUTURE**
-Same view but at sector level — how have setups in Energy / IT / etc
-behaved historically? Adds sector-relative context.
+Aggregate cockpit by sector: "Energy setups have P(+2R)=0.42 historically".
+Context layer for cross-sector comparison.
+
+### ID24 — Candle behaviour analytics · **FUTURE**
+Extend cockpit: for each historical setup, classify the mother bar
+(inside, hammer-like, tight-cluster width vs ATR) and see hit rate
+conditioned on that feature.
 
 ---
 
@@ -83,57 +72,15 @@ IM3 Self-documenting system · IM4 Research cockpit.
 ---
 
 ## F. FEATURES COMPLETED
-
-### FC Regime Spectrum · DONE
-### FP Fundamentals Pipeline · DONE (961 symbols)
-### FS Sizing with quality multiplier · DONE
-### FA Unified Alerts · DONE
-### FU Canonical Universe · DONE
-### FT Trend Scanner v3 · DONE
-### FP2 Positional Scanner · DONE
-### FV Value Radar v2 · DONE
-### FM Meta-Model v7 · DONE (AUC 0.629)
-### FML Price-Model · DONE (AUC 0.584 / 0.589)
-### FVAL Fast Validation · DONE
-### FSP Setup v3.5 · DONE
-### FWF Walk-forward v5 · DONE
-### FSR Strategy Runs ledger + UI · DONE
-### FCONF Central Config · DONE
-### FDEP Deployment Verification · DONE (15/15 green)
-### FRC Research Cockpit v1 · **DONE this batch**
+(all prior) + Research Cockpit v1 (ID22) + Research Universe (ID22b)
 
 ---
 
-## G. STATUS SUMMARY
-
-| ID   | Item                      | Status       |
-|------|---------------------------|--------------|
-| R1–R23 | Rules                   | Active       |
-| ID1  | All-weather swing         | DONE         |
-| ID2  | Value Radar v2            | DONE         |
-| ID3a | Positional scanner        | DONE         |
-| ID3b | Swing scanner (custom)    | PARTIAL      |
-| ID4  | Free data sources         | FUTURE       |
-| ID5  | Feed life into stocks     | FUTURE       |
-| ID6  | Universe split            | PARTIAL      |
-| ID7  | Trim / unify / simplify   | MOSTLY DONE  |
-| ID8  | Trend scanner             | DONE         |
-| ID9  | Scanner UI panels         | DONE         |
-| ID10 | Meta-model v7             | DONE         |
-| ID11 | Signal sparsity fix       | DONE         |
-| ID12 | Alt setup patterns        | FUTURE       |
-| ID13 | Fast validation           | DONE         |
-| ID14 | Meta-model plateau        | OPEN         |
-| ID15 | Target sweep              | DONE         |
-| ID16 | Sizing quality multiplier | DONE         |
-| ID17 | Robustness check          | DONE         |
-| ID18 | Hybrid tranche exits      | REJECTED     |
-| ID19 | Central strategy config   | DONE         |
-| ID20 | Strategy runs dashboard   | DONE         |
-| ID21 | Production deployment     | DONE         |
-| ID22 | Research cockpit v1       | DONE         |
-| ID22b | Cross-symbol similarity  | NEXT         |
-| ID23 | Sector-level research     | FUTURE       |
+## G. STATUS SUMMARY (rows added)
+| ID22b | Research universe      | DONE this batch |
+| ID22c | Warm cache nightly     | NEXT            |
+| ID23 | Sector-level research   | FUTURE          |
+| ID24 | Candle analytics        | FUTURE          |
 
 ---
 
@@ -142,4 +89,4 @@ IM3 Self-documenting system · IM4 Research cockpit.
 - HTTPS via nginx + certbot
 - Rotate secrets
 - Retire Streamlit app.py
-- Google Sheets sync (missing GCP key)
+- Google Sheets sync

@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="16.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="17.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -188,6 +188,28 @@ def research_api(symbol: str, user: str = Depends(verify_user)):
         return research_cockpit.analyze_symbol(symbol.upper())
     except Exception as e:
         return {"symbol": symbol.upper(), "error": str(e)}
+
+
+@app.get("/api/research-universe")
+def research_universe_api(compute_missing: bool = False,
+                          user: str = Depends(verify_user)):
+    import research_cockpit
+    try:
+        return research_cockpit.analyze_universe(
+            compute_missing=compute_missing)
+    except Exception as e:
+        return {"error": str(e), "rows": [], "n_setups": 0}
+
+
+@app.post("/api/research-cache/clear")
+def research_cache_clear(symbol: str = None,
+                         user: str = Depends(verify_user)):
+    import research_cockpit
+    try:
+        research_cockpit.clear_cache(symbol.upper() if symbol else None)
+        return {"cleared": True, "symbol": symbol}
+    except Exception as e:
+        return {"cleared": False, "error": str(e)}
 
 
 @app.get("/api/toppicks")

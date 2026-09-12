@@ -98,8 +98,26 @@
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div>
-            <h2>🔬 Research Cockpit</h2>
-            <p>How did similar past setups on this symbol behave? Owner decides.</p>
+            <h2>🌐 Research Universe — today's setups + their historical stats</h2>
+            <p>Every setup today. Historical hit rates from this symbol's own past. Owner decides.</p>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button id="refreshResearchUniverse">Refresh</button>
+            <button id="computeMissingBtn">Compute Missing</button>
+          </div>
+        </div>
+        <div class="level" id="researchUniverseBadge"
+             style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
+        <div id="researchUniverseBox" style="overflow-x:auto;">
+          <p>Loading universe...</p>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>🔬 Research Cockpit (single symbol)</h2>
+            <p>Deep-dive on one symbol: 5y of setups, full MFE/MAE distribution.</p>
           </div>
           <button id="runResearchBtn">Compute for loaded symbol</button>
         </div>
@@ -299,5 +317,6 @@
 <script src="/static/strategy_runs.js"></script>
 <script src="/static/deployment.js"></script>
 <script src="/static/research.js"></script>
+<script src="/static/research_universe.js"></script>
 </body>
 </html>
