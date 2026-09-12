@@ -1,5 +1,8 @@
 // Strategy Runner — reads /api/strategies, runs a strategy, shows picks.
 // Also exposes Edit → strategy_editor.js
+//
+// IMPORTANT: strategies.json uses keys like "RCP" as the identifier, and
+// a separate "name" field for display. API calls must use the KEY.
 
 async function loadStrategyListFor(kind) {
   const container = document.getElementById(kind + "StrategyList");
@@ -9,8 +12,11 @@ async function loadStrategyListFor(kind) {
   try {
     const data = await api("/api/strategies");
     const strategies = data.strategies || {};
-    const matching = Object.values(strategies)
-      .filter(s => (s.type || "").toLowerCase() === kind);
+    // Keep the key alongside the definition
+    const matching = Object.entries(strategies)
+      .map(([key, s]) => ({ key, s }))
+      .filter(x => (x.s.type || "").toLowerCase() === kind);
+
     if (!matching.length) {
       container.innerHTML = `<p>No ${kind} strategies defined yet.</p>`;
       if (badge) badge.textContent = "empty";
@@ -18,8 +24,8 @@ async function loadStrategyListFor(kind) {
     }
     if (badge) badge.textContent = `${matching.length} strategies`;
     container.innerHTML = "";
-    for (const s of matching) {
-      const card = _buildStrategyCard(s, kind);
+    for (const { key, s } of matching) {
+      const card = _buildStrategyCard(key, s, kind);
       container.appendChild(card);
     }
   } catch (e) {
@@ -28,35 +34,37 @@ async function loadStrategyListFor(kind) {
   }
 }
 
-function _buildStrategyCard(strategy, kind) {
+function _buildStrategyCard(key, strategy, kind) {
   const wrap = document.createElement("div");
   wrap.className = "strategy-block";
   const condSummary = (strategy.conditions || [])
     .map(c => `${c.field} ${c.op} ${c.value}`)
     .join(" · ");
+  const safeKey = _safeId(key);
   wrap.innerHTML = `
     <div class="strategy-head">
       <div>
-        <strong>${strategy.name}</strong>
+        <strong>${strategy.name || key}</strong>
         <div class="strategy-desc">${strategy.description || ""}</div>
         <div class="strategy-cond">${condSummary}</div>
       </div>
       <div style="display:flex; gap:8px;">
-        <button class="strategy-edit-btn" data-name="${strategy.name}" style="padding:8px 14px; border-radius:10px; background:rgba(255,255,255,.05); color:#9fb0cc; border:1px solid rgba(255,255,255,.15); font-weight:700; cursor:pointer; font-size:12px;">Edit</button>
-        <button class="strategy-run-btn" data-name="${strategy.name}">Run</button>
+        <button class="strategy-edit-btn" style="padding:8px 14px; border-radius:10px; background:rgba(255,255,255,.05); color:#9fb0cc; border:1px solid rgba(255,255,255,.15); font-weight:700; cursor:pointer; font-size:12px;">Edit</button>
+        <button class="strategy-run-btn">Run</button>
       </div>
     </div>
-    <div class="strategy-picks" id="strat-picks-${_safeId(strategy.name)}">
+    <div class="strategy-picks" id="strat-picks-${safeKey}">
       <p class="strategy-hint">Press <b>Run</b> to compute today's picks.</p>
     </div>`;
+
   const runBtn = wrap.querySelector(".strategy-run-btn");
   runBtn.addEventListener("click", async () => {
-    const box = document.getElementById("strat-picks-" + _safeId(strategy.name));
+    const box = document.getElementById("strat-picks-" + safeKey);
     runBtn.textContent = "Running...";
     runBtn.disabled = true;
     box.innerHTML = "<p>Computing across universe...</p>";
     try {
-      const r = await api(`/api/strategies/${encodeURIComponent(strategy.name)}/run?limit=30`);
+      const r = await api(`/api/strategies/${encodeURIComponent(key)}/run?limit=30`);
       if (r.error) {
         box.innerHTML = `<p class="strategy-error">${r.error}</p>`;
       } else {
@@ -69,10 +77,11 @@ function _buildStrategyCard(strategy, kind) {
     runBtn.textContent = "Run";
     runBtn.disabled = false;
   });
+
   const editBtn = wrap.querySelector(".strategy-edit-btn");
   editBtn.addEventListener("click", () => {
     if (window.openStrategyEditor) {
-      window.openStrategyEditor(strategy.name);
+      window.openStrategyEditor(key);
     }
   });
   return wrap;
@@ -132,7 +141,7 @@ async function seedStrategies() {
       loadStrategyListFor("swing"),
     ]);
   } catch (e) {
-    alert("Seed failed: " + e.message);
+    console.error("Seed failed:", e);
   }
 }
 
