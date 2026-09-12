@@ -73,24 +73,74 @@ I8–I34.
 
 ## D. IDEAS
 
-### ID1–ID49 as previously logged (all DONE or listed).
-### ID50 — Compare mode · **DONE this batch**
-New `/api/compare` endpoint + `compare_tool.py`. Compare panel in
-Research tab with text input (2-4 comma-separated symbols). Renders
-a side-by-side table covering overview / fundamentals / signal /
-history / signature match. Reads only from cached data and existing
-tables — no on-demand compute.
-### ID51 — Unified stock card · **DONE this batch**
-`terminal/static/cards.js` defines `renderUnifiedCard(item)`. Now used
-by Top Picks, Radar, Trend, Positional, and Value Radar — same visual
-language everywhere.
-### ID52 — Data source plugins · **PLANNED (Phase 4)**
-### ID53 — Bearish pattern grading · **DONE** (previous batch)
+### ID1 — All-weather swing mode · **DONE**
+### ID2 — Long-term Value Radar · **DONE**
+### ID3 — Custom scanners: swing + positional · **PARTIAL**
+### ID4 — Free data source expansion · **PLANNED (Phase 4)**
+### ID5 — "Feeding of life into stocks" · **FUTURE**
+### ID6 — Universe split · **PARTIAL**
+### ID7 — Trim / unify / simplify · **MOSTLY DONE**
+### ID8 — Trend-regime scanner · **DONE**
+### ID9 — Scanner UI panels · **DONE**
+### ID10 — Meta-model v7 · **DONE**
+### ID11 — Signal sparsity fix · **DONE**
+### ID12 — Alt setup patterns · **FUTURE**
+### ID13 — Fast validation · **DONE**
+### ID14 — Meta-model plateau · **OPEN**
+### ID15 — Target sweep · **DONE**
+### ID16 — Sizing quality multiplier · **DONE**
+### ID17 — Robustness check · **DONE**
+### ID18 — Hybrid tranche exits · **REJECTED**
+### ID19 — Central strategy config · **DONE**
+### ID20 — Strategy runs dashboard · **DONE**
+### ID21 — Production deployment · **DONE**
+### ID22 — Research Cockpit v1 · **DONE**
+### ID22b — Research Universe · **DONE**
+### ID22c — Warm cache nightly · **DONE**
+### ID23 — Sector aggregation · **DONE**
+### ID23b — Reliability colour coding · **DONE**
+### ID23c — Sortable columns · **DONE**
+### ID24 — Candle behaviour analytics · **DONE** (as ID47)
+### ID25 — Sector strength overlay · **FUTURE**
+### ID26 — Setup similarity matching · **DONE** (as ID46)
+### ID27 — Rule DSL engine · **DONE**
+### ID28 — Two-pillar portal redesign · **DONE**
+### ID29 — Signature matching across symbols · **DONE** (as ID46)
+### ID30 — Pattern condition transparency · **DONE** (as ID48)
+### ID31 — Time-machine chart markers · **DONE** (as ID49)
+### ID32 — Data source plugin system · **NEXT (Phase 4)**
+### ID33 — Unified stock card · **DONE** (as ID51)
+### ID34 — Backtest sandbox per strategy · **DONE** (as ID43)
+### ID35 — Progressive disclosure · **DONE**
+### ID36 — Compare mode · **DONE** (as ID50)
+### ID37 — Strategy library page · **PARTIAL**
+### ID38 — Strategy seeds · **DONE**
+### ID39 — Rule DSL engine · **DONE**
+### ID40 — Seed strategies · **DONE**
+### ID41 — Strategy UI · **DONE**
+### ID42 — In-browser strategy editor · **DONE**
+### ID43 — Backtest sandbox per strategy · **DONE**
+### ID44 — Fundamentals data fix · **DONE**
+### ID45 — Score normalization (percentile) · **DONE**
+### ID46 — Signature matching · **DONE**
+### ID47 — Candle behaviour analytics · **DONE**
+### ID48 — Pattern condition transparency · **DONE**
+### ID49 — Time-machine chart markers · **DONE**
+### ID50 — Compare mode · **DONE**
+### ID51 — Unified stock card · **DONE**
+### ID52 — Data source plugins · **NEXT (Phase 4)**
+### ID53 — Bearish pattern grading · **DONE**
 
 ---
 
 ## E. IMAGINATIONS
-IM1–IM6 as previously logged.
+
+- **IM1** Personal multi-strategy quant terminal.
+- **IM2** Bear-market accumulation engine.
+- **IM3** Self-documenting, self-improving system.
+- **IM4** Research cockpit (predictability, potential, candle behaviour).
+- **IM5** Two-pillar portal — Funda and Swing as distinct product lines.
+- **IM6** Owner-authored strategies — write rules, see results in-browser.
 
 ---
 
@@ -130,8 +180,8 @@ IM1–IM6 as previously logged.
 - **FPT** Pattern transparency
 - **FTM** Time-machine chart markers
 - **FBPG** Bearish pattern grading
-- **FCMP** Compare mode (ID50)
-- **FUC** Unified stock card (ID51)
+- **FCMP** Compare mode
+- **FUC** Unified stock card
 
 ---
 
@@ -141,6 +191,7 @@ IM1–IM6 as previously logged.
 |-------|---------------------------|--------------|
 | R1–R28 | Rules                    | Active       |
 | I1–I45 | Instructions             | Applied      |
+| ID1–ID43 | Various               | DONE / listed |
 | ID44  | Fundamentals fix          | DONE         |
 | ID45  | Score normalization       | DONE         |
 | ID46  | Signature matching        | DONE         |
@@ -159,11 +210,13 @@ IM1–IM6 as previously logged.
 ### Phase 3 — **COMPLETE**
 All items shipped.
 
-### Phase 4 (this or next session)
+### Phase 4 (next)
 - **ID52** Data source plugin system — standard interface for
           TradingView / Yahoo / NSE / Chartink / ScanX / screener.in.
-          Auto-discovery, fallback chain, health dashboard.
-- Growth data source integration (needed for Multibagger growth filters)
+          Auto-discovery, fallback chain, health dashboard in System tab.
+- Growth data source integration — needed for Multibagger growth
+  filters (revenue_growth_3y, profit_growth_3y). Currently empty on
+  TradingView's India scanner.
 
 ### Deferred (owner chose to skip)
 - Settings `.env` / admin creds rotation

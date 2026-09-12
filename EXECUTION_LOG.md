@@ -485,6 +485,67 @@ route fix, editor, backtest sandbox.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 ---
+### #051 · TV column probe (ID44 step 1) — VERIFIED
+- Result: 48 of 104 columns return real values.
+- TV India does NOT return: growth (revenue/net_income/eps), insider
+  or institutional holding, price_to_book, operating cash flow.
+
+### #052 · Fundamentals v5 + schema migration (ID44 step 2) — VERIFIED
+- Files: `db.py`, `fundamentals_tv.py`, `rule_engine.py`
+- Result: 863 rows; roce 875, roe 850, pe 846, debt_eq 853, cfo_flag 860.
+  Multibagger 98 picks.
+
+### #053 · Percentile scoring (ID45) — VERIFIED
+- Files: `rule_engine.py`
+- Result: scores in 0-100 range (was 20-1850).
+
+### #054 · Candle behaviour analytics (ID47) — VERIFIED
+- Files: `research_cockpit.py`, `terminal/static/research.js`
+- Result: TANLA shows inv_hammer setups hitting +1R/+2R/+3R 100%.
+
+### #055 · Signature matching (ID46) — VERIFIED
+- Files: `build_setup_pool.py` (new), `research_cockpit.py`,
+  `terminal/static/research.js`
+- Result: initial pool 1,300 setups across 166 symbols (200-symbol
+  build).
+
+### #056 · Weekly setup_pool rebuild scheduler job — VERIFIED
+- Files: `scheduler_bg.py`
+- Job: `poolRebuild@Sun06:00` with 800 symbols, step=5, full clear+rebuild.
+
+### #057 · Pattern transparency + chart markers (ID48 + ID49) — VERIFIED
+- Files: `patterns.py`, `terminal_api.py`, `terminal/static/app.js`
+- What:
+  - Every detector records a `checks` list stored in
+    `pattern_tags.params` JSON.
+  - New `/api/patterns/history/{symbol}` endpoint.
+  - Chart overlays markers at every historical signal — green up
+    arrow (WIN), red down arrow (LOSS), yellow circle
+    (TIMEOUT/EXPIRED), blue square (OPEN).
+
+### #058 · Bearish pattern grading fix (ID53) — VERIFIED
+- Files: `pattern_grader.py`
+- Result: `pattern_grader.py` handles bearish H&S top warning;
+  regrade produced full gate table:
+  HTF 60.1%, AT 63.8%, DB 62.9%, InvHS 67.3%, H&S Top 76.8%
+  (all ENABLED). Bull Flag 56.1% (DISABLED).
+
+### #059 · Compare mode + unified stock card (ID50 + ID51) — VERIFIED
+- Files: `compare_tool.py` (new), `terminal_api.py`,
+  `terminal/static/cards.js` (new), `terminal/static/app.js`,
+  `terminal/static/scanners.js`, `terminal/static/index.html`,
+  `backlog.md`, `EXECUTION_LOG.md`
+- What:
+  - **ID50** — `/api/compare?symbols=A,B,C` reads only cached data.
+    Compare panel in Research tab with text input (2-4 symbols).
+    Side-by-side table: overview / fundamentals / signal / history /
+    signature match.
+  - **ID51** — `cards.js` defines `renderUnifiedCard(item)`.
+    Top Picks, Radar, Trend, Positional, and Value Radar now use
+    the same card.
+- Result: API `status: 200`, `rows: 3`. Phase 3 complete.
+
+---
 
 ---
 
