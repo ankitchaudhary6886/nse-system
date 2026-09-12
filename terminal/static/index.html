@@ -14,6 +14,58 @@
   .rel-mod    { background: rgba(251,191,36,.18); color: #fbbf24; }
   .rel-thin   { background: rgba(255,255,255,.06); color: #9fb0cc; }
   .rel-none   { background: rgba(255,255,255,.03); color: #64748b; }
+
+  .toggle-btn {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    background: rgba(96,165,250,.1);
+    color: #60a5fa;
+    border: 1px solid rgba(96,165,250,.3);
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .toggle-btn:hover { background: rgba(96,165,250,.2); }
+  .details-panel {
+    margin-top: 8px;
+    padding: 8px 0;
+    border-left: 2px solid rgba(96,165,250,.25);
+    padding-left: 10px;
+  }
+  .details-panel.hidden { display: none; }
+
+  .unified-card {
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.04);
+    border-radius: 12px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .unified-card:hover {
+    border-color: rgba(96,165,250,.35);
+    background: rgba(96,165,250,.08);
+  }
+  .uc-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 700;
+  }
+  .uc-symbol { color: #edf3ff; }
+  .uc-line {
+    margin-top: 4px; font-size: 12px; color: #dbe7ff;
+  }
+  .uc-dim { color: #7f8da9; }
+  .uc-note { color: #9fb0cc; font-size: 11px; margin-top: 6px; }
+
+  .nav-group {
+    margin-top: 18px; margin-bottom: 6px;
+    padding-left: 10px;
+    font-size: 10px; letter-spacing: 1.4px;
+    color: #7f8da9; text-transform: uppercase; font-weight: 700;
+  }
 </style>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -27,15 +79,20 @@
         <div class="brand-subtitle">Momentum Terminal</div>
       </div>
     </div>
+
     <nav class="nav">
-      <button class="nav-btn active" data-view="picks">Top Picks</button>
-      <button class="nav-btn" data-view="overview">Overview</button>
-      <button class="nav-btn" data-view="screener">Screener</button>
-      <button class="nav-btn" data-view="swing">Swing Desk</button>
-      <button class="nav-btn" data-view="patterns">Scanners</button>
-      <button class="nav-btn" data-view="ledger">Ledger</button>
-      <button class="nav-btn" data-view="radar">Radar</button>
+      <div class="nav-group">Product lines</div>
+      <button class="nav-btn" data-view="funda">💎 Funda</button>
+      <button class="nav-btn" data-view="swing">🏄 Swing</button>
+
+      <div class="nav-group">Analysis</div>
+      <button class="nav-btn active" data-view="research">🔬 Research</button>
+
+      <div class="nav-group">Record</div>
+      <button class="nav-btn" data-view="ledger">📒 Ledger</button>
+      <button class="nav-btn" data-view="system">⚙️ System</button>
     </nav>
+
     <div class="sidebar-footer">
       <div class="mini-label">System</div>
       <div class="mini-value" id="healthStatus">Checking...</div>
@@ -45,8 +102,8 @@
   <main class="main">
     <div class="topbar">
       <div>
-        <h1 id="viewTitle">Top Picks</h1>
-        <p>Gabani Stage-2 / VCP Pullback System</p>
+        <h1 id="viewTitle">Research</h1>
+        <p id="viewSubtitle">Gabani Stage-2 / VCP Pullback System</p>
       </div>
       <div class="top-actions">
         <input id="symbolSearch" placeholder="Symbol e.g. DIXON" />
@@ -64,19 +121,98 @@
       <div class="metric-card"><span>Market Universe</span><strong id="mUniverse">—</strong></div>
     </div>
 
-    <section id="view-picks" class="view active-view">
+    <!-- ================= FUNDA ================= -->
+    <section id="view-funda" class="view">
       <div class="panel">
         <div class="panel-header">
           <div>
-            <h2>Today's Top Picks</h2>
-            <p>45% ML P(WIN) + 25% accumulation + 15% sector RS + 15% delivery</p>
+            <h2>💎 Value Radar</h2>
+            <p>Quality names in downturns — long-term accumulation candidates</p>
+          </div>
+          <span class="badge muted" id="valueRadarBadge">—</span>
+        </div>
+        <div class="card-list" id="valueRadarList"><p>Loading...</p></div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>📊 Positional Picks</h2>
+            <p>Quality + trend + value composite. Tiers S/A/B/C.</p>
+          </div>
+          <span class="badge muted" id="positionalBadge">—</span>
+        </div>
+        <div class="card-list" id="positionalList"><p>Loading...</p></div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>🌟 Today's Top Picks</h2>
+            <p>Composite: ML P(WIN) + accumulation + sector RS + delivery</p>
           </div>
         </div>
-        <div class="radar-layout" id="picksList"></div>
+        <div class="card-list" id="picksList"><p>Loading...</p></div>
       </div>
     </section>
 
-    <section id="view-overview" class="view">
+    <!-- ================= SWING ================= -->
+    <section id="view-swing" class="view">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>🏄 Swing Desk</h2>
+            <p>Forward validation log — includes ALL-WEATHER setups</p>
+          </div>
+          <button id="runSwingBtn">Run Swing Scan</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Risk %</th><th>PB</th><th>Impulse</th><th>Zone</th><th>Outcome</th></tr>
+            </thead>
+            <tbody id="swingTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>📈 Trend Scanner</h2>
+            <p>Stocks with current price above BOTH EMA50 and EMA200</p>
+          </div>
+          <span class="badge muted" id="trendBadge">—</span>
+        </div>
+        <div class="card-list" id="trendList"><p>Loading...</p></div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>📡 Radar (momentum / volume / turnaround)</h2>
+            <p>Raw universe clusters for reference</p>
+          </div>
+        </div>
+        <div class="radar-layout">
+          <div>
+            <h3 style="font-size:13px; color:#9fb0cc; margin:0 0 8px;">Momentum</h3>
+            <div class="card-list" id="radarMomentum"></div>
+          </div>
+          <div>
+            <h3 style="font-size:13px; color:#9fb0cc; margin:0 0 8px;">Volume Spike</h3>
+            <div class="card-list" id="radarVolume"></div>
+          </div>
+          <div>
+            <h3 style="font-size:13px; color:#9fb0cc; margin:0 0 8px;">Turnaround</h3>
+            <div class="card-list" id="radarTurn"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= RESEARCH ================= -->
+    <section id="view-research" class="view active-view">
       <div class="terminal-grid">
         <div class="panel large">
           <div class="panel-header">
@@ -91,8 +227,8 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h2>Setup & Tranche Plan</h2>
-              <p>Trigger, PDL stop, lifecycle</p>
+              <h2>Setup & Sizing</h2>
+              <p>Trigger, stop, target, position size</p>
             </div>
           </div>
           <div class="setup-box" id="setupSummary">
@@ -108,41 +244,8 @@
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div>
-            <h2>🏭 Research Sectors — pooled by sector</h2>
-            <p>All setups from every cached symbol, grouped by sector. Real pooling, not averages of averages.</p>
-          </div>
-          <button id="refreshResearchSector">Refresh</button>
-        </div>
-        <div class="level" id="researchSectorBadge"
-             style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
-        <div id="researchSectorBox" style="overflow-x:auto;">
-          <p>Loading sectors...</p>
-        </div>
-      </div>
-
-      <div class="panel" style="margin-top:18px">
-        <div class="panel-header">
-          <div>
-            <h2>🌐 Research Universe — today's setups + historical stats</h2>
-            <p>Sortable. Colour-coded by historical sample size. Click a symbol to inspect.</p>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <button id="refreshResearchUniverse">Refresh</button>
-            <button id="computeMissingBtn">Compute Missing</button>
-          </div>
-        </div>
-        <div class="level" id="researchUniverseBadge"
-             style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
-        <div id="researchUniverseBox" style="overflow-x:auto;">
-          <p>Loading universe...</p>
-        </div>
-      </div>
-
-      <div class="panel" style="margin-top:18px">
-        <div class="panel-header">
-          <div>
-            <h2>🔬 Research Cockpit (single symbol)</h2>
-            <p>Deep-dive on one symbol: 5y of setups, full MFE/MAE distribution.</p>
+            <h2>🔬 Research Cockpit — single symbol</h2>
+            <p>5y of historical setups on this symbol. P(trigger), hit rates, MFE/MAE.</p>
           </div>
           <button id="runResearchBtn">Compute for loaded symbol</button>
         </div>
@@ -150,73 +253,39 @@
           <p>Load a symbol and press "Compute" to see historical behaviour.</p>
         </div>
       </div>
-    </section>
 
-    <section id="view-screener" class="view">
-      <div class="terminal-grid">
-        <div class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>On-Demand Screener</h2>
-              <p>Baseline (Stage-2 + momentum + volume) + VCP checks — any symbol, DB-first</p>
-            </div>
-            <button id="runScreenerBtn">Run Screener</button>
-          </div>
-          <div class="setup-box" id="screenerMetrics">
-            <p>Type a symbol in the top search box, then press Run Screener.</p>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>Check Breakdown</h2>
-              <p>All gates must align for a live signal</p>
-            </div>
-            <span class="badge muted" id="screenerBadge">—</span>
-          </div>
-          <div class="setup-box" id="screenerChecks">
-            <p>No scan yet.</p>
-          </div>
-        </div>
-      </div>
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div>
-            <h2>Whole-Band Scan</h2>
-            <p>Full baseline+VCP engine over the top smallcap band (DB-only, seconds)</p>
+            <h2>🌐 Research Universe — today's setups + historical stats</h2>
+            <p>Sortable. Colour-coded by sample size. Click a symbol to inspect.</p>
           </div>
-          <button id="scanBandBtn">Scan Whole Band</button>
+          <div style="display:flex; gap:6px;">
+            <button id="refreshResearchUniverse">Refresh</button>
+            <button id="computeMissingBtn">Compute Missing</button>
+          </div>
         </div>
-        <div class="card-list" id="bandHits"><p>No band scan yet.</p></div>
+        <div class="level" id="researchUniverseBadge" style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
+        <div id="researchUniverseBox" style="overflow-x:auto;"><p>Loading universe...</p></div>
       </div>
-    </section>
 
-    <section id="view-swing" class="view">
-      <div class="panel">
+      <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div>
-            <h2>Swing Desk</h2>
-            <p>Forward validation log — includes ALL-WEATHER setups</p>
+            <h2>🏭 Research Sectors — pooled by sector</h2>
+            <p>All setups from every cached symbol, grouped by sector. Real pooling, not averages of averages.</p>
           </div>
-          <button id="runSwingBtn">Run Swing Scan</button>
+          <button id="refreshResearchSector">Refresh</button>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Risk %</th><th>PB</th><th>Impulse</th><th>Zone</th><th>Outcome</th></tr>
-            </thead>
-            <tbody id="swingTable"></tbody>
-          </table>
-        </div>
+        <div class="level" id="researchSectorBadge" style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
+        <div id="researchSectorBox" style="overflow-x:auto;"><p>Loading sectors...</p></div>
       </div>
-    </section>
 
-    <section id="view-patterns" class="view">
-      <div class="panel">
+      <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div>
-            <h2>Pattern Scanner</h2>
-            <p>Rule-based formations: HTF · Asc Triangle · Double Bottom · Inv H&S · H&S Top warning</p>
+            <h2>🎯 Pattern Scanner</h2>
+            <p>HTF · Asc Triangle · Double Bottom · Inv H&S · H&S Top warning</p>
           </div>
           <button id="runPatternScan">Run Full Scan</button>
         </div>
@@ -227,37 +296,26 @@
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div>
-            <h2>📈 Trend Scanner</h2>
-            <p>Stocks with current price above BOTH EMA50 and EMA200</p>
+            <h2>🧪 Screener</h2>
+            <p>Baseline + VCP checks — any symbol, DB-first</p>
           </div>
-          <span class="badge muted" id="trendBadge">—</span>
+          <button id="runScreenerBtn">Run Screener</button>
         </div>
-        <div class="card-list" id="trendList">
-          <p>Loading...</p>
-        </div>
-      </div>
-
-      <div class="panel" style="margin-top:18px">
-        <div class="panel-header">
-          <div>
-            <h2>📊 Positional Picks</h2>
-            <p>Long-term holds: quality + trend + value composite. Tiers S/A/B/C.</p>
-          </div>
-          <span class="badge muted" id="positionalBadge">—</span>
-        </div>
-        <div class="card-list" id="positionalList">
-          <p>Loading...</p>
+        <div class="terminal-grid" style="margin-top:10px;">
+          <div class="setup-box" id="screenerMetrics"><p>Type a symbol above and press Run Screener.</p></div>
+          <div class="setup-box" id="screenerChecks"><span class="badge muted" id="screenerBadge">—</span></div>
         </div>
       </div>
     </section>
 
+    <!-- ================= LEDGER ================= -->
     <section id="view-ledger" class="view">
       <div class="terminal-grid">
         <div class="panel">
           <div class="panel-header">
             <div>
               <h2>System Performance</h2>
-              <p>Graded swing signals (WIN/LOSS/TIMEOUT)</p>
+              <p>Graded swing signals</p>
             </div>
           </div>
           <div class="setup-box" id="ledgerStats"><p>Loading stats...</p></div>
@@ -271,25 +329,10 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Outcome</th></tr>
-              </thead>
+              <thead><tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Outcome</th></tr></thead>
               <tbody id="ledgerTable"></tbody>
             </table>
           </div>
-        </div>
-      </div>
-
-      <div class="panel" style="margin-top:18px">
-        <div class="panel-header">
-          <div>
-            <h2>🚀 Deployment Status</h2>
-            <p>System health check — refreshed on demand</p>
-          </div>
-          <span class="badge muted" id="deploymentBadge">—</span>
-        </div>
-        <div id="deploymentBox" class="setup-box">
-          <p>Loading...</p>
         </div>
       </div>
 
@@ -301,37 +344,35 @@
           </div>
           <span class="badge muted" id="strategyRunsBadge">—</span>
         </div>
-        <div id="strategyRunsBox" style="overflow-x:auto;">
-          <p>Loading runs...</p>
-        </div>
+        <div id="strategyRunsBox" style="overflow-x:auto;"><p>Loading runs...</p></div>
       </div>
     </section>
 
-    <section id="view-radar" class="view">
-      <div class="panel" style="margin-bottom:18px">
+    <!-- ================= SYSTEM ================= -->
+    <section id="view-system" class="view">
+      <div class="panel">
         <div class="panel-header">
           <div>
-            <h2>💎 Value Radar</h2>
-            <p>Quality names in downturns — long-term accumulation candidates</p>
+            <h2>🚀 Deployment Status</h2>
+            <p>System health check — refreshed on demand</p>
           </div>
-          <span class="badge muted" id="valueRadarBadge">—</span>
+          <span class="badge muted" id="deploymentBadge">—</span>
         </div>
-        <div class="card-list" id="valueRadarList">
-          <p>Loading...</p>
-        </div>
+        <div id="deploymentBox" class="setup-box"><p>Loading...</p></div>
       </div>
-      <div class="radar-layout">
-        <div class="panel">
-          <div class="panel-header"><div><h2>Momentum</h2><p>Strong continuation</p></div></div>
-          <div class="card-list" id="radarMomentum"></div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>📚 Documentation</h2>
+            <p>For developers / migration</p>
+          </div>
         </div>
-        <div class="panel">
-          <div class="panel-header"><div><h2>Volume Spike</h2><p>Abnormal activity</p></div></div>
-          <div class="card-list" id="radarVolume"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-header"><div><h2>Turnaround</h2><p>Waking up</p></div></div>
-          <div class="card-list" id="radarTurn"></div>
+        <div class="setup-box">
+          <div class="level"><span>Portal redesign vision</span><strong>PORTAL_REDESIGN.md</strong></div>
+          <div class="level"><span>Instructions &amp; rules</span><strong>backlog.md</strong></div>
+          <div class="level"><span>Batch history</span><strong>EXECUTION_LOG.md</strong></div>
+          <div class="level"><span>Project overview</span><strong>PROJECT_HANDOFF.md</strong></div>
         </div>
       </div>
     </section>
@@ -340,7 +381,6 @@
 <script src="/static/app.js"></script>
 <script src="/static/scanners.js"></script>
 <script src="/static/strategy_runs.js"></script>
-<script src="/static/deployment.js"></script>
 <script src="/static/research.js"></script>
 <script src="/static/research_universe.js"></script>
 <script src="/static/research_sector.js"></script>
