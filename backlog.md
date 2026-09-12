@@ -4,7 +4,6 @@
 - Every message from Ankit prefixed with `#` is captured here.
 - Categories: RULES · INSTRUCTIONS · DEMANDS · IDEAS · IMAGINATIONS
 - DONE items stay. Execution details live in `EXECUTION_LOG.md`.
-- This file survives chat migration.
 - Filename is lowercase `backlog.md` (Windows case-safety).
 
 ---
@@ -59,21 +58,21 @@ Tier A visible. Examples: RSYSTEMS, MADRASFERT, SANOFI, TANLA.
 ### ID6 — Universe split · **PARTIAL DONE**
 Fundamentals covers Nifty 500 ∪ band (~863). Full Nifty 1000 target.
 
-### ID7 — Trim / unify / simplify · **IN PROGRESS**
-- Merge alert modules — **DONE** (`alerts.py` canonical; shims in place)
-- Canonical universe source — **DONE** (`universe_helper.py`; swing_live migrated)
-- Other callers to migrate: value_radar, positional_scanner, patterns, meta_model
+### ID7 — Trim / unify / simplify · **MOSTLY DONE**
+- Merge alert modules — **DONE** (`alerts.py` canonical)
+- Canonical universe source — **DONE** (`universe_helper.py`; swing_live,
+  value_radar, positional migrated)
 - Pick one screener (scanner.py vs screener_engine.py) — pending
-- Retire Streamlit app.py — deferred (nse.service still running, user not using it)
+- Retire Streamlit app.py — deferred
 - Single price ingester — pending
 
-### ID8 — Trend-regime scanner · **DONE this batch**
-Stocks with current close > EMA50 AND > EMA200.
-- Daily run after daily_update
-- Score rewards golden-cross structure + rising EMAs + fresh crosses
-- Stored in `trend_candidates`
-- Telegram alert on 20%+ day-over-day pool changes
-Files: `trend_scanner.py`
+### ID8 — Trend-regime scanner · **DONE**
+Price > EMA50 AND > EMA200. Daily 15:50 IST. API `/api/trend`.
+UI card in Scanners panel.
+
+### ID9 — UI panels for new scanners · **DONE this batch**
+Trend + Positional cards in Scanners view.
+Value Radar card already in Radar view.
 
 ---
 
@@ -98,11 +97,16 @@ Conservative win-rate 0.35. Regime multiplier applied.
 `alerts.py` canonical. `telegram_alerts.py` + `swing_alerts.py` are shims.
 
 ### FU Canonical Universe · **DONE**
-`universe_helper.py` — `band_universe`, `active_universe`, `combined_universe`.
-`swing_live.py` migrated this batch. Others in next batch.
+`universe_helper.py` — band / active / combined.
 
 ### FT Trend Scanner · **DONE**
-`trend_scanner.py` — ID8 feature. Daily run + day-over-day alert.
+`trend_scanner.py` + API + scheduler slot + UI card.
+
+### FP2 Positional Scanner · **DONE**
+`positional_scanner.py` + API + scheduler slot + UI card.
+
+### FV Value Radar v2 · **DONE**
+`value_radar.py` + API + scheduler slot + UI card.
 
 ---
 
@@ -118,14 +122,9 @@ Conservative win-rate 0.35. Regime multiplier applied.
 | ID4  | Free data sources         | FUTURE       |
 | ID5  | Feed life into stocks     | FUTURE       |
 | ID6  | Universe split            | PARTIAL      |
-| ID7  | Trim / unify / simplify   | IN PROGRESS  |
+| ID7  | Trim / unify / simplify   | MOSTLY DONE  |
 | ID8  | Trend-regime scanner      | DONE         |
-| FC   | Regime spectrum           | DONE         |
-| FP   | Fundamentals pipeline     | DONE         |
-| FS   | Sizing fallback           | DONE         |
-| FA   | Unified alerts            | DONE         |
-| FU   | Canonical universe        | DONE         |
-| FT   | Trend scanner             | DONE         |
+| ID9  | Scanner UI panels         | DONE         |
 
 ---
 

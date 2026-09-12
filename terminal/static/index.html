@@ -22,7 +22,7 @@
       <button class="nav-btn" data-view="overview">Overview</button>
       <button class="nav-btn" data-view="screener">Screener</button>
       <button class="nav-btn" data-view="swing">Swing Desk</button>
-      <button class="nav-btn" data-view="patterns">Patterns</button>
+      <button class="nav-btn" data-view="patterns">Scanners</button>
       <button class="nav-btn" data-view="ledger">Ledger</button>
       <button class="nav-btn" data-view="radar">Radar</button>
     </nav>
@@ -59,7 +59,7 @@
         <div class="panel-header">
           <div>
             <h2>Today's Top Picks</h2>
-            <p>50% ML P(WIN) + 30% accumulation + 20% sector leadership (+ live-setup bonus)</p>
+            <p>45% ML P(WIN) + 25% accumulation + 15% sector RS + 15% delivery</p>
           </div>
         </div>
         <div class="radar-layout" id="picksList"></div>
@@ -140,7 +140,7 @@
         <div class="panel-header">
           <div>
             <h2>Swing Desk</h2>
-            <p>Forward validation log</p>
+            <p>Forward validation log — includes ALL-WEATHER setups</p>
           </div>
           <button id="runSwingBtn">Run Swing Scan</button>
         </div>
@@ -160,12 +160,38 @@
         <div class="panel-header">
           <div>
             <h2>Pattern Scanner</h2>
-            <p>Rule-based formations: HTF · Asc Triangle · Double Bottom · Bull Flag · Inv H&S · H&S Top warning</p>
+            <p>Rule-based formations: HTF · Asc Triangle · Double Bottom · Inv H&S · H&S Top warning</p>
           </div>
           <button id="runPatternScan">Run Full Scan</button>
         </div>
         <div class="level" id="patternStatus"><span>Status</span><strong>loading…</strong></div>
         <div class="card-list" id="patternList" style="margin-top:14px"></div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>📈 Trend Scanner</h2>
+            <p>Stocks with current price above BOTH EMA50 and EMA200</p>
+          </div>
+          <span class="badge muted" id="trendBadge">—</span>
+        </div>
+        <div class="card-list" id="trendList">
+          <p>Loading...</p>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>📊 Positional Picks</h2>
+            <p>Long-term holds: quality + trend + value composite. Tiers S/A/B/C.</p>
+          </div>
+          <span class="badge muted" id="positionalBadge">—</span>
+        </div>
+        <div class="card-list" id="positionalList">
+          <p>Loading...</p>
+        </div>
       </div>
     </section>
 
@@ -200,6 +226,18 @@
     </section>
 
     <section id="view-radar" class="view">
+      <div class="panel" style="margin-bottom:18px">
+        <div class="panel-header">
+          <div>
+            <h2>💎 Value Radar</h2>
+            <p>Quality names in downturns — long-term accumulation candidates</p>
+          </div>
+          <span class="badge muted" id="valueRadarBadge">—</span>
+        </div>
+        <div class="card-list" id="valueRadarList">
+          <p>Loading...</p>
+        </div>
+      </div>
       <div class="radar-layout">
         <div class="panel">
           <div class="panel-header"><div><h2>Momentum</h2><p>Strong continuation</p></div></div>
@@ -218,5 +256,6 @@
   </main>
 </div>
 <script src="/static/app.js"></script>
+<script src="/static/scanners.js"></script>
 </body>
 </html>
