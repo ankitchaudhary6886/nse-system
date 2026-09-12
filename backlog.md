@@ -17,17 +17,17 @@
 ## B. INSTRUCTIONS  (chronological)
 
 ### Session 1 — 2026-09-12 (morning)
-I1–I7 as logged.
+I1–I7.
 
 ### Session 2 — 2026-09-12 (midday → evening)
-I8–I34 as logged.
+I8–I34.
 
 ### Session 2 (continued) — 2026-09-12 (evening)
-- **I35** Proceed with ID44 (fundamentals fix). Step 1: probe TV.
-- **I36** Step 2: rewrite fetcher, quality-only Multibagger.
-- **I37** Fix score outlier bug — percentile scoring.
-- **I38** Proceed with Phase 3 + Phase 4. Start Phase 3 with ID47
-          (candle behaviour analytics).
+I35–I37 as logged.
+
+### Session 2 (Phase 3 begins)
+- **I38** Proceed with Phase 3 + Phase 4. Start Phase 3 with ID47.
+- **I39** ID47 verified. Proceed with ID46 (signature matching).
 
 ---
 
@@ -39,34 +39,16 @@ D1–D6 as previously logged.
 ## D. IDEAS
 
 ### ID1–ID45 as previously logged.
-
-### ID46 — Signature matching · **PLANNED (Phase 3, next)**
-Find the N closest historical setups across ALL symbols to today's
-live setup. Show pooled stats. Requires a global historical-setup table
-built once (background job).
-
-### ID47 — Candle behaviour analytics · **DONE this batch**
-Mother bar of every historical setup is classified (inside / hammer /
-inverse hammer / doji / wide / normal), grouped, and hit rates computed
-per category. Current setup is matched against its category.
-
-### ID48 — Pattern condition transparency · **PLANNED (Phase 3)**
-Show per-condition pass/fail on every pattern tag. Currently patterns
-only report aggregate score.
-
+### ID46 — Signature matching · **DONE this batch**
+Global `setup_pool` table built by `build_setup_pool.py`. For any live
+setup, find 30 nearest historical setups by L1 distance on z-scored
+features. Show pooled hit rates, MFE/MAE, outcome mix, sector breakdown.
+### ID47 — Candle behaviour analytics · **DONE** (previous batch)
+### ID48 — Pattern condition transparency · **NEXT (Phase 3)**
 ### ID49 — Time-machine chart markers · **PLANNED (Phase 3)**
-Historical pattern signals overlaid on the chart, coloured by outcome.
-Click a marker → that historical setup's details.
-
 ### ID50 — Compare mode · **PLANNED (Phase 3)**
-Multi-select 2-4 stocks → side-by-side metrics table.
-
 ### ID51 — Unified stock card · **PLANNED (Phase 3)**
-One card component used everywhere. Currently three card builders exist.
-
 ### ID52 — Data source plugins · **PLANNED (Phase 4)**
-Standard interface for TradingView / Yahoo / NSE / Chartink / ScanX /
-screener.in. Auto-discovery, fallback chain, health dashboard.
 
 ---
 
@@ -76,7 +58,7 @@ IM1–IM6 as previously logged.
 ---
 
 ## F. FEATURES COMPLETED
-Prior list + **FCA** (candle behaviour analytics).
+Prior list + **FSM** (signature matching).
 
 ---
 
@@ -85,12 +67,12 @@ Prior list + **FCA** (candle behaviour analytics).
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R27 | Rules                    | Active       |
-| I1–I38 | Instructions             | Applied      |
+| I1–I39 | Instructions             | Applied      |
 | ID44  | Fundamentals fix          | DONE         |
 | ID45  | Score normalization       | DONE         |
+| ID46  | Signature matching        | DONE         |
 | ID47  | Candle behaviour          | DONE         |
-| ID46  | Signature matching        | NEXT (P3)    |
-| ID48  | Pattern transparency      | PLANNED P3   |
+| ID48  | Pattern transparency      | NEXT         |
 | ID49  | Time-machine markers      | PLANNED P3   |
 | ID50  | Compare mode              | PLANNED P3   |
 | ID51  | Unified stock card        | PLANNED P3   |
@@ -101,8 +83,7 @@ Prior list + **FCA** (candle behaviour analytics).
 ## H. REMAINING / LEFT
 
 ### Phase 3 (this session)
-- ID46 Signature matching — NEXT
-- ID48 Pattern transparency
+- ID48 Pattern transparency — NEXT
 - ID49 Time-machine chart markers
 - ID50 Compare mode
 - ID51 Unified stock card

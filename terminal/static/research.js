@@ -7,12 +7,10 @@ function _researchRow(label, value, colour) {
     <strong style="color:${col};">${value}</strong>
   </div>`;
 }
-
 function _pctStr(x) {
   if (x === null || x === undefined) return "—";
   return (x * 100).toFixed(0) + "%";
 }
-
 function _num(x, dp) {
   if (x === null || x === undefined) return "—";
   return Number(x).toFixed(dp === undefined ? 2 : dp);
@@ -23,9 +21,7 @@ function _renderCandleBlock(data) {
   const currentType = data.current_setup && data.current_setup.mother_type;
   const keys = Object.keys(cs);
   if (!keys.length) return "";
-  // sort by n_setups desc
   keys.sort((a, b) => (cs[b].n_setups || 0) - (cs[a].n_setups || 0));
-
   let html = `<h4 style="margin:14px 0 8px; font-size:13px;">🕯️ Candle behaviour (mother-bar classification)</h4>`;
   if (currentType) {
     html += `<div class="level" style="padding:8px 12px; border-left:3px solid #60a5fa;">
@@ -67,6 +63,62 @@ function _renderCandleBlock(data) {
   return html;
 }
 
+function _renderSignatureBlock(data) {
+  const sm = data.signature_match;
+  if (!sm) return "";
+  if (sm.error) {
+    return `<h4 style="margin:14px 0 8px; font-size:13px;">🎯 Signature match</h4>
+      <p style="color:#fbbf24; font-size:12px;">${sm.error}</p>`;
+  }
+  const sectors = Object.entries(sm.match_sectors || {})
+    .sort((a, b) => b[1] - a[1]).slice(0, 5)
+    .map(([k, v]) => `${k}:${v}`).join(" · ");
+  const outcomes = Object.entries(sm.outcome_mix || {})
+    .map(([k, v]) => `${k}:${v}`).join(" · ");
+  let html = `<h4 style="margin:14px 0 8px; font-size:13px;">🎯 Signature match — ${sm.k} nearest of ${sm.n_pool} pool setups</h4>`;
+  html += `<div class="level" style="padding:8px 12px;">
+    <span>Hit rate (given trigger)</span>
+    <strong>+1R ${_pctStr(sm.p_1r)} · +2R ${_pctStr(sm.p_2r)} · +3R ${_pctStr(sm.p_3r)}</strong>
+  </div>`;
+  html += `<div class="level" style="padding:8px 12px;">
+    <span>MFE in R</span>
+    <strong>median ${_num(sm.median_mfe_r)} · p95 ${_num(sm.p95_mfe_r)}</strong>
+  </div>`;
+  html += `<div class="level" style="padding:8px 12px;">
+    <span>MAE in R</span>
+    <strong>median ${_num(sm.median_mae_r)} · p5 ${_num(sm.p5_mae_r)}</strong>
+  </div>`;
+  html += _researchRow("Outcome mix", outcomes);
+  html += _researchRow("Top sectors in matches", sectors);
+
+  if (sm.sample_matches && sm.sample_matches.length) {
+    html += `<details style="margin-top:8px;">
+      <summary style="cursor:pointer; color:#9fb0cc; font-size:12px;">Show 15 sample matches</summary>
+      <table style="width:100%; border-collapse:collapse; font-size:12px; margin-top:8px;">
+        <thead><tr style="text-align:left; color:#9fb0cc; border-bottom:1px solid rgba(255,255,255,.1);">
+          <th style="padding:6px 4px;">Symbol</th>
+          <th style="padding:6px 4px;">Date</th>
+          <th style="padding:6px 4px;">Outcome</th>
+          <th style="padding:6px 4px;">MFE</th>
+          <th style="padding:6px 4px;">MAE</th>
+        </tr></thead><tbody>`;
+    sm.sample_matches.forEach(m => {
+      const oc = m.outcome === "WIN" ? "chk-ok"
+               : m.outcome === "LOSS" ? "chk-fail" : "";
+      html += `<tr style="border-bottom:1px solid rgba(255,255,255,.05); cursor:pointer;"
+        onclick="window.jumpResearch && window.jumpResearch('${m.symbol}')">
+        <td style="padding:6px 4px;"><b>${m.symbol}</b></td>
+        <td style="padding:6px 4px;">${m.signal_date}</td>
+        <td style="padding:6px 4px;"><span class="${oc}">${m.outcome || "?"}</span></td>
+        <td style="padding:6px 4px;">${_num(m.mfe_r)}R</td>
+        <td style="padding:6px 4px;">${_num(m.mae_r)}R</td>
+      </tr>`;
+    });
+    html += `</tbody></table></details>`;
+  }
+  return html;
+}
+
 function renderResearch(data) {
   const box = document.getElementById("researchBox");
   if (!box) return;
@@ -95,8 +147,7 @@ function renderResearch(data) {
     html += _researchRow("EMA zone", cs.ema_zone);
     html += _researchRow("Shape score", cs.shape_score + "/100");
     if (cs.mother_type) {
-      html += _researchRow("Mother bar",
-        `${cs.mother_type} · body ${cs.mother_body_ratio} · range ${cs.mother_range_atr}x ATR`);
+      html += _researchRow("Mother bar", cs.mother_type);
     }
   } else {
     html += `<div class="level" style="padding:8px 12px; border-left:3px solid #7f8da9;">
@@ -104,46 +155,30 @@ function renderResearch(data) {
     </div>`;
   }
 
-  html += `<h4 style="margin:14px 0 8px; font-size:13px;">Historical behaviour — ${h.n_setups || 0} setups over ${data.history_years}y (step ${data.step})</h4>`;
+  // Signature match comes right after live setup — it's the global view.
+  html += _renderSignatureBlock(data);
 
+  // Symbol-only history
+  html += `<h4 style="margin:14px 0 8px; font-size:13px;">Symbol history — ${h.n_setups || 0} setups over ${data.history_years}y (step ${data.step})</h4>`;
   if (!h.n_setups) {
-    html += `<p>No historical setups found on this symbol.</p>`;
+    html += `<p>No historical setups on this symbol.</p>`;
     box.innerHTML = html;
     return;
   }
-
   html += _researchRow("Triggered",
     `${h.n_triggered} of ${h.n_setups} (P=${_pctStr(h.p_trigger)})`);
-
   html += `<div class="level" style="padding:8px 12px;">
-    <span>Hit rate (given trigger)</span>
-    <strong>
-      +1R ${_pctStr(h.p_1r_given_trigger)} · +2R ${_pctStr(h.p_2r_given_trigger)} · +3R ${_pctStr(h.p_3r_given_trigger)} · +4R ${_pctStr(h.p_4r_given_trigger)}
-    </strong>
+    <span>Hit rate</span>
+    <strong>+1R ${_pctStr(h.p_1r_given_trigger)} · +2R ${_pctStr(h.p_2r_given_trigger)} · +3R ${_pctStr(h.p_3r_given_trigger)}</strong>
   </div>`;
-
-  html += `<div class="level" style="padding:8px 12px;">
-    <span>Median bars to level</span>
-    <strong>
-      +1R ${_num(h.median_bars_to_1r, 0)} · +2R ${_num(h.median_bars_to_2r, 0)} · +3R ${_num(h.median_bars_to_3r, 0)} · +4R ${_num(h.median_bars_to_4r, 0)}
-    </strong>
-  </div>`;
-
   html += `<div class="level" style="padding:8px 12px;">
     <span>MFE in R</span>
-    <strong>p5 ${_num(h.p5_mfe_r)} · median ${_num(h.median_mfe_r)} · p95 ${_num(h.p95_mfe_r)}</strong>
+    <strong>median ${_num(h.median_mfe_r)} · p95 ${_num(h.p95_mfe_r)}</strong>
   </div>`;
-
   html += `<div class="level" style="padding:8px 12px;">
     <span>MAE in R</span>
-    <strong>p5 ${_num(h.p5_mae_r)} · median ${_num(h.median_mae_r)} · p95 ${_num(h.p95_mae_r)}</strong>
+    <strong>median ${_num(h.median_mae_r)} · p5 ${_num(h.p5_mae_r)}</strong>
   </div>`;
-
-  if (h.outcome_mix) {
-    const parts = Object.entries(h.outcome_mix).map(
-      ([k, v]) => `${k}:${v}`).join(" · ");
-    html += _researchRow("Outcome mix", parts);
-  }
 
   // Candle block
   html += _renderCandleBlock(data);

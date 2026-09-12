@@ -365,6 +365,26 @@ route fix, editor, backtest sandbox.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 ---
+### #054 · Candle behaviour analytics (ID47) — VERIFIED
+- Result: TANLA shows inv_hammer setups hitting +1R/+2R/+3R 100% (n=1
+  triggered, caveat small sample). Grouping works.
+
+### #055 · Signature matching (ID46)
+- Files: `build_setup_pool.py` (new), `research_cockpit.py`,
+  `terminal/static/research.js`
+- What:
+  - `setup_pool` table stores every historical setup across the whole
+    universe with 8-dimensional feature vector + forward outcome.
+  - `build_setup_pool.py` populates it (top 200 symbols, 5y, step=5).
+  - `signature_match(live_features, k=30)` computes L1 distance in
+    z-scored feature space, returns k nearest + pooled stats.
+  - Live setups in the Research Cockpit now include a "Signature match"
+    block above the symbol-only history — global context.
+  - Cache version bumped to 4 (auto-invalidate).
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
+
 ---
 
 ## HOW NEW SESSIONS USE THIS
