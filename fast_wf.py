@@ -1,13 +1,12 @@
 """
 Fast walk-forward — Backtester path, ~80s.
 Runs the current strategy over the last N years of band universe
-and reports aggregate stats. Verdict is PF-driven (profit factor),
-not win-rate-driven — a 2R system can be very tradeable at 40% WR.
+and reports aggregate stats. Verdict is PF-driven (profit factor).
 
 Usage:
-  python fast_wf.py               -> current params
-  python fast_wf.py 2.5           -> override TARGET_R_MULTIPLE = 2.5
-  python fast_wf.py 3 5           -> target 3R, max_positions 5
+  python fast_wf.py               -> current params (TARGET_R=2.0)
+  python fast_wf.py 2.5           -> override Backtester.TARGET_R = 2.5
+  python fast_wf.py 2.5 5         -> target 2.5, max_positions 5
 """
 import sys
 import time
@@ -15,6 +14,7 @@ import datetime as dt
 import numpy as np
 import db
 from universe_helper import band_universe
+from backtest import Backtester, BacktestResult
 
 
 def _verdict(n, wr, pf):
@@ -37,11 +37,9 @@ def main():
     max_pos = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
     if target_r is not None:
-        import setup
-        setup.SetupDetector.TARGET_R_MULTIPLE = target_r
-        print(f"[WF] override TARGET_R_MULTIPLE = {target_r}")
-
-    from backtest import Backtester, BacktestResult
+        # override on Backtester CLASS — it uses self.TARGET_R internally
+        Backtester.TARGET_R = target_r
+        print(f"[WF] override Backtester.TARGET_R = {target_r}")
 
     conn = db.get_conn()
     syms = band_universe(conn, limit=400)
