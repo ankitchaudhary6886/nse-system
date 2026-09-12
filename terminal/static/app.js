@@ -47,6 +47,7 @@ function setView(name) {
   if (name === "research") loadPatterns();
   if (name === "system") loadDeployment();
 }
+window.setView = setView;
 
 async function loadHealth() {
   try {
@@ -83,7 +84,7 @@ async function loadRegime() {
 }
 
 // ============================================================
-// Top Picks
+// Top Picks — unified card
 // ============================================================
 async function loadTopPicks() {
   try {
@@ -92,17 +93,18 @@ async function loadTopPicks() {
     if (!box) return;
     box.innerHTML = "";
     (data.picks || []).forEach(x => {
-      const div = document.createElement("div");
-      div.className = "stock-card";
-      const del = x.delivery != null ? ` · 📦 ${(x.delivery * 100).toFixed(0)}` : "";
-      div.innerHTML = `<strong>${x.symbol} ${x.setup ? '<span class="outcome WIN">🏄 LIVE SETUP</span>' : ""}</strong>
-        <span>Composite ${(x.composite * 100).toFixed(0)} · 🧠 ${(x.p_win * 100).toFixed(0)}% · 🏦 ${x.accum.toFixed(2)}${del}</span>
-        <span>${x.sector || "Unknown sector"} · sector RS ${(x.sector_rs * 100).toFixed(0)}</span>`;
-      div.addEventListener("click", () => {
-        setView("research");
-        loadSymbol(x.symbol);
+      const subtitle = x.sector || "Unknown sector";
+      const primary = `Composite ${(x.composite * 100).toFixed(0)} · `
+        + `🧠 ${(x.p_win * 100).toFixed(0)}% · `
+        + `🏦 accum ${x.accum.toFixed(2)}`;
+      const secondary = `sector RS ${(x.sector_rs * 100).toFixed(0)}`
+        + (x.delivery != null ? ` · 📦 ${(x.delivery * 100).toFixed(0)}` : "");
+      const card = window.renderUnifiedCard({
+        symbol: x.symbol,
+        setup: !!x.setup,
+        subtitle, primary, secondary,
       });
-      box.appendChild(div);
+      box.appendChild(card);
     });
   } catch (e) {}
 }
@@ -136,7 +138,7 @@ async function loadSwing() {
 }
 
 // ============================================================
-// Patterns — cards with checks checklist
+// Patterns — cards with checks
 // ============================================================
 function dirBadge(d) {
   return d === "BULLISH" ? '<span class="outcome WIN">BULLISH</span>' : '<span class="outcome LOSS">BEARISH</span>';
@@ -161,10 +163,9 @@ function sauceLine(p) {
   if (ss.below52 != null) bits.push(`${(Number(ss.below52) * 100).toFixed(0)}% below 52w high`);
   return bits.join(" · ");
 }
-
 function _checksHtml(checks) {
   if (!checks || !checks.length) {
-    return `<p style="color:#7f8da9; font-size:11px; margin:6px 0 0 0;">Conditions not recorded (older tag, before transparency update).</p>`;
+    return `<p style="color:#7f8da9; font-size:11px; margin:6px 0 0 0;">Conditions not recorded (older tag).</p>`;
   }
   let html = `<div class="checks-list" style="margin-top:8px;">`;
   checks.forEach(c => {
@@ -178,6 +179,9 @@ function _checksHtml(checks) {
   });
   html += `</div>`;
   return html;
+}
+function _safeId(s) {
+  return String(s).replace(/[^A-Za-z0-9_-]/g, "_");
 }
 
 async function loadPatterns() {
@@ -212,7 +216,6 @@ async function loadPatterns() {
           ${hasChecks ? `<button class="toggle-btn" data-target="${checkId}">Show conditions (${p.checks.length})</button>
             <div id="${checkId}" class="details-panel hidden">${_checksHtml(p.checks)}</div>`
             : _checksHtml(p.checks)}`;
-        // Clicking the card body (not the toggle) opens the symbol
         div.addEventListener("click", (e) => {
           if (e.target.classList.contains("toggle-btn")) return;
           setView("research");
@@ -221,7 +224,6 @@ async function loadPatterns() {
         list.appendChild(div);
       });
     }
-    // DTW templates
     let tmatch = [];
     try { const td = await api("/api/templates/latest?limit=12"); tmatch = td.matches || []; } catch (e) {}
     let tbox = $("templateBox");
@@ -249,10 +251,6 @@ async function loadPatterns() {
   }
 }
 
-function _safeId(s) {
-  return String(s).replace(/[^A-Za-z0-9_-]/g, "_");
-}
-
 async function runPatternScan() {
   const btn = $("runPatternScan");
   const st = $("patternStatus");
@@ -268,26 +266,55 @@ async function runPatternScan() {
 }
 
 // ============================================================
-// Radar / Legacy
+// Radar — unified card
 // ============================================================
-function createRadarCard(item) {
-  const div = document.createElement("div");
-  div.className = "stock-card";
-  div.innerHTML = `<strong>${item.symbol}</strong><span>1M ${fmt(item.perf1m, "%")} · 3M ${fmt(item.perf3m, "%")} · Vol ${fmt(item.relvol, "x")}</span><span>₹${fmt(item.mcap_cr)} cr mcap</span>${item.p_win != null ? `<span>🧠 P(WIN) ${(item.p_win * 100).toFixed(0)}%</span>` : ""}`;
-  div.addEventListener("click", () => { setView("research"); loadSymbol(item.symbol); });
-  return div;
-}
 async function loadRadar() {
   try {
     const data = await api("/api/radar");
     const mu = $("mUniverse"); if (mu) mu.textContent = data.total || "—";
     const g = data.groups || {};
-    const m = $("radarMomentum"), v = $("radarVolume"), t = $("radarTurn");
-    if (m) m.innerHTML = ""; if (v) v.innerHTML = ""; if (t) t.innerHTML = "";
-    (g["Momentum"] || []).slice(0, 18).forEach(x => m && m.appendChild(createRadarCard(x)));
-    (g["Volume Spike"] || []).slice(0, 18).forEach(x => v && v.appendChild(createRadarCard(x)));
-    (g["Turnaround"] || []).slice(0, 18).forEach(x => t && t.appendChild(createRadarCard(x)));
+    const render = (items, box) => {
+      if (!box) return;
+      box.innerHTML = "";
+      (items || []).slice(0, 18).forEach(x => {
+        const subtitle = `1M ${fmt(x.perf1m, "%")} · 3M ${fmt(x.perf3m, "%")} · Vol ${fmt(x.relvol, "x")}`;
+        const primary = `₹${fmt(x.mcap_cr)} cr mcap`;
+        const secondary = x.p_win != null
+          ? `🧠 P(WIN) ${(x.p_win * 100).toFixed(0)}%` : "";
+        box.appendChild(window.renderUnifiedCard({
+          symbol: x.symbol, subtitle, primary, secondary,
+        }));
+      });
+    };
+    render(g["Momentum"], $("radarMomentum"));
+    render(g["Volume Spike"], $("radarVolume"));
+    render(g["Turnaround"], $("radarTurn"));
   } catch (e) {}
+}
+
+// ============================================================
+// Compare (ID50)
+// ============================================================
+async function runCompare() {
+  const input = $("compareInput");
+  const box = $("compareBox");
+  if (!input || !box) return;
+  const syms = input.value.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+  if (syms.length < 2) {
+    box.innerHTML = "<p>Enter at least 2 symbols, comma-separated.</p>";
+    return;
+  }
+  if (syms.length > 4) {
+    box.innerHTML = "<p>Max 4 symbols.</p>";
+    return;
+  }
+  box.innerHTML = "<p>Loading...</p>";
+  try {
+    const r = await api(`/api/compare?symbols=${encodeURIComponent(syms.join(","))}`);
+    window.renderCompareTable(r);
+  } catch (e) {
+    box.innerHTML = `<p>Compare error: ${e.message}</p>`;
+  }
 }
 
 // ============================================================
@@ -377,7 +404,6 @@ function resetChart() {
   ema200 = chart.addLineSeries({ color: "#94a3b8", lineWidth: 1 });
 }
 
-// ID49 — pattern markers on chart
 async function _applyPatternMarkers(symbol) {
   if (!candleSeries) return;
   try {
@@ -387,35 +413,25 @@ async function _applyPatternMarkers(symbol) {
       candleSeries.setMarkers([]);
       return;
     }
-    // Map each signal to a marker. Only include signals that fall within
-    // the displayed candle window (lightweight-charts handles out-of-range
-    // silently, but trim to keep payload small).
     const markers = sigs.map(s => {
       const d = String(s.date).slice(0, 10);
-      let color = "#fbbf24";  // unknown / timeout
+      let color = "#fbbf24";
       let position = "aboveBar";
       let shape = "circle";
       let text = s.pattern ? s.pattern.slice(0, 6) : "";
       if (s.outcome === "WIN") { color = "#34d399"; shape = "arrowUp"; position = "belowBar"; }
       else if (s.outcome === "LOSS") { color = "#fb7185"; shape = "arrowDown"; position = "aboveBar"; }
       else if (s.outcome === "EXPIRED" || s.outcome === "TIMEOUT") { color = "#fbbf24"; shape = "circle"; }
-      else { color = "#60a5fa"; shape = "square"; }  // OPEN / undefined
-      // Direction override: bearish patterns get downward marker
+      else { color = "#60a5fa"; shape = "square"; }
       if (s.direction === "BEARISH") {
         shape = "arrowDown";
         position = "aboveBar";
-        if (s.outcome === "LOSS") color = "#34d399";  // bearish loss = good for bears
+        if (s.outcome === "LOSS") color = "#34d399";
       }
-      return {
-        time: d, position, color, shape,
-        text: text,
-        size: 0.8,
-      };
+      return { time: d, position, color, shape, text, size: 0.8 };
     });
     candleSeries.setMarkers(markers);
-  } catch (e) {
-    // silent
-  }
+  } catch (e) {}
 }
 
 async function loadSymbol(symbol) {
@@ -484,7 +500,6 @@ async function loadSymbol(symbol) {
       renderSizing(sz);
     } catch (e) {}
   }
-
   try {
     const meta = await api(`/api/meta/${symbol}`);
     if (meta && meta.p_win != null && setupSummary) {
@@ -516,15 +531,13 @@ async function loadSymbol(symbol) {
       newsBox.textContent = "No stored news.";
     }
   }
-
-  // ID49 — pattern markers
   await _applyPatternMarkers(symbol);
-
   if (chart) chart.timeScale().fitContent();
 }
+window.loadSymbol = loadSymbol;
 
 // ============================================================
-// Sizing / Delivery (progressive disclosure)
+// Sizing / Delivery
 // ============================================================
 function renderSizing(sz) {
   let box = $("sizingBox");
@@ -559,7 +572,7 @@ function renderSizing(sz) {
       <div class="level"><span>Regime (${sz.regime_level})</span><strong>×${sz.regime_mult}</strong></div>
       <div class="level"><span>Quality (shape ${sz.shape_score ?? "—"})</span><strong>×${sz.quality_mult}</strong></div>`;
   }
-  const html = `
+  box.innerHTML = `
     <h3 style="margin:0;font-size:15px;">💰 Position Sizing</h3>
     ${compact}
     <button class="toggle-btn" data-target="sizingDetails">Show derivation</button>
@@ -567,10 +580,8 @@ function renderSizing(sz) {
       ${details}
       ${capitalEditor(sz.capital)}
     </div>`;
-  box.innerHTML = html;
   bindCapitalSave();
 }
-
 function capitalEditor(cap) {
   return `<div class="level"><span>Set capital</span><strong style="display:flex;gap:6px;">
     <input id="capitalInput" style="min-width:110px;padding:6px 8px;" type="number" value="${cap || 1000000}"/>
@@ -591,7 +602,6 @@ function bindCapitalSave() {
     } catch (e) { alert("Save failed: " + e.message); }
   });
 }
-
 async function loadDelivery(symbol) {
   const panel = $("setupSummary") ? $("setupSummary").parentElement : null;
   if (!panel) return;
@@ -626,9 +636,6 @@ async function loadDelivery(symbol) {
   }
 }
 
-// ============================================================
-// Global click handler for toggle buttons
-// ============================================================
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".toggle-btn");
   if (btn) {
@@ -651,7 +658,6 @@ async function refreshAll() {
     loadPatterns(), loadRadar(),
   ]);
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   const rb = $("refreshBtn");
   if (rb) rb.addEventListener("click", refreshAll);
@@ -671,6 +677,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const titleEl = $("chartTitle");
     const sym = (titleEl ? titleEl.textContent : "").split(" ")[0];
     if (sym && window.loadResearch) window.loadResearch(sym);
+  });
+  // Compare
+  const cmpBtn = $("compareRunBtn");
+  if (cmpBtn) cmpBtn.addEventListener("click", runCompare);
+  const cmpIn = $("compareInput");
+  if (cmpIn) cmpIn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runCompare();
   });
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.addEventListener("click", () => setView(btn.dataset.view));

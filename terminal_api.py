@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="22.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="23.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -318,7 +318,22 @@ def research_cache_clear(symbol: str = None,
 
 
 # ============================================================
-# Patterns — ORDER MATTERS (latest/stats/history before {symbol})
+# Compare (ID50)
+# ============================================================
+@app.get("/api/compare")
+def compare_api(symbols: str, user: str = Depends(verify_user)):
+    import compare_tool
+    try:
+        syms = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+        if not syms:
+            return {"error": "no symbols", "rows": []}
+        return compare_tool.compare(syms, max_n=4)
+    except Exception as e:
+        return {"error": str(e), "rows": []}
+
+
+# ============================================================
+# Patterns
 # ============================================================
 @app.get("/api/patterns/latest")
 def patterns_latest(limit: int = 100, user: str = Depends(verify_user)):
@@ -338,7 +353,6 @@ def patterns_stats(user: str = Depends(verify_user)):
 @app.get("/api/patterns/history/{symbol}")
 def patterns_history(symbol: str, limit: int = 500,
                      user: str = Depends(verify_user)):
-    """ID49 — compact signal+outcome rows for chart markers."""
     import patterns
     try:
         return {"symbol": symbol.upper(),

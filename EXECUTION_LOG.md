@@ -464,6 +464,27 @@ route fix, editor, backtest sandbox.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 ---
+### #058 · Bearish pattern grading fix (ID53) — VERIFIED
+- Result: `pattern_grader.py` handles bearish H&S top warning;
+  regrade produced full gate table:
+  HTF 60.1%, AT 63.8%, DB 62.9%, InvHS 67.3%, H&S Top 76.8%
+  (ENABLED). Bull Flag 56.1% (DISABLED).
+
+### #059 · Compare mode + unified stock card (ID50 + ID51)
+- Files: `compare_tool.py` (new), `terminal_api.py`,
+  `terminal/static/cards.js` (new), `terminal/static/app.js`,
+  `terminal/static/scanners.js`, `terminal/static/index.html`
+- What:
+  - **ID50** — `/api/compare?symbols=A,B,C` reads only cached data.
+    Compare panel in Research tab with text input. Renders side-by-side
+    table (overview / fundamentals / signal / history / signature).
+  - **ID51** — `cards.js` defines `renderUnifiedCard(item)`.
+    Top Picks, Radar, Trend, Positional, and Value Radar now use the
+    same card. Same visual language everywhere.
+  - Phase 3 complete.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
 
 ---
 

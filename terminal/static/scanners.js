@@ -1,5 +1,4 @@
-// Scanners panel — trend + positional cards.
-// Self-contained; hooks into DOMContentLoaded. Loaded after app.js.
+// Scanners — Trend, Positional, Value Radar. Uses renderUnifiedCard.
 
 async function loadTrendPanel() {
   const box = document.getElementById("trendList");
@@ -16,16 +15,12 @@ async function loadTrendPanel() {
     if (badge) badge.textContent = `${picks.length} candidates`;
     box.innerHTML = "";
     picks.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "stock-card";
-      div.innerHTML = `<strong>${p.symbol} · score ${p.score}</strong>
-        <span>₹${p.close} · EMA50 ₹${p.ema50} · EMA200 ₹${p.ema200}</span>
-        <span>${p.notes || ""}</span>`;
-      div.addEventListener("click", () => {
-        setView("overview");
-        loadSymbol(p.symbol);
-      });
-      box.appendChild(div);
+      const subtitle = `score ${p.score}`;
+      const primary = `₹${p.close} · EMA50 ₹${p.ema50} · EMA200 ₹${p.ema200}`;
+      const secondary = p.notes || "";
+      box.appendChild(window.renderUnifiedCard({
+        symbol: p.symbol, subtitle, primary, secondary,
+      }));
     });
   } catch (e) {
     box.innerHTML = `<p>Trend error: ${e.message}</p>`;
@@ -48,19 +43,15 @@ async function loadPositionalPanel() {
     if (badge) badge.textContent = `${picks.length} candidates`;
     box.innerHTML = "";
     picks.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "stock-card";
-      const tierClass = p.tier === "S" ? "WIN" :
-                        p.tier === "A" ? "WIN" :
-                        p.tier === "B" ? "OPEN" : "PENDING";
-      div.innerHTML = `<strong>${p.symbol} <span class="outcome ${tierClass}">TIER ${p.tier}</span></strong>
-        <span>₹${p.last_price} · Q${p.quality_score}/T${p.trend_score}/V${p.value_score} · composite ${p.composite}</span>
-        <span>${p.notes || ""}</span>`;
-      div.addEventListener("click", () => {
-        setView("overview");
-        loadSymbol(p.symbol);
-      });
-      box.appendChild(div);
+      const tierCls = (p.tier === "S" || p.tier === "A") ? "WIN"
+                    : p.tier === "B" ? "OPEN" : "PENDING";
+      const badges = [`<span class="outcome ${tierCls}">TIER ${p.tier}</span>`];
+      const subtitle = `₹${p.last_price}`;
+      const primary = `Q${p.quality_score}/T${p.trend_score}/V${p.value_score} · composite ${p.composite}`;
+      const secondary = p.notes || "";
+      box.appendChild(window.renderUnifiedCard({
+        symbol: p.symbol, badges, subtitle, primary, secondary,
+      }));
     });
   } catch (e) {
     box.innerHTML = `<p>Positional error: ${e.message}</p>`;
@@ -68,14 +59,47 @@ async function loadPositionalPanel() {
   }
 }
 
+async function loadValueRadarPanel() {
+  const box = document.getElementById("valueRadarList");
+  const badge = document.getElementById("valueRadarBadge");
+  if (!box) return;
+  try {
+    const data = await api("/api/value-radar?n=25");
+    const picks = data.picks || [];
+    if (!picks.length) {
+      box.innerHTML = "<p>No value candidates right now.</p>";
+      if (badge) badge.textContent = "empty";
+      return;
+    }
+    if (badge) badge.textContent = `${picks.length} candidates`;
+    box.innerHTML = "";
+    picks.forEach(p => {
+      const tierCls = p.tier === "A" ? "WIN" : (p.tier === "B" ? "OPEN" : "PENDING");
+      const badges = [`<span class="outcome ${tierCls}">TIER ${p.tier}</span>`];
+      const below = p.below_52w != null ? (p.below_52w * 100).toFixed(0) : "—";
+      const subtitle = `₹${p.last_price} · ${below}% off 52w high`;
+      const primary = `Q${p.quality_score}/V${p.value_score} · composite ${p.composite}`;
+      const secondary = p.notes || "";
+      box.appendChild(window.renderUnifiedCard({
+        symbol: p.symbol, badges, subtitle, primary, secondary,
+      }));
+    });
+  } catch (e) {
+    box.innerHTML = `<p>Value Radar error: ${e.message}</p>`;
+    if (badge) badge.textContent = "unavailable";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   loadTrendPanel();
   loadPositionalPanel();
+  loadValueRadarPanel();
   const btn = document.getElementById("refreshBtn");
   if (btn) {
     btn.addEventListener("click", () => {
       loadTrendPanel();
       loadPositionalPanel();
+      loadValueRadarPanel();
     });
   }
 });
