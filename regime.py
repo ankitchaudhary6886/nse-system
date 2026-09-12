@@ -1,27 +1,38 @@
 """
 Market Regime Filter — Top-down gatekeeper.
-Only allows new long entries when benchmark close > EMA(close, 10).
-Tries smallcap indices first; falls back to Nifty 50.
+v2 (2026-09-12): 5-level spectrum via regime_spectrum.py.
+RegimeState remains backwards-compatible — is_bullish still present.
 """
 from dataclasses import dataclass
 import datetime as dt
 import yfinance as yf
 import pandas as pd
+from regime_spectrum import (classify, SIZE_MULT,
+                             ALLOWS_NORMAL_SWING, ALLOWS_AW)
 
 
 @dataclass
 class RegimeState:
+    # backwards-compatible fields
     is_bullish: bool
     index_close: float
     ema10: float
     symbol: str = ""
     breadth_above_20ema: float = None
+    # spectrum additions
+    level: str = "NEUTRAL"
+    ema20: float = 0.0
+    ema10_slope_pct: float = 0.0
+    size_mult: float = 1.0
+    allows_swing: bool = True
+    allows_aw: bool = True
 
 
 class MarketRegime:
     INDEX_CANDIDATES = ["^CNXSMALLCAP", "^CNXSC",
                         "NIFTY_SMALLCAP_100.NS", "^NSEI"]
     EMA_PERIOD = 10
+    EMA20_PERIOD = 20
 
     @classmethod
     def _fetch(cls, days_back):
@@ -47,12 +58,30 @@ class MarketRegime:
         print(f"   benchmark used: {used}")
         df["EMA10"] = df["Close"].ewm(span=cls.EMA_PERIOD,
                                       adjust=False).mean()
+        df["EMA20"] = df["Close"].ewm(span=cls.EMA20_PERIOD,
+                                      adjust=False).mean()
         last = df.iloc[-1]
-        is_bullish = bool(last["Close"] > last["EMA10"])
-        return RegimeState(is_bullish=is_bullish,
-                           index_close=round(float(last["Close"]), 2),
-                           ema10=round(float(last["EMA10"]), 2),
-                           symbol=used)
+        prev10 = df["EMA10"].iloc[-6] if len(df) > 6 else df["EMA10"].iloc[0]
+        slope_pct = ((last["EMA10"] / prev10) - 1) * 100 if prev10 else 0.0
+        level = classify(
+            close=float(last["Close"]),
+            ema10=float(last["EMA10"]),
+            ema20=float(last["EMA20"]),
+            ema10_slope_pct=slope_pct,
+        )
+        is_bullish = level in ("STRONG_BULL", "BULL")
+        return RegimeState(
+            is_bullish=is_bullish,
+            index_close=round(float(last["Close"]), 2),
+            ema10=round(float(last["EMA10"]), 2),
+            ema20=round(float(last["EMA20"]), 2),
+            symbol=used,
+            level=level,
+            ema10_slope_pct=round(slope_pct, 3),
+            size_mult=SIZE_MULT.get(level, 1.0),
+            allows_swing=ALLOWS_NORMAL_SWING.get(level, True),
+            allows_aw=ALLOWS_AW.get(level, True),
+        )
 
     @classmethod
     def check_series(cls, df: pd.DataFrame) -> pd.Series:

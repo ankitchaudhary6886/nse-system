@@ -2,8 +2,8 @@
 Fundamentals fetcher (canonical) — TradingView India scanner.
 Free, no auth, batch fetch. Fills the `fundamentals` table.
 
-v2 (2026-09-12): canonical fetcher, uses log_utils, retries with backoff,
-batch commits, fills sector from stocks table.
+v3 (2026-09-12): universe = Nifty 500 (stocks.active) UNION
+universe_broad band (1000-8000 cr), dedup. Targets ~1000-1500 symbols.
 """
 import sys
 import time
@@ -62,6 +62,21 @@ def _sector_map(conn):
     return out
 
 
+def _universe(conn, limit=None):
+    syms = set()
+    for r in conn.execute(
+            "SELECT symbol FROM stocks WHERE active=1"):
+        syms.add(r[0])
+    for r in conn.execute(
+            "SELECT symbol FROM universe_broad "
+            "WHERE mcap_cr BETWEEN 1000 AND 8000 "
+            "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
+            "ORDER BY mcap_cr DESC LIMIT 1500"):
+        syms.add(r[0])
+    out = sorted(syms)
+    return out[:limit] if limit else out
+
+
 def _upsert(conn, row):
     conn.execute(
         "INSERT OR REPLACE INTO fundamentals VALUES "
@@ -70,10 +85,7 @@ def _upsert(conn, row):
 
 def run(limit=None):
     conn = db.get_conn()
-    symbols = [r[0] for r in conn.execute(
-        "SELECT symbol FROM stocks WHERE active=1 ORDER BY symbol")]
-    if limit:
-        symbols = symbols[:limit]
+    symbols = _universe(conn, limit)
     total = len(symbols)
     log.info(f"fundamentals fetch: {total} symbols, batch={BATCH_SIZE}")
 
@@ -111,14 +123,16 @@ def run(limit=None):
                 m.get("net_margin_fq"),
                 m.get("revenue_growth_fy"),
                 m.get("net_income_growth_fy"),
-                None, None, None,   # promoter, pledge, fii (not on TV)
+                None, None, None,
                 m.get("dividend_yield_recent"),
-                None,               # cfo_positive (not on TV)
+                None,
                 now,
             ))
             saved += 1
         conn.commit()
-        log.info(f"batch {b // BATCH_SIZE + 1}: saved {saved} so far")
+        log.info(f"batch {b // BATCH_SIZE + 1} / "
+                 f"{(total + BATCH_SIZE - 1) // BATCH_SIZE}: "
+                 f"saved {saved} so far")
 
     conn.close()
     log.info(f"fundamentals fetch complete: saved={saved} "
@@ -133,7 +147,7 @@ def show(n=10):
         "FROM fundamentals WHERE uploaded_at LIKE 'tv:%' "
         "ORDER BY symbol LIMIT ?", (n,)).fetchall()
     conn.close()
-    log.info(f"sample rows from fundamentals ({len(rows)}):")
+    log.info(f"sample rows ({len(rows)}):")
     for r in rows:
         log.info(f"  {r}")
 
