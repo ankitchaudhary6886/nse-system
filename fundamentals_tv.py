@@ -1,10 +1,28 @@
 """
 Fundamentals fetcher (canonical) — TradingView India scanner.
-Free, no auth, batch fetch. Fills the `fundamentals` table.
+v5 (2026-09-12): rewritten after TV column probe. Uses only columns
+that actually return values for NSE stocks.
 
-v4 (2026-09-12): adds held_percent_insiders -> promoter_holding and
-free_cash_flow_fq -> cfo_positive. Unlocks tier A in Value Radar.
-Universe = Nifty 500 (stocks.active) UNION universe_broad band.
+Available on TV India (validated by tv_column_probe.py, 30 symbols):
+  close, market_cap_basic, price_earnings_ttm,
+  return_on_equity_fy, return_on_invested_capital_fy,
+  debt_to_equity_fy, operating_margin_fy, net_margin_fy,
+  gross_margin_fy, free_cash_flow_fy, capital_expenditures_fy,
+  book_value_per_share_fy, earnings_per_share_fy,
+  enterprise_value_ebitda_ttm, dividends_yield,
+  beta_1_year, beta_3_year,
+  total_shares_outstanding, float_shares_outstanding,
+  average_volume_30d_calc
+
+NOT available (returns null):
+  revenue_growth_*, net_income_growth_*, eps_growth_*,
+  price_to_book_*, held_percent_insiders,
+  operating_cash_flow_fy
+
+Derived:
+  pb            = close / book_value_per_share_fy
+  cfo_positive  = 1 if free_cash_flow_fy > 0 else 0
+  fcf_fy        = free_cash_flow_fy (raw)
 """
 import sys
 import time
@@ -20,22 +38,15 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 BATCH_SIZE = 100
 
 COLUMNS = [
-    "name",
-    "close",
-    "market_cap_basic",
-    "price_earnings_ttm",
-    "price_to_book_fq",
-    "return_on_equity_fq",
-    "return_on_invested_capital_fq",
-    "debt_to_equity_fq",
-    "interest_coverage_fq",
-    "operating_margin_fq",
-    "net_margin_fq",
-    "revenue_growth_fy",
-    "net_income_growth_fy",
-    "dividend_yield_recent",
-    "held_percent_insiders",       # -> promoter_holding
-    "free_cash_flow_fq",           # -> cfo_positive (proxy)
+    "name", "close", "market_cap_basic", "price_earnings_ttm",
+    "return_on_equity_fy", "return_on_invested_capital_fy",
+    "debt_to_equity_fy", "operating_margin_fy", "net_margin_fy",
+    "gross_margin_fy", "free_cash_flow_fy", "capital_expenditures_fy",
+    "book_value_per_share_fy", "earnings_per_share_fy",
+    "enterprise_value_ebitda_ttm", "dividends_yield",
+    "beta_1_year", "beta_3_year",
+    "total_shares_outstanding", "float_shares_outstanding",
+    "average_volume_30d_calc",
 ]
 
 
@@ -80,12 +91,6 @@ def _universe(conn, limit=None):
     return out[:limit] if limit else out
 
 
-def _upsert(conn, row):
-    conn.execute(
-        "INSERT OR REPLACE INTO fundamentals VALUES "
-        "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", row)
-
-
 def run(limit=None):
     conn = db.get_conn()
     symbols = _universe(conn, limit)
@@ -97,6 +102,7 @@ def run(limit=None):
     saved = 0
     ok_batches = 0
     failed_batches = 0
+    saved_fields = 0
 
     for b in range(0, total, BATCH_SIZE):
         batch = symbols[b:b + BATCH_SIZE]
@@ -110,34 +116,63 @@ def run(limit=None):
             sym = item["s"].replace("NSE:", "")
             d = item["d"]
             m = dict(zip(COLUMNS, d))
-            mcap = m.get("market_cap_basic")
-            de = m.get("debt_to_equity_fq")
-            fcf = m.get("free_cash_flow_fq")
+
+            close = m.get("close")
+            bvps = m.get("book_value_per_share_fy")
+            pb = (close / bvps) if (close and bvps and bvps > 0) else None
+
+            fcf = m.get("free_cash_flow_fy")
             cfo_flag = None
             if fcf is not None:
                 cfo_flag = 1 if fcf > 0 else 0
-            _upsert(conn, (
-                sym, m.get("name"), sectors.get(sym),
-                m.get("close"),
-                None if mcap is None else mcap / 1e7,
-                m.get("price_earnings_ttm"),
-                m.get("price_to_book_fq"),
-                m.get("return_on_equity_fq"),
-                m.get("return_on_invested_capital_fq"),
-                None if de is None else de / 100.0,
-                m.get("interest_coverage_fq"),
-                m.get("operating_margin_fq"),
-                m.get("net_margin_fq"),
-                m.get("revenue_growth_fy"),
-                m.get("net_income_growth_fy"),
-                m.get("held_percent_insiders"),
-                None,   # pledge_pct (not on TV)
-                None,   # fii_holding (not on TV)
-                m.get("dividend_yield_recent"),
-                cfo_flag,
-                now,
-            ))
+
+            mcap = m.get("market_cap_basic")
+            div_yield = m.get("dividends_yield")
+            # TV returns 0.4769 for 0.48% — store as-is (percent)
+
+            values = {
+                "symbol": sym,
+                "name": m.get("name"),
+                "sector": sectors.get(sym),
+                "current_price": close,
+                "market_cap_cr": (mcap / 1e7) if mcap is not None else None,
+                "pe": m.get("price_earnings_ttm"),
+                "pb": pb,
+                "roe": m.get("return_on_equity_fy"),
+                "roce": m.get("return_on_invested_capital_fy"),
+                "debt_to_equity": m.get("debt_to_equity_fy"),
+                "interest_coverage": None,      # not available
+                "operating_margin": m.get("operating_margin_fy"),
+                "net_profit_margin": m.get("net_margin_fy"),
+                "sales_growth_3y": None,        # not available
+                "profit_growth_3y": None,       # not available
+                "promoter_holding": None,       # not available
+                "pledge_pct": None,             # not available
+                "fii_holding": None,            # not available
+                "dividend_yield": div_yield,
+                "cfo_positive": cfo_flag,
+                "uploaded_at": now,
+                "beta_1y": m.get("beta_1_year"),
+                "eps_fy": m.get("earnings_per_share_fy"),
+                "book_value": bvps,
+                "ev_ebitda": m.get("enterprise_value_ebitda_ttm"),
+                "fcf_fy": fcf,
+                "net_debt_fy": None,            # not directly available
+                "data_source": "tradingview",
+            }
+
+            cols = list(values.keys())
+            placeholders = ",".join("?" for _ in cols)
+            conn.execute(
+                f"INSERT OR REPLACE INTO fundamentals ({','.join(cols)}) "
+                f"VALUES ({placeholders})",
+                [values[k] for k in cols])
             saved += 1
+            # Count non-null core fields
+            for k in ("roce", "roe", "pe", "debt_to_equity"):
+                if values.get(k) is not None:
+                    saved_fields += 1
+
         conn.commit()
         log.info(f"batch {b // BATCH_SIZE + 1} / "
                  f"{(total + BATCH_SIZE - 1) // BATCH_SIZE}: "
@@ -145,39 +180,35 @@ def run(limit=None):
 
     conn.close()
     log.info(f"fundamentals fetch complete: saved={saved} "
-             f"batches_ok={ok_batches} batches_failed={failed_batches}")
+             f"batches_ok={ok_batches} batches_failed={failed_batches} "
+             f"core_fields_populated={saved_fields}")
     return saved
-
-
-def show(n=10):
-    conn = db.get_conn()
-    rows = conn.execute(
-        "SELECT symbol, name, pe, roce, debt_to_equity, "
-        "promoter_holding, cfo_positive "
-        "FROM fundamentals WHERE uploaded_at LIKE 'tv:%' "
-        "ORDER BY symbol LIMIT ?", (n,)).fetchall()
-    conn.close()
-    log.info(f"sample rows ({len(rows)}):")
-    for r in rows:
-        log.info(f"  {r}")
 
 
 def count():
     conn = db.get_conn()
     n = conn.execute(
         "SELECT COUNT(*) FROM fundamentals "
-        "WHERE uploaded_at LIKE 'tv:%'").fetchone()[0]
-    n_prom = conn.execute(
+        "WHERE data_source='tradingview'").fetchone()[0]
+    n_roce = conn.execute(
         "SELECT COUNT(*) FROM fundamentals "
-        "WHERE uploaded_at LIKE 'tv:%' AND promoter_holding IS NOT NULL"
-    ).fetchone()[0]
+        "WHERE roce IS NOT NULL").fetchone()[0]
+    n_roe = conn.execute(
+        "SELECT COUNT(*) FROM fundamentals "
+        "WHERE roe IS NOT NULL").fetchone()[0]
+    n_pe = conn.execute(
+        "SELECT COUNT(*) FROM fundamentals "
+        "WHERE pe IS NOT NULL").fetchone()[0]
+    n_de = conn.execute(
+        "SELECT COUNT(*) FROM fundamentals "
+        "WHERE debt_to_equity IS NOT NULL").fetchone()[0]
     n_cfo = conn.execute(
         "SELECT COUNT(*) FROM fundamentals "
-        "WHERE uploaded_at LIKE 'tv:%' AND cfo_positive IS NOT NULL"
-    ).fetchone()[0]
+        "WHERE cfo_positive IS NOT NULL").fetchone()[0]
     conn.close()
-    log.info(f"fundamentals rows: {n} | with promoter: {n_prom} | "
-             f"with cfo: {n_cfo}")
+    log.info(f"fundamentals rows: {n} | "
+             f"roce: {n_roce} | roe: {n_roe} | pe: {n_pe} | "
+             f"debt_eq: {n_de} | cfo_flag: {n_cfo}")
     return n
 
 
@@ -187,9 +218,5 @@ if __name__ == "__main__":
         n = int(sys.argv[2]) if len(sys.argv) > 2 else None
         run(limit=n)
         count()
-    elif cmd == "sample":
-        run(limit=5)
-        show()
-    elif cmd == "show":
-        show()
+    elif cmd == "count":
         count()

@@ -300,3 +300,29 @@ route fix, editor, backtest sandbox.
 2. Read `EXECUTION_LOG.md` — exactly what shipped.
 3. Read `PORTAL_REDESIGN.md` — vision & roadmap.
 4. Continue from the last entry's status.
+
+### #051 · TV column probe (ID44 step 1)
+- Files: `tv_column_probe.py` (new)
+- Result: 48 of 104 columns return real values. Growth, shareholding,
+  price_to_book, operating_cash_flow are all null or rejected.
+- Status: DEPLOYED · VERIFIED
+
+### #052 · Fundamentals v5 + schema migration (ID44 step 2)
+- Files: `db.py` (added `_migrate`), `fundamentals_tv.py` (v5),
+  `rule_engine.py` (Multibagger seed → quality-only)
+- What:
+  - 6 new columns on `fundamentals`: beta_1y, eps_fy, book_value,
+    ev_ebitda, fcf_fy, net_debt_fy. Plus `data_source` marker.
+  - `db.get_conn()` runs idempotent column migration on every connection.
+  - `fundamentals_tv.py` uses only probe-verified columns; derives
+    `pb` from close/book_value and `cfo_positive` from FCF sign.
+  - Multibagger seed rewritten as quality-only strategy.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
+
+## HOW NEW SESSIONS USE THIS
+1. Read `backlog.md` — rules, instructions, current status.
+2. Read `EXECUTION_LOG.md` — exactly what shipped.
+3. Read `PORTAL_REDESIGN.md` — vision & roadmap.
+4. Continue from the last entry's status.

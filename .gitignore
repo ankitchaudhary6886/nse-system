@@ -22,4 +22,5 @@ data/logs/
 
 data/strategies.json
 data/strategies.json.bak
+data/strategies.json.bak2
 data/backtest_cache.json

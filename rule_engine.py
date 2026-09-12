@@ -112,21 +112,7 @@ def _rsi(closes, period=14):
     return 100 - (100 / (1 + gains / losses))
 
 
-# ============================================================
-# Pattern-specific features (owner's rules)
-# ============================================================
 def _find_gapup(o, c, lookback=15, min_gap=0.04):
-    """
-    Find the most recent gap-up in the last `lookback` days.
-    Gap-up = open[t] >= prev_close[t-1] * (1 + min_gap).
-    Returns dict with fields:
-      had_gapup_15d : 0/1
-      days_since_gapup : int or None (0 = today)
-      gapup_size : float (e.g. 0.06 = 6%)
-      pre_gap_above50 : was close[t-1] above its 50-SMA? 0/1 or None
-      pre_gap_above200 : same for 200-SMA
-      pre_gap_drawdown : how far prev_close was below its 60-day high, 0-1
-    """
     n = len(c)
     out = {
         "had_gapup_15d": 0,
@@ -150,7 +136,6 @@ def _find_gapup(o, c, lookback=15, min_gap=0.04):
             out["had_gapup_15d"] = 1
             out["days_since_gapup"] = n - 1 - idx
             out["gapup_size"] = float(gap)
-            # Pre-gap trend context
             if idx >= 50:
                 s50 = _sma(c[:idx], 50)
                 if s50:
@@ -168,17 +153,6 @@ def _find_gapup(o, c, lookback=15, min_gap=0.04):
 
 
 def _impulse_pullback(c, h, l, lookback=60):
-    """
-    Find impulse peak in last `lookback` bars, then measure pullback /
-    consolidation since. Returns:
-      impulse_pct_60d : (peak_high / low_before_peak) - 1
-      days_since_impulse_peak : int
-      pullback_from_peak_pct : (peak_high - current_close) / peak_high
-      consolidation_range_pct : (cons_high - cons_low) / peak_high over
-                                bars since peak
-      consolidation_vol_ratio : avg volume since peak / avg volume
-                                during impulse (lower = drying up)
-    """
     out = {
         "impulse_pct_60d": None,
         "days_since_impulse_peak": None,
@@ -210,9 +184,6 @@ def _impulse_pullback(c, h, l, lookback=60):
     return out
 
 
-# ============================================================
-# Feature computation
-# ============================================================
 def _compute_features(sym, df, fund_row, sector, sector_rs):
     if df is None or len(df) < 60:
         return None
@@ -280,7 +251,9 @@ def _compute_features(sym, df, fund_row, sector, sector_rs):
                   "profit_growth_3y", "sales_growth_3y",
                   "promoter_holding", "dividend_yield",
                   "cfo_positive", "market_cap_cr",
-                  "operating_margin", "net_profit_margin"]:
+                  "operating_margin", "net_profit_margin",
+                  "beta_1y", "eps_fy", "book_value",
+                  "ev_ebitda", "fcf_fy", "net_debt_fy"]:
             features[k] = fund_row.get(k)
 
     features["sector"] = sector
@@ -510,25 +483,32 @@ def run_all():
 
 
 # ============================================================
-# Seed strategies (owner-designed rules)
+# Seed strategies
 # ============================================================
+# Note: TradingView India does not return growth or shareholding data
+# (see tv_column_probe.py). Multibagger therefore relies on quality
+# and balance-sheet metrics only. Growth filters must come from a
+# different source (ID4 / Phase 4).
 SEEDS = {
     "Multibagger": {
         "name": "Multibagger",
-        "description": "Long-term quality + growth. Holds months to years.",
+        "description": (
+            "Quality compounder — high ROCE/ROE, low debt, positive FCF. "
+            "(Note: growth data unavailable on TV India; quality-only.)"
+        ),
         "type": "fundamental",
         "universe": "active",
         "conditions": [
-            {"field": "roce", "op": ">=", "value": 18},
-            {"field": "profit_growth_3y", "op": ">=", "value": 15},
-            {"field": "sales_growth_3y", "op": ">=", "value": 12},
+            {"field": "roce", "op": ">=", "value": 15},
+            {"field": "roe", "op": ">=", "value": 12},
             {"field": "debt_to_equity", "op": "<=", "value": 1.0},
             {"field": "cfo_positive", "op": "==", "value": 1},
+            {"field": "operating_margin", "op": ">=", "value": 8},
         ],
         "score_weights": {
-            "roce": 0.30,
-            "profit_growth_3y": 0.30,
-            "sales_growth_3y": 0.20,
+            "roce": 0.35,
+            "roe": 0.25,
+            "operating_margin": 0.20,
             "pe": -0.20,
         },
     },
