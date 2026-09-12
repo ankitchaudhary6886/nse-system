@@ -7,10 +7,9 @@ Usage:
   python verify_deployment.py --full              # checks + full pipeline
   python verify_deployment.py --sweep             # add 2y/3y/4y walk-forward
   python verify_deployment.py --fast --sweep      # most common combo
-
-Ctrl+C safe at any point.
 """
 import sys
+import os
 import time
 import datetime as dt
 import subprocess
@@ -28,16 +27,31 @@ def _check(ok, label, detail=""):
     return ok
 
 
+def _strip_prefix(val):
+    """Strip 'tv:' / 'csv:' / 'calc:' prefix from uploaded_at values."""
+    s = str(val)
+    if ":" in s:
+        # keep the right side if it looks ISO-ish
+        left, right = s.split(":", 1)
+        if left in ("tv", "csv", "calc"):
+            return right
+    return s
+
+
 def _table_fresh(conn, table, col="date", max_days=5):
     try:
         r = conn.execute(f"SELECT MAX({col}) FROM {table}").fetchone()
         latest = r[0] if r else None
         if not latest:
             return False, "empty"
-        d = dt.date.fromisoformat(str(latest)[:10])
+        cleaned = _strip_prefix(latest)
+        try:
+            d = dt.date.fromisoformat(str(cleaned)[:10])
+        except Exception:
+            return False, f"unparseable date: {latest}"
         age = (dt.date.today() - d).days
         n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-        return age <= max_days, f"latest {latest} ({age}d), {n} rows"
+        return age <= max_days, f"latest {str(cleaned)[:10]} ({age}d), {n} rows"
     except Exception as e:
         return False, f"err: {e}"
 
@@ -80,6 +94,22 @@ def run_checks():
         fails += 1
 
     conn.close()
+    print(flush=True)
+
+    print("MODEL FILES")
+    ml_ok = os.path.exists("data/ml_models.pkl")
+    _check(ml_ok, "data/ml_models.pkl",
+           "present" if ml_ok else "missing — run: python ml_train.py")
+    if not ml_ok:
+        fails += 1
+    meta_ok = os.path.exists("data/meta_model.pkl")
+    _check(meta_ok, "data/meta_model.pkl",
+           "present" if meta_ok else "missing — run: python meta_model.py train")
+    if not meta_ok:
+        fails += 1
+    gcp_ok = os.path.exists("data/gcp_key.json")
+    _check(True, "data/gcp_key.json",
+           "present" if gcp_ok else "absent (sheets sync will skip — OK)")
     print(flush=True)
 
     print("TODAY'S ACTIVITY")
@@ -158,35 +188,22 @@ def run_checks():
 
 
 def run_pipeline(skip_prices=False):
-    mode = "FAST (skipping prices ingest)" if skip_prices \
-        else "FULL"
+    mode = "FAST (skipping prices ingest)" if skip_prices else "FULL"
     print("=" * 70)
     print(f"RUNNING DAILY PIPELINE — {mode}")
     print("=" * 70, flush=True)
     t0 = time.time()
 
-    steps = [
-        ("prices",      None if not skip_prices else "SKIP"),
-        ("technicals",  None),
-        ("scan",        None),
-        ("ml",          None),
-        ("pwin",        None),
-        ("toppicks",    None),
-        ("events",      None),
-        ("swing",       None),
-        ("telegram",    None),
-        ("sheets",      None),
-    ]
+    steps = ["prices", "technicals", "scan", "ml", "pwin", "toppicks",
+             "events", "swing", "telegram", "sheets"]
 
-    import daily_update
-
-    for name, override in steps:
+    for name in steps:
+        if name == "prices" and skip_prices:
+            print(f"\n[{name}] SKIPPED (fast mode)", flush=True)
+            continue
         t = time.time()
         print(f"\n[{name}] starting...", flush=True)
         try:
-            if override == "SKIP":
-                print(f"[{name}] SKIPPED (fast mode)", flush=True)
-                continue
             if name == "prices":
                 import ingest_prices
                 ingest_prices.run(show_every=100)
@@ -244,18 +261,11 @@ def run_sweep():
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-
-    # 1. checks FIRST — user sees results in 5s
     fails = run_checks()
-
-    # 2. pipeline (optional)
     if "--full" in args:
         run_pipeline(skip_prices=False)
     elif "--fast" in args:
         run_pipeline(skip_prices=True)
-
-    # 3. sweep (optional)
     if "--sweep" in args:
         run_sweep()
-
     sys.exit(0 if fails == 0 else 1)

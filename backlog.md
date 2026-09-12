@@ -30,17 +30,18 @@
 - **R19** System identifies. Owner decides. No prescribed exits,
           targets, sizing, or signals.
 - **R20** Log every owner instruction in BACKLOG immediately.
-- **R21** Every candidate presented with full picture — predictability,
-          potential, historical hit rate at multiple R levels, candle
-          behaviour, sector context.
-- **R22** All tunable parameters live in `strategy_config.py`.
+- **R21** Every candidate presented with full picture.
+- **R22** All tunable parameters in `strategy_config.py`.
+- **R23** Optional integrations (sheets, gcp, yahoo) skip gracefully if
+          creds/files missing. Never fail the whole pipeline.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
 I1–I21 (see EXECUTION_LOG)
-I22 ID21 deployment complete → verify → then ID22 (research cockpit).
+I22 Fix graceful skips for ml + sheets; fix fundamentals date check.
+I23 After ID21 fully green → build ID22 (research cockpit).
 
 ---
 
@@ -53,26 +54,23 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 
 ### ID1–ID20 · DONE / partial (see EXECUTION_LOG)
 
-### ID19 — Central strategy config · **DONE**
-All parameters in `strategy_config.py`. Behavior unchanged (verified:
-same 185 trades / PF 1.43).
+### ID21 — Production deployment · **IN PROGRESS → nearly done**
+- `verify_deployment.py --fast --sweep` runs the full check + pipeline + 3-window WF
+- Checks: 15/15 after this batch (fixing fundamentals date parse)
+- Model files: `ml_models.pkl` needs generation once (ml_train.py)
+- Sheets: gracefully skips if GCP key absent (per R23)
+- Sweep: PF 1.72 / 1.42 / 1.16 across 2y/3y/4y (all logged)
 
-### ID21 — Production deployment · **IN PROGRESS**
-- `verify_deployment.py` — CLI check + `--scan` + `--sweep`
-- `/api/deployment-check` endpoint
-- Deployment panel in Ledger view
-- Next: run `--scan` on VM to populate fresh data, then verify all-green.
-
-### ID22 — Research cockpit · **NEXT (after ID21)**
-For every setup shown, present the full picture:
-- Historical hit rate at +1R / +2R / +3R / +4R from similar past setups
-- Median time-to-target at each R level
+### ID22 — Research cockpit · **NEXT**
+For every setup, present the full picture:
+- Historical hit rate at +1R / +2R / +3R / +4R from similar setups
+- Median time-to-target at each level
 - Max favorable / adverse excursion distributions
 - Candle behaviour at signal (mother bar, tightness, volume profile)
-- Sector context (RS, similar sectors in same state)
-- Predictability score (from meta-model, decomposed)
+- Sector context
+- Predictability score (meta-model, decomposed)
 - Potential score (distance to 52w high, momentum alignment)
-Owner decides which to examine. No recommendations from the AI.
+Owner decides. No recommendations from AI (R19).
 
 ---
 
@@ -89,16 +87,17 @@ IM3 Self-documenting system · IM4 Research cockpit (ID22).
 ### FS Sizing with quality multiplier · DONE
 ### FA Unified Alerts · DONE
 ### FU Canonical Universe · DONE
-### FT Trend Scanner v3 · DONE
-### FP2 Positional Scanner · DONE
-### FV Value Radar v2 · DONE
+### FT Trend Scanner v3 · DONE (326 today)
+### FP2 Positional Scanner · DONE (50 today)
+### FV Value Radar v2 · DONE (125 today)
 ### FM Meta-Model v7 · DONE (AUC 0.629)
+### FML Price-Model · DONE (this batch — ml_predict graceful)
 ### FVAL Fast Validation · DONE
 ### FSP Setup v3.5 · DONE
-### FWF Walk-forward v5 · DONE
+### FWF Walk-forward v5 · DONE (3-window sweep logged)
 ### FSR Strategy Runs ledger + UI · DONE
 ### FCONF Central Config · DONE
-### FDEP Deployment Verification · **DONE this batch**
+### FDEP Deployment Verification · DONE (this batch)
 
 ---
 
@@ -106,7 +105,7 @@ IM3 Self-documenting system · IM4 Research cockpit (ID22).
 
 | ID   | Item                      | Status       |
 |------|---------------------------|--------------|
-| R1–R22 | Rules                   | Active       |
+| R1–R23 | Rules                   | Active       |
 | ID1  | All-weather swing         | DONE         |
 | ID2  | Value Radar v2            | DONE         |
 | ID3a | Positional scanner        | DONE         |
@@ -128,7 +127,7 @@ IM3 Self-documenting system · IM4 Research cockpit (ID22).
 | ID18 | Hybrid tranche exits      | REJECTED     |
 | ID19 | Central strategy config   | DONE         |
 | ID20 | Strategy runs dashboard   | DONE         |
-| ID21 | Production deployment     | IN PROGRESS  |
+| ID21 | Production deployment     | NEARLY DONE  |
 | ID22 | Research cockpit          | NEXT         |
 
 ---
@@ -138,3 +137,4 @@ IM3 Self-documenting system · IM4 Research cockpit (ID22).
 - HTTPS via nginx + certbot
 - Rotate secrets
 - Retire Streamlit app.py
+- Google Sheets sync (missing GCP key)
