@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="17.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="18.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -199,6 +199,15 @@ def research_universe_api(compute_missing: bool = False,
             compute_missing=compute_missing)
     except Exception as e:
         return {"error": str(e), "rows": [], "n_setups": 0}
+
+
+@app.get("/api/research-sector")
+def research_sector_api(user: str = Depends(verify_user)):
+    import research_cockpit
+    try:
+        return research_cockpit.sector_aggregate()
+    except Exception as e:
+        return {"error": str(e), "sectors": [], "n_sectors": 0}
 
 
 @app.post("/api/research-cache/clear")

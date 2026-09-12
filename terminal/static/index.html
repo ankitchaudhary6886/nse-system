@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NSE Intelligence Terminal</title>
 <link rel="stylesheet" href="/static/style.css">
+<style>
+  .rel-pill {
+    display: inline-block; padding: 1px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+  }
+  .rel-strong { background: rgba(52,211,153,.18); color: #34d399; }
+  .rel-mod    { background: rgba(251,191,36,.18); color: #fbbf24; }
+  .rel-thin   { background: rgba(255,255,255,.06); color: #9fb0cc; }
+  .rel-none   { background: rgba(255,255,255,.03); color: #64748b; }
+</style>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
@@ -98,8 +108,23 @@
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div>
-            <h2>🌐 Research Universe — today's setups + their historical stats</h2>
-            <p>Every setup today. Historical hit rates from this symbol's own past. Owner decides.</p>
+            <h2>🏭 Research Sectors — pooled by sector</h2>
+            <p>All setups from every cached symbol, grouped by sector. Real pooling, not averages of averages.</p>
+          </div>
+          <button id="refreshResearchSector">Refresh</button>
+        </div>
+        <div class="level" id="researchSectorBadge"
+             style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
+        <div id="researchSectorBox" style="overflow-x:auto;">
+          <p>Loading sectors...</p>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>🌐 Research Universe — today's setups + historical stats</h2>
+            <p>Sortable. Colour-coded by historical sample size. Click a symbol to inspect.</p>
           </div>
           <div style="display:flex; gap:6px;">
             <button id="refreshResearchUniverse">Refresh</button>
@@ -318,5 +343,6 @@
 <script src="/static/deployment.js"></script>
 <script src="/static/research.js"></script>
 <script src="/static/research_universe.js"></script>
+<script src="/static/research_sector.js"></script>
 </body>
 </html>

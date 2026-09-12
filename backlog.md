@@ -7,24 +7,25 @@
 
 ---
 
-## A. RULES  (always active)
+## A. RULES (unchanged, summary)
+R1–R23 as recorded. Highlights: whole files · plain English ·
+laptop push / VM pull · batch per machine · skip ops unless asked ·
+auto-backlog new ideas · log every execution · no pausing ·
+3-4 edits/response · fast feedback loops · PF-driven verdicts ·
+sweep parameters · multi-window WF · system identifies, owner decides ·
+log every instruction immediately · full picture per candidate ·
+central config · graceful skips for optional integrations.
 
-- **R1**–**R23** unchanged (see previous entries). Summary:
-  whole files · plain English · VS Code + Oracle VM · laptop push / VM pull ·
-  batched blocks · skip ops unless asked · auto-backlog new ideas ·
-  log every execution · no pausing · 3-4 edits/response ·
-  execute after machine complete · fast feedback loops (~5s) ·
-  PF-driven verdicts · sweep parameters · prefer simpler on ties ·
-  multi-window WF · system identifies, owner decides ·
-  log every instruction immediately · full picture per candidate ·
-  central config · graceful skips for optional integrations.
+### New
+- **R24** Research tables are sortable + colour-coded by sample size.
+          Reliability is visible at a glance: green ≥10, amber 5-9,
+          grey <5, dash for none.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
-I1–I23 (see EXECUTION_LOG)
-I24 ID22b shipped — research universe view.
+I1–I24 (see EXECUTION_LOG)
 
 ---
 
@@ -35,52 +36,61 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 
 ## D. IDEAS
 
-### ID1–ID21 · DONE / partial (see EXECUTION_LOG)
+### ID1–ID22c · DONE / partial (see EXECUTION_LOG)
 
-### ID22 — Research Cockpit v1 · **DONE**
-Per-symbol 5y analysis. Cached 7 days. CLI + API + UI.
+### ID23 — Sector-level aggregation · **DONE this batch**
+`research_cockpit.sector_aggregate()` pools raw setups from every
+cached symbol in a sector, then recomputes stats on the pool.
+Endpoint: `/api/research-sector`
+UI panel: "Research Sectors" in Overview tab.
+Sortable + reliability-coloured.
 
-### ID22b — Research Universe · **DONE this batch**
-Today's setups (SWING + ALL_WEATHER + top TREND) joined with cached
-per-symbol stats. Cached per symbol, refreshed on demand.
-Endpoint: `/api/research-universe`
-Cache table: `research_cache(symbol, computed_at, payload)`.
-UI panel: "Research Universe" in Overview tab.
-Shows: n setups, n triggered, P(+1R / +2R / +3R), median MFE/MAE.
-Owner scans the table, picks what interests them.
+### ID23b — Reliability colour coding · **DONE this batch**
+`rel-pill` classes: `rel-strong` (≥10), `rel-mod` (5-9),
+`rel-thin` (1-4), `rel-none` (0).
+Applied to n column in both universe and sector tables.
 
-### ID22c — Auto-warm cache nightly · **NEXT**
-Scheduler job after swing scan: for each symbol with a signal today,
-compute research stats and cache them. Then universe view is always
-instant. Currently cold-cache items show "miss".
-
-### ID23 — Sector-level research · **FUTURE**
-Aggregate cockpit by sector: "Energy setups have P(+2R)=0.42 historically".
-Context layer for cross-sector comparison.
+### ID23c — Sortable columns · **DONE this batch**
+Click any table header to sort ascending/descending.
+Sort state preserved across re-renders.
 
 ### ID24 — Candle behaviour analytics · **FUTURE**
-Extend cockpit: for each historical setup, classify the mother bar
-(inside, hammer-like, tight-cluster width vs ATR) and see hit rate
-conditioned on that feature.
+Classify each historical setup's mother bar (inside, hammer, tight
+cluster width vs ATR) and compute hit rate conditioned on that feature.
+Adds a context layer to the cockpit.
+
+### ID25 — Sector strength overlay · **FUTURE**
+Join sector aggregation with sector_rs from sector_gate. See if
+hit rates differ across sector regimes.
+
+### ID26 — Setup similarity matching · **FUTURE**
+For a live setup, find the N closest historical setups (across all
+symbols) by feature distance (impulse %, PB depth, shape score, etc.)
+and show only those stats. Personalised context, not symbol-only.
 
 ---
 
-## E. IMAGINATIONS
+## E. IMAGINATIONS (unchanged)
 IM1 Multi-strategy quant terminal · IM2 Bear-market accumulation ·
 IM3 Self-documenting system · IM4 Research cockpit.
 
 ---
 
 ## F. FEATURES COMPLETED
-(all prior) + Research Cockpit v1 (ID22) + Research Universe (ID22b)
+### FRC Research Cockpit v1 · DONE
+### FRU Research Universe · DONE
+### FRS Sector Aggregation · DONE
+### FSRT Sortable + Reliability UI · DONE
 
 ---
 
-## G. STATUS SUMMARY (rows added)
-| ID22b | Research universe      | DONE this batch |
-| ID22c | Warm cache nightly     | NEXT            |
-| ID23 | Sector-level research   | FUTURE          |
-| ID24 | Candle analytics        | FUTURE          |
+## G. STATUS SUMMARY (added rows)
+| ID23  | Sector aggregation      | DONE this batch |
+| ID23b | Reliability colours     | DONE this batch |
+| ID23c | Sortable tables         | DONE this batch |
+| ID24  | Candle behaviour        | FUTURE          |
+| ID25  | Sector strength overlay | FUTURE          |
+| ID26  | Setup similarity        | FUTURE          |
 
 ---
 

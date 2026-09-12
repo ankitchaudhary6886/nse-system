@@ -5,6 +5,7 @@ Entry points:
   analyze_symbol(sym)          — full per-symbol analysis (cached 7d)
   analyze_universe(limit)      — today's setups + their cached stats
   warm_cache()                 — compute + cache stats for today's symbols
+  sector_aggregate()           — pool setups across symbols, by sector
 
 Cache table: research_cache(symbol, computed_at, payload_json)
 """
@@ -297,6 +298,7 @@ def analyze_symbol(sym, use_cache=True):
                                    low_52w * 100, 1),
         "current_setup": current_setup,
         "historical": agg, "recent_setups": recent,
+        "raw_setups": setups,
         "history_bars_tested": len(df),
         "history_years": 5, "step": STEP,
     }
@@ -371,14 +373,57 @@ def analyze_universe(today_only=True, max_symbols=200,
 
 
 # ============================================================
+# Sector aggregation
+# ============================================================
+def sector_aggregate(max_symbols=200):
+    """
+    Roll up the day's universe by sector. Pools raw setups from every
+    cached symbol in the sector, then recomputes stats on the pool.
+    """
+    conn = db.get_conn()
+    today = dt.date.today().isoformat()
+    symbols = _today_symbols(conn)
+
+    buckets = {}   # sector -> list of cached payloads
+    missing = []
+    for sym in list(symbols.keys())[:max_symbols]:
+        cached = _get_cached(conn, sym)
+        if cached is None or "error" in cached:
+            missing.append(sym)
+            continue
+        sector = cached.get("sector") or "Unknown"
+        buckets.setdefault(sector, []).append(cached)
+    conn.close()
+
+    out = []
+    for sector, cached_list in buckets.items():
+        pooled_setups = []
+        for c in cached_list:
+            pooled_setups.extend(c.get("raw_setups", []))
+        agg = _aggregate(pooled_setups)
+        out.append({
+            "sector": sector,
+            "n_symbols": len(cached_list),
+            "symbols": [c.get("symbol") for c in cached_list],
+            **agg,
+        })
+
+    out.sort(key=lambda r: -(r["n_setups"] or 0))
+
+    return {
+        "date": today,
+        "n_sectors": len(out),
+        "n_symbols_cached": sum(len(v) for v in buckets.values()),
+        "n_symbols_missing": len(missing),
+        "missing": missing[:30],
+        "sectors": out,
+    }
+
+
+# ============================================================
 # Warm cache for today's symbols
 # ============================================================
 def warm_cache(max_symbols=200, force=False):
-    """
-    Compute + cache research stats for every symbol signalled today.
-    Skips already-cached symbols unless force=True.
-    Prints progress. Returns count computed.
-    """
     conn = db.get_conn()
     _ensure_cache(conn)
     symbols = _today_symbols(conn, trend_limit=50)
@@ -429,7 +474,7 @@ def clear_cache(sym=None):
 
 
 # ============================================================
-# CLI output helpers
+# CLI output
 # ============================================================
 def _print_symbol(result):
     print("=" * 70)
@@ -469,10 +514,9 @@ def _print_universe(out):
     print("=" * 100)
     print(f"RESEARCH UNIVERSE — {out['date']}  ({out['n_setups']} setups)")
     print("=" * 100)
-    header = (f"{'SYM':<12} {'SRC':<12} {'n':<4} {'trig':<5} "
-              f"{'P1R':<6} {'P2R':<6} {'P3R':<6} "
-              f"{'MFE':<6} {'MAE':<6} {'52wHi%':<7}")
-    print(header)
+    print(f"{'SYM':<12} {'SRC':<12} {'n':<4} {'trig':<5} "
+          f"{'P1R':<6} {'P2R':<6} {'P3R':<6} "
+          f"{'MFE':<6} {'MAE':<6} {'52wHi%':<7}")
     for r in out["rows"]:
         def _f(v, dp=2):
             if v is None:
@@ -490,9 +534,35 @@ def _print_universe(out):
               f"{_f(r['pct_from_52w_high'], 1):<7}")
 
 
-# ============================================================
-# CLI
-# ============================================================
+def _print_sector(out):
+    print("=" * 100)
+    print(f"RESEARCH SECTORS — {out['date']}")
+    print(f"  {out['n_sectors']} sectors · {out['n_symbols_cached']} "
+          f"symbols cached · {out['n_symbols_missing']} missing")
+    print("=" * 100)
+    print(f"{'SECTOR':<20} {'syms':<5} {'n':<5} {'trig':<5} "
+          f"{'P1R':<6} {'P2R':<6} {'P3R':<6} "
+          f"{'MFE':<6} {'MAE':<6}")
+    for r in out["sectors"]:
+        def _f(v, dp=2):
+            if v is None:
+                return "—"
+            return f"{v:.{dp}f}"
+        def _p(v):
+            if v is None:
+                return "—"
+            return f"{v*100:.0f}%"
+        print(f"{(r['sector'] or 'Unknown'):<20} "
+              f"{r['n_symbols']:<5} "
+              f"{(r['n_setups'] or 0):<5} "
+              f"{(r['n_triggered'] or 0):<5} "
+              f"{_p(r['p_1r_given_trigger']):<6} "
+              f"{_p(r['p_2r_given_trigger']):<6} "
+              f"{_p(r['p_3r_given_trigger']):<6} "
+              f"{_f(r['median_mfe_r']):<6} "
+              f"{_f(r['median_mae_r']):<6}")
+
+
 if __name__ == "__main__":
     argv = sys.argv[1:]
 
@@ -511,6 +581,15 @@ if __name__ == "__main__":
                 except Exception:
                     pass
         warm_cache(max_symbols=limit, force=force)
+        sys.exit(0)
+
+    if "--sector" in argv or "-s" in argv:
+        want_json = "--json" in argv
+        out = sector_aggregate()
+        if want_json:
+            print(json.dumps(out, indent=2, default=str))
+        else:
+            _print_sector(out)
         sys.exit(0)
 
     if "--universe" in argv or "-u" in argv:
