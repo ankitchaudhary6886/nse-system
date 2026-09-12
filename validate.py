@@ -1,8 +1,7 @@
 """
 Validation harness — is the edge real?
-mc : Monte-Carlo bootstrap on graded live trades (R-multiples).
-wf : walk-forward check of the setup detector (in-sample vs out-of-sample).
-Results stored in validation_log(run_date, mode, payload).
+v2 (2026-09-12): 400 symbols default, step=3, dual OOS windows.
+Runs: mc (bootstrap) | wf (walk-forward) | all.
 """
 import sys
 import json
@@ -106,7 +105,13 @@ def _simulate(df, i, st):
     return "TIMEOUT"
 
 
-def walk_forward(conn=None, n_symbols=120, step=5, seed=7):
+def walk_forward(conn=None, n_symbols=400, step=3, seed=7,
+                 min_bars=700):
+    """Walk-forward with dual OOS windows for robustness.
+    In-sample:   60% of bars
+    OOS-1:       60-80%
+    OOS-2:       80-100%
+    """
     own = conn is None
     if own:
         conn = db.get_conn()
@@ -122,18 +127,23 @@ def walk_forward(conn=None, n_symbols=120, step=5, seed=7):
             "WHERE symbol=? ORDER BY date", (s,)).fetchall()
     if own:
         conn.close()
+
     from setup import SetupDetector
     is_w = is_l = is_n = 0
-    oos_w = oos_l = oos_n = 0
+    oos1_w = oos1_l = oos1_n = 0
+    oos2_w = oos2_l = oos2_n = 0
+
     for s in syms:
         rows = data[s]
-        if len(rows) < 750:
+        if len(rows) < min_bars:
             continue
         df = pd.DataFrame(list(rows),
                           columns=["date", "Close", "High", "Low",
                                    "Volume"]).set_index("date")
         df.index = pd.to_datetime(df.index)
-        split = int(len(df) * 0.6)
+        n_bars = len(df)
+        split1 = int(n_bars * 0.60)
+        split2 = int(n_bars * 0.80)
         last_i = -10
         for i in range(280, len(df) - 31, step):
             if i - last_i < 10:
@@ -143,33 +153,59 @@ def walk_forward(conn=None, n_symbols=120, step=5, seed=7):
                 continue
             last_i = i
             out = _simulate(df, i, st)
-            if i < split:
+            if i < split1:
                 is_n += 1
                 if out == "WIN":
                     is_w += 1
                 elif out == "LOSS":
                     is_l += 1
-            else:
-                oos_n += 1
+            elif i < split2:
+                oos1_n += 1
                 if out == "WIN":
-                    oos_w += 1
+                    oos1_w += 1
                 elif out == "LOSS":
-                    oos_l += 1
+                    oos1_l += 1
+            else:
+                oos2_n += 1
+                if out == "WIN":
+                    oos2_w += 1
+                elif out == "LOSS":
+                    oos2_l += 1
+
+    def wr(w, l):
+        gl = w + l
+        return round(w / gl, 3) if gl else None
+
     is_gl = is_w + is_l
-    oos_gl = oos_w + oos_l
-    is_wr = round(is_w / is_gl, 3) if is_gl else None
-    oos_wr = round(oos_w / oos_gl, 3) if oos_gl else None
+    oos1_gl = oos1_w + oos1_l
+    oos2_gl = oos2_w + oos2_l
+    oos_gl = oos1_gl + oos2_gl
+    oos_w = oos1_w + oos2_w
+    oos_l = oos1_l + oos2_l
+    is_wr = wr(is_w, is_l)
+    oos_wr = wr(oos_w, oos_l)
+
     if oos_gl < 20:
-        verdict = "INSUFFICIENT OOS TRADES"
+        verdict = f"INSUFFICIENT OOS TRADES (n={oos_gl}, need >=20)"
     elif oos_wr >= 0.45 and oos_wr >= (is_wr or 0) - 0.10:
         verdict = "EDGE HOLDS OUT-OF-SAMPLE"
+    elif oos_wr >= 0.35:
+        verdict = "WEAK OOS EDGE — sample small, review params"
     else:
         verdict = "OVERFIT RISK — review params"
-    return {"in_sample": {"wins": is_w, "losses": is_l,
-                          "win_rate": is_wr, "signals": is_n},
-            "out_sample": {"wins": oos_w, "losses": oos_l,
-                           "win_rate": oos_wr, "signals": oos_n},
-            "verdict": verdict}
+
+    return {
+        "n_symbols_tested": len([s for s in syms if len(data[s]) >= min_bars]),
+        "in_sample": {"wins": is_w, "losses": is_l,
+                      "win_rate": is_wr, "signals": is_n},
+        "oos_1": {"wins": oos1_w, "losses": oos1_l,
+                  "win_rate": wr(oos1_w, oos1_l), "signals": oos1_n},
+        "oos_2": {"wins": oos2_w, "losses": oos2_l,
+                  "win_rate": wr(oos2_w, oos2_l), "signals": oos2_n},
+        "oos_combined": {"wins": oos_w, "losses": oos_l,
+                         "win_rate": oos_wr, "signals": oos_gl},
+        "verdict": verdict,
+    }
 
 
 def run_mode(mode):
