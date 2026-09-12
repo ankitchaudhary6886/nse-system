@@ -5,10 +5,12 @@
 - Categories: RULES · INSTRUCTIONS · DEMANDS · IDEAS · IMAGINATIONS
 - DONE items stay. Execution details live in `EXECUTION_LOG.md`.
 - This file survives chat migration.
+- Filename is lowercase `backlog.md` (Windows case-safety).
 
 ---
 
 ## A. RULES  (always active)
+
 - **R1**  Whole files only. No patches. Ever.
 - **R2**  Plain English. Ask for screenshots when useful.
 - **R3**  VS Code (Windows) + Oracle Cloud VM via SSH.
@@ -20,6 +22,7 @@
 - **R9**  Every execution logged in EXECUTION_LOG.md.
 - **R10** No pausing; keep momentum.
 - **R11** 3-4 file edits per response when possible.
+- **R12** Execute new ideas only AFTER the machine is functionally complete.
 
 ---
 
@@ -43,7 +46,7 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 
 ### ID2 — Long-term Value Radar · **DONE (v2)**
 Tier A visible after promoter/CFO enrichment + band tuning.
-Tier A examples: RSYSTEMS, MADRASFERT, SANOFI, TANLA.
+Examples: RSYSTEMS, MADRASFERT, SANOFI, TANLA.
 
 ### ID3 — Custom scanners: swing + positional · **PARTIAL DONE**
 - ID3a Positional scanner — DONE (`positional_scanner.py`, Sat 10:00 IST).
@@ -58,11 +61,19 @@ Fundamentals now covers Nifty 500 + band union (~863 symbols).
 Full Nifty 1000 target.
 
 ### ID7 — Trim / unify / simplify · **IN PROGRESS**
-- Consolidate alert modules (telegram_alerts + swing_alerts)
+- Merge alert modules (telegram_alerts + swing_alerts) — **DONE this batch**
 - Pick one screener (scanner.py vs screener_engine.py)
 - Retire Streamlit app.py
 - Single universe source
 - Single price ingester
+
+### ID8 — Trend-regime scanner  · **FUTURE**
+Stocks whose current price is above BOTH EMA50 and EMA200.
+Simple filter, useful for cutting bear-market noise.
+- Daily list of "confirmed uptrend" symbols
+- Feeds other scanners as a pre-filter
+- Complements regime spectrum (market-level) with stock-level trend
+Do after ID7.
 
 ---
 
@@ -75,17 +86,16 @@ IM3 Self-documenting system.
 ## F. FEATURES COMPLETED
 
 ### FC Regime Spectrum · **DONE**
-5 levels: STRONG_BULL / BULL / NEUTRAL / WEAK / CAPITULATION.
-Sizing 1.00 / 1.00 / 0.75 / 0.50 / 0.25.
-`allows_swing` only in first three.
+5 levels, sizing scale, allows_swing only in first three.
 
 ### FP Fundamentals Pipeline · **DONE**
-Canonical `fundamentals_tv.py` fetches 863 symbols weekly (Sat 08:00).
-Adds promoter via `held_percent_insiders` (returned null by TV),
-CFO via `free_cash_flow_fq`. Universe = Nifty 500 ∪ band.
+Canonical `fundamentals_tv.py`, 863 symbols weekly (Sat 08:00).
 
 ### FS Sizing with fallback · **DONE**
-Conservative win-rate 0.35 when no cache/graded data. Regime multiplier applied.
+Conservative win-rate 0.35 when no cache. Regime multiplier applied.
+
+### FA Unified Alerts · **DONE this batch**
+`alerts.py` is canonical. `telegram_alerts.py` + `swing_alerts.py` are shims.
 
 ---
 
@@ -93,7 +103,7 @@ Conservative win-rate 0.35 when no cache/graded data. Regime multiplier applied.
 
 | ID   | Item                      | Status       |
 |------|---------------------------|--------------|
-| R1–R11 | Rules                   | Active       |
+| R1–R12 | Rules                   | Active       |
 | ID1  | All-weather swing         | DONE         |
 | ID2  | Value Radar v2            | DONE         |
 | ID3a | Positional scanner        | DONE         |
@@ -102,9 +112,11 @@ Conservative win-rate 0.35 when no cache/graded data. Regime multiplier applied.
 | ID5  | Feed life into stocks     | FUTURE       |
 | ID6  | Universe split            | PARTIAL      |
 | ID7  | Trim / unify / simplify   | IN PROGRESS  |
+| ID8  | Trend-regime scanner      | FUTURE       |
 | FC   | Regime spectrum           | DONE         |
 | FP   | Fundamentals pipeline     | DONE         |
 | FS   | Sizing fallback           | DONE         |
+| FA   | Unified alerts            | DONE         |
 
 ---
 
