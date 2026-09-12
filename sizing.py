@@ -1,20 +1,7 @@
 """
 Position sizing — half-Kelly with beginner-safe caps.
-v2 (2026-09-12): allocation now scales with the 5-level regime spectrum.
-  STRONG_BULL / BULL  -> 1.00x alloc
-  NEUTRAL             -> 0.75x alloc
-  WEAK                -> 0.50x alloc
-  CAPITULATION        -> 0.25x alloc
-
-Basis:
-  W = meta-model P(WIN) for the symbol (fallback: graded system win-rate)
-  b = payoff ratio 2.0 (target = 2R, stop = 1R by system design)
-  Kelly f* = (b*W - (1-W)) / b ; half-Kelly = f*/2
-Caps:
-  MAX_ALLOC      = 20% of capital per position (before regime scale)
-  RISK_PER_TRADE = 1% of capital max loss at stop
-Suggested value = min(half-kelly value, risk-based value, max-alloc value)
-                  * regime size multiplier
+v3 (2026-09-12): fallback win-rate 0.35 when no cache/graded history;
+regime spectrum multiplies alloc AND risk budget.
 """
 import db
 
@@ -22,6 +9,7 @@ B_PAYOFF = 2.0
 MAX_ALLOC = 0.20
 RISK_PER_TRADE = 0.01
 DEFAULT_CAPITAL = 1_000_000
+FALLBACK_WINRATE = 0.35
 
 
 def get_capital(conn=None):
@@ -100,6 +88,8 @@ def suggest(symbol, trigger=None, stop=None, capital=None, conn=None):
         wr = _system_winrate(conn)
         if wr is not None:
             w, src = wr, "graded system win-rate"
+    if w is None:
+        w, src = FALLBACK_WINRATE, "conservative fallback (no data yet)"
     if own:
         conn.close()
 
@@ -111,10 +101,6 @@ def suggest(symbol, trigger=None, stop=None, capital=None, conn=None):
            "regime_mult": regime_mult,
            "max_alloc_pct": MAX_ALLOC * 100,
            "risk_per_trade_pct": RISK_PER_TRADE * 100}
-    if w is None:
-        out["error"] = ("no win-rate basis yet "
-                        "(run swing grading / pwin cache first)")
-        return out
     f = kelly_fraction(w)
     half = f / 2.0
     alloc = min(half, MAX_ALLOC) * regime_mult

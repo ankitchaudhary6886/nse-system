@@ -2,8 +2,9 @@
 Fundamentals fetcher (canonical) — TradingView India scanner.
 Free, no auth, batch fetch. Fills the `fundamentals` table.
 
-v3 (2026-09-12): universe = Nifty 500 (stocks.active) UNION
-universe_broad band (1000-8000 cr), dedup. Targets ~1000-1500 symbols.
+v4 (2026-09-12): adds held_percent_insiders -> promoter_holding and
+free_cash_flow_fq -> cfo_positive. Unlocks tier A in Value Radar.
+Universe = Nifty 500 (stocks.active) UNION universe_broad band.
 """
 import sys
 import time
@@ -33,6 +34,8 @@ COLUMNS = [
     "revenue_growth_fy",
     "net_income_growth_fy",
     "dividend_yield_recent",
+    "held_percent_insiders",       # -> promoter_holding
+    "free_cash_flow_fq",           # -> cfo_positive (proxy)
 ]
 
 
@@ -109,6 +112,10 @@ def run(limit=None):
             m = dict(zip(COLUMNS, d))
             mcap = m.get("market_cap_basic")
             de = m.get("debt_to_equity_fq")
+            fcf = m.get("free_cash_flow_fq")
+            cfo_flag = None
+            if fcf is not None:
+                cfo_flag = 1 if fcf > 0 else 0
             _upsert(conn, (
                 sym, m.get("name"), sectors.get(sym),
                 m.get("close"),
@@ -123,9 +130,11 @@ def run(limit=None):
                 m.get("net_margin_fq"),
                 m.get("revenue_growth_fy"),
                 m.get("net_income_growth_fy"),
-                None, None, None,
+                m.get("held_percent_insiders"),
+                None,   # pledge_pct (not on TV)
+                None,   # fii_holding (not on TV)
                 m.get("dividend_yield_recent"),
-                None,
+                cfo_flag,
                 now,
             ))
             saved += 1
@@ -143,7 +152,8 @@ def run(limit=None):
 def show(n=10):
     conn = db.get_conn()
     rows = conn.execute(
-        "SELECT symbol, name, pe, roce, debt_to_equity, dividend_yield "
+        "SELECT symbol, name, pe, roce, debt_to_equity, "
+        "promoter_holding, cfo_positive "
         "FROM fundamentals WHERE uploaded_at LIKE 'tv:%' "
         "ORDER BY symbol LIMIT ?", (n,)).fetchall()
     conn.close()
@@ -157,8 +167,17 @@ def count():
     n = conn.execute(
         "SELECT COUNT(*) FROM fundamentals "
         "WHERE uploaded_at LIKE 'tv:%'").fetchone()[0]
+    n_prom = conn.execute(
+        "SELECT COUNT(*) FROM fundamentals "
+        "WHERE uploaded_at LIKE 'tv:%' AND promoter_holding IS NOT NULL"
+    ).fetchone()[0]
+    n_cfo = conn.execute(
+        "SELECT COUNT(*) FROM fundamentals "
+        "WHERE uploaded_at LIKE 'tv:%' AND cfo_positive IS NOT NULL"
+    ).fetchone()[0]
     conn.close()
-    log.info(f"fundamentals rows tagged 'tv:': {n}")
+    log.info(f"fundamentals rows: {n} | with promoter: {n_prom} | "
+             f"with cfo: {n_cfo}")
     return n
 
 
