@@ -1,8 +1,7 @@
 """
 Swing Desk engine (live, no execution).
 EOD: regime gate + breadth gate + sector gate + fund veto -> signals -> Telegram.
-When regime is DEFENSIVE, falls back to ALL-WEATHER mode (stricter filters,
-half position size).
+When regime is DEFENSIVE, falls back to ALL-WEATHER mode.
 Daily: grade pending signals WIN / LOSS / EXPIRED / TIMEOUT.
 """
 import datetime as dt
@@ -11,19 +10,14 @@ import db
 from scanner import Screener
 from setup import SetupDetector
 from regime import MarketRegime
+from universe_helper import combined_universe
 import sector_gate
 import breadth
 
 
 def universe(conn):
-    rows = conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT 1000").fetchall()
-    core = [r[0] for r in conn.execute(
-        "SELECT symbol FROM stocks WHERE active=1")]
-    return sorted(set([r[0] for r in rows]) | set(core))
+    """Canonical combined universe (band + active)."""
+    return combined_universe(conn, band_limit=1000)
 
 
 def ensure(conn):
@@ -32,7 +26,6 @@ def ensure(conn):
         stop REAL, target REAL, risk_pct REAL, pullback REAL,
         impulse REAL, ema_zone TEXT, outcome TEXT,
         updated_at TEXT)""")
-    # safe migration: add 'mode' column if missing
     cols = [r[1] for r in conn.execute("PRAGMA table_info(swing_signals)")]
     if "mode" not in cols:
         try:
@@ -52,14 +45,12 @@ def _is_vetoed(sym, conn):
 
 
 def _scan_all_weather(conn, today):
-    """High-conviction setups during DEFENSIVE regime. Half size."""
     try:
         import all_weather
     except Exception as e:
         print(f"[AW] module missing: {e}")
         return 0
 
-    # Relaxed breadth: only above50 >= 0.35
     try:
         b = breadth.compute(conn)
         if b["above50"] < 0.35:
@@ -99,8 +90,8 @@ def _scan_all_weather(conn, today):
         print(f"  [AW] {sym:<12} {st['pattern']:<18} entry {st['entry']} "
               f"stop {st['stop']} target {st['target']} fund {fs}")
         try:
-            import swing_alerts
-            swing_alerts.notify_all_weather(sym, st)
+            from alerts import notify_all_weather
+            notify_all_weather(sym, st)
         except Exception as e:
             print(f"  [AW] alert skipped: {e}")
     print(f"[AW] all-weather signals stored: {n}")
@@ -112,13 +103,13 @@ def scan():
     ensure(conn)
     reg = MarketRegime.compute()
     today = dt.date.today().isoformat()
-    print(f"regime: {'BULLISH' if reg.is_bullish else 'DEFENSIVE'} "
-          f"({reg.symbol})")
+    print(f"regime: {reg.level} ({reg.symbol}) "
+          f"size_mult={reg.size_mult} allows_swing={reg.allows_swing}")
     conn.execute(
         "DELETE FROM swing_signals WHERE signal_date=? AND mode='SWING'",
         (today,))
 
-    if not reg.is_bullish:
+    if not reg.allows_swing:
         print("defensive regime -> running ALL-WEATHER scan")
         n_aw = _scan_all_weather(conn, today)
         conn.commit()
@@ -160,7 +151,6 @@ def scan():
         if not st.triggered:
             continue
 
-        # Staleness check: only accept patterns completed on the last bar
         last_bar_date = str(df.index[-1].date())
         if st.signal_date != last_bar_date:
             continue
@@ -185,8 +175,8 @@ def scan():
               f"SL Rs {st.stop_loss}  TGT Rs {st.target_price}  "
               f"risk {risk_pct:.1%}  zone {st.ema_proximity}")
         try:
-            import swing_alerts
-            swing_alerts.notify_setup(st)
+            from alerts import notify_setup
+            notify_setup(st)
         except Exception as e:
             print(f"  alert skipped: {e}")
     conn.commit()

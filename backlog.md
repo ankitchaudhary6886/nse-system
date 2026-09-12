@@ -30,7 +30,8 @@
 ### 2026-09-12
 I1 PO issues · I2 Sequence 1→2→3 · I3 Handoff · I4 impulse fix ·
 I5 fundamentals · I6 restructure BACKLOG · I7 EXECUTION_LOG ·
-I8 3-4 edits per response.
+I8 3-4 edits per response · I9 Universe unification via shared module ·
+I10 Replace `telegram_alerts`/`swing_alerts` with unified `alerts` (shims).
 
 ---
 
@@ -45,11 +46,10 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 115 candidates → 5 signals. Verified.
 
 ### ID2 — Long-term Value Radar · **DONE (v2)**
-Tier A visible after promoter/CFO enrichment + band tuning.
-Examples: RSYSTEMS, MADRASFERT, SANOFI, TANLA.
+Tier A visible. Examples: RSYSTEMS, MADRASFERT, SANOFI, TANLA.
 
 ### ID3 — Custom scanners: swing + positional · **PARTIAL DONE**
-- ID3a Positional scanner — DONE (`positional_scanner.py`, Sat 10:00 IST).
+- ID3a Positional scanner — DONE (`positional_scanner.py`).
 - ID3b Swing scanner — partially covered by screener_engine.py.
 
 ### ID4 — Free data source expansion (ScanX etc.) · **FUTURE**
@@ -57,23 +57,23 @@ Examples: RSYSTEMS, MADRASFERT, SANOFI, TANLA.
 ### ID5 — "Feeding of life into stocks" · **FUTURE**
 
 ### ID6 — Universe split · **PARTIAL DONE**
-Fundamentals now covers Nifty 500 + band union (~863 symbols).
-Full Nifty 1000 target.
+Fundamentals covers Nifty 500 ∪ band (~863). Full Nifty 1000 target.
 
 ### ID7 — Trim / unify / simplify · **IN PROGRESS**
-- Merge alert modules (telegram_alerts + swing_alerts) — **DONE this batch**
-- Pick one screener (scanner.py vs screener_engine.py)
-- Retire Streamlit app.py
-- Single universe source
-- Single price ingester
+- Merge alert modules — **DONE** (`alerts.py` canonical; shims in place)
+- Canonical universe source — **DONE** (`universe_helper.py`; swing_live migrated)
+- Other callers to migrate: value_radar, positional_scanner, patterns, meta_model
+- Pick one screener (scanner.py vs screener_engine.py) — pending
+- Retire Streamlit app.py — deferred (nse.service still running, user not using it)
+- Single price ingester — pending
 
-### ID8 — Trend-regime scanner  · **FUTURE**
-Stocks whose current price is above BOTH EMA50 and EMA200.
-Simple filter, useful for cutting bear-market noise.
-- Daily list of "confirmed uptrend" symbols
-- Feeds other scanners as a pre-filter
-- Complements regime spectrum (market-level) with stock-level trend
-Do after ID7.
+### ID8 — Trend-regime scanner · **DONE this batch**
+Stocks with current close > EMA50 AND > EMA200.
+- Daily run after daily_update
+- Score rewards golden-cross structure + rising EMAs + fresh crosses
+- Stored in `trend_candidates`
+- Telegram alert on 20%+ day-over-day pool changes
+Files: `trend_scanner.py`
 
 ---
 
@@ -92,10 +92,17 @@ IM3 Self-documenting system.
 Canonical `fundamentals_tv.py`, 863 symbols weekly (Sat 08:00).
 
 ### FS Sizing with fallback · **DONE**
-Conservative win-rate 0.35 when no cache. Regime multiplier applied.
+Conservative win-rate 0.35. Regime multiplier applied.
 
-### FA Unified Alerts · **DONE this batch**
-`alerts.py` is canonical. `telegram_alerts.py` + `swing_alerts.py` are shims.
+### FA Unified Alerts · **DONE**
+`alerts.py` canonical. `telegram_alerts.py` + `swing_alerts.py` are shims.
+
+### FU Canonical Universe · **DONE**
+`universe_helper.py` — `band_universe`, `active_universe`, `combined_universe`.
+`swing_live.py` migrated this batch. Others in next batch.
+
+### FT Trend Scanner · **DONE**
+`trend_scanner.py` — ID8 feature. Daily run + day-over-day alert.
 
 ---
 
@@ -112,11 +119,13 @@ Conservative win-rate 0.35 when no cache. Regime multiplier applied.
 | ID5  | Feed life into stocks     | FUTURE       |
 | ID6  | Universe split            | PARTIAL      |
 | ID7  | Trim / unify / simplify   | IN PROGRESS  |
-| ID8  | Trend-regime scanner      | FUTURE       |
+| ID8  | Trend-regime scanner      | DONE         |
 | FC   | Regime spectrum           | DONE         |
 | FP   | Fundamentals pipeline     | DONE         |
 | FS   | Sizing fallback           | DONE         |
 | FA   | Unified alerts            | DONE         |
+| FU   | Canonical universe        | DONE         |
+| FT   | Trend scanner             | DONE         |
 
 ---
 
@@ -124,3 +133,4 @@ Conservative win-rate 0.35 when no cache. Regime multiplier applied.
 - Settings `.env` / admin creds
 - HTTPS via nginx + certbot
 - Rotate secrets
+- Retire Streamlit app.py (nse.service)
