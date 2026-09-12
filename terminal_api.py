@@ -18,16 +18,19 @@ APP_PASS = os.getenv("ADMIN_PASS", "change_this_password")
 API_HOST = os.getenv("API_HOST", "127.0.0.1")
 security = HTTPBasic()
 
+
 @asynccontextmanager
 async def lifespan(app):
     scheduler_bg.start()
     yield
     scheduler_bg.stop()
 
-app = FastAPI(title="NSE Intelligence Terminal", version="11.0",
+
+app = FastAPI(title="NSE Intelligence Terminal", version="12.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
+
 
 def verify_user(credentials: HTTPBasicCredentials = Depends(security)):
     user_ok = secrets.compare_digest(credentials.username, APP_USER)
@@ -39,6 +42,7 @@ def verify_user(credentials: HTTPBasicCredentials = Depends(security)):
             headers={"WWW-Authenticate": "Basic"})
     return credentials.username
 
+
 def safe_float(v, nd=2):
     try:
         if v is None:
@@ -47,12 +51,15 @@ def safe_float(v, nd=2):
     except Exception:
         return None
 
+
 def get_conn():
     return db.get_conn()
+
 
 @app.get("/")
 def root(user: str = Depends(verify_user)):
     return FileResponse("terminal/static/index.html")
+
 
 @app.get("/api/health")
 def health(user: str = Depends(verify_user)):
@@ -65,17 +72,24 @@ def health(user: str = Depends(verify_user)):
     return {"ok": True, "prices_rows": n,
             "time": dt.datetime.now().isoformat()}
 
+
 @app.get("/api/regime")
 def regime(user: str = Depends(verify_user)):
     try:
         from regime import MarketRegime
         rg = MarketRegime.compute()
         return {"ok": True, "is_bullish": rg.is_bullish,
-                "stance": "BULLISH" if rg.is_bullish else "DEFENSIVE",
+                "level": rg.level,
+                "size_mult": rg.size_mult,
+                "allows_swing": rg.allows_swing,
+                "allows_aw": rg.allows_aw,
+                "stance": rg.level,
                 "symbol": rg.symbol, "index_close": rg.index_close,
-                "ema10": rg.ema10}
+                "ema10": rg.ema10, "ema20": rg.ema20,
+                "ema10_slope_pct": rg.ema10_slope_pct}
     except Exception as e:
         return {"ok": False, "stance": "UNAVAILABLE", "error": str(e)}
+
 
 @app.get("/api/macro")
 def macro_flow(user: str = Depends(verify_user)):
@@ -88,6 +102,7 @@ def macro_flow(user: str = Depends(verify_user)):
         print(f"[MACRO] api failed: {e}")
     return {"fii_net": None, "dii_net": None, "net_flow": None}
 
+
 @app.get("/api/toppicks")
 def toppicks(user: str = Depends(verify_user)):
     import top_picks
@@ -97,11 +112,13 @@ def toppicks(user: str = Depends(verify_user)):
         print(f"[TOPPICKS] compute failed: {e}")
     return {"picks": top_picks.top(15)}
 
+
 @app.post("/api/pwin/refresh")
 def pwin_refresh(bg: BackgroundTasks, user: str = Depends(verify_user)):
     import pwin_cache
     bg.add_task(pwin_cache.refresh_all)
     return {"started": True}
+
 
 @app.get("/api/swing/signals")
 def swing_signals(limit: int = 80, user: str = Depends(verify_user)):
@@ -111,7 +128,7 @@ def swing_signals(limit: int = 80, user: str = Depends(verify_user)):
     swing_live.ensure(conn)
     rows = conn.execute(
         "SELECT signal_date, symbol, entry_trigger, stop, target, "
-        "risk_pct, pullback, impulse, ema_zone, outcome "
+        "risk_pct, pullback, impulse, ema_zone, outcome, mode "
         "FROM swing_signals ORDER BY signal_date DESC LIMIT ?",
         (limit,)).fetchall()
     signals = [{"date": r[0], "symbol": r[1],
@@ -121,6 +138,7 @@ def swing_signals(limit: int = 80, user: str = Depends(verify_user)):
                 "pullback": safe_float(r[6], 3),
                 "impulse": safe_float(r[7], 3),
                 "ema_zone": r[8], "outcome": r[9],
+                "mode": r[10] or "SWING",
                 "p_win": None} for r in rows]
     score = {r[0]: r[1] for r in conn.execute(
         "SELECT outcome, COUNT(*) FROM swing_signals "
@@ -135,12 +153,14 @@ def swing_signals(limit: int = 80, user: str = Depends(verify_user)):
     return {"signals": signals, "scorecard": score,
             "win_rate": round(100 * wins / graded, 1) if graded else None}
 
+
 @app.post("/api/swing/scan")
 def run_swing_scan(bg: BackgroundTasks, user: str = Depends(verify_user)):
     import swing_live
     bg.add_task(swing_live.update_outcomes)
     bg.add_task(swing_live.scan)
     return {"started": True}
+
 
 @app.get("/api/radar")
 def radar(user: str = Depends(verify_user)):
@@ -181,10 +201,12 @@ def radar(user: str = Depends(verify_user)):
         groups[k].sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
     return {"groups": groups, "events": events, "total": len(rows)}
 
+
 @app.get("/api/patterns/latest")
 def patterns_latest(limit: int = 100, user: str = Depends(verify_user)):
     import patterns
     return {"patterns": patterns.latest(limit=limit)}
+
 
 @app.get("/api/patterns/stats")
 def patterns_stats(user: str = Depends(verify_user)):
@@ -194,11 +216,13 @@ def patterns_stats(user: str = Depends(verify_user)):
     except Exception as e:
         return {"stats": {}, "error": str(e)}
 
+
 @app.post("/api/patterns/scan")
 def patterns_scan(bg: BackgroundTasks, user: str = Depends(verify_user)):
     import patterns
     bg.add_task(patterns.run)
     return {"started": True}
+
 
 @app.get("/api/patterns/{symbol}")
 def patterns_for_symbol(symbol: str, limit: int = 50,
@@ -207,6 +231,7 @@ def patterns_for_symbol(symbol: str, limit: int = 50,
     return {"symbol": symbol.upper(),
             "patterns": patterns.for_symbol(symbol.upper(), limit=limit),
             "live_detect": patterns.detect_symbol(symbol.upper())}
+
 
 @app.get("/api/templates/latest")
 def templates_latest(limit: int = 30, user: str = Depends(verify_user)):
@@ -224,15 +249,18 @@ def templates_latest(limit: int = 30, user: str = Depends(verify_user)):
                          "template": r[2],
                          "similarity": r[3]} for r in rows]}
 
+
 @app.get("/api/delivery/top")
 def delivery_top(n: int = 30, user: str = Depends(verify_user)):
     import delivery
     return {"rows": delivery.top(n)}
 
+
 @app.get("/api/delivery/accum")
 def delivery_accum(n: int = 30, user: str = Depends(verify_user)):
     import delivery
     return {"candidates": delivery.accumulation(n)}
+
 
 @app.get("/api/delivery/{symbol}")
 def delivery_symbol(symbol: str, limit: int = 20,
@@ -241,6 +269,27 @@ def delivery_symbol(symbol: str, limit: int = 20,
     return {"symbol": symbol.upper(),
             "history": delivery.for_symbol(symbol.upper(), limit),
             "score": delivery.delivery_score(symbol.upper())}
+
+
+@app.get("/api/value-radar")
+def value_radar_api(n: int = 25, tier: str = None,
+                    user: str = Depends(verify_user)):
+    import value_radar
+    try:
+        return {"picks": value_radar.top(n, tier=tier)}
+    except Exception as e:
+        return {"picks": [], "error": str(e)}
+
+
+@app.get("/api/positional")
+def positional_api(n: int = 25, tier: str = None,
+                   user: str = Depends(verify_user)):
+    import positional_scanner
+    try:
+        return {"picks": positional_scanner.top(n, tier=tier)}
+    except Exception as e:
+        return {"picks": [], "error": str(e)}
+
 
 @app.post("/api/webhook/ingest")
 def webhook_ingest(payload: dict,
@@ -256,8 +305,7 @@ def webhook_ingest(payload: dict,
     if not token:
         raise HTTPException(
             status_code=503,
-            detail="webhook not configured (set WEBHOOK_TOKEN in .env "
-                   "or settings.webhook_token)")
+            detail="webhook not configured")
     got_hdr = x_webhook_token or ""
     got_body = str(payload.get("token", ""))
     ok = (secrets.compare_digest(got_hdr, token) or
@@ -287,6 +335,7 @@ def webhook_ingest(payload: dict,
     except Exception:
         pass
     return {"stored": True}
+
 
 @app.get("/api/cockpit/{symbol}/chart")
 def cockpit_chart(symbol: str, user: str = Depends(verify_user)):
@@ -344,6 +393,7 @@ def cockpit_chart(symbol: str, user: str = Depends(verify_user)):
             "ema50": line("ema50"), "ema200": line("ema200"),
             "swing": swing}
 
+
 @app.get("/api/cockpit/{symbol}/summary")
 def cockpit_summary(symbol: str, user: str = Depends(verify_user)):
     sym = symbol.upper()
@@ -381,6 +431,7 @@ def cockpit_summary(symbol: str, user: str = Depends(verify_user)):
     return {"symbol": sym, "sector": sector, "mcap_cr": mcap,
             "fund_score": fund_score, "status": status, "news": news}
 
+
 @app.get("/api/meta/{symbol}")
 def meta_score(symbol: str, user: str = Depends(verify_user)):
     import meta_model
@@ -391,29 +442,24 @@ def meta_score(symbol: str, user: str = Depends(verify_user)):
         return {"symbol": symbol, "p_win": None, "why": [],
                 "error": str(e)}
 
-@app.get("/api/value-radar")
-def value_radar_api(n: int = 25, tier: str = None,
-                    user: str = Depends(verify_user)):
-    import value_radar
-    try:
-        return {"picks": value_radar.top(n, tier=tier)}
-    except Exception as e:
-        return {"picks": [], "error": str(e)}
 
 @app.get("/api/model/runs")
 def model_runs(n: int = 10, user: str = Depends(verify_user)):
     import model_report
     return {"runs": model_report.history(n)}
 
+
 @app.get("/api/ledger/stats")
 def ledger_stats(user: str = Depends(verify_user)):
     import ledger
     return ledger.compute_stats() or {"total_trades": 0}
 
+
 @app.get("/api/ledger/trades")
 def ledger_trades(limit: int = 100, user: str = Depends(verify_user)):
     import ledger
     return {"trades": ledger.get_trades(limit)}
+
 
 @app.get("/api/validate/latest")
 def validate_latest(user: str = Depends(verify_user)):
@@ -434,6 +480,7 @@ def validate_latest(user: str = Depends(verify_user)):
                 out[mode] = {"run_date": d}
     return out
 
+
 @app.get("/api/sizing/{symbol}")
 def sizing(symbol: str, trigger: float = None, stop: float = None,
            user: str = Depends(verify_user)):
@@ -442,6 +489,7 @@ def sizing(symbol: str, trigger: float = None, stop: float = None,
         return sz.suggest(symbol.upper(), trigger=trigger, stop=stop)
     except Exception as e:
         return {"symbol": symbol, "error": str(e)}
+
 
 @app.post("/api/sizing/capital")
 def sizing_capital(payload: dict, user: str = Depends(verify_user)):
@@ -454,6 +502,7 @@ def sizing_capital(payload: dict, user: str = Depends(verify_user)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @app.get("/api/screener/scan")
 def screener_scan(limit: int = 40, user: str = Depends(verify_user)):
     import screener_engine
@@ -464,6 +513,7 @@ def screener_scan(limit: int = 40, user: str = Depends(verify_user)):
     except Exception as e:
         return {"scanned": 0, "hits": [], "error": str(e)}
 
+
 @app.get("/api/screener/{symbol}")
 def screener_check(symbol: str, user: str = Depends(verify_user)):
     import screener_engine
@@ -471,6 +521,7 @@ def screener_check(symbol: str, user: str = Depends(verify_user)):
         return screener_engine.evaluate_stock(symbol.upper())
     except Exception as e:
         return {"error": str(e)}
+
 
 if __name__ == "__main__":
     import uvicorn
