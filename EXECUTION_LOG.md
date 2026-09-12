@@ -3,117 +3,228 @@
 Purpose: survives chat migrations. New session reads `backlog.md` +
 this file and knows the full history.
 
-Format: numbered batch entries with Files / What / Verify / Status.
+Format: numbered batches. Session boundaries marked.
+Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ---
 
-## Session 1 — 2026-09-12 (morning)
+## SESSION 1 — 2026-09-12 (morning)
 
 ### #001 · regime.py — yfinance period fix
 - Files: `regime.py`
-- What: invalid `period="{days}d"` → start/end dates. Fallback chain preserved.
+- What: `period="{days}d"` invalid → `start`/`end` dates. Fallback chain
+  ^CNXSMALLCAP → ^CNXSC → NIFTY_SMALLCAP_100.NS → ^NSEI.
+- Verify: VM → `RegimeState` returned, benchmark = ^NSEI.
 - Status: DEPLOYED · VERIFIED
 
-### #002 · screener_engine.py — yfinance period fix + index fallback
+### #002 · screener_engine.py — yfinance period + index fallback
+- Files: `screener_engine.py`
 - Status: DEPLOYED · VERIFIED
 
 ### #003 · db.py — central schema (29 tables)
+- Files: `db.py`
 - Status: DEPLOYED · VERIFIED
 
 ### #004 · meta_model.py — feature guard + bundle format
+- Files: `meta_model.py`
 - Status: DEPLOYED · VERIFIED
 
 ### #005 · events + swing_live + deepdive — three fixes
+- Files: `events.py`, `swing_live.py`, `deepdive.py`
 - Status: DEPLOYED · VERIFIED
 
 ### #006 · backtest + swing_live + screener_engine — staleness
+- Files: `backtest.py`, `swing_live.py`, `screener_engine.py`
 - Status: DEPLOYED · VERIFIED
 
 ### #007 · app.py — optional-panel guards
+- Files: `app.py`
 - Status: DEPLOYED · VERIFIED
 
 ### #008 · log_utils + daily_update + scheduler_bg + requirements split
+- Files: `log_utils.py` (new), `daily_update.py`, `scheduler_bg.py`,
+  `requirements.txt`, `requirements-optional.txt` (new)
 - Status: DEPLOYED · VERIFIED
 
 ### #009 · setup.py v3.1 — impulse indexing bug fix
-- Result: impulse range 35.1–46.8% (was 10–3000%). 2 setups found (was 0).
+- Files: `setup.py`
+- Result: impulse range 35.1–46.8% (was 10–3000%). First setups appeared.
 - Status: DEPLOYED · VERIFIED
 
-### #010 · all_weather.py + swing_live + swing_alerts — all-weather mode
+### #010 · all_weather.py — all-weather swing mode
+- Files: `all_weather.py` (new), `swing_live.py`, `swing_alerts.py`
 - Result: 115 candidates → 5 signals → Telegram fired.
 - Status: DEPLOYED · VERIFIED
 
 ### #011 · value_radar.py
+- Files: `value_radar.py` (new)
 - Status: DEPLOYED · VERIFIED
 
 ### #012 · value_radar wiring
+- Files: `scheduler_bg.py`, `terminal_api.py`, `index.html`, `app.js`
 - Status: DEPLOYED · VERIFIED
 
-### #013 · fundamentals_tv.py + scheduler — canonical fetcher
-- Result: 863 symbols saved.
+### #013 · fundamentals_tv.py — canonical fetcher
+- Files: `fundamentals_tv.py`, `scheduler_bg.py`
+- Result: 863 symbols.
 - Status: DEPLOYED · VERIFIED
 
 ### #014 · BACKLOG + EXECUTION_LOG restructure
+- Files: `backlog.md`, `EXECUTION_LOG.md` (new)
 - Status: DEPLOYED · VERIFIED
 
 ---
 
-## Session 2 — 2026-09-12 (midday → evening)
+## SESSION 2 — 2026-09-12 (midday → evening)
 
 ### #015 · Feature C — regime spectrum
 - Files: `regime_spectrum.py` (new), `regime.py`, `sizing.py`
-- Result: `level=CAPITULATION size_mult=0.25 allows_swing=False`.
+- Result: 5 levels, sizing scale 1.00 / 1.00 / 0.75 / 0.50 / 0.25.
+  `allows_swing` only in first three.
 - Status: DEPLOYED · VERIFIED
 
-### #016 · Value Radar v2 — tier tuning + promoter/CFO enrichment
+### #016 · Value Radar v2 — tiers + promoter/CFO enrichment
+- Files: `value_radar.py`, `fundamentals_tv.py`
 - Result: tier A appeared (RSYSTEMS, MADRASFERT, SANOFI, TANLA).
 - Status: DEPLOYED · VERIFIED
 
-### #017 · Sizing — fallback win-rate 0.35
+### #017 · Sizing — fallback win-rate
+- Files: `sizing.py`
 - Status: DEPLOYED · VERIFIED
 
-### #018 · Positional scanner (ID3a)
+### #018 · positional_scanner.py (ID3a)
+- Files: `positional_scanner.py` (new)
 - Result: 50 picks saved.
 - Status: DEPLOYED · VERIFIED
 
-### #019 · Alerts unification (ID7)
-- Files: `alerts.py` (new), `telegram_alerts.py` + `swing_alerts.py` shims.
+### #019 · alerts.py — unified alerts (ID7)
+- Files: `alerts.py` (new), `telegram_alerts.py`, `swing_alerts.py`
 - Status: DEPLOYED · VERIFIED
 
 ### #020 · universe_helper.py (ID7)
-- Files: `universe_helper.py` (new), `swing_live.py` migrated.
+- Files: `universe_helper.py` (new), `swing_live.py` migrated
 - Status: DEPLOYED · VERIFIED
 
 ### #021 · trend_scanner.py (ID8)
-- Result: 100+ candidates; day-over-day alert wired.
+- Files: `trend_scanner.py` (new)
 - Status: DEPLOYED · VERIFIED
 
 ### #022 · universe_helper migration (ID7 cont.)
-- Files: `value_radar.py`, `positional_scanner.py` migrated.
+- Files: `value_radar.py`, `positional_scanner.py`
 - Status: DEPLOYED · VERIFIED
 
 ### #023 · Scanners UI (ID9)
 - Files: `terminal/static/scanners.js` (new), `index.html`
 - Status: DEPLOYED · VERIFIED
 
-### #024 · Trend v2 (score rebalance) + meta-model v7 (33 features)
+### #024 · Trend v2 + meta_model v7 (33 features)
 - Files: `trend_scanner.py`, `meta_model.py`
-- Result: trend score still saturated at 100; meta v7 AUC unchanged (0.629)
-- Status: DEPLOYED · PARTIAL (see #025)
+- Result: trend still saturated at 100; meta AUC unchanged 0.629.
+- Status: DEPLOYED · PARTIAL
 
 ### #025 · Trend v3 — unbounded score
 - Files: `trend_scanner.py`
-- What: score is now raw and unbounded. Components use continuous bands.
-- Status: DEPLOYED · AWAITING VERIFICATION
+- Result: scores differentiate (100.0 / 99.8 / 99.3 / ...).
+- Status: DEPLOYED · VERIFIED
 
-### #026 · Validation harness run (walk-forward + Monte-Carlo)
-- Files: none (run only)
-- What: `validate.py all` to confirm the edge holds out-of-sample.
-- Status: AWAITING RUN
+### #026 · validate.py v3 — fast walk-forward
+- Files: `validate.py`
+- What: delegates to Backtester (100x faster). Dual OOS windows.
+- Status: DEPLOYED · VERIFIED
+
+### #027 · Setup v3.2 — widen impulse
+- Files: `setup.py`, `quick_setup_diag.py` (new), `quick_funnel.py` (new)
+- Result: setup pass 0.4% → 3.2%; diag identified 1c_ema10_breaks as
+  biggest killer (50%).
+- Status: DEPLOYED · VERIFIED
+
+### #028 · Setup v3.3 — widen 1c / PB
+- Files: `setup.py`
+- Result: setup pass 3.2% → 8.0%; 89 setups in sample.
+- Status: DEPLOYED · VERIFIED
+
+### #029 · fast_wf.py — target sweep
+- Files: `fast_wf.py` (new)
+- Result: 2R PF 1.21 / 2.5R PF 1.30 / 3R PF 1.43.
+  Decision: adopt 3R (monotonic improvement).
+- Status: DEPLOYED · VERIFIED
+
+### #030 · Sizing v4 — quality multiplier
+- Files: `sizing.py`
+- What: shape_score 0-100 → multiplier 0.60x-1.20x. Applied on top of
+  regime multiplier.
+- Status: DEPLOYED · VERIFIED
+
+### #031 · strategy_runs.py — durable ledger
+- Files: `strategy_runs.py` (new), `fast_wf.py` logging
+- Status: DEPLOYED · VERIFIED
+
+### #032 · Tranche exits tested (ID18)
+- Files: `backtest.py`, `fast_wf.py`
+- Result: PF identical to full-exit (1.45 vs 1.43), DD worse by 7.3pp,
+  return worse by 65pp. REJECTED per R16.
+- Status: REJECTED · Code retained behind `TRANCHES_ENABLED = False`
+
+### #033 · Strategy runs dashboard
+- Files: `terminal_api.py`, `terminal/static/strategy_runs.js` (new),
+  `index.html`
+- Status: DEPLOYED · VERIFIED
+
+### #034 · strategy_config.py — central config (ID19)
+- Files: `strategy_config.py` (new), `setup.py`, `backtest.py`,
+  `scanner.py`, `sizing.py`, `all_weather.py`
+- Verify: WF numbers unchanged (185 trades / PF 1.43) confirming behavior
+  preservation.
+- Status: DEPLOYED · VERIFIED
+
+### #035 · Deployment verification (ID21)
+- Files: `verify_deployment.py` (new), `terminal_api.py`,
+  `terminal/static/deployment.js` (new), `index.html`
+- Status: DEPLOYED · VERIFIED
+
+### #036 · Graceful skips — ml_predict + sheets_sync
+- Files: `ml_predict.py`, `sheets_sync.py`, `verify_deployment.py`
+- Result: 15/15 checks green. `ml_train.py` created `data/ml_models.pkl`
+  (AUC 0.584 6M / 0.589 12M).
+- Status: DEPLOYED · VERIFIED
+
+### #037 · research_cockpit.py (ID22 v1)
+- Files: `research_cockpit.py` (new), `terminal_api.py`,
+  `terminal/static/research.js` (new), `index.html`
+- What: per-symbol 5y historical behaviour — P(trigger), P(+1R..+4R),
+  median bars, MFE/MAE distributions, outcome mix.
+- Status: DEPLOYED · VERIFIED
+
+### #038 · Research Universe (ID22b)
+- Files: `research_cockpit.py`, `terminal_api.py`,
+  `terminal/static/research_universe.js` (new), `index.html`
+- What: today's setups joined with cached per-symbol stats.
+- Status: DEPLOYED · VERIFIED
+
+### #039 · Warm cache scheduler (ID22c)
+- Files: `research_cockpit.py`, `scheduler_bg.py`
+- What: job at 16:20 IST computes stats for all today's signals.
+- Status: DEPLOYED · VERIFIED
+
+### #040 · Sector aggregation + sortable UI (ID23 / R24)
+- Files: `research_cockpit.py`, `terminal_api.py`,
+  `terminal/static/research_sector.js` (new), `research_universe.js`
+  (sortable + reliability), `index.html`
+- What: pools raw setups across symbols by sector, recomputes stats on
+  the pool. UI now sortable, n-reliability colour-coded.
+- Status: DEPLOYED · VERIFIED
+
+### #041 · Fix warm_cache --force + CACHE_VERSION
+- Files: `research_cockpit.py`
+- What: `--force` was passing `use_cache=True` so old payloads without
+  `raw_setups` were returned. Now passes `use_cache=False`.
+  `CACHE_VERSION = 2` auto-invalidates old payloads.
+- Result: sector aggregation now shows real pooled n / P1R / P2R / P3R.
+- Status: DEPLOYED · VERIFIED
 
 ---
 
 ## HOW NEW SESSIONS USE THIS
-1. Read `backlog.md` — know rules, ideas, current status.
-2. Read `EXECUTION_LOG.md` — know exactly what shipped.
+1. Read `backlog.md` — rules, ideas, current status.
+2. Read `EXECUTION_LOG.md` — exactly what shipped.
 3. Continue from the last entry's status.
