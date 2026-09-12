@@ -1,11 +1,12 @@
 """
-Hiren Gabani Master Pullback — OFFICIAL v3.3.
+Hiren Gabani Master Pullback — OFFICIAL v3.4.
 6-point checklist + mother-candle trigger + PDL stop + 5% rule.
 
 v3.1 — impulse indexing bug fix.
 v3.2 — widened impulse 25-50% -> 18-75%, PB 12-20% -> 8-25%.
-v3.3 — EMA10-break tolerance 0.35 -> 0.45; PB floor 8% -> 6%;
-       PB days cap 15 -> 20. Diag showed 1c killed 50% of candidates.
+v3.3 — EMA10-break tolerance 0.35 -> 0.45; PB floor 8% -> 6%.
+v3.4 — TARGET_R_MULTIPLE 2.0 -> 3.0 after walk-forward sweep:
+       3R PF 1.43 vs 2R PF 1.21, expectancy 0.276R vs 0.126R.
 """
 from dataclasses import dataclass, field
 from typing import List
@@ -36,12 +37,12 @@ class SetupDetector:
     IMPULSE_LOOKBACK = 90
     IMPULSE_MIN_PCT = 0.18
     IMPULSE_MAX_PCT = 0.75
-    EMA10_BREAK_TOL = 0.45        # v3.3 was 0.35
+    EMA10_BREAK_TOL = 0.45
     PB_LOOKBACK = 25
-    PB_MIN_PCT = 0.06             # v3.3 was 0.08
+    PB_MIN_PCT = 0.06
     PB_MAX_PCT = 0.25
     PB_MIN_DAYS = 6
-    PB_MAX_DAYS = 20              # v3.3 was 15
+    PB_MAX_DAYS = 20
     CRASH_WINDOW = 3
     CRASH_MAX_PCT = 0.15
     EMA10 = 10
@@ -52,7 +53,7 @@ class SetupDetector:
     TIGHT_MAX_RUN_BACK = 4
     TIGHT_MIN = 2
     MAX_STOP_PCT = 0.05
-    TARGET_R_MULTIPLE = 2.0
+    TARGET_R_MULTIPLE = 3.0       # was 2.0 (WF sweep 2026-09-12)
     MAX_SHIFT = 2
 
     @classmethod
@@ -190,4 +191,4 @@ class SetupDetector:
             impulse_pct=round(impulse_pct, 3),
             ema_proximity=ema_proximity,
             shape_score=shape,
-            reasons=["OFFICIAL v3.3: 1c widened, PB floor 6%, days cap 20"])
+            reasons=["OFFICIAL v3.4: 3R target (WF-validated)"])

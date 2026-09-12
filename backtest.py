@@ -1,11 +1,11 @@
 """
 Optimized + corrected backtester.
-- Precomputed indicators (no per-day recomputation)
+- Precomputed indicators
 - O(1) prefilter; setup detector only on survivors
 - Pending buy-stop orders (enter at trigger, not close)
 - PDL stop + 5% rule enforced
 - Only signals whose pattern completed on the CURRENT bar are taken
-  (no stale entries from earlier sessions).
+- TARGET_R = 3.0 (walk-forward sweep 2026-09-12: PF 1.43 vs 1.21 at 2R)
 """
 from dataclasses import dataclass, field
 from typing import List
@@ -129,7 +129,7 @@ class Backtester:
     HOLD_DAYS_MAX = 30
     ORDER_EXPIRY_BARS = 3
     TICK_SIZE = 0.05
-    TARGET_R = 2.0
+    TARGET_R = 3.0                # was 2.0
 
     def __init__(self, result: BacktestResult = None):
         self.result = result or BacktestResult()
@@ -207,7 +207,6 @@ class Backtester:
         for date in all_dates:
             date_str = str(date.date())
 
-            # ---- manage open positions ----
             to_close = []
             for sym, pos in list(open_positions.items()):
                 if date not in data[sym].index:
@@ -249,7 +248,6 @@ class Backtester:
             for sym in to_close:
                 open_positions.pop(sym, None)
 
-            # ---- pending buy-stop orders ----
             to_rm = []
             for sym, od in list(pending_orders.items()):
                 if date <= od["signal_date"]:
@@ -275,13 +273,11 @@ class Backtester:
             for sym in to_rm:
                 pending_orders.pop(sym, None)
 
-            # ---- regime gate ----
             if date not in regime.index or not regime.loc[date]:
                 continue
             if len(open_positions) >= self.result.max_positions:
                 continue
 
-            # ---- EOD scan with O(1) prefilter ----
             for sym, p in P.items():
                 if sym in open_positions or sym in pending_orders:
                     continue
@@ -309,8 +305,6 @@ class Backtester:
                 st = SetupDetector.detect(df_slice, sym)
                 if not st.triggered:
                     continue
-                # Staleness check: only accept signals whose pattern
-                # completed on the CURRENT bar.
                 if st.signal_date != date_str:
                     stale_signals += 1
                     continue

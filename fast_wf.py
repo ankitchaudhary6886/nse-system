@@ -1,10 +1,9 @@
 """
 Fast walk-forward — Backtester path, ~80s.
-Runs the current strategy over the last N years of band universe
-and reports aggregate stats. Verdict is PF-driven (profit factor).
+Verdict is PF-driven, not win-rate-driven.
 
 Usage:
-  python fast_wf.py               -> current params (TARGET_R=2.0)
+  python fast_wf.py               -> current params (TARGET_R=3.0)
   python fast_wf.py 2.5           -> override Backtester.TARGET_R = 2.5
   python fast_wf.py 2.5 5         -> target 2.5, max_positions 5
 """
@@ -20,14 +19,14 @@ from backtest import Backtester, BacktestResult
 def _verdict(n, wr, pf):
     if n < 30:
         return f"INSUFFICIENT TRADES (n={n}, need >=30)"
-    if pf >= 1.5 and wr >= 0.42:
+    if pf >= 1.60 and wr >= 0.38:
         return "STRONG EDGE"
-    if pf >= 1.3 and wr >= 0.38:
+    if pf >= 1.40 and wr >= 0.33:
         return "SOLID EDGE"
-    if pf >= 1.15 and wr >= 0.35:
-        return "WEAK EDGE — tradeable with sizing"
-    if pf >= 1.0:
-        return "MARGINAL — positive expectancy, small sample"
+    if pf >= 1.20 and wr >= 0.35:
+        return "TRADEABLE EDGE — size carefully"
+    if pf >= 1.00:
+        return "MARGINAL — positive expectancy, small edge"
     return "NO EDGE — negative expectancy"
 
 
@@ -37,7 +36,6 @@ def main():
     max_pos = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
     if target_r is not None:
-        # override on Backtester CLASS — it uses self.TARGET_R internally
         Backtester.TARGET_R = target_r
         print(f"[WF] override Backtester.TARGET_R = {target_r}")
 

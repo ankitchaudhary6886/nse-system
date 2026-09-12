@@ -21,16 +21,19 @@
 - **R10** No pausing; keep momentum.
 - **R11** 3-4 file edits per response when possible.
 - **R12** Execute new ideas only AFTER the machine is functionally complete.
-- **R13** Fast feedback loops (funels/diags ~5s), not multi-minute waits.
+- **R13** Fast feedback loops (funnels/diags ~5s), not multi-minute waits.
 - **R14** Verdicts are PF-driven. A 2R system with 40% WR and PF >=1.2 is
-          tradeable — do not dismiss on win rate alone.
+          tradeable. Do not dismiss on win rate alone.
+- **R15** Parameter changes are swept, not picked. One variable at a time,
+          measure PF / expectancy / DD.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
-I1–I13 (see EXECUTION_LOG)
-I14 Correct verdict logic — PF-driven, not WR-driven.
+I1–I14 (see EXECUTION_LOG)
+I15 Adopt 3R target after sweep.
+I16 Sweep wider target still (3.5R, 4R) as follow-up.
 
 ---
 
@@ -43,28 +46,31 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 
 ### ID1–ID10 · DONE
 ### ID11 — Signal sparsity fix · **DONE**
-- Initial: 0.4% setup pass rate
-- v3.2: 3.2%
-- v3.3: **8.0% (89 setups in sample)** — 20x the original
+Final: 8.0% setup pass rate (was 0.4%).
 
 ### ID12 — Alt setup patterns · **FUTURE**
-Add second setup family (breakout-pullback, consolidation-tight-close)
-if 2R/2.5R/3R sweep doesn't improve PF above 1.3.
+If 3.5R/4R sweep doesn't improve PF above 1.5, add second setup family.
 
 ### ID13 — Fast validation · **DONE**
-`fast_wf.py` (80s), `quick_funnel.py` (5s), `quick_setup_diag.py` (3s).
+`fast_wf.py`, `quick_funnel.py`, `quick_setup_diag.py`.
 
 ### ID14 — Meta-model plateau · **OPEN**
-AUC 0.629 stable across 3 retrains. Top-decile 62-63% is tradeable.
-Deferred.
+AUC 0.629 stable. Deferred.
 
-### ID15 — Target sweep (2R vs 2.5R vs 3R) · **IN PROGRESS**
-First WF result: PF 1.21, +85.82% over 3y, DD 13.72%.
-Sweep targets to see if PF breaks 1.3.
+### ID15 — Target sweep · **DONE 2026-09-12**
+| R    | Trades | WR   | PF   | Total  | DD    | Expectancy |
+|------|--------|------|------|--------|-------|------------|
+| 2.0R | 215    | 39.1%| 1.21 | +85.8% | 13.7% | +0.126R    |
+| 2.5R | 194    | 36.1%| 1.30 | +150.6%| 15.7% | +0.193R    |
+| 3.0R | 185    | 35.1%| 1.43 | +273.5%| 17.5% | +0.276R    |
+Decision: adopt 3R as default (setup.py v3.4, backtest.py).
 
 ### ID16 — Position sizing integration · **PENDING**
-Wire swing signal confidence into sizing.py alloc multiplier (already
-supports regime mult). Add quality tier multiplier.
+Wire confidence into sizing.py. Regime multiplier already works.
+
+### ID17 — 3.5R / 4R sweep · **NEXT**
+Test if PF keeps climbing past 3R or plateaus.
+Command: `python fast_wf.py 3.5` / `python fast_wf.py 4`.
 
 ---
 
@@ -77,17 +83,17 @@ IM3 Self-documenting system.
 ## F. FEATURES COMPLETED
 
 ### FC Regime Spectrum · DONE
-### FP Fundamentals Pipeline · DONE
+### FP Fundamentals Pipeline · DONE (863 symbols)
 ### FS Sizing with fallback · DONE
 ### FA Unified Alerts · DONE
 ### FU Canonical Universe · DONE
 ### FT Trend Scanner v3 · DONE
 ### FP2 Positional Scanner · DONE
 ### FV Value Radar v2 · DONE
-### FM Meta-Model v7 · DONE (33 features)
+### FM Meta-Model v7 · DONE (AUC 0.629)
 ### FVAL Fast Validation · DONE
-### FSP Setup v3.3 · DONE (widened)
-### FWF Walk-forward v1 · DONE (PF 1.21, +85.82%, DD 13.72%)
+### FSP Setup v3.4 · DONE (3R target, WF-validated)
+### FWF Walk-forward v2 · DONE (PF 1.43 at 3R, +273.5%, DD 17.5%)
 
 ---
 
@@ -95,7 +101,7 @@ IM3 Self-documenting system.
 
 | ID   | Item                      | Status       |
 |------|---------------------------|--------------|
-| R1–R14 | Rules                   | Active       |
+| R1–R15 | Rules                   | Active       |
 | ID1  | All-weather swing         | DONE         |
 | ID2  | Value Radar v2            | DONE         |
 | ID3a | Positional scanner        | DONE         |
@@ -111,8 +117,9 @@ IM3 Self-documenting system.
 | ID12 | Alt setup patterns        | FUTURE       |
 | ID13 | Fast validation           | DONE         |
 | ID14 | Meta-model plateau        | OPEN         |
-| ID15 | Target sweep              | IN PROGRESS  |
+| ID15 | Target sweep              | DONE         |
 | ID16 | Sizing integration        | PENDING      |
+| ID17 | 3.5R / 4R sweep           | NEXT         |
 
 ---
 
