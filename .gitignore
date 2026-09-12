@@ -19,3 +19,7 @@ project_dump.txt
 terminal.log
 backtest_trades.csv
 data/logs/
+
+data/strategies.json
+data/strategies.json.bak
+data/backtest_cache.json
