@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="19.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="20.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -180,12 +180,33 @@ def macro_flow(user: str = Depends(verify_user)):
 
 
 # ============================================================
-# Strategies
+# Strategies — ORDER MATTERS
 # ============================================================
+# 1. Static prefix endpoints FIRST (seed) — otherwise {name} would
+#    swallow /seed and complain about missing payload.
+# 2. Then the parametrised {name} endpoints.
+# ============================================================
+
 @app.get("/api/strategies")
 def list_strategies(user: str = Depends(verify_user)):
     import rule_engine
     return {"strategies": rule_engine.load_strategies()}
+
+
+@app.post("/api/strategies/seed")
+def seed_strategies(force: bool = False, user: str = Depends(verify_user)):
+    import rule_engine
+    n = rule_engine.seed_if_empty(force=force)
+    return {"seeded": n}
+
+
+@app.post("/api/strategies/run-all")
+def run_all_strategies(user: str = Depends(verify_user)):
+    import rule_engine
+    try:
+        return {"results": rule_engine.run_all()}
+    except Exception as e:
+        return {"error": str(e), "results": {}}
 
 
 @app.get("/api/strategies/{name}")
@@ -210,13 +231,6 @@ def delete_strategy(name: str, user: str = Depends(verify_user)):
     import rule_engine
     rule_engine.delete_strategy(name)
     return {"deleted": True, "name": name}
-
-
-@app.post("/api/strategies/seed")
-def seed_strategies(force: bool = False, user: str = Depends(verify_user)):
-    import rule_engine
-    n = rule_engine.seed_if_empty(force=force)
-    return {"seeded": n}
 
 
 @app.get("/api/strategies/{name}/run")
@@ -273,7 +287,7 @@ def research_cache_clear(symbol: str = None,
 
 
 # ============================================================
-# Existing endpoints (unchanged)
+# Existing endpoints
 # ============================================================
 @app.get("/api/toppicks")
 def toppicks(user: str = Depends(verify_user)):
