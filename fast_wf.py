@@ -1,14 +1,14 @@
 """
-Fast walk-forward — Backtester path, ~80s.
-Verdict is PF-driven, not win-rate-driven.
-Every run is logged to strategy_runs for later comparison.
+Fast walk-forward — Backtester path.
+Verdict is PF-driven. Every run is logged to strategy_runs.
 
 Usage:
-  python fast_wf.py                           # 3y / 400 syms / 3R
-  python fast_wf.py --r 2.5                   # target override
-  python fast_wf.py --years 4 --symbols 500   # longer window
-  python fast_wf.py --r 3.0 --max-pos 8       # concurrent positions
-  python fast_wf.py --no-log                  # skip DB logging
+  python fast_wf.py                     # 3y / 400 syms / 3R full-exit
+  python fast_wf.py --tranche           # tranche exits (1/3 @ 2R, 1/3 @ 3R, trail)
+  python fast_wf.py --r 2.5             # target override (full-exit only)
+  python fast_wf.py --years 4 --symbols 500
+  python fast_wf.py --max-pos 8
+  python fast_wf.py --no-log
   python fast_wf.py --help
 """
 import sys
@@ -38,13 +38,15 @@ def _verdict(n, wr, pf):
 def _parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--r", type=float, default=None,
-                   help="TARGET_R override (default 3.0)")
+                   help="TARGET_R override (full-exit mode only)")
     p.add_argument("--years", type=float, default=3.0,
                    help="lookback years (default 3.0)")
     p.add_argument("--symbols", type=int, default=400,
                    help="symbol count (default 400)")
     p.add_argument("--max-pos", type=int, default=None,
                    help="max concurrent positions (default 5)")
+    p.add_argument("--tranche", action="store_true",
+                   help="enable tranche exits (1/3 @ 2R, 1/3 @ 3R, trail)")
     p.add_argument("--no-log", action="store_true",
                    help="skip strategy_runs DB logging")
     return p.parse_args()
@@ -55,7 +57,11 @@ def main():
     args = _parse_args()
 
     target_r = args.r if args.r is not None else Backtester.TARGET_R
-    if args.r is not None:
+    mode = "TRANCHED" if args.tranche else f"{target_r}R full-exit"
+    if args.tranche:
+        Backtester.TRANCHES_ENABLED = True
+        print(f"[WF] TRANCHE mode ON (1/3 @ 2R, 1/3 @ 3R, trail EMA10)")
+    elif args.r is not None:
         Backtester.TARGET_R = args.r
         print(f"[WF] override Backtester.TARGET_R = {args.r}")
 
@@ -70,7 +76,7 @@ def main():
     if args.max_pos is not None:
         result_obj.max_positions = args.max_pos
     print(f"[WF] {len(syms)} symbols, {start.isoformat()} to "
-          f"{end.isoformat()} ({args.years}y)")
+          f"{end.isoformat()} ({args.years}y) | mode={mode}")
 
     bt = Backtester(result=result_obj)
     result = bt.run([s + ".NS" for s in syms],
@@ -97,7 +103,7 @@ def main():
 
     print()
     print("=" * 60)
-    print(f"WALK-FORWARD RESULT ({dt_sec:.1f}s)")
+    print(f"WALK-FORWARD RESULT ({dt_sec:.1f}s) | {mode}")
     print("=" * 60)
     print(f"trades            : {n}")
     print(f"wins / losses     : {len(wins)} / {len(losses)}")
@@ -117,7 +123,7 @@ def main():
         try:
             import strategy_runs
             strategy_runs.log({
-                "target_r": target_r,
+                "target_r": target_r if not args.tranche else 0.0,
                 "years": args.years,
                 "symbols": len(syms),
                 "max_pos": result_obj.max_positions,
@@ -132,7 +138,7 @@ def main():
                 "total_return": round(result.total_return, 4),
                 "max_dd": round(result.max_drawdown, 4),
                 "holding_days": round(result.avg_holding_days, 2),
-                "verdict": verdict,
+                "verdict": f"{mode} | {verdict}",
                 "run_seconds": round(dt_sec, 1),
             })
             print("[WF] logged to strategy_runs")

@@ -1,8 +1,5 @@
 """
 Strategy run ledger — records every fast_wf sweep for comparison.
-Every walk-forward run gets logged so future parameter changes can be
-compared against a history instead of re-run from scratch.
-
 Table: strategy_runs
 """
 import datetime as dt
@@ -36,9 +33,6 @@ def _ensure(conn):
 
 
 def log(result: dict):
-    """result = dict with keys: target_r, years, symbols, max_pos,
-    trades, wins, losses, win_rate, avg_win, avg_loss, expectancy_r,
-    pf, total_return, max_dd, holding_days, verdict."""
     conn = db.get_conn()
     _ensure(conn)
     conn.execute("""
@@ -85,7 +79,6 @@ def history(n=20):
 
 
 def summary_by_target():
-    """Group results by target_r — useful for target selection."""
     conn = db.get_conn()
     _ensure(conn)
     rows = conn.execute("""
@@ -111,7 +104,7 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "history"
     if cmd == "history":
         print("RECENT RUNS")
-        print("-" * 100)
+        print("-" * 110)
         for h in history():
             print(f"{h['run_at']:<20} "
                   f"R={h['target_r']:<4} "
@@ -125,7 +118,7 @@ if __name__ == "__main__":
                   f"| {h['verdict']}")
     elif cmd == "summary":
         print("SUMMARY BY TARGET_R")
-        print("-" * 100)
+        print("-" * 110)
         for s in summary_by_target():
             print(f"R={s['target_r']:<4} "
                   f"runs={s['runs']:<3} "

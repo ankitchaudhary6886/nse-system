@@ -1,11 +1,12 @@
 """
-Optimized + corrected backtester.
+Optimized backtester.
 - Precomputed indicators
-- O(1) prefilter; setup detector only on survivors
 - Pending buy-stop orders (enter at trigger, not close)
 - PDL stop + 5% rule enforced
 - Only signals whose pattern completed on the CURRENT bar are taken
-- TARGET_R = 3.0 (walk-forward sweep 2026-09-12: PF 1.43 vs 1.21 at 2R)
+- TARGET_R = 3.0 default (full-exit mode)
+- TRANCHES_ENABLED = True switches to 1/3 @ 2R, 1/3 @ 3R, remainder
+  trails EMA10. Stop moves to breakeven after 2R.
 """
 from dataclasses import dataclass, field
 from typing import List
@@ -32,6 +33,7 @@ class Trade:
     pnl_pct: float
     holding_days: int
     exit_reason: str
+    n_exits: int = 1
 
 
 @dataclass
@@ -101,21 +103,6 @@ class BacktestResult:
             r *= (1 + t.pnl_pct)
         return r - 1.0 if self.trades else 0.0
 
-    def summary(self):
-        return (
-            f"\n{'='*60}\n  BACKTEST SUMMARY\n{'='*60}\n"
-            f"  Total trades      : {self.total_trades}\n"
-            f"  Wins / Losses     : {self.wins} / {self.losses}\n"
-            f"  Win Rate          : {self.win_rate:.1%}\n"
-            f"  Avg Win           : {self.avg_win:+.2%}\n"
-            f"  Avg Loss          : {self.avg_loss:+.2%}\n"
-            f"  Avg R:R           : {self.avg_rr:.2f}\n"
-            f"  Profit Factor     : {self.profit_factor:.2f}\n"
-            f"  Total Return      : {self.total_return:+.2%}\n"
-            f"  Max Drawdown      : {self.max_drawdown:.2%}\n"
-            f"  Avg Holding Days  : {self.avg_holding_days:.1f}\n"
-            f"{'='*60}")
-
 
 def _naive_index(df):
     try:
@@ -129,7 +116,14 @@ class Backtester:
     HOLD_DAYS_MAX = 30
     ORDER_EXPIRY_BARS = 3
     TICK_SIZE = 0.05
-    TARGET_R = 3.0                # was 2.0
+    TARGET_R = 3.0
+    TRANCHES_ENABLED = False
+    # tranche spec
+    T_LEVEL_1 = 2.0
+    T_LEVEL_2 = 3.0
+    T_PCT_1 = 0.33
+    T_PCT_2 = 0.33
+    TRAIL_EMA = 10
 
     def __init__(self, result: BacktestResult = None):
         self.result = result or BacktestResult()
@@ -168,6 +162,7 @@ class Backtester:
         h = dfr["High"].values.astype(float)
         l = dfr["Low"].values.astype(float)
         v = dfr["Volume"].values.astype(float)
+        e10 = pd.Series(c).ewm(span=10, adjust=False).mean().values
         e200 = pd.Series(c).ewm(span=200, adjust=False).mean().values
         vs20 = pd.Series(v).rolling(20).mean().values
         hh252 = pd.Series(h).rolling(252).max().values
@@ -175,8 +170,38 @@ class Backtester:
         volok = pd.Series(expl.astype(float)).rolling(60).max().shift(1)\
             .fillna(0).values
         pos = {d: i for i, d in enumerate(dfr.index)}
-        return dict(c=c, h=h, l=l, v=v, e200=e200, vs20=vs20,
+        return dict(c=c, h=h, l=l, v=v, e10=e10, e200=e200, vs20=vs20,
                     hh252=hh252, volok=volok, pos=pos, idx=dfr.index)
+
+    def _close_tranche(self, pos, date, raw_price, pct, reason):
+        net = raw_price * (1 - self.result.slippage_pct
+                           - self.result.commission_pct)
+        pos["exits"].append({
+            "date": str(date.date()) if hasattr(date, "date")
+                    else str(date),
+            "net": float(net), "pct": float(pct), "reason": reason,
+        })
+
+    def _finalize_trade(self, sym, pos, exit_date):
+        entry = pos["entry_price"]
+        total_pnl = 0.0
+        weighted_exit = 0.0
+        total_pct = 0.0
+        for e in pos["exits"]:
+            total_pnl += (e["net"] - entry) / entry * e["pct"]
+            weighted_exit += e["net"] * e["pct"]
+            total_pct += e["pct"]
+        if total_pct > 0:
+            weighted_exit /= total_pct
+        reasons = [e["reason"] for e in pos["exits"]]
+        unique = list(dict.fromkeys(reasons))
+        reason = unique[0] if len(unique) == 1 else "TRANCHED"
+        held = (exit_date - pos["entry_date"]).days
+        self.result.trades.append(Trade(
+            sym, str(pos["entry_date"].date()), str(exit_date.date()),
+            "LONG", entry, round(weighted_exit, 4),
+            pos["initial_stop"], pos["target_r"],
+            total_pnl, held, reason, n_exits=len(pos["exits"])))
 
     def run(self, symbols, start, end):
         days = (pd.Timestamp(end) - pd.Timestamp(start)).days + 30
@@ -207,47 +232,89 @@ class Backtester:
         for date in all_dates:
             date_str = str(date.date())
 
+            # ---- manage open positions ----
             to_close = []
             for sym, pos in list(open_positions.items()):
                 if date not in data[sym].index:
                     continue
                 row = data[sym].loc[date]
-                held = (date - pos["entry_date"]).days
+                p = P[sym]
+                i = p["pos"].get(date)
+                if i is None:
+                    continue
+
+                # 1. hard stop check (always first)
                 if row["Low"] <= pos["stop"]:
-                    ex = pos["stop"] * (1 - self.result.slippage_pct
-                                        - self.result.commission_pct)
-                    self.result.trades.append(Trade(
-                        sym, str(pos["entry_date"].date()),
-                        str(date.date()), "LONG", pos["entry_price"],
-                        ex, pos["stop"], pos["target"],
-                        (ex - pos["entry_price"]) / pos["entry_price"],
-                        held, "STOP"))
+                    self._close_tranche(pos, date, pos["stop"],
+                                        pos["remaining_pct"], "STOP")
+                    pos["remaining_pct"] = 0.0
+                    self._finalize_trade(sym, pos, date)
                     to_close.append(sym)
                     continue
-                if row["High"] >= pos["target"]:
-                    ex = pos["target"] * (1 - self.result.slippage_pct
-                                          - self.result.commission_pct)
-                    self.result.trades.append(Trade(
-                        sym, str(pos["entry_date"].date()),
-                        str(date.date()), "LONG", pos["entry_price"],
-                        ex, pos["stop"], pos["target"],
-                        (ex - pos["entry_price"]) / pos["entry_price"],
-                        held, "TARGET"))
-                    to_close.append(sym)
-                    continue
+
+                # 2. tranche partial exits
+                if self.TRANCHES_ENABLED:
+                    risk = pos["entry_price"] - pos["initial_stop"]
+                    if risk > 0:
+                        # 2R tranche
+                        if not pos["t1_done"]:
+                            t1_price = pos["entry_price"] + \
+                                self.T_LEVEL_1 * risk
+                            if row["High"] >= t1_price:
+                                self._close_tranche(pos, date, t1_price,
+                                                    self.T_PCT_1, "T2R")
+                                pos["t1_done"] = True
+                                pos["remaining_pct"] -= self.T_PCT_1
+                                # move stop to breakeven
+                                if pos["entry_price"] > pos["stop"]:
+                                    pos["stop"] = pos["entry_price"]
+                        # 3R tranche
+                        if not pos["t2_done"] and pos["t1_done"]:
+                            t2_price = pos["entry_price"] + \
+                                self.T_LEVEL_2 * risk
+                            if row["High"] >= t2_price:
+                                self._close_tranche(pos, date, t2_price,
+                                                    self.T_PCT_2, "T3R")
+                                pos["t2_done"] = True
+                                pos["remaining_pct"] -= self.T_PCT_2
+                                pos["trail_active"] = True
+                    # trailing EMA10 on remainder
+                    if pos["trail_active"] and \
+                            pos["remaining_pct"] > 0.001:
+                        ema = p["e10"][i]
+                        if not np.isnan(ema) and row["Close"] < ema:
+                            self._close_tranche(pos, date, row["Close"],
+                                                pos["remaining_pct"],
+                                                "TRAIL")
+                            pos["remaining_pct"] = 0.0
+                            self._finalize_trade(sym, pos, date)
+                            to_close.append(sym)
+                            continue
+                else:
+                    # full-exit mode: single target
+                    if row["High"] >= pos["target_r"]:
+                        self._close_tranche(pos, date, pos["target_r"],
+                                            pos["remaining_pct"],
+                                            "TARGET")
+                        pos["remaining_pct"] = 0.0
+                        self._finalize_trade(sym, pos, date)
+                        to_close.append(sym)
+                        continue
+
+                # 3. time stop
+                held = (date - pos["entry_date"]).days
                 if held >= self.HOLD_DAYS_MAX:
-                    ex = row["Close"] * (1 - self.result.slippage_pct
-                                         - self.result.commission_pct)
-                    self.result.trades.append(Trade(
-                        sym, str(pos["entry_date"].date()),
-                        str(date.date()), "LONG", pos["entry_price"],
-                        ex, pos["stop"], pos["target"],
-                        (ex - pos["entry_price"]) / pos["entry_price"],
-                        held, "TIME_STOP"))
+                    self._close_tranche(pos, date, row["Close"],
+                                        pos["remaining_pct"], "TIME")
+                    pos["remaining_pct"] = 0.0
+                    self._finalize_trade(sym, pos, date)
                     to_close.append(sym)
+                    continue
+
             for sym in to_close:
                 open_positions.pop(sym, None)
 
+            # ---- pending buy-stop orders ----
             to_rm = []
             for sym, od in list(pending_orders.items()):
                 if date <= od["signal_date"]:
@@ -262,11 +329,17 @@ class Backtester:
                     fill = od["trigger"] * (1 + self.result.slippage_pct
                                             + self.result.commission_pct)
                     if od["stop"] < fill:
+                        risk = fill - od["stop"]
+                        target = fill + self.TARGET_R * risk
                         open_positions[sym] = {
                             "entry_date": date, "entry_price": fill,
-                            "stop": od["stop"],
-                            "target": fill + self.TARGET_R *
-                            (fill - od["stop"])}
+                            "initial_stop": od["stop"], "stop": od["stop"],
+                            "target_r": target,
+                            "exits": [],
+                            "remaining_pct": 1.0,
+                            "t1_done": False, "t2_done": False,
+                            "trail_active": False,
+                        }
                     to_rm.append(sym)
                 else:
                     pending_orders[sym]["bars"] += 1
@@ -278,6 +351,7 @@ class Backtester:
             if len(open_positions) >= self.result.max_positions:
                 continue
 
+            # ---- EOD scan ----
             for sym, p in P.items():
                 if sym in open_positions or sym in pending_orders:
                     continue
@@ -318,18 +392,14 @@ class Backtester:
                 if len(pending_orders) >= self.result.max_pending_orders:
                     break
 
-        for sym, pos in open_positions.items():
+        # force-close anything still open
+        for sym, pos in list(open_positions.items()):
             if data[sym].empty:
                 continue
             ld = data[sym].index[-1]
-            ex = data[sym].iloc[-1]["Close"] * (
-                1 - self.result.slippage_pct - self.result.commission_pct)
-            self.result.trades.append(Trade(
-                sym, str(pos["entry_date"].date()), str(ld.date()),
-                "LONG", pos["entry_price"], ex, pos["stop"],
-                pos["target"],
-                (ex - pos["entry_price"]) / pos["entry_price"],
-                (ld - pos["entry_date"]).days, "EOD_CLOSE"))
+            self._close_tranche(pos, ld, data[sym].iloc[-1]["Close"],
+                                pos["remaining_pct"], "EOD_CLOSE")
+            self._finalize_trade(sym, pos, ld)
 
         print(f"   prefilter hits: {prefilter_hits}")
         print(f"   stale signals skipped: {stale_signals}")
