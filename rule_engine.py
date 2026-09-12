@@ -72,7 +72,6 @@ def delete_strategy(name):
 # Feature computation
 # ============================================================
 def _seq_len(v):
-    """Safe length for list or numpy array or None."""
     if v is None:
         return 0
     try:
@@ -347,6 +346,58 @@ def evaluate(strategy, features):
             "checks": checks}
 
 
+def _diagnose(strategy, all_checks):
+    """
+    all_checks = list of per-symbol check lists (every symbol that was
+    evaluated, whether it passed or not). Returns failure counts per
+    condition and per (condition, missing) pair.
+    """
+    conditions = strategy.get("conditions", [])
+    n = len(all_checks)
+    if n == 0:
+        return {"n_evaluated": 0, "per_condition": []}
+
+    # For each condition, count how many symbols failed it.
+    # Also count how many failed because value was missing.
+    fails = [0] * len(conditions)
+    missing = [0] * len(conditions)
+    # Count all-fail (whole strategy failed) — but we want to know
+    # per-condition how many failed. We also want to know which condition
+    # is "last blocker" (the one where the fewest symbols survive).
+    survivor_after = [n] * (len(conditions) + 1)
+    for checks in all_checks:
+        ok_so_far = True
+        for i, c in enumerate(checks):
+            if not c["ok"]:
+                fails[i] += 1
+                if c["got"] == "—":
+                    missing[i] += 1
+                ok_so_far = False
+            if ok_so_far:
+                pass  # symbol still alive after this condition
+        # recompute survivors step by step (cleaner)
+    # Compute survivors per prefix
+    survivors = [n]
+    for i in range(len(conditions)):
+        alive = 0
+        for checks in all_checks:
+            if all(checks[j]["ok"] for j in range(i + 1)):
+                alive += 1
+        survivors.append(alive)
+
+    per_condition = []
+    for i, c in enumerate(conditions):
+        per_condition.append({
+            "field": c["field"],
+            "op": c["op"],
+            "want": c["value"],
+            "failed": fails[i],
+            "failed_because_missing": missing[i],
+            "survived_after": survivors[i + 1],
+        })
+    return {"n_evaluated": n, "per_condition": per_condition}
+
+
 def run_strategy(name, limit=50):
     strategies = load_strategies()
     s = strategies.get(name)
@@ -360,6 +411,7 @@ def run_strategy(name, limit=50):
     srs = _load_sector_rs(conn)
 
     results = []
+    all_checks = []
     n_checked = 0
     for sym in syms:
         n_checked += 1
@@ -371,6 +423,7 @@ def run_strategy(name, limit=50):
         if not feats:
             continue
         r = evaluate(s, feats)
+        all_checks.append(r["checks"])
         if not r["passed"]:
             continue
         results.append({
@@ -386,13 +439,16 @@ def run_strategy(name, limit=50):
     conn.close()
 
     results.sort(key=lambda r: -(r["score"] if r["score"] is not None else 0))
+    diag = _diagnose(s, all_checks)
+
     return {"strategy": name,
             "type": s.get("type", "unknown"),
             "universe": s.get("universe", "active"),
             "n_symbols_checked": n_checked,
             "n_passed": len(results),
             "run_at": dt.datetime.now().isoformat(timespec="seconds"),
-            "picks": results[:limit]}
+            "picks": results[:limit],
+            "diagnostic": diag}
 
 
 def run_all():
@@ -508,6 +564,17 @@ if __name__ == "__main__":
         for p in out["picks"]:
             print(f"  {p['symbol']:<14} score {p['score']:>8.3f}  "
                   f"{p['sector'] or '?'}")
+        # Failure breakdown (helpful when n_passed == 0 or very low)
+        diag = out.get("diagnostic") or {}
+        pc = diag.get("per_condition") or []
+        if pc:
+            print()
+            print(f"  failure breakdown (n={diag.get('n_evaluated')}):")
+            for c in pc:
+                fb = c["failed_because_missing"]
+                print(f"    {c['field']:<24} {c['op']:<3} {str(c['want']):<8}  "
+                      f"failed {c['failed']:<5} (missing {fb:<5})  "
+                      f"survived {c['survived_after']}")
         sys.exit(0)
 
     print("commands: --seed [--force] | --list | --run NAME")
