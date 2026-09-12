@@ -384,6 +384,24 @@ route fix, editor, backtest sandbox.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 ---
+### #054 · Candle behaviour analytics (ID47) — VERIFIED
+- Result: TANLA shows inv_hammer setups 100% hit on 1 triggered sample.
+
+### #055 · Signature matching (ID46) — VERIFIED
+- Result: setup_pool built with 200 symbols → 1,300 setups across
+  166 symbols, hit_1R total 445.
+- Note: initial 200-symbol build was a scoping choice; full universe
+  (~800 symbols) yields ~5,000+ setups.
+
+### #056 · Weekly setup_pool rebuild scheduler job
+- Files: `scheduler_bg.py`
+- What: `_pool_rebuild_job` at Sunday 06:00 IST. Calls
+  `build_setup_pool.build(limit=800, step=5, clear=True)`.
+  Full rebuild weekly — ~8-10 minutes. Runs before value_radar
+  (Sun 09:00) and does not overlap with weekday pipeline.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
 
 ---
 

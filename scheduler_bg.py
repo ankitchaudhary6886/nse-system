@@ -1,5 +1,6 @@
-"""Background scheduler — daily chain + swing + patterns + fundamentals +
-value radar + positional + trend + validation."""
+"""Background scheduler — daily chain + swing + research cache + pool
+rebuild + patterns + fundamentals + value radar + positional + trend +
+validation."""
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
@@ -52,6 +53,34 @@ def _swing_job():
         log.info("swing scan complete")
     except Exception as e:
         log.exception(f"swing scan failed: {e}")
+
+
+def _warm_research_job():
+    log.info("research cache warm started")
+    try:
+        import research_cockpit
+        n = research_cockpit.warm_cache(max_symbols=200)
+        log.info(f"research cache warm complete: {n} computed")
+    except Exception as e:
+        log.exception(f"research cache warm failed: {e}")
+
+
+def _pool_rebuild_job():
+    """Weekly full rebuild of setup_pool — the corpus that powers
+    signature matching in the research cockpit. 800 symbols × 5y × step 5.
+    ~8-10 minutes."""
+    log.info("setup pool rebuild started")
+    try:
+        import build_setup_pool
+        n = build_setup_pool.build(limit=800, step=5, clear=True)
+        # Refresh count after rebuild
+        try:
+            build_setup_pool.stats()
+        except Exception:
+            pass
+        log.info(f"setup pool rebuild complete: {n} setups added")
+    except Exception as e:
+        log.exception(f"setup pool rebuild failed: {e}")
 
 
 def _purge_vetoed():
@@ -133,7 +162,7 @@ def _template_job():
 
 
 def _fundamentals_job():
-    log.info("weekly fundamentals refresh (TradingView) started")
+    log.info("weekly fundamentals refresh started")
     try:
         import fundamentals_tv
         fundamentals_tv.run()
@@ -229,6 +258,7 @@ def start():
     if _scheduler is not None:
         return
     _scheduler = BackgroundScheduler(timezone=IST)
+    # ---- Weekday chain ----
     _scheduler.add_job(_data_quality_job,
                        CronTrigger(hour=15, minute=30, timezone=IST),
                        id="data_quality", replace_existing=True)
@@ -244,6 +274,9 @@ def start():
     _scheduler.add_job(_swing_job,
                        CronTrigger(hour=16, minute=15, timezone=IST),
                        id="swing_scan", replace_existing=True)
+    _scheduler.add_job(_warm_research_job,
+                       CronTrigger(hour=16, minute=20, timezone=IST),
+                       id="research_warm", replace_existing=True)
     _scheduler.add_job(_institutional_job,
                        CronTrigger(hour=16, minute=45, timezone=IST),
                        id="institutional", replace_existing=True)
@@ -256,6 +289,11 @@ def start():
     _scheduler.add_job(_template_job,
                        CronTrigger(hour=18, minute=35, timezone=IST),
                        id="template_scan", replace_existing=True)
+    # ---- Weekend jobs ----
+    _scheduler.add_job(_pool_rebuild_job,
+                       CronTrigger(day_of_week="sun", hour=6, minute=0,
+                                   timezone=IST),
+                       id="pool_rebuild", replace_existing=True)
     _scheduler.add_job(_fundamentals_job,
                        CronTrigger(day_of_week="sat", hour=8, minute=0,
                                    timezone=IST),
@@ -272,6 +310,7 @@ def start():
                        CronTrigger(day_of_week="sun", hour=9, minute=0,
                                    timezone=IST),
                        id="value_radar", replace_existing=True)
+    # ---- Monthly ----
     _scheduler.add_job(_validate_mc_job,
                        CronTrigger(day_of_week="mon", hour=8, minute=0,
                                    timezone=IST),
@@ -282,10 +321,11 @@ def start():
                        id="validate_wf", replace_existing=True)
     _scheduler.start()
     log.info("scheduler started — dq@15:30, daily@15:45, trend@15:50, "
-             "delivery@16:00, swing@16:15, inst@16:45, macro@17:30, "
-             "patterns@18:05, templates@18:35, fund@Sat08:00, "
-             "retrain@Sat09:00, positional@Sat10:00, "
-             "valueRadar@Sun09:00, mc@Mon08:00, wf@1st10:00 IST")
+             "delivery@16:00, swing@16:15, research@16:20, "
+             "inst@16:45, macro@17:30, patterns@18:05, templates@18:35, "
+             "poolRebuild@Sun06:00, fund@Sat08:00, retrain@Sat09:00, "
+             "positional@Sat10:00, valueRadar@Sun09:00, "
+             "mc@Mon08:00, wf@1st10:00 IST")
 
 
 def stop():

@@ -23,11 +23,14 @@ I1–I7.
 I8–I34.
 
 ### Session 2 (continued) — 2026-09-12 (evening)
-I35–I37 as logged.
-
-### Session 2 (Phase 3 begins)
+- **I35** Fundamentals fix step 1: TV probe.
+- **I36** Step 2: rewrite fetcher, quality-only Multibagger.
+- **I37** Score outlier fix — percentile scoring.
 - **I38** Proceed with Phase 3 + Phase 4. Start Phase 3 with ID47.
 - **I39** ID47 verified. Proceed with ID46 (signature matching).
+- **I40** Add weekly setup_pool rebuild job (Sunday 06:00 IST, 800
+          symbols, step=5). Also prompted question re: 200 vs full
+          universe.
 
 ---
 
@@ -38,12 +41,7 @@ D1–D6 as previously logged.
 
 ## D. IDEAS
 
-### ID1–ID45 as previously logged.
-### ID46 — Signature matching · **DONE this batch**
-Global `setup_pool` table built by `build_setup_pool.py`. For any live
-setup, find 30 nearest historical setups by L1 distance on z-scored
-features. Show pooled hit rates, MFE/MAE, outcome mix, sector breakdown.
-### ID47 — Candle behaviour analytics · **DONE** (previous batch)
+### ID1–ID47 as previously logged.
 ### ID48 — Pattern condition transparency · **NEXT (Phase 3)**
 ### ID49 — Time-machine chart markers · **PLANNED (Phase 3)**
 ### ID50 — Compare mode · **PLANNED (Phase 3)**
@@ -58,7 +56,7 @@ IM1–IM6 as previously logged.
 ---
 
 ## F. FEATURES COMPLETED
-Prior list + **FSM** (signature matching).
+Prior list + **FPB** (weekly pool rebuild scheduler job).
 
 ---
 
@@ -67,7 +65,7 @@ Prior list + **FSM** (signature matching).
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R27 | Rules                    | Active       |
-| I1–I39 | Instructions             | Applied      |
+| I1–I40 | Instructions             | Applied      |
 | ID44  | Fundamentals fix          | DONE         |
 | ID45  | Score normalization       | DONE         |
 | ID46  | Signature matching        | DONE         |
@@ -82,7 +80,7 @@ Prior list + **FSM** (signature matching).
 
 ## H. REMAINING / LEFT
 
-### Phase 3 (this session)
+### Phase 3
 - ID48 Pattern transparency — NEXT
 - ID49 Time-machine chart markers
 - ID50 Compare mode
