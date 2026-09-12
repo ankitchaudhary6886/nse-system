@@ -427,6 +427,43 @@ route fix, editor, backtest sandbox.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 ---
+### #051 · TV column probe (ID44 step 1) — VERIFIED
+- Result: 48 of 104 columns return real values.
+
+### #052 · Fundamentals v5 + schema migration (ID44 step 2) — VERIFIED
+- Result: 863 rows; roce 875, roe 850, pe 846, debt_eq 853, cfo_flag 860.
+  Multibagger 98 picks.
+
+### #053 · Percentile scoring (ID45) — VERIFIED
+- Result: scores in 0-100 range.
+
+### #054 · Candle behaviour analytics (ID47) — VERIFIED
+- Result: TANLA shows inv_hammer setups hitting +1R/+2R/+3R 100%.
+
+### #055 · Signature matching (ID46) — VERIFIED
+- Result: setup_pool built with 200 symbols → 1,300 setups across
+  166 symbols.
+
+### #056 · Weekly setup_pool rebuild scheduler job — VERIFIED
+- Job: `poolRebuild@Sun06:00` with 800 symbols.
+
+### #057 · Pattern transparency + chart markers (ID48 + ID49) — VERIFIED
+- Result: new tags carry checks; history endpoint returns signals for
+  chart markers.
+
+### #058 · Bearish pattern grading fix (ID53)
+- Files: `pattern_grader.py`
+- What: `_grade_one` now accepts `direction`. Bearish patterns
+  (H&S top warning) are graded on the short side: trigger = LOW breaks
+  below breakout, stop above, target below at -1R. Long logic unchanged.
+  `grade_all` now reads direction from pattern_tags. `regrade` command
+  re-runs the full history with the new logic.
+- Impact: previously all HEAD_SHOULDERS_TOP_WARNING tags were ungraded
+  (breakout <= stop sanity check failed). Fixes chart markers on the
+  Research cockpit for bearish signals.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
 
 ---
 
