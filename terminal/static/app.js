@@ -14,7 +14,7 @@ function setView(name) {
   const el = $("view-" + name);
   if (el) el.classList.add("active-view");
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.view === name));
-  const titles = { picks: "Top Picks", overview: "Overview", screener: "Screener", swing: "Swing Desk", patterns: "Patterns", ledger: "Ledger", radar: "Radar" };
+  const titles = { picks: "Top Picks", overview: "Overview", screener: "Screener", swing: "Swing Desk", patterns: "Scanners", ledger: "Ledger", radar: "Radar" };
   const t = $("viewTitle");
   if (t) t.textContent = titles[name] || "Top Picks";
   if (name === "overview" && chart) setTimeout(() => chart.timeScale().fitContent(), 50);
@@ -30,8 +30,11 @@ async function loadRegime() {
     const r = await api("/api/regime");
     box.classList.remove("loading", "bull", "defensive");
     let regimeHtml = "";
-    if (r.stance === "BULLISH") { box.classList.add("bull"); regimeHtml = `🟢 <strong>BULLISH / AGGRESSIVE</strong> — ${r.symbol} close ${r.index_close} > EMA10 ${r.ema10}. New long setups allowed.`; }
-    else if (r.stance === "DEFENSIVE") { box.classList.add("defensive"); regimeHtml = `🛑 <strong>DEFENSIVE / CASH</strong> — ${r.symbol} close ${r.index_close} < EMA10 ${r.ema10}. No new long entries.`; }
+    if (r.stance === "STRONG_BULL") { box.classList.add("bull"); regimeHtml = `🟢🟢 <strong>STRONG BULL</strong> — ${r.symbol} close ${r.index_close} > EMA10 ${r.ema10}. Size ×1.0`; }
+    else if (r.stance === "BULL") { box.classList.add("bull"); regimeHtml = `🟢 <strong>BULL</strong> — ${r.symbol} close ${r.index_close} > EMA10 ${r.ema10}. Size ×1.0`; }
+    else if (r.stance === "NEUTRAL") { regimeHtml = `🟡 <strong>NEUTRAL</strong> — ${r.symbol} close ${r.index_close} vs EMA10 ${r.ema10}. Size ×0.75`; }
+    else if (r.stance === "WEAK") { box.classList.add("defensive"); regimeHtml = `🟠 <strong>WEAK</strong> — ${r.symbol} close ${r.index_close} < EMA10 ${r.ema10}. Size ×0.5, AW only`; }
+    else if (r.stance === "CAPITULATION") { box.classList.add("defensive"); regimeHtml = `🔴 <strong>CAPITULATION</strong> — ${r.symbol} close ${r.index_close} < EMA10 ${r.ema10}. Size ×0.25, AW only`; }
     else { regimeHtml = `⚠️ Regime unavailable: ${r.error || ""}`; }
     let macroHtml = "";
     try { const m = await api("/api/macro"); if (m && m.fii_net !== null && m.dii_net !== null) { const net = m.fii_net + m.dii_net; const icon = net >= 0 ? "🟢" : "🛑"; macroHtml = `<div style="margin-top:8px; font-size:14px; opacity:0.9;">${icon} Smart Money Flow: FII ${m.fii_net > 0 ? "+" : ""}${m.fii_net.toFixed(0)}Cr / DII ${m.dii_net > 0 ? "+" : ""}${m.dii_net.toFixed(0)}Cr (Net: ${net > 0 ? "+" : ""}${net.toFixed(0)}Cr)</div>`; } } catch (e) {}
@@ -63,7 +66,7 @@ async function loadSwing() {
   const mo = $("mOpen"); if (mo) mo.textContent = `${score.OPEN || 0} / ${score.PENDING || 0}`;
   for (const s of signals) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${s.date}</td><td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="outcome PENDING">🧠${(s.p_win * 100).toFixed(0)}%</span>` : ""}</td><td>${fmt(s.trigger)}</td><td>${fmt(s.stop)}</td><td>${fmt(s.target)}</td><td>${fmt(s.risk_pct, "%")}</td><td>${s.pullback ? (s.pullback * 100).toFixed(1) + "%" : "—"}</td><td>${s.impulse ? (s.impulse * 100).toFixed(1) + "%" : "—"}</td><td>${s.ema_zone || "—"}</td><td>${outcomeBadge(s.outcome)}</td>`;
+    tr.innerHTML = `<td>${s.date}</td><td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="outcome PENDING">🧠${(s.p_win * 100).toFixed(0)}%</span>` : ""} ${s.mode === "ALL_WEATHER" ? '<span class="outcome TIMEOUT">AW</span>' : ""}</td><td>${fmt(s.trigger)}</td><td>${fmt(s.stop)}</td><td>${fmt(s.target)}</td><td>${fmt(s.risk_pct, "%")}</td><td>${s.pullback ? (s.pullback * 100).toFixed(1) + "%" : "—"}</td><td>${s.impulse ? (s.impulse * 100).toFixed(1) + "%" : "—"}</td><td>${s.ema_zone || "—"}</td><td>${outcomeBadge(s.outcome)}</td>`;
     tr.addEventListener("click", () => { setView("overview"); loadSymbol(s.symbol); });
     tbody.appendChild(tr);
   }
@@ -273,37 +276,6 @@ function createRadarCard(item) {
   div.addEventListener("click", () => { setView("overview"); loadSymbol(item.symbol); });
   return div;
 }
-async function loadValueRadar() {
-  const box = $("valueRadarList");
-  const badge = $("valueRadarBadge");
-  if (!box) return;
-  try {
-    const data = await api("/api/value-radar?n=15");
-    const picks = data.picks || [];
-    if (!picks.length) {
-      box.innerHTML = "<p>No value candidates this week.</p>";
-      if (badge) badge.textContent = "empty";
-      return;
-    }
-    if (badge) badge.textContent = `${picks.length} candidates`;
-    box.innerHTML = "";
-    picks.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "stock-card";
-      const tierClass = p.tier === "A" ? "WIN" : (p.tier === "B" ? "OPEN" : "PENDING");
-      div.innerHTML = `<strong>${p.symbol} <span class="outcome ${tierClass}">TIER ${p.tier}</span></strong>
-        <span>₹${p.last_price} · ${(p.below_52w * 100).toFixed(0)}% off high · PE ${p.pe ?? "—"} vs sector ${p.sector_pe ? p.sector_pe.toFixed(1) : "—"}</span>
-        <span>Quality ${p.quality_score}/100 · Value ${p.value_score}/100 · Composite ${p.composite}</span>
-        <span>${p.notes || ""}</span>`;
-      div.addEventListener("click", () => { setView("overview"); loadSymbol(p.symbol); });
-      box.appendChild(div);
-    });
-  } catch (e) {
-    box.innerHTML = `<p>Value Radar error: ${e.message}</p>`;
-    if (badge) badge.textContent = "unavailable";
-  }
-}
-
 async function loadRadar() {
   const data = await api("/api/radar");
   const mu = $("mUniverse"); if (mu) mu.textContent = data.total || "—";
@@ -373,6 +345,8 @@ function renderSizing(sz) {
   }
   html += `<div class="level"><span>Capital</span><strong>₹${sz.capital.toLocaleString()}</strong></div>
     <div class="level"><span>Win prob (${sz.basis})</span><strong>${(sz.p_win * 100).toFixed(0)}%</strong></div>
+    <div class="level"><span>Regime (${sz.regime_level})</span><strong>×${sz.regime_mult}</strong></div>
+    <div class="level"><span>Quality (shape ${sz.shape_score ?? "—"})</span><strong>×${sz.quality_mult}</strong></div>
     <div class="level"><span>Kelly / Half-Kelly</span><strong>${sz.kelly_pct}% / ${sz.half_kelly_pct}%</strong></div>
     <div class="level"><span>Alloc cap applied</span><strong>${sz.alloc_pct}%</strong></div>`;
   if (sz.shares !== undefined) {
@@ -452,10 +426,10 @@ async function loadSymbol(symbol) {
     $("setupBadge").className = "badge good"; $("setupBadge").textContent = "Valid setup";
     candleSeries.createPriceLine({ price: setup.trigger, color: "#34d399", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: "Trigger" });
     candleSeries.createPriceLine({ price: setup.stop, color: "#fb7185", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: "PDL Stop" });
-    candleSeries.createPriceLine({ price: setup.target, color: "#60a5fa", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "Target" });
-    $("setupSummary").innerHTML = `<div class="level"><span>Trigger</span><strong>${setup.trigger}</strong></div><div class="level"><span>PDL Stop</span><strong>${setup.stop}</strong></div><div class="level"><span>Target (2R)</span><strong>${setup.target}</strong></div><div class="level"><span>Pullback</span><strong>${(setup.pullback * 100).toFixed(1)}%</strong></div><div class="level"><span>Impulse</span><strong>${(setup.impulse * 100).toFixed(1)}%</strong></div><div class="level"><span>EMA Zone</span><strong>${setup.zone}</strong></div><div class="level"><span>Shape score</span><strong>${setup.shape ?? "—"}/100</strong></div>${trancheLadder(setup)}`;
+    candleSeries.createPriceLine({ price: setup.target, color: "#60a5fa", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "Target 3R" });
+    $("setupSummary").innerHTML = `<div class="level"><span>Trigger</span><strong>${setup.trigger}</strong></div><div class="level"><span>PDL Stop</span><strong>${setup.stop}</strong></div><div class="level"><span>Target (3R)</span><strong>${setup.target}</strong></div><div class="level"><span>Pullback</span><strong>${(setup.pullback * 100).toFixed(1)}%</strong></div><div class="level"><span>Impulse</span><strong>${(setup.impulse * 100).toFixed(1)}%</strong></div><div class="level"><span>EMA Zone</span><strong>${setup.zone}</strong></div><div class="level"><span>Shape score</span><strong>${setup.shape ?? "—"}/100</strong></div>${trancheLadder(setup)}`;
     try {
-      const sz = await api(`/api/sizing/${symbol}?trigger=${setup.trigger}&stop=${setup.stop}`);
+      const sz = await api(`/api/sizing/${symbol}?trigger=${setup.trigger}&stop=${setup.stop}&shape=${setup.shape ?? ""}`);
       renderSizing(sz);
     } catch (e) { /* sizing optional */ }
   } else {
@@ -486,7 +460,7 @@ async function runSwingScan() {
   catch (e) { $("runSwingBtn").textContent = "Run Swing Scan"; alert("Swing scan failed: " + e.message); }
 }
 
-async function refreshAll() { await Promise.all([loadHealth(), loadRegime(), loadTopPicks(), loadSwing(), loadRadar(), loadPatterns(), loadValueRadar()]); }
+async function refreshAll() { await Promise.all([loadHealth(), loadRegime(), loadTopPicks(), loadSwing(), loadRadar(), loadPatterns()]); }
 
 document.addEventListener("DOMContentLoaded", () => {
   $("refreshBtn").addEventListener("click", refreshAll);
@@ -496,6 +470,11 @@ document.addEventListener("DOMContentLoaded", () => {
   $("runScreenerBtn").addEventListener("click", () => { setView("screener"); loadScreener($("symbolSearch").value); });
   $("scanBandBtn").addEventListener("click", loadBandScan);
   $("runPatternScan").addEventListener("click", runPatternScan);
+  const rrb = $("runResearchBtn");
+  if (rrb) rrb.addEventListener("click", () => {
+    const sym = ($("chartTitle").textContent || "").split(" ")[0];
+    if (sym && window.loadResearch) window.loadResearch(sym);
+  });
   document.querySelectorAll(".nav-btn").forEach(btn => { btn.addEventListener("click", () => setView(btn.dataset.view)); });
   refreshAll();
 });

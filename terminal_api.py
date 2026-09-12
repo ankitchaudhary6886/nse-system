@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="15.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="16.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -84,6 +84,12 @@ def deployment_check(user: str = Depends(verify_user)):
         if not ok:
             out["fails"] += 1
 
+    def _clean(val):
+        s = str(val)
+        if ":" in s and s.split(":", 1)[0] in ("tv", "csv", "calc"):
+            return s.split(":", 1)[1]
+        return s
+
     for table, col, max_days in [
         ("prices_daily", "date", 5),
         ("technicals_daily", "date", 5),
@@ -101,22 +107,21 @@ def deployment_check(user: str = Depends(verify_user)):
             if not latest:
                 add(False, table, "empty")
                 continue
-            d = dt.date.fromisoformat(str(latest)[:10])
+            cleaned = _clean(latest)
+            d = dt.date.fromisoformat(str(cleaned)[:10])
             age = (today - d).days
             n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
             add(age <= max_days, table,
-                f"latest {latest} ({age}d), {n} rows")
+                f"latest {str(cleaned)[:10]} ({age}d), {n} rows")
         except Exception as e:
             add(False, table, f"err: {e}")
 
-    # strategy_runs
     try:
         n = conn.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0]
         add(n > 0, "strategy_runs", f"{n} runs")
     except Exception as e:
         add(False, "strategy_runs", str(e))
 
-    # today's signals
     try:
         iso = today.isoformat()
         n = conn.execute(
@@ -132,7 +137,6 @@ def deployment_check(user: str = Depends(verify_user)):
 
     conn.close()
 
-    # alerts
     try:
         from alerts import _creds
         tok, chat = _creds()
@@ -175,6 +179,15 @@ def macro_flow(user: str = Depends(verify_user)):
     except Exception as e:
         print(f"[MACRO] api failed: {e}")
     return {"fii_net": None, "dii_net": None, "net_flow": None}
+
+
+@app.get("/api/research/{symbol}")
+def research_api(symbol: str, user: str = Depends(verify_user)):
+    import research_cockpit
+    try:
+        return research_cockpit.analyze_symbol(symbol.upper())
+    except Exception as e:
+        return {"symbol": symbol.upper(), "error": str(e)}
 
 
 @app.get("/api/toppicks")
