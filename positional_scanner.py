@@ -1,23 +1,16 @@
 """
 Positional Scanner — long-term holds (months to years).
-Authorized 2026-09-12 (BACKLOG ID3a). v2 (2026-09-12): relaxed trend,
-always save top-50, tier C added for ranked-but-not-qualifying.
-
+v3 (2026-09-12): uses canonical universe_helper (ID7).
 Score = 0.4*quality + 0.3*trend + 0.3*valuation
-Tiers:
-  S — composite >= 80 AND all pillars >= 60
-  A — composite >= 65
-  B — composite >= 50
-  C — ranked below B (still stored, watchlist)
-
-Runs weekly (Sat 10:00 IST). Telegram alert.
-Stored in positional_picks table.
+Tiers: S (>=80 all pillars), A (>=65), B (>=50), C (ranked below).
+Runs weekly Sat 10:00 IST.
 """
 import sys
 import datetime as dt
 import statistics
 import db
 from log_utils import get_logger
+from universe_helper import band_universe
 
 log = get_logger("positional")
 
@@ -69,8 +62,6 @@ def _quality_score(f):
 
 
 def _trend_score(price, dma200, dma200_prev, ema50, hi52, lo52):
-    """Relaxed: gives credit for EMA50 and for proximity to 52w high even
-    when below 200DMA. Works in CAPITULATION regime."""
     score = 0
     notes = []
     if dma200 and price > dma200:
@@ -152,11 +143,7 @@ def compute(conn=None, limit=1500):
         log.warning("no fundamentals table — run fundamentals_tv.py first")
         return []
 
-    syms = [r[0] for r in conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()]
+    syms = band_universe(conn, limit=limit)
 
     rows_out = []
     for sym in syms:
@@ -283,8 +270,8 @@ def report(n=25, send_tg=True):
               f"comp {r['composite']:>5}  {r['notes']}")
     if send_tg:
         try:
-            import telegram_alerts
-            telegram_alerts.send(_fmt_tg(rows))
+            from alerts import send
+            send(_fmt_tg(rows))
             print("[POS] telegram sent")
         except Exception as e:
             print(f"[POS] telegram skipped: {e}")

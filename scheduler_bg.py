@@ -1,6 +1,5 @@
-"""Background scheduler — dq + daily + delivery + swing (+veto purge) +
-macro + patterns + templates + fundamentals (TV) + value radar +
-positional + weekly/monthly jobs. No intraday layers."""
+"""Background scheduler — daily chain + swing + patterns + fundamentals +
+value radar + positional + trend + validation."""
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
@@ -30,6 +29,16 @@ def _daily_job():
         log.info("daily update complete")
     except Exception as e:
         log.exception(f"daily update failed: {e}")
+
+
+def _trend_job():
+    log.info("trend scanner started")
+    try:
+        import trend_scanner
+        trend_scanner.compute()
+        log.info("trend scanner complete")
+    except Exception as e:
+        log.exception(f"trend scanner failed: {e}")
 
 
 def _swing_job():
@@ -204,8 +213,8 @@ def _drift_check():
                    f"{len(rows)} graded — review setup quality")
             log.warning(msg)
             try:
-                import swing_alerts
-                swing_alerts.send(msg)
+                from alerts import send
+                send(msg)
             except Exception:
                 pass
         else:
@@ -226,6 +235,9 @@ def start():
     _scheduler.add_job(_daily_job,
                        CronTrigger(hour=15, minute=45, timezone=IST),
                        id="daily_update", replace_existing=True)
+    _scheduler.add_job(_trend_job,
+                       CronTrigger(hour=15, minute=50, timezone=IST),
+                       id="trend_scan", replace_existing=True)
     _scheduler.add_job(_delivery_job,
                        CronTrigger(hour=16, minute=0, timezone=IST),
                        id="delivery_fetch", replace_existing=True)
@@ -269,8 +281,8 @@ def start():
                                    timezone=IST),
                        id="validate_wf", replace_existing=True)
     _scheduler.start()
-    log.info("scheduler started — dq@15:30, daily@15:45, delivery@16:00, "
-             "swing@16:15(+veto purge), inst@16:45, macro@17:30, "
+    log.info("scheduler started — dq@15:30, daily@15:45, trend@15:50, "
+             "delivery@16:00, swing@16:15, inst@16:45, macro@17:30, "
              "patterns@18:05, templates@18:35, fund@Sat08:00, "
              "retrain@Sat09:00, positional@Sat10:00, "
              "valueRadar@Sun09:00, mc@Mon08:00, wf@1st10:00 IST")

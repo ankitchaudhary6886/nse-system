@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="12.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="13.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -202,6 +202,22 @@ def radar(user: str = Depends(verify_user)):
     return {"groups": groups, "events": events, "total": len(rows)}
 
 
+@app.get("/api/trend")
+def trend_api(n: int = 50, user: str = Depends(verify_user)):
+    import trend_scanner
+    try:
+        return {"candidates": trend_scanner.top(n)}
+    except Exception as e:
+        return {"candidates": [], "error": str(e)}
+
+
+@app.post("/api/trend/scan")
+def trend_scan(bg: BackgroundTasks, user: str = Depends(verify_user)):
+    import trend_scanner
+    bg.add_task(trend_scanner.compute)
+    return {"started": True}
+
+
 @app.get("/api/patterns/latest")
 def patterns_latest(limit: int = 100, user: str = Depends(verify_user)):
     import patterns
@@ -303,9 +319,7 @@ def webhook_ingest(payload: dict,
         conn.close()
         token = row[0] if row else None
     if not token:
-        raise HTTPException(
-            status_code=503,
-            detail="webhook not configured")
+        raise HTTPException(status_code=503, detail="webhook not configured")
     got_hdr = x_webhook_token or ""
     got_body = str(payload.get("token", ""))
     ok = (secrets.compare_digest(got_hdr, token) or
@@ -327,11 +341,10 @@ def webhook_ingest(payload: dict,
     conn.commit()
     conn.close()
     try:
-        import telegram_alerts
-        telegram_alerts.send(
-            f"📡 WEBHOOK {payload.get('source')} "
-            f"{str(payload.get('symbol', '')).upper()} "
-            f"{payload.get('kind')} @ {payload.get('price')}")
+        from alerts import send
+        send(f"📡 WEBHOOK {payload.get('source')} "
+             f"{str(payload.get('symbol', '')).upper()} "
+             f"{payload.get('kind')} @ {payload.get('price')}")
     except Exception:
         pass
     return {"stored": True}

@@ -1,13 +1,14 @@
 """
 Long-Term Value Radar — quality names in downturns, for accumulation.
-Authorized 2026-09-12 (Feature B). v2 (2026-09-12): tier tuning + softer
-quality bands so tiers differentiate with available TV data.
+Authorized 2026-09-12 (Feature B). v3 (2026-09-12): uses canonical
+universe_helper for symbol list (ID7 consolidation).
 """
 import sys
 import json
 import datetime as dt
 import statistics
 import db
+from universe_helper import band_universe
 
 
 def _quality_score(row):
@@ -100,11 +101,7 @@ def compute(conn=None, limit=1500):
         "PRAGMA table_info(fundamentals)")]
     has_fund = bool(fund_cols)
 
-    syms = [r[0] for r in conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()]
+    syms = band_universe(conn, limit=limit)
 
     rows_out = []
     for sym in syms:
@@ -239,8 +236,8 @@ def report(n=25, send_tg=True):
               f"{r['notes']}")
     if send_tg:
         try:
-            import telegram_alerts
-            telegram_alerts.send(_fmt_tg(rows))
+            from alerts import send
+            send(_fmt_tg(rows))
             print("[VR] telegram sent")
         except Exception as e:
             print(f"[VR] telegram skipped: {e}")
