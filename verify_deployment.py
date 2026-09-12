@@ -1,17 +1,19 @@
 """
-Deployment verification — single command to check system health.
+Deployment verification — fast checks first, pipeline optional.
 
 Usage:
-  python verify_deployment.py               # checks only
-  python verify_deployment.py --scan        # run full daily pipeline first
-  python verify_deployment.py --sweep       # run 2y/3y/4y walk-forward sweep
-  python verify_deployment.py --scan --sweep
+  python verify_deployment.py                     # checks only (~5s)
+  python verify_deployment.py --fast              # checks + pipeline (skip prices)
+  python verify_deployment.py --full              # checks + full pipeline
+  python verify_deployment.py --sweep             # add 2y/3y/4y walk-forward
+  python verify_deployment.py --fast --sweep      # most common combo
+
+Ctrl+C safe at any point.
 """
 import sys
 import time
 import datetime as dt
-import os
-import json
+import subprocess
 import db
 
 
@@ -22,23 +24,22 @@ def _check(ok, label, detail=""):
     line = f"  {color}{mark}{reset}  {label:<40}"
     if detail:
         line += f"  {detail}"
-    print(line)
+    print(line, flush=True)
     return ok
 
 
 def _table_fresh(conn, table, col="date", max_days=5):
     try:
-        r = conn.execute(
-            f"SELECT MAX({col}) FROM {table}").fetchone()
+        r = conn.execute(f"SELECT MAX({col}) FROM {table}").fetchone()
         latest = r[0] if r else None
         if not latest:
-            return False, "empty", 0
+            return False, "empty"
         d = dt.date.fromisoformat(str(latest)[:10])
         age = (dt.date.today() - d).days
         n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-        return age <= max_days, f"latest {latest} ({age}d), {n} rows", n
+        return age <= max_days, f"latest {latest} ({age}d), {n} rows"
     except Exception as e:
-        return False, f"err: {e}", 0
+        return False, f"err: {e}"
 
 
 def run_checks():
@@ -46,12 +47,11 @@ def run_checks():
     print("DEPLOYMENT VERIFICATION")
     print(f"Time: {dt.datetime.now().isoformat(timespec='seconds')}")
     print("=" * 70)
-    print()
+    print(flush=True)
 
     conn = db.get_conn()
     fails = 0
 
-    # ---- Data tables ----
     print("DATA TABLES")
     for table, col, days in [
         ("prices_daily", "date", 5),
@@ -64,25 +64,24 @@ def run_checks():
         ("positional_picks", "date", 30),
         ("pwin_daily", "date", 14),
     ]:
-        ok, detail, n = _table_fresh(conn, table, col, days)
+        ok, detail = _table_fresh(conn, table, col, days)
         if not ok:
             fails += 1
         _check(ok, table, detail)
 
-    # strategy_runs is event-based, just check non-empty
     try:
         n = conn.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0]
-        _check(n > 0, "strategy_runs", f"{n} runs logged")
-        if n == 0:
+        ok = n > 0
+        _check(ok, "strategy_runs", f"{n} runs logged")
+        if not ok:
             fails += 1
     except Exception as e:
         _check(False, "strategy_runs", f"err: {e}")
         fails += 1
 
     conn.close()
-    print()
+    print(flush=True)
 
-    # ---- Today's activity ----
     print("TODAY'S ACTIVITY")
     conn = db.get_conn()
     today = dt.date.today().isoformat()
@@ -101,9 +100,8 @@ def run_checks():
     except Exception as e:
         _check(False, "trend candidates today", str(e))
     conn.close()
-    print()
+    print(flush=True)
 
-    # ---- Config ----
     print("CONFIG SANITY")
     try:
         from strategy_config import SETUP, BACKTEST, SIZING
@@ -115,23 +113,22 @@ def run_checks():
     except Exception as e:
         _check(False, "strategy_config loads", str(e))
         fails += 1
-    print()
+    print(flush=True)
 
-    # ---- Alerts ----
     print("ALERTS")
     try:
         from alerts import _creds
         token, chat = _creds()
-        _check(bool(token and chat), "Telegram credentials",
-               "secret file or env")
-        if not (token and chat):
+        ok = bool(token and chat)
+        _check(ok, "Telegram credentials",
+               "secret file or env" if ok else "MISSING")
+        if not ok:
             fails += 1
     except Exception as e:
         _check(False, "Telegram credentials", str(e))
         fails += 1
-    print()
+    print(flush=True)
 
-    # ---- API ----
     print("API")
     try:
         import requests
@@ -149,45 +146,116 @@ def run_checks():
         _check(False, "API /api/health", str(e))
         fails += 1
 
-    print()
+    print(flush=True)
     print("=" * 70)
     if fails == 0:
-        print("\033[92m✓ ALL CHECKS PASSED\033[0m — ready for live monitoring")
+        print("\033[92m✓ ALL CHECKS PASSED\033[0m")
     else:
-        print(f"\033[91m{fails} checks failed\033[0m — see above")
+        print(f"\033[91m{fails} checks failed\033[0m")
     print("=" * 70)
+    print(flush=True)
     return fails
 
 
-def run_scan():
-    print("RUNNING FULL DAILY PIPELINE")
-    print("-" * 70)
-    try:
-        import daily_update
-        daily_update.run()
-    except Exception as e:
-        print(f"Pipeline failed: {e}")
-    print("-" * 70)
+def run_pipeline(skip_prices=False):
+    mode = "FAST (skipping prices ingest)" if skip_prices \
+        else "FULL"
+    print("=" * 70)
+    print(f"RUNNING DAILY PIPELINE — {mode}")
+    print("=" * 70, flush=True)
+    t0 = time.time()
+
+    steps = [
+        ("prices",      None if not skip_prices else "SKIP"),
+        ("technicals",  None),
+        ("scan",        None),
+        ("ml",          None),
+        ("pwin",        None),
+        ("toppicks",    None),
+        ("events",      None),
+        ("swing",       None),
+        ("telegram",    None),
+        ("sheets",      None),
+    ]
+
+    import daily_update
+
+    for name, override in steps:
+        t = time.time()
+        print(f"\n[{name}] starting...", flush=True)
+        try:
+            if override == "SKIP":
+                print(f"[{name}] SKIPPED (fast mode)", flush=True)
+                continue
+            if name == "prices":
+                import ingest_prices
+                ingest_prices.run(show_every=100)
+            elif name == "technicals":
+                import technicals
+                technicals.compute_all()
+            elif name == "scan":
+                import scan
+                scan.run()
+            elif name == "ml":
+                import ml_predict
+                ml_predict.predict_all()
+            elif name == "pwin":
+                import pwin_cache
+                pwin_cache.refresh_all()
+            elif name == "toppicks":
+                import top_picks
+                top_picks.compute(force=True)
+            elif name == "events":
+                import events
+                events.detect()
+            elif name == "swing":
+                import swing_live
+                swing_live.update_outcomes()
+                swing_live.scan()
+            elif name == "telegram":
+                from alerts import report
+                report()
+            elif name == "sheets":
+                import sheets_sync
+                sheets_sync.sync()
+            dt_sec = time.time() - t
+            print(f"[{name}] OK ({dt_sec:.1f}s)", flush=True)
+        except Exception as e:
+            print(f"[{name}] FAILED: {e}", flush=True)
+
     print()
+    print(f"Pipeline complete in {time.time() - t0:.1f}s")
+    print("=" * 70, flush=True)
 
 
 def run_sweep():
-    print("WALK-FORWARD SWEEP (2y / 3y / 4y)")
-    print("-" * 70)
-    import subprocess
+    print("=" * 70)
+    print("WALK-FORWARD SWEEP — 2y / 3y / 4y")
+    print("=" * 70, flush=True)
     for years in [2, 3, 4]:
-        print(f"\n--- {years}-year window ---")
+        print(f"\n--- {years}-year window ---", flush=True)
+        t0 = time.time()
         subprocess.run(
             ["python", "fast_wf.py", "--years", str(years)],
             check=False)
-    print()
+        print(f"({time.time() - t0:.1f}s)", flush=True)
+    print(flush=True)
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if "--scan" in args:
-        run_scan()
+
+    # 1. checks FIRST — user sees results in 5s
+    fails = run_checks()
+
+    # 2. pipeline (optional)
+    if "--full" in args:
+        run_pipeline(skip_prices=False)
+    elif "--fast" in args:
+        run_pipeline(skip_prices=True)
+
+    # 3. sweep (optional)
     if "--sweep" in args:
         run_sweep()
-    fails = run_checks()
+
     sys.exit(0 if fails == 0 else 1)
