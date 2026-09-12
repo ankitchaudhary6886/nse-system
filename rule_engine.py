@@ -1,20 +1,7 @@
 """
 Rule Engine — generic strategy evaluation.
 
-Strategies are JSON definitions stored in data/strategies.json. Each
-strategy specifies:
-  - universe: "active" (Nifty 500 core) or "band" (mid/smallcap 1-8k cr)
-  - conditions: list of {field, op, value}
-  - score_weights: dict of field -> weight (negative = lower is better)
-  - type: "fundamental" or "swing" (labels only, does not affect logic)
-
-Evaluation:
-  1. For each symbol in universe, compute feature dict (prices + fundamentals)
-  2. Apply all conditions — pass/fail
-  3. If all pass, compute weighted score from score_weights
-  4. Return ranked list, with per-condition pass/fail notes
-
-Owner controls everything. No recommendations.
+Strategies are JSON definitions stored in data/strategies.json.
 """
 import os
 import json
@@ -29,7 +16,6 @@ log = get_logger("rule_engine")
 
 STRATEGIES_PATH = os.path.join("data", "strategies.json")
 
-# --- Operator map ---
 OPS = {
     "==": lambda a, b: a == b,
     "!=": lambda a, b: a != b,
@@ -85,29 +71,39 @@ def delete_strategy(name):
 # ============================================================
 # Feature computation
 # ============================================================
+def _seq_len(v):
+    """Safe length for list or numpy array or None."""
+    if v is None:
+        return 0
+    try:
+        return len(v)
+    except Exception:
+        return 0
+
+
 def _ema(vals, span):
-    if not vals:
+    if _seq_len(vals) == 0:
         return None
     k = 2.0 / (span + 1.0)
-    e = vals[0]
+    e = float(vals[0])
     for v in vals[1:]:
-        e = v * k + e * (1 - k)
+        e = float(v) * k + e * (1 - k)
     return e
 
 
 def _sma(vals, span):
-    if not vals or len(vals) < span:
+    if _seq_len(vals) < span:
         return None
     return float(np.mean(vals[-span:]))
 
 
 def _rsi(closes, period=14):
-    if len(closes) < period + 1:
+    if _seq_len(closes) < period + 1:
         return None
     gains = 0.0
     losses = 0.0
     for i in range(len(closes) - period, len(closes)):
-        ch = closes[i] - closes[i - 1]
+        ch = float(closes[i]) - float(closes[i - 1])
         if ch > 0:
             gains += ch
         else:
@@ -118,8 +114,6 @@ def _rsi(closes, period=14):
 
 
 def _range_contraction(df, windows=(5, 5, 5, 5)):
-    """True if each consecutive window has a smaller high-low range than
-    the previous. Classic RCP shape."""
     need = sum(windows)
     if len(df) < need:
         return 0
@@ -135,7 +129,6 @@ def _range_contraction(df, windows=(5, 5, 5, 5)):
             return 0
         ranges.append(float(np.max(seg_h) - np.min(seg_l)))
         idx += w
-    # each subsequent range must be smaller
     for i in range(1, len(ranges)):
         if ranges[i] >= ranges[i - 1]:
             return 0
@@ -143,7 +136,6 @@ def _range_contraction(df, windows=(5, 5, 5, 5)):
 
 
 def _compute_features(sym, df, fund_row, sector, sector_rs):
-    """Return dict of features for one symbol. Missing values = None."""
     if df is None or len(df) < 60:
         return None
     c = df["Close"].values.astype(float)
@@ -218,7 +210,6 @@ def _compute_features(sym, df, fund_row, sector, sector_rs):
         "sector_rs": sector_rs,
     }
 
-    # fundamentals
     if fund_row:
         for k in ["roce", "pe", "pb", "roe", "debt_to_equity",
                   "profit_growth_3y", "sales_growth_3y",
@@ -227,9 +218,7 @@ def _compute_features(sym, df, fund_row, sector, sector_rs):
                   "operating_margin", "net_profit_margin"]:
             features[k] = fund_row.get(k)
 
-    # sector name
     features["sector"] = sector
-
     return features
 
 
@@ -330,13 +319,8 @@ def _condition_label(cond, features):
         got_str = f"{got:.3f}"
     else:
         got_str = str(got)
-    return {
-        "field": field,
-        "op": op,
-        "want": want,
-        "got": got_str,
-        "ok": ok,
-    }
+    return {"field": field, "op": op, "want": want,
+            "got": got_str, "ok": bool(ok)}
 
 
 def evaluate(strategy, features):
@@ -358,11 +342,9 @@ def evaluate(strategy, features):
             have = True
         except Exception:
             continue
-    return {
-        "passed": True,
-        "score": round(score, 4) if have else 0.0,
-        "checks": checks,
-    }
+    return {"passed": True,
+            "score": round(score, 4) if have else 0.0,
+            "checks": checks}
 
 
 def run_strategy(name, limit=50):
@@ -398,23 +380,19 @@ def run_strategy(name, limit=50):
             "close": feats.get("close"),
             "distance_from_52w_high": feats.get("distance_from_52w_high"),
             "checks": r["checks"],
-            "top_features": {
-                k: feats.get(k) for k in
-                (s.get("score_weights") or {}).keys()
-            },
+            "top_features": {k: feats.get(k)
+                             for k in (s.get("score_weights") or {}).keys()},
         })
     conn.close()
 
     results.sort(key=lambda r: -(r["score"] if r["score"] is not None else 0))
-    return {
-        "strategy": name,
-        "type": s.get("type", "unknown"),
-        "universe": s.get("universe", "active"),
-        "n_symbols_checked": n_checked,
-        "n_passed": len(results),
-        "run_at": dt.datetime.now().isoformat(timespec="seconds"),
-        "picks": results[:limit],
-    }
+    return {"strategy": name,
+            "type": s.get("type", "unknown"),
+            "universe": s.get("universe", "active"),
+            "n_symbols_checked": n_checked,
+            "n_passed": len(results),
+            "run_at": dt.datetime.now().isoformat(timespec="seconds"),
+            "picks": results[:limit]}
 
 
 def run_all():
@@ -501,9 +479,6 @@ def seed_if_empty(force=False):
     return added
 
 
-# ============================================================
-# CLI
-# ============================================================
 if __name__ == "__main__":
     import sys
     argv = sys.argv[1:]
