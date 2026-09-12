@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="20.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="21.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -180,13 +180,8 @@ def macro_flow(user: str = Depends(verify_user)):
 
 
 # ============================================================
-# Strategies — ORDER MATTERS
+# Strategies — ORDER MATTERS (static prefixes first)
 # ============================================================
-# 1. Static prefix endpoints FIRST (seed) — otherwise {name} would
-#    swallow /seed and complain about missing payload.
-# 2. Then the parametrised {name} endpoints.
-# ============================================================
-
 @app.get("/api/strategies")
 def list_strategies(user: str = Depends(verify_user)):
     import rule_engine
@@ -207,6 +202,17 @@ def run_all_strategies(user: str = Depends(verify_user)):
         return {"results": rule_engine.run_all()}
     except Exception as e:
         return {"error": str(e), "results": {}}
+
+
+@app.post("/api/strategies/backtest-cache/clear")
+def clear_backtest_cache(name: str = None,
+                         user: str = Depends(verify_user)):
+    import strategy_backtest
+    try:
+        strategy_backtest.clear_cache(name)
+        return {"cleared": True, "name": name}
+    except Exception as e:
+        return {"cleared": False, "error": str(e)}
 
 
 @app.get("/api/strategies/{name}")
@@ -241,6 +247,25 @@ def run_strategy_api(name: str, limit: int = 30,
         return rule_engine.run_strategy(name, limit=limit)
     except Exception as e:
         return {"error": str(e), "picks": []}
+
+
+@app.get("/api/strategies/{name}/backtest")
+def backtest_strategy_api(name: str, years: int = 2, step: int = 5,
+                          universe_limit: int = 150,
+                          stop_pct: float = 0.05,
+                          target_r: float = 3.0,
+                          hold_bars: int = 30,
+                          refresh: bool = False,
+                          user: str = Depends(verify_user)):
+    import strategy_backtest
+    try:
+        return strategy_backtest.backtest_strategy(
+            name, years=years, step=step,
+            universe_limit=universe_limit,
+            stop_pct=stop_pct, target_r=target_r,
+            hold_bars=hold_bars, use_cache=not refresh)
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # ============================================================
