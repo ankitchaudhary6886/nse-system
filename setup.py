@@ -1,17 +1,11 @@
 """
-Hiren Gabani Master Pullback — OFFICIAL v3.2.
-6-point checklist + mother-candle trigger + PDL stop + 5% rule
-+ 3-session recency + pullback orderliness grade (0-100).
+Hiren Gabani Master Pullback — OFFICIAL v3.3.
+6-point checklist + mother-candle trigger + PDL stop + 5% rule.
 
-v3.1 (2026-09-12) — FIX: impulse calculation used mixed
-negative/positive indexing, inflating impulse_pct by 10-30x.
-
-v3.2 (2026-09-12) — LOOSEN: funnel diagnostic showed the three
-impulse checks killed 83% of setups and pullback depth killed 11%.
-Widened thresholds to match a broader market regime:
-  impulse 25-50%  ->  18-75%
-  EMA10 break tol 0.25 -> 0.35
-  pullback 12-20% ->  8-25%
+v3.1 — impulse indexing bug fix.
+v3.2 — widened impulse 25-50% -> 18-75%, PB 12-20% -> 8-25%.
+v3.3 — EMA10-break tolerance 0.35 -> 0.45; PB floor 8% -> 6%;
+       PB days cap 15 -> 20. Diag showed 1c killed 50% of candidates.
 """
 from dataclasses import dataclass, field
 from typing import List
@@ -40,14 +34,14 @@ class Setup:
 
 class SetupDetector:
     IMPULSE_LOOKBACK = 90
-    IMPULSE_MIN_PCT = 0.18        # was 0.25
-    IMPULSE_MAX_PCT = 0.75        # was 0.50
-    EMA10_BREAK_TOL = 0.35        # was 0.25
+    IMPULSE_MIN_PCT = 0.18
+    IMPULSE_MAX_PCT = 0.75
+    EMA10_BREAK_TOL = 0.45        # v3.3 was 0.35
     PB_LOOKBACK = 25
-    PB_MIN_PCT = 0.08             # was 0.12
-    PB_MAX_PCT = 0.25             # was 0.20
+    PB_MIN_PCT = 0.06             # v3.3 was 0.08
+    PB_MAX_PCT = 0.25
     PB_MIN_DAYS = 6
-    PB_MAX_DAYS = 15
+    PB_MAX_DAYS = 20              # v3.3 was 15
     CRASH_WINDOW = 3
     CRASH_MAX_PCT = 0.15
     EMA10 = 10
@@ -91,7 +85,6 @@ class SetupDetector:
                            abs(l[i] - c[i - 1])))
         atr14 = float(np.mean(trs[-14:])) if len(trs) >= 14 else None
 
-        # --- 1. Impulse 18-75%, mostly above 10 EMA ---
         win_end = n - cls.PB_LOOKBACK
         win_start = win_end - cls.IMPULSE_LOOKBACK
         if win_start < 0:
@@ -112,7 +105,6 @@ class SetupDetector:
         if int(np.sum(ic < ie)) > max(2, int(cls.EMA10_BREAK_TOL * len(ic))):
             return None
 
-        # --- 2. Pullback 8-25% ---
         pb_window = h[win_end:]
         recent_high = float(np.max(pb_window))
         current_low = float(l[-1])
@@ -120,7 +112,6 @@ class SetupDetector:
         if not (cls.PB_MIN_PCT <= pb_depth <= cls.PB_MAX_PCT):
             return None
 
-        # --- 3. Orderly 6-15d, no hard crash ---
         pb_days = len(pb_window) - 1 - int(np.argmax(pb_window))
         if not (cls.PB_MIN_DAYS <= pb_days <= cls.PB_MAX_DAYS):
             return None
@@ -129,7 +120,6 @@ class SetupDetector:
             if base and (base - l[i]) / base >= cls.CRASH_MAX_PCT:
                 return None
 
-        # --- Shape score ---
         pseg = c[swing_high_idx:]
         shape = 0
         if len(pseg) > 4:
@@ -140,7 +130,6 @@ class SetupDetector:
             s_vol = max(0.0, min(1.0, 1 - vol / 0.03))
             shape = int(100 * (0.5 * s_drop + 0.5 * s_vol))
 
-        # --- 4. Tighten at 10/20 EMA ---
         near10 = abs(current_low - ema10[-1]) / ema10[-1] <= cls.EMA_TOUCH_MULT
         near20 = abs(current_low - ema20[-1]) / ema20[-1] <= cls.EMA_TOUCH_MULT
         in_zone = (current_low <= ema10[-1] * 1.02 and
@@ -150,14 +139,12 @@ class SetupDetector:
         ema_proximity = "EMA10" if near10 else ("EMA20" if near20
                                                 else "ZONE")
 
-        # --- 5. Volume dry-up ---
         vol_now = vol_sma20[-1]
         avg3 = float(np.mean(v[-3:]))
         if np.isnan(vol_now) or not (avg3 < 0.8 * vol_now or
                                      v[-1] < 0.7 * vol_now):
             return None
 
-        # --- 6. Mother candle ---
         def is_tight(i):
             inside = h[i] < h[i - 1] and l[i] > l[i - 1]
             narrow = (atr14 is not None and
@@ -179,7 +166,6 @@ class SetupDetector:
         mother_bar_high = float(h[mother_idx])
         mother_bar_low = float(l[mother_idx])
 
-        # --- 7. Trigger, PDL stop, 5% rule ---
         entry_price = mother_bar_high
         stop_loss = float(l[-1])
         if stop_loss >= entry_price:
@@ -204,4 +190,4 @@ class SetupDetector:
             impulse_pct=round(impulse_pct, 3),
             ema_proximity=ema_proximity,
             shape_score=shape,
-            reasons=["OFFICIAL v3.2: impulse/EMA10/pullback widened"])
+            reasons=["OFFICIAL v3.3: 1c widened, PB floor 6%, days cap 20"])

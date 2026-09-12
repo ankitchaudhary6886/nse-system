@@ -4,7 +4,6 @@
 - Every message from Ankit prefixed with `#` is captured here.
 - Categories: RULES · INSTRUCTIONS · DEMANDS · IDEAS · IMAGINATIONS
 - DONE items stay. Execution details live in `EXECUTION_LOG.md`.
-- Filename is lowercase `backlog.md` (Windows case-safety).
 
 ---
 
@@ -22,14 +21,14 @@
 - **R10** No pausing; keep momentum.
 - **R11** 3-4 file edits per response when possible.
 - **R12** Execute new ideas only AFTER the machine is functionally complete.
+- **R13** Fast feedback loops: use funnels/diags (~5s), not multi-minute
+          walk-forwards, when hunting for bottlenecks.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
-I1–I11 (see EXECUTION_LOG for details)
-I12 Address signal sparsity — done via v3.2 threshold widening.
-I13 Keep validation fast (Backtester path or funnel diagnostics).
+I1–I13 (see EXECUTION_LOG)
 
 ---
 
@@ -41,22 +40,35 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 ## D. IDEAS
 
 ### ID1–ID10 · DONE (see EXECUTION_LOG)
-### ID11 — Signal sparsity fix · **DONE 2026-09-12**
-Empirical finding: setup detector fired 0.2 signals per symbol over
-4+ years. quick_setup_diag showed three impulse checks + pullback depth
-killed 83% + 11% of candidates.
-Fix (setup.py v3.2): widened impulse 25-50% → 18-75%, EMA10 break
-tolerance 0.25 → 0.35, pullback depth 12-20% → 8-25%.
-Expected: setup pass rate 0.4% → 3-5% of screener passes.
 
-### ID12 — Fallback: alternative setup patterns · **FUTURE**
-If v3.2 doesn't recover enough signals, add a second setup family
-(breakout-pullback, consolidation-tight-close, etc). Two independent
-strategies feed swing_signals.mode.
+### ID11 — Signal sparsity fix · **DONE (v3.2 + v3.3)**
+Timeline:
+- Initial: 0.4% setup pass rate (4 setups in 100×2y sample).
+- v3.2: widened impulse 25-50%→18-75%, EMA10 tol 0.25→0.35,
+  PB depth 12-20%→8-25%.  Result: 3.2% pass (36 setups).
+- v3.3: EMA10 tol 0.35→0.45, PB floor 0.08→0.06, PB days cap 15→20.
+  Target: 5-8% pass rate.
+Diag showed 1c_ema10_breaks was still the #1 killer at 50% post-v3.2.
 
-### ID13 — Validation via Backtester (fast path) · **DONE**
-validate.py v3 delegates to Backtester which precomputes indicators
-once per symbol. 100x faster than slice-and-eval.
+### ID12 — Alt setup patterns · **FUTURE**
+If v3.3 doesn't produce an edge, add second setup family
+(breakout-pullback, consolidation-tight-close). Independent strategy,
+same swing_signals table with different mode.
+
+### ID13 — Fast validation · **DONE**
+- `validate.py` v3 delegates to Backtester (100x faster)
+- `fast_wf.py` — inline walk-forward, ~60s
+- `quick_funnel.py` — 5s funnel diagnostic
+- `quick_setup_diag.py` — 3s per-check breakdown
+
+### ID14 — Meta-model plateau · **OPEN**
+3 consecutive retrains: AUC 0.629 (v6), 0.629 (v7 33-feat).
+Features have hit diminishing returns. Options:
+- Accept 0.629 (top-decile win 62-63% is tradeable)
+- Add fundamentally different features (e.g. sector rotation,
+  FII/DII flow interaction)
+- Pivot to shorter-horizon labels
+Deferred until swing signal base is validated.
 
 ---
 
@@ -68,17 +80,17 @@ IM3 Self-documenting system.
 
 ## F. FEATURES COMPLETED
 
-### FC Regime Spectrum · DONE
-### FP Fundamentals Pipeline · DONE (863 symbols)
+### FC Regime Spectrum · DONE (5 levels)
+### FP Fundamentals Pipeline · DONE (863 symbols weekly)
 ### FS Sizing with fallback · DONE
 ### FA Unified Alerts · DONE
 ### FU Canonical Universe · DONE
 ### FT Trend Scanner v3 · DONE (unbounded score)
 ### FP2 Positional Scanner · DONE
 ### FV Value Radar v2 · DONE
-### FM Meta-Model v7 · DONE (33 features)
-### FVAL Validation v3 · DONE (fast via Backtester)
-### FSP Setup v3.2 · DONE (widened thresholds)
+### FM Meta-Model v7 · DONE (33 features, AUC 0.629)
+### FVAL Fast Validation · DONE (`fast_wf.py`, `quick_funnel.py`)
+### FSP Setup v3.3 · DONE (widened thresholds)
 
 ---
 
@@ -86,7 +98,7 @@ IM3 Self-documenting system.
 
 | ID   | Item                      | Status       |
 |------|---------------------------|--------------|
-| R1–R12 | Rules                   | Active       |
+| R1–R13 | Rules                   | Active       |
 | ID1  | All-weather swing         | DONE         |
 | ID2  | Value Radar v2            | DONE         |
 | ID3a | Positional scanner        | DONE         |
@@ -101,6 +113,7 @@ IM3 Self-documenting system.
 | ID11 | Signal sparsity fix       | DONE         |
 | ID12 | Alt setup patterns        | FUTURE       |
 | ID13 | Fast validation           | DONE         |
+| ID14 | Meta-model plateau        | OPEN         |
 
 ---
 
