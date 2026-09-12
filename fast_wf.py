@@ -1,29 +1,62 @@
 """
-Fast walk-forward — Backtester path, ~60s.
+Fast walk-forward — Backtester path, ~80s.
 Runs the current strategy over the last N years of band universe
-and reports aggregate win rate / PF / drawdown. Tells us if the
-widened thresholds actually produce a positive-expectancy system.
+and reports aggregate stats. Verdict is PF-driven (profit factor),
+not win-rate-driven — a 2R system can be very tradeable at 40% WR.
+
+Usage:
+  python fast_wf.py               -> current params
+  python fast_wf.py 2.5           -> override TARGET_R_MULTIPLE = 2.5
+  python fast_wf.py 3 5           -> target 3R, max_positions 5
 """
+import sys
 import time
 import datetime as dt
 import numpy as np
 import db
 from universe_helper import band_universe
-from backtest import Backtester
+
+
+def _verdict(n, wr, pf):
+    if n < 30:
+        return f"INSUFFICIENT TRADES (n={n}, need >=30)"
+    if pf >= 1.5 and wr >= 0.42:
+        return "STRONG EDGE"
+    if pf >= 1.3 and wr >= 0.38:
+        return "SOLID EDGE"
+    if pf >= 1.15 and wr >= 0.35:
+        return "WEAK EDGE — tradeable with sizing"
+    if pf >= 1.0:
+        return "MARGINAL — positive expectancy, small sample"
+    return "NO EDGE — negative expectancy"
 
 
 def main():
     t0 = time.time()
+    target_r = float(sys.argv[1]) if len(sys.argv) > 1 else None
+    max_pos = int(sys.argv[2]) if len(sys.argv) > 2 else None
+
+    if target_r is not None:
+        import setup
+        setup.SetupDetector.TARGET_R_MULTIPLE = target_r
+        print(f"[WF] override TARGET_R_MULTIPLE = {target_r}")
+
+    from backtest import Backtester, BacktestResult
+
     conn = db.get_conn()
     syms = band_universe(conn, limit=400)
     conn.close()
 
     end = dt.date.today()
     start = end - dt.timedelta(days=365 * 3)
+
+    result_obj = BacktestResult()
+    if max_pos is not None:
+        result_obj.max_positions = max_pos
     print(f"[WF] {len(syms)} symbols, {start.isoformat()} to "
           f"{end.isoformat()}")
 
-    bt = Backtester()
+    bt = Backtester(result=result_obj)
     result = bt.run([s + ".NS" for s in syms],
                     start.isoformat(), end.isoformat())
 
@@ -43,6 +76,7 @@ def main():
     pf = (sum(t.pnl_pct for t in wins) /
           abs(sum(t.pnl_pct for t in losses))) if losses and \
         sum(t.pnl_pct for t in losses) else 999.0
+    expectancy_r = wr * abs(avg_w / avg_l) - (1 - wr) if avg_l else 0.0
 
     print()
     print("=" * 60)
@@ -53,20 +87,14 @@ def main():
     print(f"win rate          : {wr:.1%}")
     print(f"avg win           : {avg_w*100:+.2f}%")
     print(f"avg loss          : {avg_l*100:+.2f}%")
+    print(f"R-multiple (avg)  : {abs(avg_w/avg_l):.2f}")
+    print(f"expectancy / trade: {expectancy_r:+.3f} R")
     print(f"profit factor     : {pf:.2f}")
     print(f"total return      : {result.total_return*100:+.2f}%")
     print(f"max drawdown      : {result.max_drawdown*100:.2f}%")
     print(f"avg holding days  : {result.avg_holding_days:.1f}")
     print()
-
-    if n < 20:
-        print("VERDICT: INSUFFICIENT TRADES (n<20)")
-    elif wr >= 0.45 and pf >= 1.5:
-        print("VERDICT: EDGE HOLDS")
-    elif wr >= 0.40 and pf >= 1.2:
-        print("VERDICT: WEAK EDGE — tradeable with sizing")
-    else:
-        print("VERDICT: NO EDGE at current params")
+    print(f"VERDICT: {_verdict(n, wr, pf)}")
 
 
 if __name__ == "__main__":

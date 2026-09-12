@@ -21,14 +21,16 @@
 - **R10** No pausing; keep momentum.
 - **R11** 3-4 file edits per response when possible.
 - **R12** Execute new ideas only AFTER the machine is functionally complete.
-- **R13** Fast feedback loops: use funnels/diags (~5s), not multi-minute
-          walk-forwards, when hunting for bottlenecks.
+- **R13** Fast feedback loops (funels/diags ~5s), not multi-minute waits.
+- **R14** Verdicts are PF-driven. A 2R system with 40% WR and PF >=1.2 is
+          tradeable — do not dismiss on win rate alone.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
 I1–I13 (see EXECUTION_LOG)
+I14 Correct verdict logic — PF-driven, not WR-driven.
 
 ---
 
@@ -39,36 +41,30 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 
 ## D. IDEAS
 
-### ID1–ID10 · DONE (see EXECUTION_LOG)
-
-### ID11 — Signal sparsity fix · **DONE (v3.2 + v3.3)**
-Timeline:
-- Initial: 0.4% setup pass rate (4 setups in 100×2y sample).
-- v3.2: widened impulse 25-50%→18-75%, EMA10 tol 0.25→0.35,
-  PB depth 12-20%→8-25%.  Result: 3.2% pass (36 setups).
-- v3.3: EMA10 tol 0.35→0.45, PB floor 0.08→0.06, PB days cap 15→20.
-  Target: 5-8% pass rate.
-Diag showed 1c_ema10_breaks was still the #1 killer at 50% post-v3.2.
+### ID1–ID10 · DONE
+### ID11 — Signal sparsity fix · **DONE**
+- Initial: 0.4% setup pass rate
+- v3.2: 3.2%
+- v3.3: **8.0% (89 setups in sample)** — 20x the original
 
 ### ID12 — Alt setup patterns · **FUTURE**
-If v3.3 doesn't produce an edge, add second setup family
-(breakout-pullback, consolidation-tight-close). Independent strategy,
-same swing_signals table with different mode.
+Add second setup family (breakout-pullback, consolidation-tight-close)
+if 2R/2.5R/3R sweep doesn't improve PF above 1.3.
 
 ### ID13 — Fast validation · **DONE**
-- `validate.py` v3 delegates to Backtester (100x faster)
-- `fast_wf.py` — inline walk-forward, ~60s
-- `quick_funnel.py` — 5s funnel diagnostic
-- `quick_setup_diag.py` — 3s per-check breakdown
+`fast_wf.py` (80s), `quick_funnel.py` (5s), `quick_setup_diag.py` (3s).
 
 ### ID14 — Meta-model plateau · **OPEN**
-3 consecutive retrains: AUC 0.629 (v6), 0.629 (v7 33-feat).
-Features have hit diminishing returns. Options:
-- Accept 0.629 (top-decile win 62-63% is tradeable)
-- Add fundamentally different features (e.g. sector rotation,
-  FII/DII flow interaction)
-- Pivot to shorter-horizon labels
-Deferred until swing signal base is validated.
+AUC 0.629 stable across 3 retrains. Top-decile 62-63% is tradeable.
+Deferred.
+
+### ID15 — Target sweep (2R vs 2.5R vs 3R) · **IN PROGRESS**
+First WF result: PF 1.21, +85.82% over 3y, DD 13.72%.
+Sweep targets to see if PF breaks 1.3.
+
+### ID16 — Position sizing integration · **PENDING**
+Wire swing signal confidence into sizing.py alloc multiplier (already
+supports regime mult). Add quality tier multiplier.
 
 ---
 
@@ -80,17 +76,18 @@ IM3 Self-documenting system.
 
 ## F. FEATURES COMPLETED
 
-### FC Regime Spectrum · DONE (5 levels)
-### FP Fundamentals Pipeline · DONE (863 symbols weekly)
+### FC Regime Spectrum · DONE
+### FP Fundamentals Pipeline · DONE
 ### FS Sizing with fallback · DONE
 ### FA Unified Alerts · DONE
 ### FU Canonical Universe · DONE
-### FT Trend Scanner v3 · DONE (unbounded score)
+### FT Trend Scanner v3 · DONE
 ### FP2 Positional Scanner · DONE
 ### FV Value Radar v2 · DONE
-### FM Meta-Model v7 · DONE (33 features, AUC 0.629)
-### FVAL Fast Validation · DONE (`fast_wf.py`, `quick_funnel.py`)
-### FSP Setup v3.3 · DONE (widened thresholds)
+### FM Meta-Model v7 · DONE (33 features)
+### FVAL Fast Validation · DONE
+### FSP Setup v3.3 · DONE (widened)
+### FWF Walk-forward v1 · DONE (PF 1.21, +85.82%, DD 13.72%)
 
 ---
 
@@ -98,7 +95,7 @@ IM3 Self-documenting system.
 
 | ID   | Item                      | Status       |
 |------|---------------------------|--------------|
-| R1–R13 | Rules                   | Active       |
+| R1–R14 | Rules                   | Active       |
 | ID1  | All-weather swing         | DONE         |
 | ID2  | Value Radar v2            | DONE         |
 | ID3a | Positional scanner        | DONE         |
@@ -114,6 +111,8 @@ IM3 Self-documenting system.
 | ID12 | Alt setup patterns        | FUTURE       |
 | ID13 | Fast validation           | DONE         |
 | ID14 | Meta-model plateau        | OPEN         |
+| ID15 | Target sweep              | IN PROGRESS  |
+| ID16 | Sizing integration        | PENDING      |
 
 ---
 
