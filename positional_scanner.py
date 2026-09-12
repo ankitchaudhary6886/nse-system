@@ -1,16 +1,14 @@
 """
 Positional Scanner — long-term holds (months to years).
-Authorized 2026-09-12 (BACKLOG ID3a).
-
-Combines quality + trend + valuation into one ranked list.
-Different from Value Radar (deep-discount accumulation) and
-from swing (days–weeks).
+Authorized 2026-09-12 (BACKLOG ID3a). v2 (2026-09-12): relaxed trend,
+always save top-50, tier C added for ranked-but-not-qualifying.
 
 Score = 0.4*quality + 0.3*trend + 0.3*valuation
 Tiers:
-  S — composite >= 85 AND all pillars >= 70
-  A — composite >= 70
-  B — composite >= 55
+  S — composite >= 80 AND all pillars >= 60
+  A — composite >= 65
+  B — composite >= 50
+  C — ranked below B (still stored, watchlist)
 
 Runs weekly (Sat 10:00 IST). Telegram alert.
 Stored in positional_picks table.
@@ -70,15 +68,20 @@ def _quality_score(f):
     return min(100, score), notes
 
 
-def _trend_score(price, dma200, dma200_prev, hi52, lo52):
+def _trend_score(price, dma200, dma200_prev, ema50, hi52, lo52):
+    """Relaxed: gives credit for EMA50 and for proximity to 52w high even
+    when below 200DMA. Works in CAPITULATION regime."""
     score = 0
     notes = []
     if dma200 and price > dma200:
-        score += 40
+        score += 30
         notes.append("above 200DMA")
     if dma200 and dma200_prev and dma200 > dma200_prev:
-        score += 25
+        score += 20
         notes.append("200DMA rising")
+    if ema50 and price > ema50:
+        score += 20
+        notes.append("above EMA50")
     if hi52 and price and hi52 > 0:
         ratio = price / hi52
         if ratio >= 0.95:
@@ -168,6 +171,7 @@ def compute(conn=None, limit=1500):
         price = closes[-1]
         dma200 = sum(closes[-200:]) / 200
         dma200_prev = sum(closes[-220:-20]) / 200
+        ema50 = sum(closes[-50:]) / 50
         hi52 = max(closes[-252:]) if len(closes) >= 252 else max(closes)
         lo52 = min(closes[-252:]) if len(closes) >= 252 else min(closes)
 
@@ -179,7 +183,8 @@ def compute(conn=None, limit=1500):
         sector = f.get("sector") or None
 
         q, q_notes = _quality_score(f)
-        t, t_notes = _trend_score(price, dma200, dma200_prev, hi52, lo52)
+        t, t_notes = _trend_score(price, dma200, dma200_prev, ema50,
+                                  hi52, lo52)
         pe = f.get("pe")
         sec_med = sector_med.get(sector)
         pg = f.get("profit_growth_3y")
@@ -187,14 +192,15 @@ def compute(conn=None, limit=1500):
         v, v_notes = _value_score(pe, sec_med, peg)
 
         composite = round(0.4 * q + 0.3 * t + 0.3 * v, 1)
-        if composite >= 85 and q >= 70 and t >= 70 and v >= 70:
+
+        if composite >= 80 and q >= 60 and t >= 60 and v >= 60:
             tier = "S"
-        elif composite >= 70:
+        elif composite >= 65:
             tier = "A"
-        elif composite >= 55:
+        elif composite >= 50:
             tier = "B"
         else:
-            continue
+            tier = "C"
 
         rows_out.append({
             "date": today, "symbol": sym, "sector": sector,
@@ -205,7 +211,7 @@ def compute(conn=None, limit=1500):
         })
 
     rows_out.sort(key=lambda r: -r["composite"])
-    rows_out = rows_out[:75]
+    rows_out = rows_out[:50]
 
     conn.execute("DELETE FROM positional_picks WHERE date=?", (today,))
     for r in rows_out:
