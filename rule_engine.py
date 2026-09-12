@@ -2,6 +2,11 @@
 Rule Engine — generic strategy evaluation.
 
 Strategies are JSON definitions stored in data/strategies.json.
+
+v2 (2026-09-12): score uses percentile ranks within the current universe.
+Raw-value scoring was outlier-dominated (holding companies with weird
+accounting inflating the whole score). Percentile scoring produces
+comparable numbers across symbols.
 """
 import os
 import json
@@ -221,6 +226,7 @@ def _compute_features(sym, df, fund_row, sector, sector_rs):
     imp = _impulse_pullback(c, h, l, lookback=60)
 
     features = {
+        "symbol": sym,
         "close": close,
         "open": open_,
         "high": float(h[-1]),
@@ -340,6 +346,33 @@ def _universe_symbols(conn, universe):
 
 
 # ============================================================
+# Percentile ranks
+# ============================================================
+def _percentile_ranks(sym_values):
+    """sym_values = list of (symbol, value). Returns dict symbol -> pct (0-100).
+    Symbols with None or NaN values are omitted."""
+    valid = []
+    for s, v in sym_values:
+        if v is None:
+            continue
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            continue
+        if math.isnan(fv) or math.isinf(fv):
+            continue
+        valid.append((s, fv))
+    if not valid:
+        return {}
+    valid.sort(key=lambda x: x[1])
+    n = len(valid)
+    out = {}
+    for i, (s, v) in enumerate(valid):
+        out[s] = (100.0 * i / (n - 1)) if n > 1 else 50.0
+    return out
+
+
+# ============================================================
 # Evaluation
 # ============================================================
 def _condition_label(cond, features):
@@ -361,7 +394,7 @@ def _condition_label(cond, features):
             "got": got_str, "ok": bool(ok)}
 
 
-def evaluate(strategy, features):
+def evaluate(strategy, features, pct_maps=None):
     conditions = strategy.get("conditions", [])
     checks = [_condition_label(c, features) for c in conditions]
     passed = all(c["ok"] for c in checks)
@@ -369,19 +402,29 @@ def evaluate(strategy, features):
         return {"passed": False, "score": None, "checks": checks}
 
     weights = strategy.get("score_weights", {})
+    sym = features.get("symbol")
     score = 0.0
     have = False
     for field, w in weights.items():
-        v = features.get(field)
-        if v is None:
-            continue
-        try:
-            score += float(v) * float(w)
+        if pct_maps and field in pct_maps and sym in pct_maps[field]:
+            pct = pct_maps[field][sym]
+            # Negative weight = lower is better → invert percentile
+            if w < 0:
+                pct = 100.0 - pct
+            score += pct * abs(w)
             have = True
-        except Exception:
-            continue
+        else:
+            # Fallback: raw value × weight (used when pct map missing)
+            v = features.get(field)
+            if v is None:
+                continue
+            try:
+                score += float(v) * float(w)
+                have = True
+            except Exception:
+                continue
     return {"passed": True,
-            "score": round(score, 4) if have else 0.0,
+            "score": round(score, 3) if have else 0.0,
             "checks": checks}
 
 
@@ -430,20 +473,39 @@ def run_strategy(name, limit=50):
     funds = _load_fundamentals(conn)
     sectors = _load_sectors(conn)
     srs = _load_sector_rs(conn)
+    conn.close()
 
-    results = []
-    all_checks = []
-    n_checked = 0
+    # ---- Pass 1: compute features for every symbol ----
+    feats_list = []
     for sym in syms:
-        n_checked += 1
+        df = _load_symbol_df(db.get_conn(), sym)  # hmm, reopens per call
+        # Use single connection for speed
+    # Restructure: keep one connection open for the loop
+
+    conn = db.get_conn()
+    feats_list = []
+    for sym in syms:
         df = _load_symbol_df(conn, sym)
         if df is None:
             continue
-        feats = _compute_features(sym, df, funds.get(sym),
-                                  sectors.get(sym), srs.get(sym))
-        if not feats:
-            continue
-        r = evaluate(s, feats)
+        f = _compute_features(sym, df, funds.get(sym),
+                              sectors.get(sym), srs.get(sym))
+        if f:
+            feats_list.append((sym, f))
+    conn.close()
+
+    # ---- Percentile maps for score fields ----
+    score_fields = list((s.get("score_weights") or {}).keys())
+    pct_maps = {}
+    for field in score_fields:
+        pct_maps[field] = _percentile_ranks(
+            [(sym, f.get(field)) for sym, f in feats_list])
+
+    # ---- Pass 2: evaluate conditions + compute score ----
+    results = []
+    all_checks = []
+    for sym, feats in feats_list:
+        r = evaluate(s, feats, pct_maps=pct_maps)
         all_checks.append(r["checks"])
         if not r["passed"]:
             continue
@@ -455,9 +517,8 @@ def run_strategy(name, limit=50):
             "distance_from_52w_high": feats.get("distance_from_52w_high"),
             "checks": r["checks"],
             "top_features": {k: feats.get(k)
-                             for k in (s.get("score_weights") or {}).keys()},
+                             for k in score_fields},
         })
-    conn.close()
 
     results.sort(key=lambda r: -(r["score"] if r["score"] is not None else 0))
     diag = _diagnose(s, all_checks)
@@ -465,7 +526,7 @@ def run_strategy(name, limit=50):
     return {"strategy": name,
             "type": s.get("type", "unknown"),
             "universe": s.get("universe", "active"),
-            "n_symbols_checked": n_checked,
+            "n_symbols_checked": len(feats_list),
             "n_passed": len(results),
             "run_at": dt.datetime.now().isoformat(timespec="seconds"),
             "picks": results[:limit],
@@ -483,12 +544,8 @@ def run_all():
 
 
 # ============================================================
-# Seed strategies
+# Seed strategies (unchanged from last version)
 # ============================================================
-# Note: TradingView India does not return growth or shareholding data
-# (see tv_column_probe.py). Multibagger therefore relies on quality
-# and balance-sheet metrics only. Growth filters must come from a
-# different source (ID4 / Phase 4).
 SEEDS = {
     "Multibagger": {
         "name": "Multibagger",

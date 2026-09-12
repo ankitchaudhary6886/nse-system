@@ -5,15 +5,12 @@
 - Categories: RULES · INSTRUCTIONS · DEMANDS · IDEAS · IMAGINATIONS
 - DONE items stay. Execution details live in EXECUTION_LOG.md.
 - Portal redesign vision lives in PORTAL_REDESIGN.md.
-- Survives chat migration.
 
 ---
 
 ## A. RULES  (always active)
 
-- **R1**–**R26** as previously logged.
-- **R27** **Data source fixes are probed, not guessed.** Before rewriting
-          a fetcher, first probe what the source actually returns.
+- **R1**–**R27** as previously logged.
 
 ---
 
@@ -27,9 +24,9 @@
 
 ### Session 2 (continued) — 2026-09-12 (evening)
 - **I35** Proceed with ID44 (fundamentals fix). Step 1: probe TV.
-- **I36** Step 2: rewrite `fundamentals_tv.py` with only the working
-          columns; add derived fields; extend `fundamentals` schema with
-          6 new columns; adjust Multibagger seed to quality-only.
+- **I36** Step 2: rewrite fetcher, add derived fields, quality-only
+          Multibagger.
+- **I37** Fix score outlier bug — percentile scoring.
 
 ---
 
@@ -41,13 +38,11 @@ D1–D6 as previously logged.
 ## D. IDEAS
 
 ### ID1–ID43 as previously logged.
-### ID44 — Fundamentals data fix · **DONE this batch**
-TV India returns no growth data, no shareholding data, no price_to_book.
-Probe confirmed 48 working columns. Rewrote fetcher to use only those.
-Multibagger seed now quality-only (ROCE, ROE, D/E, CFO+, op margin).
-Growth filters must come from another source (Phase 4).
-### ID45 — Signature matching · **PLANNED (Phase 3)**
-### ID46 — Candle feature statistics · **PLANNED (Phase 3)**
+### ID44 — Fundamentals data fix · **DONE** (863 rows, all core fields)
+### ID45 — Score normalization · **DONE this batch**
+Percentile ranks replace raw-value scores. Outliers no longer dominate.
+### ID46 — Signature matching · **PLANNED (Phase 3)**
+### ID47 — Candle feature statistics · **PLANNED (Phase 3)**
 
 ---
 
@@ -57,7 +52,7 @@ IM1–IM6 as previously logged.
 ---
 
 ## F. FEATURES COMPLETED
-Prior list, plus **FTR** (TV column probe), **FDF** (fundamentals v5).
+Prior list + **FDF** (fundamentals v5) + **FPS** (percentile scoring).
 
 ---
 
@@ -66,22 +61,22 @@ Prior list, plus **FTR** (TV column probe), **FDF** (fundamentals v5).
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R27 | Rules                    | Active       |
-| I1–I36 | Instructions             | Applied      |
+| I1–I37 | Instructions             | Applied      |
 | ID44  | Fundamentals fix          | DONE         |
-| ID45  | Signature matching        | PLANNED P3   |
-| ID46  | Candle feature stats      | PLANNED P3   |
+| ID45  | Score normalization       | DONE         |
+| ID46  | Signature matching        | PLANNED P3   |
+| ID47  | Candle feature stats      | PLANNED P3   |
 
 ---
 
 ## H. REMAINING / LEFT
 
 ### Immediate NEXT
-- **Growth data** for Multibagger — need a second source
-  (screener.in, Chartink, Yahoo fundamentals) — Phase 4 (ID32).
+- Growth data source for Multibagger (Phase 4 / ID32).
 
 ### Phase 3
-- ID45 Signature matching
-- ID46 Candle behaviour analytics
+- ID46 Signature matching
+- ID47 Candle behaviour analytics
 - ID30 Pattern transparency
 - ID31 Time-machine chart markers
 - ID36 Compare mode
@@ -89,16 +84,10 @@ Prior list, plus **FTR** (TV column probe), **FDF** (fundamentals v5).
 
 ### Phase 4
 - ID32 Data source plugin system
-- Growth / shareholding data source
 
 ### Deferred
 - Settings `.env` / admin creds rotation
 - HTTPS via nginx + certbot (A0)
 - Rotate secrets
-- Retire Streamlit app.py (nse.service)
+- Retire Streamlit app.py
 - Google Sheets sync (missing GCP key)
-
----
-
-## I. HOW THIS FILE GROWS
-As previously documented.

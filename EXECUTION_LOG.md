@@ -319,6 +319,26 @@ route fix, editor, backtest sandbox.
   - Multibagger seed rewritten as quality-only strategy.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
+### #051 · TV column probe (ID44 step 1)
+- Files: `tv_column_probe.py`
+- Result: 48 of 104 columns return real values.
+- Status: DEPLOYED · VERIFIED
+
+### #052 · Fundamentals v5 + schema migration (ID44 step 2)
+- Files: `db.py`, `fundamentals_tv.py`, `rule_engine.py`
+- Result: 863 rows; roce 875, roe 850, pe 846, debt_eq 853, cfo_flag 860.
+  Multibagger 98 picks (was 0).
+- Status: DEPLOYED · VERIFIED
+
+### #053 · Percentile scoring (ID45)
+- Files: `rule_engine.py`
+- What: score = Σ(percentile × weight) instead of Σ(raw × weight).
+  Negative weights invert percentile. Fallback to raw only if pct
+  map missing. Fixes outlier-dominated scores (JPOLYINVST at 1850).
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
+
 ---
 
 ## HOW NEW SESSIONS USE THIS
