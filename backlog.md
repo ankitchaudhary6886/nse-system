@@ -9,7 +9,6 @@
 ---
 
 ## A. RULES  (always active)
-
 - **R1**  Whole files only. No patches. Ever.
 - **R2**  Plain English. Ask for screenshots when useful.
 - **R3**  VS Code (Windows) + Oracle Cloud VM via SSH.
@@ -30,7 +29,7 @@
 I1 PO issues · I2 Sequence 1→2→3 · I3 Handoff · I4 impulse fix ·
 I5 fundamentals · I6 restructure BACKLOG · I7 EXECUTION_LOG ·
 I8 3-4 edits per response · I9 Universe unification via shared module ·
-I10 Replace `telegram_alerts`/`swing_alerts` with unified `alerts` (shims).
+I10 Replace alert modules with unified `alerts`.
 
 ---
 
@@ -42,37 +41,17 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 ## D. IDEAS
 
 ### ID1 — All-weather swing mode · **DONE**
-115 candidates → 5 signals. Verified.
-
 ### ID2 — Long-term Value Radar · **DONE (v2)**
-Tier A visible. Examples: RSYSTEMS, MADRASFERT, SANOFI, TANLA.
-
 ### ID3 — Custom scanners: swing + positional · **PARTIAL DONE**
-- ID3a Positional scanner — DONE (`positional_scanner.py`).
-- ID3b Swing scanner — partially covered by screener_engine.py.
-
 ### ID4 — Free data source expansion (ScanX etc.) · **FUTURE**
-
 ### ID5 — "Feeding of life into stocks" · **FUTURE**
-
 ### ID6 — Universe split · **PARTIAL DONE**
-Fundamentals covers Nifty 500 ∪ band (~863). Full Nifty 1000 target.
-
 ### ID7 — Trim / unify / simplify · **MOSTLY DONE**
-- Merge alert modules — **DONE** (`alerts.py` canonical)
-- Canonical universe source — **DONE** (`universe_helper.py`; swing_live,
-  value_radar, positional migrated)
-- Pick one screener (scanner.py vs screener_engine.py) — pending
-- Retire Streamlit app.py — deferred
-- Single price ingester — pending
-
 ### ID8 — Trend-regime scanner · **DONE**
-Price > EMA50 AND > EMA200. Daily 15:50 IST. API `/api/trend`.
-UI card in Scanners panel.
-
-### ID9 — UI panels for new scanners · **DONE this batch**
-Trend + Positional cards in Scanners view.
-Value Radar card already in Radar view.
+### ID9 — UI panels for new scanners · **DONE**
+### ID10 — Meta-model v7 features · **DONE this batch**
+3 trend-persistence features added (days_above_200_30,
+days_above_50_30, ema200_dist_z). Targets breaking the 0.629 plateau.
 
 ---
 
@@ -84,29 +63,15 @@ IM3 Self-documenting system.
 
 ## F. FEATURES COMPLETED
 
-### FC Regime Spectrum · **DONE**
-5 levels, sizing scale, allows_swing only in first three.
-
-### FP Fundamentals Pipeline · **DONE**
-Canonical `fundamentals_tv.py`, 863 symbols weekly (Sat 08:00).
-
-### FS Sizing with fallback · **DONE**
-Conservative win-rate 0.35. Regime multiplier applied.
-
-### FA Unified Alerts · **DONE**
-`alerts.py` canonical. `telegram_alerts.py` + `swing_alerts.py` are shims.
-
-### FU Canonical Universe · **DONE**
-`universe_helper.py` — band / active / combined.
-
-### FT Trend Scanner · **DONE**
-`trend_scanner.py` + API + scheduler slot + UI card.
-
-### FP2 Positional Scanner · **DONE**
-`positional_scanner.py` + API + scheduler slot + UI card.
-
-### FV Value Radar v2 · **DONE**
-`value_radar.py` + API + scheduler slot + UI card.
+### FC Regime Spectrum · DONE
+### FP Fundamentals Pipeline · DONE
+### FS Sizing with fallback · DONE
+### FA Unified Alerts · DONE
+### FU Canonical Universe · DONE
+### FT Trend Scanner v2 · DONE (score no longer saturates at 100)
+### FP2 Positional Scanner · DONE
+### FV Value Radar v2 · DONE
+### FM Meta-Model v7 · DONE (33 features, targets plateau break)
 
 ---
 
@@ -125,6 +90,7 @@ Conservative win-rate 0.35. Regime multiplier applied.
 | ID7  | Trim / unify / simplify   | MOSTLY DONE  |
 | ID8  | Trend-regime scanner      | DONE         |
 | ID9  | Scanner UI panels         | DONE         |
+| ID10 | Meta-model v7             | DONE         |
 
 ---
 
@@ -132,4 +98,4 @@ Conservative win-rate 0.35. Regime multiplier applied.
 - Settings `.env` / admin creds
 - HTTPS via nginx + certbot
 - Rotate secrets
-- Retire Streamlit app.py (nse.service)
+- Retire Streamlit app.py

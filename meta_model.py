@@ -1,8 +1,9 @@
 """
-Setup Meta-Model v6 — C3 + Secret Sauce + Pattern flags + DTW + Delivery.
-Features (30): momentum + structure + volume + fundamentals + sentiment
+Setup Meta-Model v7 — C3 + Secret Sauce + Pattern flags + DTW + Delivery
++ trend-persistence features.
+Features (33): momentum + structure + volume + fundamentals + sentiment
 + sector strength + vcr/ret_std20/below52 + 7 pattern flags + dtw_sim
-+ delivery_sim (10-day delivery-% conviction, 0-1, 0.5 = no data).
++ delivery_sim + days_above_200_30 + days_above_50_30 + ema200_dist_z.
 Weekly auto-retrain. Metrics auto-recorded to model_runs.
 """
 import sys
@@ -20,7 +21,6 @@ _WARNED_OLD = False
 
 
 def get_model():
-    """Load model. Returns the LGBM model, or None if incompatible."""
     global _MODEL, _WARNED_OLD
     if _MODEL is not None:
         return _MODEL
@@ -78,6 +78,9 @@ FEATURES = [
     "pat_ihs", "pat_bear", "pat_any",
     "dtw_sim",
     "delivery_sim",
+    "days_above_200_30",
+    "days_above_50_30",
+    "ema200_dist_z",
 ]
 CONTEXT_FEATS = {"roce", "pe", "debt_eq", "promoter",
                  "sector_rs", "sentiment"}
@@ -274,10 +277,12 @@ def _features_df(df, ctx):
     v = df["volume"]
     e10 = c.ewm(span=10, adjust=False).mean()
     e20 = c.ewm(span=20, adjust=False).mean()
+    e50 = c.ewm(span=50, adjust=False).mean()
     e200 = c.ewm(span=200, adjust=False).mean()
     tr = pd.concat([h - l, (h - c.shift()).abs(),
                     (l - c.shift()).abs()], axis=1).max(axis=1)
     fut_max = h.iloc[::-1].rolling(20, min_periods=1).max().iloc[::-1].shift(-1)
+
     out = pd.DataFrame(index=df.index)
     out["mom1"] = c / c.shift(21) - 1
     out["mom3"] = c / c.shift(63) - 1
@@ -301,6 +306,17 @@ def _features_df(df, ctx):
                   v.rolling(50).mean().replace(0, np.nan))
     out["ret_std20"] = c.pct_change().rolling(20).std()
     out["below52"] = 1.0 - (c / h.rolling(252).max())
+
+    # v7: trend persistence features
+    above200 = (c > e200).astype(float)
+    above50 = (c > e50).astype(float)
+    out["days_above_200_30"] = above200.rolling(30).mean()
+    out["days_above_50_30"] = above50.rolling(30).mean()
+    rel_e200 = (c / e200) - 1.0
+    mean60 = rel_e200.rolling(60).mean()
+    std60 = rel_e200.rolling(60).std().replace(0, np.nan)
+    out["ema200_dist_z"] = (rel_e200 - mean60) / std60
+
     out["win"] = ((fut_max / c - 1) >= 0.10).astype(float)
     return out
 
@@ -399,17 +415,17 @@ def train():
     auc, top_rate = _eval(model, te, FEATURES)
     base = float(te["win"].mean())
     joblib.dump({"model": model, "features": FEATURES,
-                 "version": "v6"},
+                 "version": "v7"},
                 MODEL_PATH)
     metrics = {"rows": int(len(data)), "winners": round(base, 4),
                "auc": round(auc, 4), "base_win": round(base, 4),
                "top10_win": round(top_rate, 4),
                "n_features": len(FEATURES),
-               "note": "retrain (C3+sauce+patterns+dtw+delivery)"}
+               "note": "retrain v7 (trend-persistence features)"}
     print(f"rows {len(data)} | winners {base:.1%}")
     print(f"test AUC {auc:.3f} | base win {base:.1%} | "
           f"top-10% win {top_rate:.1%}")
-    print(f"features: {len(FEATURES)} (incl. delivery_sim)")
+    print(f"features: {len(FEATURES)} (incl. trend persistence)")
     print(f"model saved to {MODEL_PATH}")
     try:
         import model_report
@@ -463,8 +479,6 @@ def lift_test():
 
 
 def _attach_extra_feats(feat, tags, tmap, dmap):
-    """Attach pattern flags, dtw_sim, delivery_sim to a feature frame.
-    Must run BEFORE any dropna on PRICE_FEATS."""
     dates = feat.index.tolist()
     fl = _pattern_flags(tags, dates)
     for k in PAT_FEATS:
@@ -529,27 +543,19 @@ def score_symbol(sym, use_yahoo=True):
            "promoter": f.get("promoter"),
            "sector_rs": srs.get(sym), "sentiment": sent.get(sym)}
 
-    # 1. Build base feature frame (all rows)
     feat = _features_df(df, ctx)
     if feat.empty:
         return None
 
-    # 2. Attach pattern flags, dtw_sim, delivery_sim BEFORE dropna
     feat = _attach_extra_feats(feat, tags, tmap, dmap)
-
-    # 3. Coerce + fill context features
     feat = _coerce_numeric(feat)
     for col in CONTEXT_FEATS:
         if col in feat.columns:
             med = feat[col].median()
             feat[col] = feat[col].fillna(med if pd.notna(med) else 0.0)
-
-    # 4. Now dropna on PRICE_FEATS (all present)
     feat = feat.dropna(subset=PRICE_FEATS)
     if feat.empty:
         return None
-
-    # 5. Score the last row
     feat = feat.tail(1)
     p = model.predict_proba(feat[FEATURES])[:, 1][0]
     contrib = model.booster_.predict(feat[FEATURES],

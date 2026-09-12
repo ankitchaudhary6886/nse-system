@@ -1,24 +1,10 @@
 """
 Trend-Regime Scanner — stocks above BOTH EMA50 and EMA200.
 Authorized 2026-09-12 (BACKLOG ID8).
-
-Purpose:
-- Stock-level complement to the market-level regime spectrum
-- Cut noise for downstream scanners (only consider confirmed trends)
-- Serve as a pre-filter for swing / positional / value layers
-
-Definition of "trend confirmed":
-  current close > EMA50  AND  current close > EMA200
-
-Strength score (0-100) rewards:
-  - EMA50 > EMA200 (golden-cross structure)   +30
-  - EMA50 > EMA50(t-20)  (medium trend rising) +20
-  - EMA200 > EMA200(t-20) (long trend rising)  +20
-  - Distance above EMA200 (mildly extended)    +15
-  - Fresh break (crossed within 20 bars)       +15
-
-Stored in trend_candidates. Runs daily after daily_update.
-Telegram alert only if the count swings by >20% vs prior day.
+v2 (2026-09-12): score no longer saturates at 100.
+- Distance-above-EMA components are now dynamic, not binary.
+- Two new bonus tiers for well-extended trends.
+Max = 100, but only a truly pristine trend hits it.
 """
 import sys
 import datetime as dt
@@ -59,23 +45,64 @@ def _score(close, e50, e200, e50_prev, e200_prev,
            crossed_50_recent, crossed_200_recent):
     score = 0
     notes = []
+
+    # 1. Golden-cross structure (25)
     if e50 is not None and e200 is not None and e50 > e200:
-        score += 30
+        score += 25
         notes.append("EMA50>EMA200")
+
+    # 2. EMA50 rising (18)
     if e50 is not None and e50_prev is not None and e50 > e50_prev:
-        score += 20
+        score += 18
         notes.append("EMA50 rising")
+
+    # 3. EMA200 rising (18)
     if e200 is not None and e200_prev is not None and e200 > e200_prev:
-        score += 20
+        score += 18
         notes.append("EMA200 rising")
+
+    # 4. Distance above EMA50 (0-12, dynamic)
+    if e50 and e50 > 0:
+        d50 = (close / e50 - 1) * 100
+        if 0 < d50 <= 5:
+            score += 12
+            notes.append(f"+{d50:.1f}% above EMA50")
+        elif 5 < d50 <= 15:
+            score += 9
+            notes.append(f"+{d50:.1f}% above EMA50")
+        elif 15 < d50 <= 30:
+            score += 5
+            notes.append(f"+{d50:.1f}% above EMA50")
+        elif d50 > 30:
+            score += 1
+            notes.append(f"+{d50:.1f}% above EMA50 (extended)")
+
+    # 5. Distance above EMA200 (0-12, dynamic)
     if e200 and e200 > 0:
-        dist = (close / e200 - 1) * 100
-        if 0 <= dist <= 30:
-            score += 15
-            notes.append(f"+{dist:.0f}% above EMA200")
+        d200 = (close / e200 - 1) * 100
+        if 0 < d200 <= 10:
+            score += 12
+            notes.append(f"+{d200:.1f}% above EMA200")
+        elif 10 < d200 <= 25:
+            score += 8
+            notes.append(f"+{d200:.1f}% above EMA200")
+        elif 25 < d200 <= 50:
+            score += 4
+            notes.append(f"+{d200:.1f}% above EMA200")
+        elif d200 > 50:
+            score += 1
+            notes.append(f"+{d200:.1f}% above EMA200 (extended)")
+
+    # 6. Fresh cross bonus (15)
     if crossed_50_recent or crossed_200_recent:
         score += 15
-        notes.append("fresh cross")
+        tags = []
+        if crossed_50_recent:
+            tags.append("EMA50")
+        if crossed_200_recent:
+            tags.append("EMA200")
+        notes.append(f"fresh {','.join(tags)} cross")
+
     return min(100, score), notes
 
 
@@ -109,7 +136,6 @@ def compute(conn=None, limit=1500):
         if not (close > e50 and close > e200):
             continue
 
-        # fresh cross detection (within last 20 bars)
         crossed_50 = False
         crossed_200 = False
         if len(closes) > 21:
@@ -140,12 +166,11 @@ def compute(conn=None, limit=1500):
              r["above_50"], r["above_200"], r["score"], r["notes"]))
     conn.commit()
 
-    # day-over-day swing alert
     try:
-        prev = conn.execute(
+        prev_row = conn.execute(
             "SELECT COUNT(*) FROM trend_candidates WHERE date < ? "
             "ORDER BY date DESC LIMIT 1", (today,)).fetchone()
-        prev_n = prev[0] if prev else 0
+        prev_n = prev_row[0] if prev_row else 0
         cur_n = len(rows_out)
         if prev_n > 0:
             change = abs(cur_n - prev_n) / prev_n
