@@ -1,12 +1,14 @@
 """
 Fast walk-forward — Backtester path, ~80s.
 Verdict is PF-driven, not win-rate-driven.
+Every run is logged to strategy_runs for later comparison.
 
 Usage:
   python fast_wf.py                           # 3y / 400 syms / 3R
   python fast_wf.py --r 2.5                   # target override
   python fast_wf.py --years 4 --symbols 500   # longer window
   python fast_wf.py --r 3.0 --max-pos 8       # concurrent positions
+  python fast_wf.py --no-log                  # skip DB logging
   python fast_wf.py --help
 """
 import sys
@@ -43,6 +45,8 @@ def _parse_args():
                    help="symbol count (default 400)")
     p.add_argument("--max-pos", type=int, default=None,
                    help="max concurrent positions (default 5)")
+    p.add_argument("--no-log", action="store_true",
+                   help="skip strategy_runs DB logging")
     return p.parse_args()
 
 
@@ -50,6 +54,7 @@ def main():
     t0 = time.time()
     args = _parse_args()
 
+    target_r = args.r if args.r is not None else Backtester.TARGET_R
     if args.r is not None:
         Backtester.TARGET_R = args.r
         print(f"[WF] override Backtester.TARGET_R = {args.r}")
@@ -88,6 +93,7 @@ def main():
           abs(sum(t.pnl_pct for t in losses))) if losses and \
         sum(t.pnl_pct for t in losses) else 999.0
     expectancy_r = wr * abs(avg_w / avg_l) - (1 - wr) if avg_l else 0.0
+    verdict = _verdict(n, wr, pf)
 
     print()
     print("=" * 60)
@@ -105,7 +111,33 @@ def main():
     print(f"max drawdown      : {result.max_drawdown*100:.2f}%")
     print(f"avg holding days  : {result.avg_holding_days:.1f}")
     print()
-    print(f"VERDICT: {_verdict(n, wr, pf)}")
+    print(f"VERDICT: {verdict}")
+
+    if not args.no_log:
+        try:
+            import strategy_runs
+            strategy_runs.log({
+                "target_r": target_r,
+                "years": args.years,
+                "symbols": len(syms),
+                "max_pos": result_obj.max_positions,
+                "trades": n,
+                "wins": len(wins),
+                "losses": len(losses),
+                "win_rate": round(wr, 4),
+                "avg_win": round(avg_w, 4),
+                "avg_loss": round(avg_l, 4),
+                "expectancy_r": round(expectancy_r, 4),
+                "pf": round(pf, 3),
+                "total_return": round(result.total_return, 4),
+                "max_dd": round(result.max_drawdown, 4),
+                "holding_days": round(result.avg_holding_days, 2),
+                "verdict": verdict,
+                "run_seconds": round(dt_sec, 1),
+            })
+            print("[WF] logged to strategy_runs")
+        except Exception as e:
+            print(f"[WF] logging skipped: {e}")
 
 
 if __name__ == "__main__":

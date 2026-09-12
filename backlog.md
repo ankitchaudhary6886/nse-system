@@ -28,14 +28,15 @@
           measure PF / expectancy / DD.
 - **R16** Non-monotonic sweep results are NOISE, not signal. Prefer the
           simpler/earlier parameter when in doubt.
+- **R17** Multi-window walk-forward is the ground truth. A parameter set
+          that only works on one window is overfit.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
-I1–I15 (see EXECUTION_LOG)
-I16 Add quality multiplier to sizing (this batch).
-I17 Keep 3R — reject 4R (non-monotonic curve, see ID15).
+I1–I16 (see EXECUTION_LOG)
+I17 Adopt multi-window robustness as the validation standard.
 
 ---
 
@@ -47,37 +48,35 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 ## D. IDEAS
 
 ### ID1–ID10 · DONE
-### ID11 — Signal sparsity fix · **DONE** (0.4% → 8.0% setup pass rate)
+### ID11 — Signal sparsity fix · **DONE** (0.4% → 8.0%)
 ### ID12 — Alt setup patterns · **FUTURE**
 ### ID13 — Fast validation · **DONE**
-### ID14 — Meta-model plateau · **OPEN** (AUC 0.629 stable)
-### ID15 — Target sweep · **DONE 2026-09-12**
-| R    | Trades | WR    | PF   | Total   | DD    | Exp/trade |
-|------|--------|-------|------|---------|-------|-----------|
-| 2.0R | 215    | 39.1% | 1.21 | +85.8%  | 13.7% | +0.126R   |
-| 2.5R | 194    | 36.1% | 1.30 | +150.6% | 15.7% | +0.193R   |
-| **3.0R** | 185 | 35.1% | **1.43** | **+273.5%** | **17.5%** | **+0.276R** |
-| 3.5R | 180    | 30.6% | 1.25 | +100.1% | 19.3% | +0.176R   |
-| 4.0R | 179    | 30.7% | 1.46 | +322.7% | 20.9% | +0.319R   |
-Decision: **adopt 3R**. 4R marginal (PF +0.03, DD +3.4pp) — noise.
+### ID14 — Meta-model plateau · **OPEN**
+### ID15 — Target sweep · **DONE** (3R adopted)
+### ID16 — Sizing quality multiplier · **DONE** (v4)
+### ID17 — Robustness check · **DONE 2026-09-12**
+Multi-window walk-forward results (3R default):
+| Window | Trades | WR    | PF   | Total   | DD    | Exp/trade |
+|--------|--------|-------|------|---------|-------|-----------|
+| 2y     | 102    | 40.2% | 1.73 | +237.5% | 17.5% | +0.435R   |
+| 3y     | 185    | 35.1% | 1.43 | +273.5% | 17.5% | +0.276R   |
+| 4y     | 418    | 31.8% | 1.16 | +132.6% | 17.8% | +0.110R   |
+**Finding: edge is regime-dependent. Monotonic decline with window
+length is REAL signal (not noise). Positive expectancy in ALL windows.
+Conservative baseline: expect 20-25% CAGR / 18% DD, not 2y's 90%.**
 
-### ID16 — Sizing quality multiplier · **DONE this batch**
-shape_score → capital multiplier (0.60x - 1.20x). Applied on top of
-regime multiplier. Absolute cap raised 20% → 25%.
+### ID18 — Hybrid tranche exits · **NEXT**
+Exit 1/3 at 2R, 1/3 at 3R, trail remaining 1/3 with 10-EMA. Test
+against current 3R full-exit. Requires partial-exit support in
+backtest.py. Could improve 4y window PF.
 
-### ID17 — Robustness check (different window) · **NEXT**
-Run fast_wf on alternate 2-year and 4-year windows:
-`python fast_wf.py --years 2` and `--years 4`.
-If PF stays in 1.3-1.5 range, the edge is stable.
+### ID19 — Central strategy config · **FUTURE**
+Move SetupDetector thresholds + TARGET_R + regime thresholds into one
+`strategy_config.py`. Enables single-file sweeps. (ID7 concern.)
 
-### ID18 — Hybrid tranche exits · **FUTURE**
-Current model: full exit at target. Alternative: exit 1/3 at 2R,
-1/3 at 3R, trail remaining 1/3 with 10-EMA. Requires partial-exit
-support in backtest.py. Test against current 3R.
-
-### ID19 — Central strategy config module · **FUTURE**
-Move all SetupDetector thresholds + TARGET_R + regime thresholds into
-a single `strategy_config.py`. Enables one-file sweeps. (ID7 concern.)
+### ID20 — Strategy runs dashboard · **NEXT**
+Surface strategy_runs history in terminal UI. See every walk-forward
+result at a glance. Small API + card.
 
 ---
 
@@ -100,7 +99,8 @@ IM3 Self-documenting system.
 ### FM Meta-Model v7 · DONE (AUC 0.629)
 ### FVAL Fast Validation · DONE
 ### FSP Setup v3.4 · DONE (3R target)
-### FWF Walk-forward v3 · DONE (PF 1.43 at 3R, +273.5%, DD 17.5%)
+### FWF Walk-forward v4 · DONE (PF 1.43 / 1.73 / 1.16 across windows)
+### FSR Strategy Runs ledger · DONE this batch
 
 ---
 
@@ -108,7 +108,7 @@ IM3 Self-documenting system.
 
 | ID   | Item                      | Status       |
 |------|---------------------------|--------------|
-| R1–R16 | Rules                   | Active       |
+| R1–R17 | Rules                   | Active       |
 | ID1  | All-weather swing         | DONE         |
 | ID2  | Value Radar v2            | DONE         |
 | ID3a | Positional scanner        | DONE         |
@@ -126,9 +126,10 @@ IM3 Self-documenting system.
 | ID14 | Meta-model plateau        | OPEN         |
 | ID15 | Target sweep              | DONE         |
 | ID16 | Sizing quality multiplier | DONE         |
-| ID17 | Robustness check          | NEXT         |
-| ID18 | Hybrid tranche exits      | FUTURE       |
+| ID17 | Robustness check          | DONE         |
+| ID18 | Hybrid tranche exits      | NEXT         |
 | ID19 | Central strategy config   | FUTURE       |
+| ID20 | Strategy runs dashboard   | NEXT         |
 
 ---
 
