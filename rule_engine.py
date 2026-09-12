@@ -69,7 +69,7 @@ def delete_strategy(name):
 
 
 # ============================================================
-# Feature computation
+# Feature computation helpers
 # ============================================================
 def _seq_len(v):
     if v is None:
@@ -112,28 +112,107 @@ def _rsi(closes, period=14):
     return 100 - (100 / (1 + gains / losses))
 
 
-def _range_contraction(df, windows=(5, 5, 5, 5)):
-    need = sum(windows)
-    if len(df) < need:
-        return 0
-    sub = df.tail(need)
-    highs = sub["High"].values
-    lows = sub["Low"].values
-    ranges = []
-    idx = 0
-    for w in windows:
-        seg_h = highs[idx:idx + w]
-        seg_l = lows[idx:idx + w]
-        if len(seg_h) < w:
-            return 0
-        ranges.append(float(np.max(seg_h) - np.min(seg_l)))
-        idx += w
-    for i in range(1, len(ranges)):
-        if ranges[i] >= ranges[i - 1]:
-            return 0
-    return 1
+# ============================================================
+# Pattern-specific features (owner's rules)
+# ============================================================
+def _find_gapup(o, c, lookback=15, min_gap=0.04):
+    """
+    Find the most recent gap-up in the last `lookback` days.
+    Gap-up = open[t] >= prev_close[t-1] * (1 + min_gap).
+    Returns dict with fields:
+      had_gapup_15d : 0/1
+      days_since_gapup : int or None (0 = today)
+      gapup_size : float (e.g. 0.06 = 6%)
+      pre_gap_above50 : was close[t-1] above its 50-SMA? 0/1 or None
+      pre_gap_above200 : same for 200-SMA
+      pre_gap_drawdown : how far prev_close was below its 60-day high, 0-1
+    """
+    n = len(c)
+    out = {
+        "had_gapup_15d": 0,
+        "days_since_gapup": None,
+        "gapup_size": None,
+        "pre_gap_above50": None,
+        "pre_gap_above200": None,
+        "pre_gap_drawdown": None,
+    }
+    if n < 22:
+        return out
+    for lb in range(1, lookback + 1):
+        idx = n - lb
+        if idx < 1:
+            break
+        prev_close = float(c[idx - 1])
+        if prev_close <= 0:
+            continue
+        gap = float(o[idx]) / prev_close - 1
+        if gap >= min_gap:
+            out["had_gapup_15d"] = 1
+            out["days_since_gapup"] = n - 1 - idx
+            out["gapup_size"] = float(gap)
+            # Pre-gap trend context
+            if idx >= 50:
+                s50 = _sma(c[:idx], 50)
+                if s50:
+                    out["pre_gap_above50"] = 1 if prev_close > s50 else 0
+            if idx >= 200:
+                s200 = _sma(c[:idx], 200)
+                if s200:
+                    out["pre_gap_above200"] = 1 if prev_close > s200 else 0
+            if idx >= 60:
+                h60 = float(np.max(c[idx - 60:idx]))
+                if h60 > 0:
+                    out["pre_gap_drawdown"] = (h60 - prev_close) / h60
+            return out
+    return out
 
 
+def _impulse_pullback(c, h, l, lookback=60):
+    """
+    Find impulse peak in last `lookback` bars, then measure pullback /
+    consolidation since. Returns:
+      impulse_pct_60d : (peak_high / low_before_peak) - 1
+      days_since_impulse_peak : int
+      pullback_from_peak_pct : (peak_high - current_close) / peak_high
+      consolidation_range_pct : (cons_high - cons_low) / peak_high over
+                                bars since peak
+      consolidation_vol_ratio : avg volume since peak / avg volume
+                                during impulse (lower = drying up)
+    """
+    out = {
+        "impulse_pct_60d": None,
+        "days_since_impulse_peak": None,
+        "pullback_from_peak_pct": None,
+        "consolidation_range_pct": None,
+        "consolidation_vol_ratio": None,
+    }
+    n = len(c)
+    if n < 30:
+        return out
+    window = min(lookback, n)
+    h_seg = h[n - window:]
+    local_peak = int(np.argmax(h_seg))
+    peak_idx = n - window + local_peak
+    peak_high = float(h[peak_idx])
+    low_start = max(0, peak_idx - 40)
+    low_before = float(np.min(l[low_start:peak_idx + 1]))
+    if low_before <= 0:
+        return out
+    out["impulse_pct_60d"] = (peak_high - low_before) / low_before
+    days_since = n - 1 - peak_idx
+    out["days_since_impulse_peak"] = days_since
+    out["pullback_from_peak_pct"] = (peak_high - float(c[-1])) / peak_high if peak_high > 0 else None
+    if days_since >= 1:
+        cons_high = float(np.max(h[peak_idx + 1:]))
+        cons_low = float(np.min(l[peak_idx + 1:]))
+        if peak_high > 0:
+            out["consolidation_range_pct"] = (cons_high - cons_low) / peak_high
+    return out
+
+
+# ============================================================
+# Feature computation
+# ============================================================
 def _compute_features(sym, df, fund_row, sector, sector_rs):
     if df is None or len(df) < 60:
         return None
@@ -145,8 +224,6 @@ def _compute_features(sym, df, fund_row, sector, sector_rs):
 
     close = float(c[-1])
     open_ = float(o[-1])
-    high = float(h[-1])
-    low = float(l[-1])
 
     dma20 = _sma(c, 20)
     dma50 = _sma(c, 50)
@@ -169,45 +246,34 @@ def _compute_features(sym, df, fund_row, sector, sector_rs):
     avg_vol_20 = _sma(v, 20)
     vol_ratio_20 = (float(v[-1]) / avg_vol_20) if avg_vol_20 else None
 
-    gap_up_pct = None
-    if len(c) >= 2:
-        gap_up_pct = (o[-1] / c[-2] - 1)
-
-    inside_day = 0
-    if len(h) >= 2:
-        if h[-1] < h[-2] and l[-1] > l[-2]:
-            inside_day = 1
+    gap = _find_gapup(o, c, lookback=15, min_gap=0.04)
+    imp = _impulse_pullback(c, h, l, lookback=60)
 
     features = {
         "close": close,
         "open": open_,
-        "high": high,
-        "low": low,
+        "high": float(h[-1]),
+        "low": float(l[-1]),
         "volume": float(v[-1]),
         "high52": high52,
         "low52": low52,
         "distance_from_52w_high": ((high52 - close) / high52) if high52 > 0 else None,
         "distance_from_52w_low": ((close - low52) / low52) if low52 > 0 else None,
-        "dma20": dma20,
-        "dma50": dma50,
-        "dma200": dma200,
+        "dma20": dma20, "dma50": dma50, "dma200": dma200,
         "above20": 1 if (dma20 and close > dma20) else 0,
         "above50": 1 if (dma50 and close > dma50) else 0,
         "above200": 1 if (dma200 and close > dma200) else 0,
-        "mom_5d": mom_5d,
-        "mom_20d": mom_20d,
-        "mom_60d": mom_60d,
+        "mom_5d": mom_5d, "mom_20d": mom_20d, "mom_60d": mom_60d,
         "rsi": _rsi(c),
         "avg_vol_20": avg_vol_20,
         "vol_ratio_20": vol_ratio_20,
-        "gap_up_pct": gap_up_pct,
-        "inside_day": inside_day,
         "close_gt_open": 1 if close > open_ else 0,
-        "range_contraction": _range_contraction(df),
         "atr_14": atr,
         "atr_pct": (atr / close) if (atr and close) else None,
         "sector_rs": sector_rs,
     }
+    features.update(gap)
+    features.update(imp)
 
     if fund_row:
         for k in ["roce", "pe", "pb", "roe", "debt_to_equity",
@@ -347,36 +413,20 @@ def evaluate(strategy, features):
 
 
 def _diagnose(strategy, all_checks):
-    """
-    all_checks = list of per-symbol check lists (every symbol that was
-    evaluated, whether it passed or not). Returns failure counts per
-    condition and per (condition, missing) pair.
-    """
     conditions = strategy.get("conditions", [])
     n = len(all_checks)
     if n == 0:
         return {"n_evaluated": 0, "per_condition": []}
 
-    # For each condition, count how many symbols failed it.
-    # Also count how many failed because value was missing.
     fails = [0] * len(conditions)
     missing = [0] * len(conditions)
-    # Count all-fail (whole strategy failed) — but we want to know
-    # per-condition how many failed. We also want to know which condition
-    # is "last blocker" (the one where the fewest symbols survive).
-    survivor_after = [n] * (len(conditions) + 1)
     for checks in all_checks:
-        ok_so_far = True
         for i, c in enumerate(checks):
             if not c["ok"]:
                 fails[i] += 1
                 if c["got"] == "—":
                     missing[i] += 1
-                ok_so_far = False
-            if ok_so_far:
-                pass  # symbol still alive after this condition
-        # recompute survivors step by step (cleaner)
-    # Compute survivors per prefix
+
     survivors = [n]
     for i in range(len(conditions)):
         alive = 0
@@ -388,9 +438,7 @@ def _diagnose(strategy, all_checks):
     per_condition = []
     for i, c in enumerate(conditions):
         per_condition.append({
-            "field": c["field"],
-            "op": c["op"],
-            "want": c["value"],
+            "field": c["field"], "op": c["op"], "want": c["value"],
             "failed": fails[i],
             "failed_because_missing": missing[i],
             "survived_after": survivors[i + 1],
@@ -462,7 +510,7 @@ def run_all():
 
 
 # ============================================================
-# Seed strategies
+# Seed strategies (owner-designed rules)
 # ============================================================
 SEEDS = {
     "Multibagger": {
@@ -486,37 +534,47 @@ SEEDS = {
     },
     "RCP": {
         "name": "RCP — Range Contraction Pattern",
-        "description": "Base with successive tightening ranges. Swing setup.",
+        "description": (
+            "Stock ran 15-30% up, then meandered 4-12 days retracing "
+            "5-20% on lower volume."
+        ),
         "type": "swing",
         "universe": "band",
         "conditions": [
             {"field": "above200", "op": "==", "value": 1},
-            {"field": "above50", "op": "==", "value": 1},
-            {"field": "distance_from_52w_high", "op": "<=", "value": 0.20},
-            {"field": "range_contraction", "op": "==", "value": 1},
+            {"field": "impulse_pct_60d", "op": ">=", "value": 0.15},
+            {"field": "impulse_pct_60d", "op": "<=", "value": 0.30},
+            {"field": "days_since_impulse_peak", "op": ">=", "value": 4},
+            {"field": "days_since_impulse_peak", "op": "<=", "value": 12},
+            {"field": "consolidation_range_pct", "op": ">=", "value": 0.05},
+            {"field": "consolidation_range_pct", "op": "<=", "value": 0.20},
             {"field": "vol_ratio_20", "op": "<=", "value": 1.0},
         ],
         "score_weights": {
-            "mom_20d": 0.5,
+            "impulse_pct_60d": 0.4,
             "sector_rs": 0.3,
             "vol_ratio_20": -0.2,
         },
     },
     "EpisodicPivot": {
         "name": "Episodic Pivot",
-        "description": "News-driven gap up + high volume, holding near highs.",
+        "description": (
+            "Downtrend stock suddenly gaps up on high volume within "
+            "last 15 days. Reaction to news / results / event."
+        ),
         "type": "swing",
         "universe": "band",
         "conditions": [
-            {"field": "gap_up_pct", "op": ">=", "value": 0.04},
-            {"field": "vol_ratio_20", "op": ">=", "value": 2.0},
-            {"field": "close_gt_open", "op": "==", "value": 1},
-            {"field": "distance_from_52w_high", "op": "<=", "value": 0.15},
+            {"field": "had_gapup_15d", "op": "==", "value": 1},
+            {"field": "days_since_gapup", "op": "<=", "value": 15},
+            {"field": "gapup_size", "op": ">=", "value": 0.04},
+            {"field": "vol_ratio_20", "op": ">=", "value": 1.5},
+            {"field": "distance_from_52w_high", "op": "<=", "value": 0.30},
         ],
         "score_weights": {
-            "gap_up_pct": 0.4,
-            "vol_ratio_20": 0.4,
-            "mom_20d": 0.2,
+            "gapup_size": 0.4,
+            "vol_ratio_20": 0.3,
+            "mom_20d": 0.3,
         },
     },
 }
@@ -564,7 +622,6 @@ if __name__ == "__main__":
         for p in out["picks"]:
             print(f"  {p['symbol']:<14} score {p['score']:>8.3f}  "
                   f"{p['sector'] or '?'}")
-        # Failure breakdown (helpful when n_passed == 0 or very low)
         diag = out.get("diagnostic") or {}
         pc = diag.get("per_condition") or []
         if pc:
@@ -572,9 +629,9 @@ if __name__ == "__main__":
             print(f"  failure breakdown (n={diag.get('n_evaluated')}):")
             for c in pc:
                 fb = c["failed_because_missing"]
-                print(f"    {c['field']:<24} {c['op']:<3} {str(c['want']):<8}  "
-                      f"failed {c['failed']:<5} (missing {fb:<5})  "
-                      f"survived {c['survived_after']}")
+                print(f"    {c['field']:<26} {c['op']:<3} "
+                      f"{str(c['want']):<8}  failed {c['failed']:<5} "
+                      f"(missing {fb:<5})  survived {c['survived_after']}")
         sys.exit(0)
 
     print("commands: --seed [--force] | --list | --run NAME")
