@@ -27,9 +27,9 @@
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
-I1–I10 (see EXECUTION_LOG for details)
-I11 Scale up validation to get a real edge verdict
-I12 Then address signal sparsity (the real bottleneck)
+I1–I11 (see EXECUTION_LOG for details)
+I12 Address signal sparsity — done via v3.2 threshold widening.
+I13 Keep validation fast (Backtester path or funnel diagnostics).
 
 ---
 
@@ -40,19 +40,23 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 
 ## D. IDEAS
 
-### ID1–ID9 · all DONE or partial (see EXECUTION_LOG)
-### ID10 — Meta-model v7 (33 features) · **DONE**
-### ID11 — Signal sparsity fix · **IN PROGRESS**
-Empirical finding 2026-09-12: setup detector fires ~0.2 signals per
-symbol over 4+ years. Too rare to trade, too rare to validate.
-Root cause unknown; likely too-tight pullback depth (12-20%) and
-EMA-touch zone in current market regime.
-Next: loosen one filter at a time, re-measure WF.
+### ID1–ID10 · DONE (see EXECUTION_LOG)
+### ID11 — Signal sparsity fix · **DONE 2026-09-12**
+Empirical finding: setup detector fired 0.2 signals per symbol over
+4+ years. quick_setup_diag showed three impulse checks + pullback depth
+killed 83% + 11% of candidates.
+Fix (setup.py v3.2): widened impulse 25-50% → 18-75%, EMA10 break
+tolerance 0.25 → 0.35, pullback depth 12-20% → 8-25%.
+Expected: setup pass rate 0.4% → 3-5% of screener passes.
 
 ### ID12 — Fallback: alternative setup patterns · **FUTURE**
-If loosening the Gabani pullback distorts the strategy, add a second
-setup family (e.g. breakout-pullback, consolidation-tight-close).
-Two independent strategies feeding swing_signals.mode.
+If v3.2 doesn't recover enough signals, add a second setup family
+(breakout-pullback, consolidation-tight-close, etc). Two independent
+strategies feed swing_signals.mode.
+
+### ID13 — Validation via Backtester (fast path) · **DONE**
+validate.py v3 delegates to Backtester which precomputes indicators
+once per symbol. 100x faster than slice-and-eval.
 
 ---
 
@@ -69,11 +73,12 @@ IM3 Self-documenting system.
 ### FS Sizing with fallback · DONE
 ### FA Unified Alerts · DONE
 ### FU Canonical Universe · DONE
-### FT Trend Scanner v3 · DONE (unbounded score, no saturation)
+### FT Trend Scanner v3 · DONE (unbounded score)
 ### FP2 Positional Scanner · DONE
 ### FV Value Radar v2 · DONE
 ### FM Meta-Model v7 · DONE (33 features)
-### FVAL Validation v2 · DONE (400 symbols, dual OOS windows)
+### FVAL Validation v3 · DONE (fast via Backtester)
+### FSP Setup v3.2 · DONE (widened thresholds)
 
 ---
 
@@ -93,8 +98,9 @@ IM3 Self-documenting system.
 | ID8  | Trend scanner             | DONE         |
 | ID9  | Scanner UI panels         | DONE         |
 | ID10 | Meta-model v7             | DONE         |
-| ID11 | Signal sparsity fix       | IN PROGRESS  |
+| ID11 | Signal sparsity fix       | DONE         |
 | ID12 | Alt setup patterns        | FUTURE       |
+| ID13 | Fast validation           | DONE         |
 
 ---
 

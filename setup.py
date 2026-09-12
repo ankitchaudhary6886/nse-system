@@ -1,16 +1,23 @@
 """
-Hiren Gabani Master Pullback — OFFICIAL v3 + shape score.
+Hiren Gabani Master Pullback — OFFICIAL v3.2.
 6-point checklist + mother-candle trigger + PDL stop + 5% rule
 + 3-session recency + pullback orderliness grade (0-100).
 
 v3.1 (2026-09-12) — FIX: impulse calculation used mixed
 negative/positive indexing, inflating impulse_pct by 10-30x.
-Now uses positive indices throughout.
+
+v3.2 (2026-09-12) — LOOSEN: funnel diagnostic showed the three
+impulse checks killed 83% of setups and pullback depth killed 11%.
+Widened thresholds to match a broader market regime:
+  impulse 25-50%  ->  18-75%
+  EMA10 break tol 0.25 -> 0.35
+  pullback 12-20% ->  8-25%
 """
 from dataclasses import dataclass, field
 from typing import List
 import numpy as np
 import pandas as pd
+
 
 @dataclass
 class Setup:
@@ -30,13 +37,15 @@ class Setup:
     shape_score: int = 0
     reasons: List[str] = field(default_factory=list)
 
+
 class SetupDetector:
     IMPULSE_LOOKBACK = 90
-    IMPULSE_MIN_PCT = 0.25
-    IMPULSE_MAX_PCT = 0.50
+    IMPULSE_MIN_PCT = 0.18        # was 0.25
+    IMPULSE_MAX_PCT = 0.75        # was 0.50
+    EMA10_BREAK_TOL = 0.35        # was 0.25
     PB_LOOKBACK = 25
-    PB_MIN_PCT = 0.12
-    PB_MAX_PCT = 0.20
+    PB_MIN_PCT = 0.08             # was 0.12
+    PB_MAX_PCT = 0.25             # was 0.20
     PB_MIN_DAYS = 6
     PB_MAX_DAYS = 15
     CRASH_WINDOW = 3
@@ -82,16 +91,15 @@ class SetupDetector:
                            abs(l[i] - c[i - 1])))
         atr14 = float(np.mean(trs[-14:])) if len(trs) >= 14 else None
 
-        # --- 1. Impulse 25-50%, clean above 10 EMA ---
-        # Window = IMPULSE_LOOKBACK bars, ending PB_LOOKBACK bars before today.
-        win_end = n - cls.PB_LOOKBACK           # positive index
+        # --- 1. Impulse 18-75%, mostly above 10 EMA ---
+        win_end = n - cls.PB_LOOKBACK
         win_start = win_end - cls.IMPULSE_LOOKBACK
         if win_start < 0:
             return None
         seg_h = h[win_start:win_end]
         sh_local = int(np.argmax(seg_h))
         swing_high = float(seg_h[sh_local])
-        swing_high_idx = win_start + sh_local   # positive index in full array
+        swing_high_idx = win_start + sh_local
         low_start = max(0, swing_high_idx - 40)
         swing_low_before = float(np.min(l[low_start:swing_high_idx + 1]))
         if swing_low_before <= 0:
@@ -101,10 +109,10 @@ class SetupDetector:
             return None
         ic = c[swing_high_idx:win_end + 1]
         ie = ema10[swing_high_idx:win_end + 1]
-        if int(np.sum(ic < ie)) > max(2, int(0.25 * len(ic))):
+        if int(np.sum(ic < ie)) > max(2, int(cls.EMA10_BREAK_TOL * len(ic))):
             return None
 
-        # --- 2. Pullback 12-20% ---
+        # --- 2. Pullback 8-25% ---
         pb_window = h[win_end:]
         recent_high = float(np.max(pb_window))
         current_low = float(l[-1])
@@ -121,7 +129,7 @@ class SetupDetector:
             if base and (base - l[i]) / base >= cls.CRASH_MAX_PCT:
                 return None
 
-        # --- Shape score: orderliness of the pullback (0-100) ---
+        # --- Shape score ---
         pseg = c[swing_high_idx:]
         shape = 0
         if len(pseg) > 4:
@@ -149,7 +157,7 @@ class SetupDetector:
                                      v[-1] < 0.7 * vol_now):
             return None
 
-        # --- 6. Mother candle: tight cluster OR inside bar ---
+        # --- 6. Mother candle ---
         def is_tight(i):
             inside = h[i] < h[i - 1] and l[i] > l[i - 1]
             narrow = (atr14 is not None and
@@ -171,7 +179,7 @@ class SetupDetector:
         mother_bar_high = float(h[mother_idx])
         mother_bar_low = float(l[mother_idx])
 
-        # --- Phase 3: trigger, PDL stop, 5% rule ---
+        # --- 7. Trigger, PDL stop, 5% rule ---
         entry_price = mother_bar_high
         stop_loss = float(l[-1])
         if stop_loss >= entry_price:
@@ -196,5 +204,4 @@ class SetupDetector:
             impulse_pct=round(impulse_pct, 3),
             ema_proximity=ema_proximity,
             shape_score=shape,
-            reasons=["OFFICIAL v3.1: impulse bug fixed, "
-                     "SL=PDL, risk<=5%"])
+            reasons=["OFFICIAL v3.2: impulse/EMA10/pullback widened"])

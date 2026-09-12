@@ -1,6 +1,6 @@
 """
 Fast diagnostic — which of the 6 SetupDetector checks kills setups?
-Same 100-symbol 2-year sample as quick_funnel. Runs in ~10s.
+v2: reads thresholds from setup.py so they stay in sync.
 """
 import time
 import numpy as np
@@ -8,6 +8,7 @@ import pandas as pd
 import db
 from universe_helper import band_universe
 from scanner import Screener
+from setup import SetupDetector as SD
 
 N = 100
 STEP = 5
@@ -27,14 +28,13 @@ def check_slice(df):
 
     trs = []
     for i in range(1, n):
-        trs.append(max(h[i] - l[i],
-                       abs(h[i] - c[i - 1]),
+        trs.append(max(h[i] - l[i], abs(h[i] - c[i - 1]),
                        abs(l[i] - c[i - 1])))
     atr14 = float(np.mean(trs[-14:])) if len(trs) >= 14 else None
 
-    # 1. impulse 25-50%
-    win_end = n - 25
-    win_start = win_end - 90
+    # 1. impulse
+    win_end = n - SD.PB_LOOKBACK
+    win_start = win_end - SD.IMPULSE_LOOKBACK
     if win_start < 0:
         return "1_window_short"
     seg_h = h[win_start:win_end]
@@ -46,47 +46,45 @@ def check_slice(df):
     if swing_low <= 0:
         return "1_low_zero"
     impulse = (swing_high - swing_low) / swing_low
-    if impulse < 0.25:
-        return "1a_impulse_below_25"
-    if impulse > 0.50:
-        return "1b_impulse_above_50"
+    if impulse < SD.IMPULSE_MIN_PCT:
+        return f"1a_impulse_below_{int(SD.IMPULSE_MIN_PCT*100)}"
+    if impulse > SD.IMPULSE_MAX_PCT:
+        return f"1b_impulse_above_{int(SD.IMPULSE_MAX_PCT*100)}"
     ic = c[swing_high_idx:win_end + 1]
     ie = ema10[swing_high_idx:win_end + 1]
-    if int(np.sum(ic < ie)) > max(2, int(0.25 * len(ic))):
+    if int(np.sum(ic < ie)) > max(2, int(SD.EMA10_BREAK_TOL * len(ic))):
         return "1c_ema10_breaks"
 
-    # 2. pullback depth
+    # 2. pullback
     pb_window = h[win_end:]
     recent_high = float(np.max(pb_window))
     current_low = float(l[-1])
     pb_depth = (recent_high - current_low) / recent_high
-    if pb_depth < 0.12:
-        return "2a_pb_shallow"
-    if pb_depth > 0.20:
-        return "2b_pb_deep"
+    if pb_depth < SD.PB_MIN_PCT:
+        return f"2a_pb_shallow"
+    if pb_depth > SD.PB_MAX_PCT:
+        return f"2b_pb_deep"
 
-    # 3. pullback days
+    # 3. days
     pb_days = len(pb_window) - 1 - int(np.argmax(pb_window))
-    if pb_days < 6:
+    if pb_days < SD.PB_MIN_DAYS:
         return "3a_days_fast"
-    if pb_days > 15:
+    if pb_days > SD.PB_MAX_DAYS:
         return "3b_days_slow"
-
-    # 3b. no crash
-    for i in range(-3, 0):
-        base = h[i - 2]
-        if base and (base - l[i]) / base >= 0.15:
+    for i in range(-SD.CRASH_WINDOW, 0):
+        base = h[i - SD.CRASH_WINDOW + 1]
+        if base and (base - l[i]) / base >= SD.CRASH_MAX_PCT:
             return "3c_crash"
 
     # 4. ema zone
-    near10 = abs(current_low - ema10[-1]) / ema10[-1] <= 0.03
-    near20 = abs(current_low - ema20[-1]) / ema20[-1] <= 0.03
+    near10 = abs(current_low - ema10[-1]) / ema10[-1] <= SD.EMA_TOUCH_MULT
+    near20 = abs(current_low - ema20[-1]) / ema20[-1] <= SD.EMA_TOUCH_MULT
     in_zone = (current_low <= ema10[-1] * 1.02 and
                current_low >= ema20[-1] * 0.98)
     if not (near10 or near20 or in_zone):
         return "4_ema_zone"
 
-    # 5. volume dry-up
+    # 5. volume
     vn = vol_sma20[-1]
     avg3 = float(np.mean(v[-3:]))
     if np.isnan(vn) or not (avg3 < 0.8 * vn or v[-1] < 0.7 * vn):
@@ -96,23 +94,23 @@ def check_slice(df):
     inside_last = bool(h[-1] < h[-2] and l[-1] > l[-2])
     tight = 0
     i = -1
-    while i >= -4:
+    while i >= -SD.TIGHT_MAX_RUN_BACK:
         ins = h[i] < h[i - 1] and l[i] > l[i - 1]
-        narrow = atr14 is not None and (h[i] - l[i]) <= 0.9 * atr14
+        narrow = atr14 is not None and \
+            (h[i] - l[i]) <= SD.TIGHT_ATR_MULT * atr14
         if not (ins or narrow):
             break
         tight += 1
         i -= 1
-    if not (inside_last or tight >= 2):
+    if not (inside_last or tight >= SD.TIGHT_MIN):
         return "6_mother_bar"
 
-    # 7. risk cap
+    # 7. risk
     entry = float(h[-2] if inside_last else h[i])
     stop = float(l[-1])
     if stop >= entry:
         return "7_stop_ge_entry"
-    risk = (entry - stop) / entry
-    if risk > 0.05:
+    if (entry - stop) / entry > SD.MAX_STOP_PCT:
         return "7_risk_above_5pct"
 
     return "PASSED"
@@ -160,8 +158,7 @@ def main():
           f"({screener_pass / max(1, total_slices) * 100:.1f}%)")
     print()
     print("setup-stage failures (sorted by count):")
-    ranked = sorted(counts.items(), key=lambda x: -x[1])
-    for k, v in ranked:
+    for k, v in sorted(counts.items(), key=lambda x: -x[1]):
         pct = v / max(1, screener_pass) * 100
         print(f"  {v:>5}  ({pct:>5.1f}%)  {k}")
 
