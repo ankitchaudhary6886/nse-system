@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="18.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="19.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -157,11 +157,9 @@ def regime(user: str = Depends(verify_user)):
         from regime import MarketRegime
         rg = MarketRegime.compute()
         return {"ok": True, "is_bullish": rg.is_bullish,
-                "level": rg.level,
-                "size_mult": rg.size_mult,
+                "level": rg.level, "size_mult": rg.size_mult,
                 "allows_swing": rg.allows_swing,
-                "allows_aw": rg.allows_aw,
-                "stance": rg.level,
+                "allows_aw": rg.allows_aw, "stance": rg.level,
                 "symbol": rg.symbol, "index_close": rg.index_close,
                 "ema10": rg.ema10, "ema20": rg.ema20,
                 "ema10_slope_pct": rg.ema10_slope_pct}
@@ -181,6 +179,59 @@ def macro_flow(user: str = Depends(verify_user)):
     return {"fii_net": None, "dii_net": None, "net_flow": None}
 
 
+# ============================================================
+# Strategies
+# ============================================================
+@app.get("/api/strategies")
+def list_strategies(user: str = Depends(verify_user)):
+    import rule_engine
+    return {"strategies": rule_engine.load_strategies()}
+
+
+@app.get("/api/strategies/{name}")
+def get_strategy(name: str, user: str = Depends(verify_user)):
+    import rule_engine
+    s = rule_engine.get_strategy(name)
+    if not s:
+        raise HTTPException(status_code=404, detail="not found")
+    return s
+
+
+@app.post("/api/strategies/{name}")
+def save_strategy(name: str, payload: dict,
+                  user: str = Depends(verify_user)):
+    import rule_engine
+    rule_engine.save_strategy(name, payload)
+    return {"saved": True, "name": name}
+
+
+@app.delete("/api/strategies/{name}")
+def delete_strategy(name: str, user: str = Depends(verify_user)):
+    import rule_engine
+    rule_engine.delete_strategy(name)
+    return {"deleted": True, "name": name}
+
+
+@app.post("/api/strategies/seed")
+def seed_strategies(force: bool = False, user: str = Depends(verify_user)):
+    import rule_engine
+    n = rule_engine.seed_if_empty(force=force)
+    return {"seeded": n}
+
+
+@app.get("/api/strategies/{name}/run")
+def run_strategy_api(name: str, limit: int = 30,
+                     user: str = Depends(verify_user)):
+    import rule_engine
+    try:
+        return rule_engine.run_strategy(name, limit=limit)
+    except Exception as e:
+        return {"error": str(e), "picks": []}
+
+
+# ============================================================
+# Research endpoints
+# ============================================================
 @app.get("/api/research/{symbol}")
 def research_api(symbol: str, user: str = Depends(verify_user)):
     import research_cockpit
@@ -221,6 +272,9 @@ def research_cache_clear(symbol: str = None,
         return {"cleared": False, "error": str(e)}
 
 
+# ============================================================
+# Existing endpoints (unchanged)
+# ============================================================
 @app.get("/api/toppicks")
 def toppicks(user: str = Depends(verify_user)):
     import top_picks
@@ -305,8 +359,7 @@ def radar(user: str = Depends(verify_user)):
     try:
         erows = conn.execute(
             "SELECT kind, symbol, text FROM events "
-            "WHERE date=(SELECT MAX(date) FROM events) "
-            "LIMIT 30").fetchall()
+            "WHERE date=(SELECT MAX(date) FROM events) LIMIT 30").fetchall()
         for kind, sym, text in erows:
             events.append({"kind": kind, "symbol": sym, "text": text})
     except Exception:
@@ -380,8 +433,8 @@ def templates_latest(limit: int = 30, user: str = Depends(verify_user)):
         rows = []
     conn.close()
     return {"matches": [{"date": r[0], "symbol": r[1],
-                         "template": r[2],
-                         "similarity": r[3]} for r in rows]}
+                         "template": r[2], "similarity": r[3]}
+                        for r in rows]}
 
 
 @app.get("/api/delivery/top")
@@ -569,11 +622,9 @@ def cockpit_summary(symbol: str, user: str = Depends(verify_user)):
     try:
         nrows = conn.execute(
             "SELECT title, age_days, label FROM sentiment_headlines "
-            "WHERE symbol=? ORDER BY age_days LIMIT 8",
-            (sym,)).fetchall()
+            "WHERE symbol=? ORDER BY age_days LIMIT 8", (sym,)).fetchall()
         for title, age, label in nrows:
-            news.append({"title": title, "age_days": age,
-                         "label": label})
+            news.append({"title": title, "age_days": age, "label": label})
     except Exception:
         pass
     conn.close()
@@ -588,8 +639,7 @@ def meta_score(symbol: str, user: str = Depends(verify_user)):
         r = meta_model.score_symbol(symbol.upper())
         return r or {"symbol": symbol, "p_win": None, "why": []}
     except Exception as e:
-        return {"symbol": symbol, "p_win": None, "why": [],
-                "error": str(e)}
+        return {"symbol": symbol, "p_win": None, "why": [], "error": str(e)}
 
 
 @app.get("/api/model/runs")

@@ -6,66 +6,68 @@
 <title>NSE Intelligence Terminal</title>
 <link rel="stylesheet" href="/static/style.css">
 <style>
-  .rel-pill {
-    display: inline-block; padding: 1px 8px; border-radius: 999px;
-    font-size: 11px; font-weight: 700;
-  }
+  .rel-pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; }
   .rel-strong { background: rgba(52,211,153,.18); color: #34d399; }
   .rel-mod    { background: rgba(251,191,36,.18); color: #fbbf24; }
   .rel-thin   { background: rgba(255,255,255,.06); color: #9fb0cc; }
   .rel-none   { background: rgba(255,255,255,.03); color: #64748b; }
 
-  .toggle-btn {
-    display: inline-block;
-    margin-top: 6px;
-    padding: 6px 12px;
-    font-size: 12px;
-    background: rgba(96,165,250,.1);
-    color: #60a5fa;
-    border: 1px solid rgba(96,165,250,.3);
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-  }
+  .toggle-btn { display:inline-block; margin-top:6px; padding:6px 12px;
+    font-size:12px; background: rgba(96,165,250,.1); color:#60a5fa;
+    border:1px solid rgba(96,165,250,.3); border-radius:10px;
+    cursor:pointer; font-weight:600; }
   .toggle-btn:hover { background: rgba(96,165,250,.2); }
-  .details-panel {
-    margin-top: 8px;
-    padding: 8px 0;
-    border-left: 2px solid rgba(96,165,250,.25);
-    padding-left: 10px;
-  }
-  .details-panel.hidden { display: none; }
+  .details-panel { margin-top:8px; padding:8px 0 8px 10px;
+    border-left:2px solid rgba(96,165,250,.25); }
+  .details-panel.hidden { display:none; }
 
-  .unified-card {
-    padding: 12px;
-    border: 1px solid rgba(255,255,255,.07);
-    background: rgba(255,255,255,.04);
-    border-radius: 12px;
-    cursor: pointer;
-    margin-bottom: 8px;
-    transition: border-color .15s ease, background .15s ease;
-  }
-  .unified-card:hover {
-    border-color: rgba(96,165,250,.35);
-    background: rgba(96,165,250,.08);
-  }
-  .uc-head {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 14px; font-weight: 700;
-  }
-  .uc-symbol { color: #edf3ff; }
-  .uc-line {
-    margin-top: 4px; font-size: 12px; color: #dbe7ff;
-  }
-  .uc-dim { color: #7f8da9; }
-  .uc-note { color: #9fb0cc; font-size: 11px; margin-top: 6px; }
+  .unified-card { padding:12px; border:1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.04); border-radius:12px;
+    cursor:pointer; margin-bottom:8px; }
+  .unified-card:hover { border-color: rgba(96,165,250,.35);
+    background: rgba(96,165,250,.08); }
+  .uc-head { display:flex; align-items:center; gap:8px;
+    font-size:14px; font-weight:700; }
+  .uc-symbol { color:#edf3ff; }
+  .uc-line { margin-top:4px; font-size:12px; color:#dbe7ff; }
+  .uc-dim { color:#7f8da9; }
+  .uc-note { color:#9fb0cc; font-size:11px; margin-top:6px; }
 
-  .nav-group {
-    margin-top: 18px; margin-bottom: 6px;
-    padding-left: 10px;
-    font-size: 10px; letter-spacing: 1.4px;
-    color: #7f8da9; text-transform: uppercase; font-weight: 700;
+  .nav-group { margin-top:18px; margin-bottom:6px; padding-left:10px;
+    font-size:10px; letter-spacing:1.4px; color:#7f8da9;
+    text-transform:uppercase; font-weight:700; }
+
+  /* Strategy runner */
+  .strategy-block {
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 14px;
+    background: rgba(255,255,255,.02);
   }
+  .strategy-head { display:flex; justify-content:space-between;
+    align-items:flex-start; gap:12px; margin-bottom:10px; }
+  .strategy-head strong { font-size:15px; color:#edf3ff; }
+  .strategy-desc { color:#9fb0cc; font-size:12px; margin-top:3px; }
+  .strategy-cond { color:#6d7fa3; font-size:11px; margin-top:6px;
+    font-family: ui-monospace, monospace; }
+  .strategy-run-btn { padding:8px 16px; border-radius:10px;
+    background: rgba(96,165,250,.15); color:#60a5fa;
+    border:1px solid rgba(96,165,250,.4); font-weight:700;
+    cursor:pointer; font-size:12px; }
+  .strategy-run-btn:hover { background: rgba(96,165,250,.3); }
+  .strategy-run-btn:disabled { opacity:.5; cursor:wait; }
+  .strategy-hint { color:#7f8da9; font-size:12px; margin:6px 0; }
+  .strategy-error { color:#fb7185; font-size:12px; }
+  .strategy-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+  .strategy-table th { text-align:left; color:#9fb0cc; padding:6px 4px;
+    border-bottom:1px solid rgba(255,255,255,.1); font-weight:600; }
+  .strategy-table td { padding:6px 4px;
+    border-bottom:1px solid rgba(255,255,255,.04); }
+  .strategy-row { cursor:pointer; }
+  .strategy-row:hover { background: rgba(96,165,250,.06); }
+  .chk-ok { color:#34d399; font-weight:700; margin-right:2px; }
+  .chk-fail { color:#fb7185; font-weight:700; margin-right:2px; }
 </style>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -126,6 +128,17 @@
       <div class="panel">
         <div class="panel-header">
           <div>
+            <h2>🧠 Custom Strategies</h2>
+            <p>Owner-authored rules. Edit in <code>data/strategies.json</code>, run here.</p>
+          </div>
+          <span class="badge muted" id="fundamentalStrategyBadge">—</span>
+        </div>
+        <div id="fundamentalStrategyList"><p>Loading strategies...</p></div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
             <h2>💎 Value Radar</h2>
             <p>Quality names in downturns — long-term accumulation candidates</p>
           </div>
@@ -161,6 +174,17 @@
       <div class="panel">
         <div class="panel-header">
           <div>
+            <h2>🧠 Custom Strategies</h2>
+            <p>Owner-authored rules. Edit in <code>data/strategies.json</code>, run here.</p>
+          </div>
+          <span class="badge muted" id="swingStrategyBadge">—</span>
+        </div>
+        <div id="swingStrategyList"><p>Loading strategies...</p></div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
             <h2>🏄 Swing Desk</h2>
             <p>Forward validation log — includes ALL-WEATHER setups</p>
           </div>
@@ -190,8 +214,8 @@
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div>
-            <h2>📡 Radar (momentum / volume / turnaround)</h2>
-            <p>Raw universe clusters for reference</p>
+            <h2>📡 Radar</h2>
+            <p>Momentum / volume / turnaround clusters</p>
           </div>
         </div>
         <div class="radar-layout">
@@ -312,21 +336,11 @@
     <section id="view-ledger" class="view">
       <div class="terminal-grid">
         <div class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>System Performance</h2>
-              <p>Graded swing signals</p>
-            </div>
-          </div>
+          <div class="panel-header"><div><h2>System Performance</h2><p>Graded swing signals</p></div></div>
           <div class="setup-box" id="ledgerStats"><p>Loading stats...</p></div>
         </div>
         <div class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>Trade Log</h2>
-              <p>Forward validation history</p>
-            </div>
-          </div>
+          <div class="panel-header"><div><h2>Trade Log</h2><p>Forward validation history</p></div></div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Outcome</th></tr></thead>
@@ -335,13 +349,9 @@
           </div>
         </div>
       </div>
-
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>🧪 Strategy Runs (walk-forward ledger)</h2>
-            <p>Every backtest sweep, logged. PF-driven verdicts.</p>
-          </div>
+          <div><h2>🧪 Strategy Runs</h2><p>Every backtest sweep, logged.</p></div>
           <span class="badge muted" id="strategyRunsBadge">—</span>
         </div>
         <div id="strategyRunsBox" style="overflow-x:auto;"><p>Loading runs...</p></div>
@@ -352,27 +362,19 @@
     <section id="view-system" class="view">
       <div class="panel">
         <div class="panel-header">
-          <div>
-            <h2>🚀 Deployment Status</h2>
-            <p>System health check — refreshed on demand</p>
-          </div>
+          <div><h2>🚀 Deployment Status</h2><p>System health check</p></div>
           <span class="badge muted" id="deploymentBadge">—</span>
         </div>
         <div id="deploymentBox" class="setup-box"><p>Loading...</p></div>
       </div>
-
       <div class="panel" style="margin-top:18px">
-        <div class="panel-header">
-          <div>
-            <h2>📚 Documentation</h2>
-            <p>For developers / migration</p>
-          </div>
-        </div>
+        <div class="panel-header"><div><h2>📚 Documentation</h2><p>For developers / migration</p></div></div>
         <div class="setup-box">
           <div class="level"><span>Portal redesign vision</span><strong>PORTAL_REDESIGN.md</strong></div>
           <div class="level"><span>Instructions &amp; rules</span><strong>backlog.md</strong></div>
           <div class="level"><span>Batch history</span><strong>EXECUTION_LOG.md</strong></div>
           <div class="level"><span>Project overview</span><strong>PROJECT_HANDOFF.md</strong></div>
+          <div class="level"><span>Strategies</span><strong>data/strategies.json</strong></div>
         </div>
       </div>
     </section>
@@ -384,5 +386,6 @@
 <script src="/static/research.js"></script>
 <script src="/static/research_universe.js"></script>
 <script src="/static/research_sector.js"></script>
+<script src="/static/strategies.js"></script>
 </body>
 </html>

@@ -26,7 +26,7 @@
 - **R13** Fast feedback loops (~5s), not multi-minute waits.
 - **R14** Verdicts are PF-driven.
 - **R15** Parameter changes are swept, not picked.
-- **R16** Non-monotonic sweeps = noise. Prefer simpler parameter.
+- **R16** Non-monotonic sweeps = noise.
 - **R17** Multi-window WF is ground truth.
 - **R18** Equivalent results → simpler wins.
 - **R19** **System identifies. Owner decides.** No prescribed exits,
@@ -36,86 +36,118 @@
 - **R22** All tunable parameters in `strategy_config.py`.
 - **R23** Optional integrations skip gracefully if creds/files missing.
 - **R24** Research tables are sortable + colour-coded by sample size.
-- **R25** **Portal is redesigned around the two-pillar model** — Funda
-          (positional) and Swing (midcap/smallcap momentum). See
-          `PORTAL_REDESIGN.md`.
+- **R25** **Portal is redesigned around the two-pillar model.**
+- **R26** **Strategies are JSON, not code.** Every new strategy is a
+          rule definition in `data/strategies.json`. No code changes.
 
 ---
 
 ## B. INSTRUCTIONS  (chronological)
 
 ### Session 1 — 2026-09-12 (morning)
-I1–I7 as previously logged.
+I1–I7 as logged.
 
 ### Session 2 — 2026-09-12 (midday → evening)
-I8–I26 as previously logged.
-- **I27** Portal redesign vision captured in `PORTAL_REDESIGN.md`.
-- **I28** Proceed with Phase 1 (portal redesign).
+I8–I28 as logged. Additions this batch:
+- **I29** Proceed with Phase 2 (rule engine + seed strategies).
+- **I30** Seed: Multibagger, RCP, Episodic Pivot. Owner can edit rules
+          in `data/strategies.json`.
 
 ---
 
 ## C. DEMANDS
 
 - **D1** Ideas never lost.
-- **D2** Durable execution log across chat sessions.
+- **D2** Durable execution log.
 - **D3** Fast pace.
-- **D4** Portal must present, never recommend (R19).
+- **D4** Portal presents, never recommends.
 - **D5** Every panel serves a decision the owner will actually make.
 
 ---
 
 ## D. IDEAS
 
-All ID1–ID38 as previously logged. Status changes this batch:
-- **ID28** Two-pillar portal redesign · **IN PROGRESS** — nav shipped,
-  panels reorganized, progressive disclosure in place.
-- **ID35** Progressive disclosure · **DONE this batch** — sizing,
-  SHAP why, delivery counts all behind toggles.
-- **ID33** Unified stock card · **IN PROGRESS** — helper function
-  `renderUnifiedCard` added; will be applied to more places next.
+All ID1–ID38 previously logged, plus:
+
+### ID39 — Rule DSL engine · **DONE this batch**
+Generic evaluator. Reads strategy JSON, computes features per symbol,
+applies conditions, ranks by weighted score. Zero code for new
+strategies.
+
+### ID40 — Seed strategies (Multibagger / RCP / Episodic Pivot) · **DONE**
+Initial definitions in `data/strategies.json`. Owner edits directly.
+
+### ID41 — Strategy execution UI · **DONE**
+Funda tab shows fundamental strategies. Swing tab shows swing strategies.
+Each has a Run button. Results include per-condition pass/fail marks.
+
+### ID42 — In-browser strategy editor · **NEXT**
+JSON editor in the System tab. Save → immediate effect. No file editing.
+
+### ID43 — Backtest sandbox per strategy · **PLANNED (Phase 2 cont.)**
+Run any strategy over last N years in browser. Equity curve, hit rate.
+Change a rule → re-run. Still in Phase 2.
 
 ---
 
 ## E. IMAGINATIONS
-
-IM1–IM6 as previously logged.
+IM1–IM6 as logged.
 
 ---
 
 ## F. FEATURES COMPLETED
 
-All previously listed, plus:
+Prior list, plus:
 
-### FP1 — Portal Phase 1 · **DONE**
-- 5-tab nav: Funda / Swing / Research / Ledger / System.
-- Overview tab retired.
-- Panels reorganized by product line.
-- Progressive disclosure on sizing / SHAP / delivery.
-- Legacy "overview" view name remapped to "research" for
-  backwards compatibility.
+### FRE — Rule Engine · **DONE this batch**
+Generic JSON-driven strategy evaluator.
+
+### FSE — Seed strategies · **DONE**
+3 seed strategies. Owner-tunable.
+
+### FSU — Strategy UI · **DONE**
+Funda + Swing tabs show strategies with Run buttons.
 
 ---
 
 ## G. STATUS SUMMARY
 
-(unchanged, plus ID28 / ID33 / ID35 statuses updated)
+| ID    | Item                      | Status       |
+|-------|---------------------------|--------------|
+| R1–R26 | Rules                    | Active       |
+| I1–I30 | Instructions             | Applied      |
+| ID1–ID23c | As logged             | DONE         |
+| ID24  | Candle behaviour          | PLANNED P3   |
+| ID25  | Sector strength overlay   | FUTURE       |
+| ID26  | Setup similarity          | PLANNED P3   |
+| ID27  | Rule DSL engine           | **DONE**     |
+| ID28  | Two-pillar portal         | **DONE**     |
+| ID29  | Signature matching        | PLANNED P3   |
+| ID30  | Pattern transparency      | PLANNED P3   |
+| ID31  | Time-machine markers      | PLANNED P3   |
+| ID32  | Data source plugins       | PLANNED P4   |
+| ID33  | Unified stock card        | IN PROGRESS  |
+| ID34  | Backtest sandbox          | PLANNED P2   |
+| ID35  | Progressive disclosure    | **DONE**     |
+| ID36  | Compare mode              | PLANNED P3   |
+| ID37  | Strategy library page     | PARTIAL      |
+| ID38  | Strategy seeds            | **DONE**     |
+| ID39  | Rule DSL engine           | **DONE**     |
+| ID40  | Seed strategies           | **DONE**     |
+| ID41  | Strategy UI               | **DONE**     |
+| ID42  | In-browser strategy editor| NEXT         |
+| ID43  | Backtest sandbox (per strat)| PLANNED P2 |
 
 ---
 
 ## H. REMAINING / LEFT
 
-### Phase 1 · **IN PROGRESS**
-- ✅ New nav
-- ✅ Panels reorganized
-- ✅ Progressive disclosure
-- ✅ Overview retired
-- ⬜ Apply unified card to scanner result lists (next)
-
-### Phase 2
-- ID27 Rule DSL engine
-- ID34 Backtest sandbox
-- ID37 Strategy library
-- ID38 Multibagger + RCP + Episodic Pivot rule design
+### Phase 2 — IN PROGRESS
+- ✅ Rule engine
+- ✅ 3 seed strategies
+- ✅ Strategy UI in Funda + Swing tabs
+- ⬜ In-browser strategy editor (ID42)
+- ⬜ Backtest sandbox per strategy (ID43)
 
 ### Phase 3
 - ID24 Candle behaviour analytics
@@ -128,9 +160,10 @@ All previously listed, plus:
 - ID32 Data source plugins
 
 ### Deferred
-As previously logged.
+As logged.
 
 ---
 
 ## I. HOW THIS FILE GROWS
-As previously logged. PORTAL_REDESIGN.md captures vision + roadmap.
+As logged. PORTAL_REDESIGN.md captures vision. Strategies in
+data/strategies.json.

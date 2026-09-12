@@ -228,3 +228,54 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 1. Read `backlog.md` — rules, ideas, current status.
 2. Read `EXECUTION_LOG.md` — exactly what shipped.
 3. Continue from the last entry's status.
+
+
+# EXECUTION LOG — durable record of every code batch
+
+Purpose: survives chat migrations. New session reads `backlog.md` +
+`EXECUTION_LOG.md` + `PORTAL_REDESIGN.md` and knows the full history.
+
+Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
+
+---
+
+## SESSION 1 — 2026-09-12 (morning)
+#001–#014 as previously logged (PO fixes, setup bug, fundamentals,
+all-weather, value radar, logging, handoff).
+
+## SESSION 2 — 2026-09-12 (midday → evening)
+#015–#041 as previously logged (Feature C, value radar v2, sizing,
+positional, alerts, universe helper, trend scanner, target sweep,
+strategy config, deployment, research cockpit, sector aggregation).
+
+### #042 · Portal Phase 1 redesign
+- Files: `terminal/static/app.js`, `terminal/static/index.html`,
+  `backlog.md`
+- What: 5-tab nav (Funda/Swing/Research/Ledger/System). Overview retired.
+  Progressive disclosure on sizing/SHAP/delivery. Legacy "overview"
+  remapped to "research" for backwards compat.
+- Status: DEPLOYED · VERIFIED
+
+### #043 · Rule engine + seed strategies (Phase 2 start)
+- Files: `rule_engine.py` (new), `terminal_api.py`,
+  `terminal/static/strategies.js` (new), `terminal/static/index.html`,
+  `backlog.md`, `EXECUTION_LOG.md`
+- What: Generic JSON-driven strategy evaluator. Feature computation
+  per symbol (prices + fundamentals + sector context). Three seed
+  strategies: Multibagger (fundamental), RCP (swing),
+  EpisodicPivot (swing). UI: Funda tab shows fundamental strategies,
+  Swing tab shows swing strategies. Each has a Run button. Results
+  include per-condition pass/fail marks.
+- API: `/api/strategies`, `/api/strategies/{name}/run`,
+  `/api/strategies/{name}` (get/save/delete), `/api/strategies/seed`.
+- Storage: `data/strategies.json`.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
+
+## HOW NEW SESSIONS USE THIS
+1. Read `backlog.md` — rules, instructions, current status.
+2. Read `EXECUTION_LOG.md` — exactly what shipped.
+3. Read `PORTAL_REDESIGN.md` — vision & roadmap.
+4. Continue from the last entry's status.
+
