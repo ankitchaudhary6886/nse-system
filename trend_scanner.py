@@ -1,10 +1,7 @@
 """
 Trend-Regime Scanner — stocks above BOTH EMA50 and EMA200.
-Authorized 2026-09-12 (BACKLOG ID8).
-v2 (2026-09-12): score no longer saturates at 100.
-- Distance-above-EMA components are now dynamic, not binary.
-- Two new bonus tiers for well-extended trends.
-Max = 100, but only a truly pristine trend hits it.
+v3 (2026-09-12): score is unbounded (no cap). Ranking is the point.
+Higher = stronger/more-pristine uptrend structure.
 """
 import sys
 import datetime as dt
@@ -43,59 +40,58 @@ def _ema(values, span):
 
 def _score(close, e50, e200, e50_prev, e200_prev,
            crossed_50_recent, crossed_200_recent):
-    score = 0
+    """Raw score, unbounded. Max realistic ~100 for pristine setups,
+    but not saturated — components use continuous-valued bands."""
+    score = 0.0
     notes = []
 
-    # 1. Golden-cross structure (25)
+    # 1. Golden-cross structure
     if e50 is not None and e200 is not None and e50 > e200:
-        score += 25
-        notes.append("EMA50>EMA200")
+        gap = (e50 / e200 - 1) * 100
+        score += 20 + min(10, gap)  # 20-30
+        notes.append(f"EMA50>EMA200 by {gap:.1f}%")
 
-    # 2. EMA50 rising (18)
+    # 2. EMA50 rising
     if e50 is not None and e50_prev is not None and e50 > e50_prev:
-        score += 18
-        notes.append("EMA50 rising")
+        slope = (e50 / e50_prev - 1) * 100
+        score += 15 + min(8, slope * 3)  # 15-23
+        notes.append(f"EMA50 +{slope:.2f}%")
 
-    # 3. EMA200 rising (18)
+    # 3. EMA200 rising
     if e200 is not None and e200_prev is not None and e200 > e200_prev:
-        score += 18
-        notes.append("EMA200 rising")
+        slope = (e200 / e200_prev - 1) * 100
+        score += 15 + min(8, slope * 3)  # 15-23
+        notes.append(f"EMA200 +{slope:.2f}%")
 
-    # 4. Distance above EMA50 (0-12, dynamic)
+    # 4. Distance above EMA50 — bell curve peak around 5-10%
     if e50 and e50 > 0:
         d50 = (close / e50 - 1) * 100
-        if 0 < d50 <= 5:
+        if 3 <= d50 <= 8:
             score += 12
-            notes.append(f"+{d50:.1f}% above EMA50")
-        elif 5 < d50 <= 15:
-            score += 9
-            notes.append(f"+{d50:.1f}% above EMA50")
-        elif 15 < d50 <= 30:
-            score += 5
-            notes.append(f"+{d50:.1f}% above EMA50")
-        elif d50 > 30:
+        elif 0 < d50 < 3 or 8 < d50 <= 15:
+            score += 8
+        elif 15 < d50 <= 25:
+            score += 4
+        elif d50 > 25:
             score += 1
-            notes.append(f"+{d50:.1f}% above EMA50 (extended)")
+        notes.append(f"+{d50:.1f}% vs EMA50")
 
-    # 5. Distance above EMA200 (0-12, dynamic)
+    # 5. Distance above EMA200 — peak around 5-15%
     if e200 and e200 > 0:
         d200 = (close / e200 - 1) * 100
-        if 0 < d200 <= 10:
+        if 5 <= d200 <= 15:
             score += 12
-            notes.append(f"+{d200:.1f}% above EMA200")
-        elif 10 < d200 <= 25:
+        elif 0 < d200 < 5 or 15 < d200 <= 25:
             score += 8
-            notes.append(f"+{d200:.1f}% above EMA200")
         elif 25 < d200 <= 50:
-            score += 4
-            notes.append(f"+{d200:.1f}% above EMA200")
+            score += 3
         elif d200 > 50:
             score += 1
-            notes.append(f"+{d200:.1f}% above EMA200 (extended)")
+        notes.append(f"+{d200:.1f}% vs EMA200")
 
-    # 6. Fresh cross bonus (15)
+    # 6. Fresh cross bonus
     if crossed_50_recent or crossed_200_recent:
-        score += 15
+        score += 10
         tags = []
         if crossed_50_recent:
             tags.append("EMA50")
@@ -103,7 +99,7 @@ def _score(close, e50, e200, e50_prev, e200_prev,
             tags.append("EMA200")
         notes.append(f"fresh {','.join(tags)} cross")
 
-    return min(100, score), notes
+    return round(score, 1), notes
 
 
 def compute(conn=None, limit=1500):
@@ -220,9 +216,7 @@ def report(n=25, send_tg=False):
     for r in rows:
         print(f"{r['symbol']:<12} "
               f"₹{r['close']:>8.2f}  "
-              f"EMA50 ₹{r['ema50']:>8.2f}  "
-              f"EMA200 ₹{r['ema200']:>8.2f}  "
-              f"score {r['score']:>3}  {r['notes']}")
+              f"score {r['score']:>5}  {r['notes']}")
     if send_tg and rows:
         try:
             from alerts import send
