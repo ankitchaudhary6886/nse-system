@@ -3,12 +3,15 @@ Fast walk-forward — Backtester path, ~80s.
 Verdict is PF-driven, not win-rate-driven.
 
 Usage:
-  python fast_wf.py               -> current params (TARGET_R=3.0)
-  python fast_wf.py 2.5           -> override Backtester.TARGET_R = 2.5
-  python fast_wf.py 2.5 5         -> target 2.5, max_positions 5
+  python fast_wf.py                           # 3y / 400 syms / 3R
+  python fast_wf.py --r 2.5                   # target override
+  python fast_wf.py --years 4 --symbols 500   # longer window
+  python fast_wf.py --r 3.0 --max-pos 8       # concurrent positions
+  python fast_wf.py --help
 """
 import sys
 import time
+import argparse
 import datetime as dt
 import numpy as np
 import db
@@ -30,27 +33,39 @@ def _verdict(n, wr, pf):
     return "NO EDGE — negative expectancy"
 
 
+def _parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("--r", type=float, default=None,
+                   help="TARGET_R override (default 3.0)")
+    p.add_argument("--years", type=float, default=3.0,
+                   help="lookback years (default 3.0)")
+    p.add_argument("--symbols", type=int, default=400,
+                   help="symbol count (default 400)")
+    p.add_argument("--max-pos", type=int, default=None,
+                   help="max concurrent positions (default 5)")
+    return p.parse_args()
+
+
 def main():
     t0 = time.time()
-    target_r = float(sys.argv[1]) if len(sys.argv) > 1 else None
-    max_pos = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    args = _parse_args()
 
-    if target_r is not None:
-        Backtester.TARGET_R = target_r
-        print(f"[WF] override Backtester.TARGET_R = {target_r}")
+    if args.r is not None:
+        Backtester.TARGET_R = args.r
+        print(f"[WF] override Backtester.TARGET_R = {args.r}")
 
     conn = db.get_conn()
-    syms = band_universe(conn, limit=400)
+    syms = band_universe(conn, limit=args.symbols)
     conn.close()
 
     end = dt.date.today()
-    start = end - dt.timedelta(days=365 * 3)
+    start = end - dt.timedelta(days=int(365 * args.years))
 
     result_obj = BacktestResult()
-    if max_pos is not None:
-        result_obj.max_positions = max_pos
+    if args.max_pos is not None:
+        result_obj.max_positions = args.max_pos
     print(f"[WF] {len(syms)} symbols, {start.isoformat()} to "
-          f"{end.isoformat()}")
+          f"{end.isoformat()} ({args.years}y)")
 
     bt = Backtester(result=result_obj)
     result = bt.run([s + ".NS" for s in syms],

@@ -1,12 +1,29 @@
 """
 Position sizing — half-Kelly with beginner-safe caps.
-v3 (2026-09-12): fallback win-rate 0.35 when no cache/graded history;
-regime spectrum multiplies alloc AND risk budget.
+v4 (2026-09-12): adds shape-score quality multiplier.
+                 - shape_score 80-100  -> 1.20x
+                 - shape_score 60-79   -> 1.00x
+                 - shape_score 40-59   -> 0.80x
+                 - shape_score 0-39    -> 0.60x
+                 - no shape (from pwin only) -> 1.00x
+                 Absolute cap raised to 25% (from 20%).
+Regime multiplier applied on top (from regime.py).
+
+Basis:
+  W = meta-model P(WIN) for the symbol (fallback: graded system win-rate,
+      then conservative 0.35 if neither available)
+  b = payoff ratio 3.0 (2R stop / 3R target as of v3.4)
+  Kelly f* = (b*W - (1-W)) / b ; half-Kelly = f*/2
+Caps:
+  MAX_ALLOC      = 25% of capital per position (before quality/regime)
+  RISK_PER_TRADE = 1% of capital max loss at stop
+Suggested value = min(half-kelly value, risk-based value, max-alloc value)
+                  * regime_mult * quality_mult
 """
 import db
 
-B_PAYOFF = 2.0
-MAX_ALLOC = 0.20
+B_PAYOFF = 3.0
+MAX_ALLOC = 0.25
 RISK_PER_TRADE = 0.01
 DEFAULT_CAPITAL = 1_000_000
 FALLBACK_WINRATE = 0.35
@@ -64,13 +81,41 @@ def _regime_scale():
         return 1.0, "UNKNOWN"
 
 
+def _quality_mult(shape_score):
+    """Shape score 0-100 -> capital multiplier 0.60x - 1.20x."""
+    if shape_score is None:
+        return 1.0
+    try:
+        s = float(shape_score)
+    except (TypeError, ValueError):
+        return 1.0
+    if s >= 80:
+        return 1.20
+    if s >= 60:
+        return 1.00
+    if s >= 40:
+        return 0.80
+    return 0.60
+
+
 def kelly_fraction(w, b=B_PAYOFF):
     if w is None:
         return None
     return max(0.0, (b * w - (1.0 - w)) / b)
 
 
-def suggest(symbol, trigger=None, stop=None, capital=None, conn=None):
+def suggest(symbol, trigger=None, stop=None, capital=None,
+            shape_score=None, conn=None):
+    """
+    Suggest a position size for `symbol`.
+
+    Args:
+      symbol:       NSE symbol
+      trigger:      entry trigger price (optional)
+      stop:         stop loss price (optional)
+      capital:      override capital (optional; else reads from settings)
+      shape_score:  0-100 setup quality from SetupDetector (optional)
+    """
     own = conn is None
     if own:
         conn = db.get_conn()
@@ -94,23 +139,27 @@ def suggest(symbol, trigger=None, stop=None, capital=None, conn=None):
         conn.close()
 
     regime_mult, regime_level = _regime_scale()
+    quality_mult = _quality_mult(shape_score)
 
     out = {"symbol": symbol, "capital": cap, "p_win": w, "basis": src,
            "payoff_b": B_PAYOFF,
            "regime_level": regime_level,
            "regime_mult": regime_mult,
+           "shape_score": shape_score,
+           "quality_mult": quality_mult,
            "max_alloc_pct": MAX_ALLOC * 100,
            "risk_per_trade_pct": RISK_PER_TRADE * 100}
     f = kelly_fraction(w)
     half = f / 2.0
-    alloc = min(half, MAX_ALLOC) * regime_mult
+    raw_alloc = min(half, MAX_ALLOC)
+    alloc = raw_alloc * regime_mult * quality_mult
     out.update({"kelly_pct": round(f * 100, 1),
                 "half_kelly_pct": round(half * 100, 1),
-                "alloc_pct": round(alloc * 100, 1),
+                "alloc_pct": round(alloc * 100, 2),
                 "max_position_value": round(cap * alloc, 0)})
     if trigger and stop and trigger > stop:
         risk_pct = (trigger - stop) / trigger
-        risk_value = cap * RISK_PER_TRADE * regime_mult
+        risk_value = cap * RISK_PER_TRADE * regime_mult * quality_mult
         value_by_risk = risk_value / risk_pct if risk_pct > 0 else 0.0
         value = min(cap * alloc, value_by_risk)
         shares = int(value // trigger) if trigger > 0 else 0
@@ -121,11 +170,12 @@ def suggest(symbol, trigger=None, stop=None, capital=None, conn=None):
                     "shares": shares,
                     "risk_amount": round(shares * trigger * risk_pct, 0),
                     "binding_cap": ("risk-based" if value_by_risk < cap * alloc
-                                    else f"kelly/alloc {round(alloc*100,1)}%")})
+                                    else f"kelly/alloc {round(alloc*100,2)}%")})
     return out
 
 
 if __name__ == "__main__":
     import sys
     sym = sys.argv[1].upper() if len(sys.argv) > 1 else "DIXON"
-    print(suggest(sym))
+    shape = float(sys.argv[2]) if len(sys.argv) > 2 else None
+    print(suggest(sym, shape_score=shape))
