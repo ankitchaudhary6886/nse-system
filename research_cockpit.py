@@ -1,14 +1,15 @@
 """
 Research Cockpit — historical behaviour of setups similar to today's.
 
-Two entry points:
+Entry points:
   analyze_symbol(sym)          — full per-symbol analysis (cached 7d)
   analyze_universe(limit)      — today's setups + their cached stats
+  warm_cache()                 — compute + cache stats for today's symbols
 
 Cache table: research_cache(symbol, computed_at, payload_json)
-Invalidated on demand via --clear-cache or 7-day TTL.
 """
 import sys
+import time
 import json
 import datetime as dt
 import numpy as np
@@ -309,26 +310,31 @@ def analyze_symbol(sym, use_cache=True):
 
 
 # ============================================================
-# Universe view — today's setups joined with cached stats
+# Universe view
 # ============================================================
-def analyze_universe(today_only=True, max_symbols=200,
-                     compute_missing=False):
-    conn = db.get_conn()
+def _today_symbols(conn, trend_limit=50):
     today = dt.date.today().isoformat()
-
     rows = conn.execute(
         "SELECT DISTINCT symbol, mode FROM swing_signals "
         "WHERE signal_date=?", (today,)).fetchall()
     symbols = {r[0]: r[1] for r in rows}
-
     try:
         trows = conn.execute(
             "SELECT symbol FROM trend_candidates WHERE date=? "
-            "ORDER BY score DESC LIMIT 50", (today,)).fetchall()
+            "ORDER BY score DESC LIMIT ?",
+            (today, trend_limit)).fetchall()
         for r in trows:
             symbols.setdefault(r[0], "TREND")
     except Exception:
         pass
+    return symbols
+
+
+def analyze_universe(today_only=True, max_symbols=200,
+                     compute_missing=False):
+    conn = db.get_conn()
+    today = dt.date.today().isoformat()
+    symbols = _today_symbols(conn)
 
     out = []
     for sym, src in list(symbols.items())[:max_symbols]:
@@ -364,6 +370,58 @@ def analyze_universe(today_only=True, max_symbols=200,
     return {"date": today, "n_setups": len(out), "rows": out}
 
 
+# ============================================================
+# Warm cache for today's symbols
+# ============================================================
+def warm_cache(max_symbols=200, force=False):
+    """
+    Compute + cache research stats for every symbol signalled today.
+    Skips already-cached symbols unless force=True.
+    Prints progress. Returns count computed.
+    """
+    conn = db.get_conn()
+    _ensure_cache(conn)
+    symbols = _today_symbols(conn, trend_limit=50)
+
+    todo = []
+    for sym in list(symbols.keys())[:max_symbols]:
+        if not force and _get_cached(conn, sym) is not None:
+            continue
+        todo.append(sym)
+
+    conn.close()
+
+    if not todo:
+        print(f"[WARM] all {len(symbols)} symbols already cached")
+        return 0
+
+    print(f"[WARM] computing {len(todo)} of {len(symbols)} symbols")
+    t0 = time.time()
+    done = 0
+    failed = 0
+    for i, sym in enumerate(todo, 1):
+        try:
+            r = analyze_symbol(sym, use_cache=True)
+            if "error" in r:
+                failed += 1
+                print(f"  [{i}/{len(todo)}] {sym}: {r['error']}")
+            else:
+                done += 1
+                if i % 5 == 0 or i == len(todo):
+                    elapsed = time.time() - t0
+                    rate = i / elapsed if elapsed else 0
+                    eta = (len(todo) - i) / rate if rate else 0
+                    print(f"  [{i}/{len(todo)}] {sym} ok "
+                          f"({elapsed:.0f}s, ETA {eta:.0f}s)")
+        except Exception as e:
+            failed += 1
+            print(f"  [{i}/{len(todo)}] {sym}: exception {e}")
+
+    print(f"[WARM] done: {done} computed, {failed} failed, "
+          f"{time.time() - t0:.0f}s total")
+    return done
+
+
 def clear_cache(sym=None):
     conn = db.get_conn()
     _clear_cache(conn, sym)
@@ -371,8 +429,7 @@ def clear_cache(sym=None):
 
 
 # ============================================================
-# CLI — manual argv inspection (argparse gets confused with
-# a nargs="?" positional + optional flags together)
+# CLI output helpers
 # ============================================================
 def _print_symbol(result):
     print("=" * 70)
@@ -409,12 +466,13 @@ def _print_symbol(result):
 
 
 def _print_universe(out):
-    print("=" * 90)
+    print("=" * 100)
     print(f"RESEARCH UNIVERSE — {out['date']}  ({out['n_setups']} setups)")
-    print("=" * 90)
-    print(f"{'SYM':<12} {'SRC':<6} {'n':<4} {'trig':<5} "
-          f"{'P1R':<6} {'P2R':<6} {'P3R':<6} "
-          f"{'MFE':<6} {'MAE':<6} {'52wHi%':<7}")
+    print("=" * 100)
+    header = (f"{'SYM':<12} {'SRC':<12} {'n':<4} {'trig':<5} "
+              f"{'P1R':<6} {'P2R':<6} {'P3R':<6} "
+              f"{'MFE':<6} {'MAE':<6} {'52wHi%':<7}")
+    print(header)
     for r in out["rows"]:
         def _f(v, dp=2):
             if v is None:
@@ -424,7 +482,7 @@ def _print_universe(out):
             if v is None:
                 return "—"
             return f"{v*100:.0f}%"
-        print(f"{r['symbol']:<12} {r['source']:<6} "
+        print(f"{r['symbol']:<12} {r['source']:<12} "
               f"{(r['n_setups'] or 0):<4} "
               f"{(r['n_triggered'] or 0):<5} "
               f"{_p(r['p_1r']):<6} {_p(r['p_2r']):<6} {_p(r['p_3r']):<6} "
@@ -432,13 +490,27 @@ def _print_universe(out):
               f"{_f(r['pct_from_52w_high'], 1):<7}")
 
 
+# ============================================================
+# CLI
+# ============================================================
 if __name__ == "__main__":
     argv = sys.argv[1:]
 
-    # manual flag checks — argparse can't reliably mix --flag with nargs="?" positional
     if "--clear-cache" in argv:
         clear_cache()
         print("cache cleared")
+        sys.exit(0)
+
+    if "--warm" in argv:
+        force = "--force" in argv
+        limit = 200
+        for a in argv:
+            if a.startswith("--limit="):
+                try:
+                    limit = int(a.split("=", 1)[1])
+                except Exception:
+                    pass
+        warm_cache(max_symbols=limit, force=force)
         sys.exit(0)
 
     if "--universe" in argv or "-u" in argv:
@@ -451,7 +523,6 @@ if __name__ == "__main__":
             _print_universe(out)
         sys.exit(0)
 
-    # single-symbol mode
     want_json = "--json" in argv
     want_refresh = "--refresh" in argv
     positional = [a for a in argv
