@@ -30,13 +30,15 @@
           simpler/earlier parameter when in doubt.
 - **R17** Multi-window walk-forward is the ground truth. A parameter set
           that only works on one window is overfit.
+- **R18** When two approaches give statistically equivalent PF/expectancy
+          but one is more complex, keep the simpler one.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
-I1–I16 (see EXECUTION_LOG)
-I17 Adopt multi-window robustness as the validation standard.
+I1–I17 (see EXECUTION_LOG)
+I18 Reject tranche exits (PF identical, DD worse).
 
 ---
 
@@ -54,29 +56,29 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 ### ID14 — Meta-model plateau · **OPEN**
 ### ID15 — Target sweep · **DONE** (3R adopted)
 ### ID16 — Sizing quality multiplier · **DONE** (v4)
-### ID17 — Robustness check · **DONE 2026-09-12**
-Multi-window walk-forward results (3R default):
-| Window | Trades | WR    | PF   | Total   | DD    | Exp/trade |
-|--------|--------|-------|------|---------|-------|-----------|
-| 2y     | 102    | 40.2% | 1.73 | +237.5% | 17.5% | +0.435R   |
-| 3y     | 185    | 35.1% | 1.43 | +273.5% | 17.5% | +0.276R   |
-| 4y     | 418    | 31.8% | 1.16 | +132.6% | 17.8% | +0.110R   |
-**Finding: edge is regime-dependent. Monotonic decline with window
-length is REAL signal (not noise). Positive expectancy in ALL windows.
-Conservative baseline: expect 20-25% CAGR / 18% DD, not 2y's 90%.**
+### ID17 — Robustness check · **DONE**
+Multi-window WF: PF 1.73 (2y) / 1.43 (3y) / 1.16 (4y). Regime-dependent,
+positive everywhere. Conservative baseline: 20-25% CAGR / ~18% DD.
 
-### ID18 — Hybrid tranche exits · **NEXT**
-Exit 1/3 at 2R, 1/3 at 3R, trail remaining 1/3 with 10-EMA. Test
-against current 3R full-exit. Requires partial-exit support in
-backtest.py. Could improve 4y window PF.
+### ID18 — Hybrid tranche exits · **REJECTED**
+Tested 2026-09-12. PF identical to full-exit (1.45 vs 1.43). Return worse
+by 65pp. DD worse by 7.3pp. Positions hold 2.3 days longer, blocking
+concurrent slots. Per R16/R18, keep full-exit. Code remains in backtest.py
+behind `TRANCHES_ENABLED = False` flag for future testing.
 
 ### ID19 — Central strategy config · **FUTURE**
 Move SetupDetector thresholds + TARGET_R + regime thresholds into one
-`strategy_config.py`. Enables single-file sweeps. (ID7 concern.)
+`strategy_config.py`. Enables single-file sweeps.
 
-### ID20 — Strategy runs dashboard · **NEXT**
-Surface strategy_runs history in terminal UI. See every walk-forward
-result at a glance. Small API + card.
+### ID20 — Strategy runs dashboard · **DONE this batch**
+- `/api/strategy-runs?n=20` endpoint
+- `/api/strategy-summary` endpoint
+- `terminal/static/strategy_runs.js` renders table + summary
+- Ledger view now shows "Strategy Runs" panel
+
+### ID21 — Deployment to production · **NEXT**
+After all code is settled: final sweep across windows, lock params,
+run weekly retrain + fresh scan, verify first real signals land.
 
 ---
 
@@ -98,9 +100,9 @@ IM3 Self-documenting system.
 ### FV Value Radar v2 · DONE
 ### FM Meta-Model v7 · DONE (AUC 0.629)
 ### FVAL Fast Validation · DONE
-### FSP Setup v3.4 · DONE (3R target)
-### FWF Walk-forward v4 · DONE (PF 1.43 / 1.73 / 1.16 across windows)
-### FSR Strategy Runs ledger · DONE this batch
+### FSP Setup v3.4 · DONE (3R full-exit)
+### FWF Walk-forward v4 · DONE (PF 1.43 / 1.73 / 1.16)
+### FSR Strategy Runs ledger + UI · DONE
 
 ---
 
@@ -108,7 +110,7 @@ IM3 Self-documenting system.
 
 | ID   | Item                      | Status       |
 |------|---------------------------|--------------|
-| R1–R17 | Rules                   | Active       |
+| R1–R18 | Rules                   | Active       |
 | ID1  | All-weather swing         | DONE         |
 | ID2  | Value Radar v2            | DONE         |
 | ID3a | Positional scanner        | DONE         |
@@ -127,9 +129,10 @@ IM3 Self-documenting system.
 | ID15 | Target sweep              | DONE         |
 | ID16 | Sizing quality multiplier | DONE         |
 | ID17 | Robustness check          | DONE         |
-| ID18 | Hybrid tranche exits      | NEXT         |
+| ID18 | Hybrid tranche exits      | REJECTED     |
 | ID19 | Central strategy config   | FUTURE       |
-| ID20 | Strategy runs dashboard   | NEXT         |
+| ID20 | Strategy runs dashboard   | DONE         |
+| ID21 | Production deployment     | NEXT         |
 
 ---
 

@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="13.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="14.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -307,6 +307,24 @@ def positional_api(n: int = 25, tier: str = None,
         return {"picks": [], "error": str(e)}
 
 
+@app.get("/api/strategy-runs")
+def strategy_runs_api(n: int = 20, user: str = Depends(verify_user)):
+    import strategy_runs
+    try:
+        return {"runs": strategy_runs.history(n)}
+    except Exception as e:
+        return {"runs": [], "error": str(e)}
+
+
+@app.get("/api/strategy-summary")
+def strategy_summary_api(user: str = Depends(verify_user)):
+    import strategy_runs
+    try:
+        return {"summary": strategy_runs.summary_by_target()}
+    except Exception as e:
+        return {"summary": [], "error": str(e)}
+
+
 @app.post("/api/webhook/ingest")
 def webhook_ingest(payload: dict,
                    x_webhook_token: str = Header(default="")):
@@ -496,10 +514,11 @@ def validate_latest(user: str = Depends(verify_user)):
 
 @app.get("/api/sizing/{symbol}")
 def sizing(symbol: str, trigger: float = None, stop: float = None,
-           user: str = Depends(verify_user)):
+           shape: float = None, user: str = Depends(verify_user)):
     import sizing as sz
     try:
-        return sz.suggest(symbol.upper(), trigger=trigger, stop=stop)
+        return sz.suggest(symbol.upper(), trigger=trigger, stop=stop,
+                          shape_score=shape)
     except Exception as e:
         return {"symbol": symbol, "error": str(e)}
 

@@ -223,6 +223,18 @@
           </div>
         </div>
       </div>
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div>
+            <h2>🧪 Strategy Runs (walk-forward ledger)</h2>
+            <p>Every backtest sweep, logged. PF-driven verdicts.</p>
+          </div>
+          <span class="badge muted" id="strategyRunsBadge">—</span>
+        </div>
+        <div id="strategyRunsBox" style="overflow-x:auto;">
+          <p>Loading runs...</p>
+        </div>
+      </div>
     </section>
 
     <section id="view-radar" class="view">
@@ -257,5 +269,6 @@
 </div>
 <script src="/static/app.js"></script>
 <script src="/static/scanners.js"></script>
+<script src="/static/strategy_runs.js"></script>
 </body>
 </html>
