@@ -7,8 +7,8 @@ Entry points:
   warm_cache()                 — compute + cache stats for today's symbols
   sector_aggregate()           — pool setups across symbols, by sector
 
-Cache table: research_cache(symbol, computed_at, payload_json)
-Payload carries CACHE_VERSION; a version mismatch invalidates the row.
+v3 (2026-09-12): adds candle behaviour analytics — classifies the mother
+bar of every historical setup and groups hit rates by category.
 """
 import sys
 import time
@@ -20,7 +20,7 @@ import db
 from setup import SetupDetector
 
 
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 HISTORY_DAYS = 5 * 365
 STEP = 5
 MIN_BARS = 280
@@ -78,6 +78,109 @@ def _clear_cache(conn, sym=None):
     else:
         conn.execute("DELETE FROM research_cache")
     conn.commit()
+
+
+# ============================================================
+# Mother-bar classification (ID47)
+# ============================================================
+def _classify_mother_bar(df, idx):
+    """
+    Classify the candle at position `idx` in df.
+    Returns dict with mtype + shape metrics, or None if invalid.
+    """
+    try:
+        o = df["Open"].values.astype(float)
+        h = df["High"].values.astype(float)
+        l = df["Low"].values.astype(float)
+        c = df["Close"].values.astype(float)
+    except Exception:
+        return None
+    if idx < 1 or idx >= len(c):
+        return None
+    body = abs(c[idx] - o[idx])
+    rng = h[idx] - l[idx]
+    if rng <= 0:
+        return None
+    upper_wick = h[idx] - max(o[idx], c[idx])
+    lower_wick = min(o[idx], c[idx]) - l[idx]
+    body_ratio = body / rng
+    upper_ratio = upper_wick / rng
+    lower_ratio = lower_wick / rng
+    close_pos = (c[idx] - l[idx]) / rng
+    is_bull = c[idx] >= o[idx]
+
+    # Classification (first match wins)
+    if h[idx] < h[idx - 1] and l[idx] > l[idx - 1]:
+        mtype = "inside"
+    elif body_ratio < 0.35 and lower_ratio > 0.55 and upper_ratio < 0.20:
+        mtype = "hammer"
+    elif body_ratio < 0.35 and upper_ratio > 0.55 and lower_ratio < 0.20:
+        mtype = "inv_hammer"
+    elif body_ratio < 0.20:
+        mtype = "doji"
+    elif body_ratio > 0.70:
+        mtype = "wide"
+    else:
+        mtype = "normal"
+
+    # ATR context (14-bar)
+    atr = None
+    if idx >= 14:
+        trs = []
+        for i in range(idx - 13, idx + 1):
+            trs.append(max(h[i] - l[i], abs(h[i] - c[i - 1]),
+                           abs(l[i] - c[i - 1])))
+        atr = float(np.mean(trs))
+    range_atr = (rng / atr) if (atr and atr > 0) else None
+
+    return {
+        "mtype": mtype,
+        "body_ratio": round(body_ratio, 3),
+        "upper_wick_pct": round(upper_ratio, 3),
+        "lower_wick_pct": round(lower_ratio, 3),
+        "close_position": round(close_pos, 3),
+        "range_atr": round(range_atr, 2) if range_atr else None,
+        "is_bull": bool(is_bull),
+    }
+
+
+def _candle_stats(setups):
+    """
+    Group historical setups by mother-bar category and compute
+    per-group hit rates + avg MFE/MAE.
+    """
+    by_type = {}
+    for s in setups:
+        mt = s.get("mother_type")
+        if not mt:
+            continue
+        by_type.setdefault(mt, []).append(s)
+
+    out = {}
+    for mtype, arr in by_type.items():
+        triggered = [x for x in arr if x.get("triggered")]
+        nt = len(triggered)
+
+        def _hr(level):
+            if not nt:
+                return None
+            k = f"hit_{level}r"
+            return round(sum(1 for x in triggered if x.get(k)) / nt, 3)
+
+        mfes = [x["mfe_r"] for x in triggered if x.get("mfe_r") is not None]
+        maes = [x["mae_r"] for x in triggered if x.get("mae_r") is not None]
+        out[mtype] = {
+            "n_setups": len(arr),
+            "n_triggered": nt,
+            "p_1r": _hr(1),
+            "p_2r": _hr(2),
+            "p_3r": _hr(3),
+            "median_mfe_r": (round(float(np.median(mfes)), 2)
+                             if mfes else None),
+            "median_mae_r": (round(float(np.median(maes)), 2)
+                             if maes else None),
+        }
+    return out
 
 
 # ============================================================
@@ -172,6 +275,8 @@ def _historical_setups(df):
         sim = _simulate_forward(df, i, st.entry_price, st.stop_loss)
         if sim is None:
             continue
+        # Classify the mother bar at the current slice's last bar (index i)
+        candle = _classify_mother_bar(df, i)
         setups.append({
             "signal_date": str(slice_df.index[-1].date()),
             "entry": st.entry_price,
@@ -183,6 +288,11 @@ def _historical_setups(df):
             "impulse_pct": round(st.impulse_pct * 100, 1),
             "ema_zone": st.ema_proximity,
             "shape_score": int(st.shape_score),
+            "mother_type": candle["mtype"] if candle else None,
+            "mother_body_ratio": candle["body_ratio"] if candle else None,
+            "mother_range_atr": candle["range_atr"] if candle else None,
+            "mother_close_pos": candle["close_position"] if candle else None,
+            "mother_is_bull": candle["is_bull"] if candle else None,
             **sim,
         })
     return setups
@@ -264,6 +374,7 @@ def analyze_symbol(sym, use_cache=True):
     current_setup = None
     st = SetupDetector.detect(df, sym)
     if st.triggered:
+        candle = _classify_mother_bar(df, len(df) - 1)
         current_setup = {
             "signal_date": st.signal_date,
             "entry": st.entry_price, "stop": st.stop_loss,
@@ -276,6 +387,9 @@ def analyze_symbol(sym, use_cache=True):
             "impulse_pct": round(st.impulse_pct * 100, 1),
             "ema_zone": st.ema_proximity,
             "shape_score": int(st.shape_score),
+            "mother_type": candle["mtype"] if candle else None,
+            "mother_body_ratio": candle["body_ratio"] if candle else None,
+            "mother_range_atr": candle["range_atr"] if candle else None,
         }
 
     latest_close = float(df["Close"].iloc[-1])
@@ -284,6 +398,7 @@ def analyze_symbol(sym, use_cache=True):
 
     setups = _historical_setups(df)
     agg = _aggregate(setups)
+    candle_stats = _candle_stats(setups)
     recent = sorted(setups, key=lambda s: s["signal_date"],
                     reverse=True)[:5]
 
@@ -303,7 +418,9 @@ def analyze_symbol(sym, use_cache=True):
         "pct_from_52w_low": round((latest_close - low_52w) /
                                    low_52w * 100, 1),
         "current_setup": current_setup,
-        "historical": agg, "recent_setups": recent,
+        "historical": agg,
+        "candle_stats": candle_stats,
+        "recent_setups": recent,
         "raw_setups": setups,
         "history_bars_tested": len(df),
         "history_years": 5, "step": STEP,
@@ -382,10 +499,6 @@ def analyze_universe(today_only=True, max_symbols=200,
 # Sector aggregation
 # ============================================================
 def sector_aggregate(max_symbols=200):
-    """
-    Roll up the day's universe by sector. Pools raw setups from every
-    cached symbol in the sector, then recomputes stats on the pool.
-    """
     conn = db.get_conn()
     today = dt.date.today().isoformat()
     symbols = _today_symbols(conn)
@@ -407,10 +520,12 @@ def sector_aggregate(max_symbols=200):
         for c in cached_list:
             pooled_setups.extend(c.get("raw_setups", []))
         agg = _aggregate(pooled_setups)
+        candle_stats = _candle_stats(pooled_setups)
         out.append({
             "sector": sector,
             "n_symbols": len(cached_list),
             "symbols": [c.get("symbol") for c in cached_list],
+            "candle_stats": candle_stats,
             **agg,
         })
 
@@ -427,7 +542,7 @@ def sector_aggregate(max_symbols=200):
 
 
 # ============================================================
-# Warm cache for today's symbols
+# Warm cache
 # ============================================================
 def warm_cache(max_symbols=200, force=False):
     conn = db.get_conn()
@@ -453,7 +568,6 @@ def warm_cache(max_symbols=200, force=False):
     failed = 0
     for i, sym in enumerate(todo, 1):
         try:
-            # When force=True, bypass cache entirely so we recompute + store
             r = analyze_symbol(sym, use_cache=not force)
             if "error" in r:
                 failed += 1
@@ -501,6 +615,10 @@ def _print_symbol(result):
         print("  CURRENT SETUP:")
         print(f"    signal {cs['signal_date']}  entry {cs['entry']}  "
               f"stop {cs['stop']}  target3R {cs['target_3r']}")
+        if cs.get("mother_type"):
+            print(f"    mother bar: {cs['mother_type']}  "
+                  f"body {cs['mother_body_ratio']}  "
+                  f"range {cs['mother_range_atr']}x ATR")
     else:
         print("  CURRENT SETUP: none triggered today")
     print()
@@ -516,6 +634,29 @@ def _print_symbol(result):
     print(f"    MAE R: p5={h['p5_mae_r']}  p50={h['median_mae_r']}  "
           f"p95={h['p95_mae_r']}")
     print(f"    outcomes: {h['outcome_mix']}")
+    print()
+    cs = result.get("candle_stats") or {}
+    if cs:
+        print("  CANDLE BEHAVIOUR (mother bar classification):")
+        print(f"    {'TYPE':<14} {'N':<5} {'TRIG':<5} "
+              f"{'P1R':<7} {'P2R':<7} {'P3R':<7} "
+              f"{'MFE':<7} {'MAE':<7}")
+        for mtype, s in sorted(cs.items(),
+                               key=lambda x: -x[1]["n_setups"]):
+            def _f(v, dp=2):
+                if v is None:
+                    return "—"
+                return f"{v:.{dp}f}"
+            def _p(v):
+                if v is None:
+                    return "—"
+                return f"{v*100:.0f}%"
+            print(f"    {mtype:<14} {s['n_setups']:<5} "
+                  f"{s['n_triggered']:<5} "
+                  f"{_p(s['p_1r']):<7} {_p(s['p_2r']):<7} "
+                  f"{_p(s['p_3r']):<7} "
+                  f"{_f(s['median_mfe_r']):<7} "
+                  f"{_f(s['median_mae_r']):<7}")
 
 
 def _print_universe(out):
@@ -549,8 +690,7 @@ def _print_sector(out):
           f"symbols cached · {out['n_symbols_missing']} missing")
     print("=" * 100)
     print(f"{'SECTOR':<22} {'syms':<5} {'n':<5} {'trig':<5} "
-          f"{'P1R':<6} {'P2R':<6} {'P3R':<6} "
-          f"{'MFE':<6} {'MAE':<6}")
+          f"{'P1R':<6} {'P2R':<6} {'P3R':<6} {'MFE':<6} {'MAE':<6}")
     for r in out["sectors"]:
         def _f(v, dp=2):
             if v is None:
@@ -561,8 +701,7 @@ def _print_sector(out):
                 return "—"
             return f"{v*100:.0f}%"
         print(f"{(r['sector'] or 'Unknown'):<22} "
-              f"{r['n_symbols']:<5} "
-              f"{(r['n_setups'] or 0):<5} "
+              f"{r['n_symbols']:<5} {(r['n_setups'] or 0):<5} "
               f"{(r['n_triggered'] or 0):<5} "
               f"{_p(r['p_1r_given_trigger']):<6} "
               f"{_p(r['p_2r_given_trigger']):<6} "

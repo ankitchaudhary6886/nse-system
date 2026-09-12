@@ -17,16 +17,17 @@
 ## B. INSTRUCTIONS  (chronological)
 
 ### Session 1 — 2026-09-12 (morning)
-- **I1**–**I7** as previously logged.
+I1–I7 as logged.
 
 ### Session 2 — 2026-09-12 (midday → evening)
-- **I8**–**I34** as previously logged.
+I8–I34 as logged.
 
 ### Session 2 (continued) — 2026-09-12 (evening)
 - **I35** Proceed with ID44 (fundamentals fix). Step 1: probe TV.
-- **I36** Step 2: rewrite fetcher, add derived fields, quality-only
-          Multibagger.
+- **I36** Step 2: rewrite fetcher, quality-only Multibagger.
 - **I37** Fix score outlier bug — percentile scoring.
+- **I38** Proceed with Phase 3 + Phase 4. Start Phase 3 with ID47
+          (candle behaviour analytics).
 
 ---
 
@@ -37,12 +38,35 @@ D1–D6 as previously logged.
 
 ## D. IDEAS
 
-### ID1–ID43 as previously logged.
-### ID44 — Fundamentals data fix · **DONE** (863 rows, all core fields)
-### ID45 — Score normalization · **DONE this batch**
-Percentile ranks replace raw-value scores. Outliers no longer dominate.
-### ID46 — Signature matching · **PLANNED (Phase 3)**
-### ID47 — Candle feature statistics · **PLANNED (Phase 3)**
+### ID1–ID45 as previously logged.
+
+### ID46 — Signature matching · **PLANNED (Phase 3, next)**
+Find the N closest historical setups across ALL symbols to today's
+live setup. Show pooled stats. Requires a global historical-setup table
+built once (background job).
+
+### ID47 — Candle behaviour analytics · **DONE this batch**
+Mother bar of every historical setup is classified (inside / hammer /
+inverse hammer / doji / wide / normal), grouped, and hit rates computed
+per category. Current setup is matched against its category.
+
+### ID48 — Pattern condition transparency · **PLANNED (Phase 3)**
+Show per-condition pass/fail on every pattern tag. Currently patterns
+only report aggregate score.
+
+### ID49 — Time-machine chart markers · **PLANNED (Phase 3)**
+Historical pattern signals overlaid on the chart, coloured by outcome.
+Click a marker → that historical setup's details.
+
+### ID50 — Compare mode · **PLANNED (Phase 3)**
+Multi-select 2-4 stocks → side-by-side metrics table.
+
+### ID51 — Unified stock card · **PLANNED (Phase 3)**
+One card component used everywhere. Currently three card builders exist.
+
+### ID52 — Data source plugins · **PLANNED (Phase 4)**
+Standard interface for TradingView / Yahoo / NSE / Chartink / ScanX /
+screener.in. Auto-discovery, fallback chain, health dashboard.
 
 ---
 
@@ -52,7 +76,7 @@ IM1–IM6 as previously logged.
 ---
 
 ## F. FEATURES COMPLETED
-Prior list + **FDF** (fundamentals v5) + **FPS** (percentile scoring).
+Prior list + **FCA** (candle behaviour analytics).
 
 ---
 
@@ -61,29 +85,31 @@ Prior list + **FDF** (fundamentals v5) + **FPS** (percentile scoring).
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R27 | Rules                    | Active       |
-| I1–I37 | Instructions             | Applied      |
+| I1–I38 | Instructions             | Applied      |
 | ID44  | Fundamentals fix          | DONE         |
 | ID45  | Score normalization       | DONE         |
-| ID46  | Signature matching        | PLANNED P3   |
-| ID47  | Candle feature stats      | PLANNED P3   |
+| ID47  | Candle behaviour          | DONE         |
+| ID46  | Signature matching        | NEXT (P3)    |
+| ID48  | Pattern transparency      | PLANNED P3   |
+| ID49  | Time-machine markers      | PLANNED P3   |
+| ID50  | Compare mode              | PLANNED P3   |
+| ID51  | Unified stock card        | PLANNED P3   |
+| ID52  | Data source plugins       | PLANNED P4   |
 
 ---
 
 ## H. REMAINING / LEFT
 
-### Immediate NEXT
-- Growth data source for Multibagger (Phase 4 / ID32).
-
-### Phase 3
-- ID46 Signature matching
-- ID47 Candle behaviour analytics
-- ID30 Pattern transparency
-- ID31 Time-machine chart markers
-- ID36 Compare mode
-- ID33 Finish unified stock card rollout
+### Phase 3 (this session)
+- ID46 Signature matching — NEXT
+- ID48 Pattern transparency
+- ID49 Time-machine chart markers
+- ID50 Compare mode
+- ID51 Unified stock card
 
 ### Phase 4
-- ID32 Data source plugin system
+- ID52 Data source plugin system
+- Growth data source integration
 
 ### Deferred
 - Settings `.env` / admin creds rotation

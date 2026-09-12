@@ -338,7 +338,33 @@ route fix, editor, backtest sandbox.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 ---
+### #051 · TV column probe (ID44 step 1)
+- Status: DEPLOYED · VERIFIED
 
+### #052 · Fundamentals v5 + schema migration (ID44 step 2)
+- Result: 863 rows, all core fields populated; Multibagger 98 picks.
+- Status: DEPLOYED · VERIFIED
+
+### #053 · Percentile scoring (ID45)
+- Result: scores in 0-100 range (was 20-1850).
+- Status: DEPLOYED · VERIFIED
+
+### #054 · Candle behaviour analytics (ID47)
+- Files: `research_cockpit.py`, `terminal/static/research.js`
+- What:
+  - `_classify_mother_bar()` — classifies each historical setup's
+    mother bar (inside / hammer / inv_hammer / doji / wide / normal)
+    with shape metrics (body_ratio, wick ratios, close_position,
+    range_atr, is_bull).
+  - `_candle_stats()` — groups setups by mtype, computes per-category
+    hit rates and median MFE/MAE.
+  - Current setup also gets its mother bar classified.
+  - Cache version bumped to 3 (auto-invalidates).
+  - UI: new "Candle behaviour" table in the Research Cockpit, with
+    the current setup's category highlighted.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
 ---
 
 ## HOW NEW SESSIONS USE THIS
