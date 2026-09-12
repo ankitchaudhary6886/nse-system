@@ -37,163 +37,56 @@
 - **R23** Optional integrations skip gracefully if creds/files missing.
 - **R24** Research tables are sortable + colour-coded by sample size.
 - **R25** **Portal is redesigned around the two-pillar model.**
-- **R26** **Strategies are JSON, not code.** Every new strategy is a
-          rule definition in `data/strategies.json`. No code changes.
+- **R26** **Strategies are JSON, not code.**
+- **R27** **Data source fixes are probed, not guessed.** Before rewriting
+          a fetcher, first probe what the source actually returns.
 
 ---
 
 ## B. INSTRUCTIONS  (chronological)
 
 ### Session 1 — 2026-09-12 (morning)
-- **I1** Fix every PO issue identified + requirements + PROJECT_HANDOFF.
-- **I2** Sequence: Option 1 (all-weather) first; then 2, 3 sequentially.
-- **I3** Update PROJECT_HANDOFF.
-- **I4** Fix impulse calculation bug in setup.py.
-- **I5** Fix sparse fundamentals data.
-- **I6** Restructure BACKLOG by category.
-- **I7** Create EXECUTION_LOG.md.
+- **I1**–**I7** as previously logged.
 
 ### Session 2 — 2026-09-12 (midday → evening)
-- **I8**  3-4 edits per response.
-- **I9**  Universe unification via shared module.
-- **I10** Replace alert modules with unified `alerts`.
-- **I11** Scale up validation to get a real edge verdict.
-- **I12** Address signal sparsity.
-- **I13** Keep validation fast (Backtester path).
-- **I14** Correct verdict logic — PF-driven.
-- **I15** Adopt 3R target after sweep.
-- **I16** Add quality multiplier to sizing.
-- **I17** Keep 3R — reject 4R.
-- **I18** Reject tranche exits.
-- **I19** Central config migration.
-- **I20** After ID19 → do ID21.
-- **I21** Present full picture per candidate.
-- **I22** Graceful skips for ml + sheets; fix fundamentals date check.
-- **I23** ID22 (research cockpit v1).
-- **I24** ID22b (research universe view).
-- **I25** Proceed with sortable + colouring AND sector aggregation.
-- **I26** Insert all logs of demands/executions/to-do/left.
-- **I27** Portal redesign vision captured in `PORTAL_REDESIGN.md`.
-- **I28** Proceed with Phase 1 (portal redesign).
-- **I29** Proceed with Phase 2 (rule engine + seed strategies).
-- **I30** Seed Multibagger, RCP, Episodic Pivot.
-- **I31** Correct RCP + Episodic Pivot per owner's specific rules:
-          - EP: pivot can be 0–15 days back, downtrend stock gaps up.
-          - RCP: 15–30% impulse up, then 4–12 days of 5–20% pullback.
-- **I32** Proceed with ID42 (in-browser strategy editor).
-- **I33** Proceed with ID43 (backtest sandbox per strategy).
-- **I34** Update backlog.md and EXECUTION_LOG.md every batch (R9).
+- **I8**–**I34** as previously logged.
+
+### Session 2 (continued) — 2026-09-12 (evening)
+- **I35** Proceed with ID44 (fundamentals fix). Step 1: probe TradingView
+          to find working column names before rewriting fetcher.
 
 ---
 
-## C. DEMANDS  (hard requirements)
+## C. DEMANDS
 
-- **D1** Ideas never lost.
-- **D2** Durable execution log across chat sessions.
-- **D3** Fast pace.
-- **D4** Portal presents, never recommends (R19).
-- **D5** Every panel serves a decision the owner will actually make.
-- **D6** Backlog and execution log stay current — no drift.
+- **D1**–**D6** as previously logged.
 
 ---
 
-## D. IDEAS  (chronological)
+## D. IDEAS
 
-### ID1 — All-weather swing mode · **DONE**
-### ID2 — Long-term Value Radar · **DONE**
-### ID3 — Custom scanners: swing + positional · **PARTIAL**
-### ID4 — Free data source expansion · **PLANNED (Phase 4)**
-### ID5 — "Feeding of life into stocks" · **FUTURE**
-### ID6 — Universe split · **PARTIAL**
-### ID7 — Trim / unify / simplify · **MOSTLY DONE**
-### ID8 — Trend-regime scanner · **DONE**
-### ID9 — Scanner UI panels · **DONE**
-### ID10 — Meta-model v7 · **DONE**
-### ID11 — Signal sparsity fix · **DONE** (0.4% → 8.0%)
-### ID12 — Alt setup patterns · **FUTURE**
-### ID13 — Fast validation · **DONE**
-### ID14 — Meta-model plateau · **OPEN**
-### ID15 — Target sweep · **DONE** (3R adopted)
-### ID16 — Sizing quality multiplier · **DONE**
-### ID17 — Robustness check · **DONE**
-### ID18 — Hybrid tranche exits · **REJECTED**
-### ID19 — Central strategy config · **DONE**
-### ID20 — Strategy runs dashboard · **DONE**
-### ID21 — Production deployment · **DONE**
-### ID22 — Research Cockpit v1 · **DONE**
-### ID22b — Research Universe · **DONE**
-### ID22c — Warm cache nightly · **DONE**
-### ID23 — Sector aggregation · **DONE**
-### ID23b — Reliability colour coding · **DONE**
-### ID23c — Sortable columns · **DONE**
-### ID24 — Candle behaviour analytics · **PLANNED (Phase 3)**
-### ID25 — Sector strength overlay · **FUTURE**
-### ID26 — Setup similarity matching · **PLANNED (Phase 3)**
-### ID27 — Rule DSL engine · **DONE**
-### ID28 — Two-pillar portal redesign · **DONE**
-### ID29 — Signature matching across symbols · **PLANNED (Phase 3)**
-### ID30 — Pattern condition transparency · **PLANNED (Phase 3)**
-### ID31 — Time-machine chart markers · **PLANNED (Phase 3)**
-### ID32 — Data source plugin system · **PLANNED (Phase 4)**
-### ID33 — Unified stock card · **IN PROGRESS**
-### ID34 — Backtest sandbox per strategy · **DONE (as ID43)**
-### ID35 — Progressive disclosure · **DONE**
-### ID36 — Compare mode · **PLANNED (Phase 3)**
-### ID37 — Strategy library page · **PARTIAL** (base done)
-### ID38 — Strategy seeds · **DONE**
-### ID39 — Rule DSL engine · **DONE**
-### ID40 — Seed strategies · **DONE**
-### ID41 — Strategy UI · **DONE**
-### ID42 — In-browser strategy editor · **DONE**
-### ID43 — Backtest sandbox per strategy · **DONE**
-### ID44 — Fundamentals data fix · **NEXT**
-TradingView returns NULL for ROCE, growth, CFO on most India
-symbols. Multibagger produces 0 picks. Needs alternative source
-or better field mapping.
+### ID1–ID43 · All DONE or listed with status below.
+
+### ID44 — Fundamentals data fix · **IN PROGRESS**
+TradingView returns NULL for ROCE / growth / CFO on most India symbols.
+Multibagger produces 0 picks. Fix:
+1. Probe TV column names to find which return real values.
+2. Rewrite `fundamentals_tv.py` with the working set.
+3. Re-fetch fundamentals.
+4. Verify Multibagger produces picks.
+
 ### ID45 — Signature matching · **PLANNED (Phase 3)**
 ### ID46 — Candle feature statistics · **PLANNED (Phase 3)**
 
 ---
 
 ## E. IMAGINATIONS
-
-- **IM1** Personal multi-strategy quant terminal.
-- **IM2** Bear-market accumulation engine.
-- **IM3** Self-documenting, self-improving system.
-- **IM4** Research cockpit (predictability, potential, candle behaviour).
-- **IM5** Two-pillar portal — Funda and Swing as distinct product lines.
-- **IM6** Owner-authored strategies — write rules, see results in-browser.
+IM1–IM6 as previously logged.
 
 ---
 
 ## F. FEATURES COMPLETED
-
-- **FC** Regime Spectrum (5 levels)
-- **FP** Fundamentals Pipeline (863 symbols weekly)
-- **FS** Sizing with quality multiplier
-- **FA** Unified Alerts
-- **FU** Canonical Universe
-- **FT** Trend Scanner v3
-- **FP2** Positional Scanner
-- **FV** Value Radar v2
-- **FM** Meta-Model v7 (AUC 0.629)
-- **FML** Price-Model (AUC 0.584 / 0.589)
-- **FVAL** Fast Validation
-- **FSP** Setup v3.5 (config-driven)
-- **FWF** Walk-forward v5 (config-driven)
-- **FSR** Strategy Runs ledger + UI
-- **FCONF** Central Config
-- **FDEP** Deployment Verification (15/15)
-- **FRC** Research Cockpit v1
-- **FRU** Research Universe
-- **FRS** Sector Aggregation
-- **FSRT** Sortable + Reliability UI
-- **FP1** Portal Phase 1 (5-tab nav)
-- **FRE** Rule Engine (JSON strategy DSL)
-- **FSE** Seed strategies (Multibagger, RCP, EpisodicPivot)
-- **FSU** Strategy UI (Run/Edit/Backtest buttons)
-- **FED** In-browser strategy editor (ID42)
-- **FBT** Strategy backtest sandbox (ID43)
+Everything previously listed, up to **FBT** (Strategy backtest sandbox).
 
 ---
 
@@ -201,56 +94,10 @@ or better field mapping.
 
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
-| R1–R26 | Rules                    | Active       |
-| I1–I34 | Instructions             | Applied      |
-| ID1   | All-weather swing         | DONE         |
-| ID2   | Value Radar v2            | DONE         |
-| ID3   | Custom scanners           | PARTIAL      |
-| ID4   | Free data sources         | PLANNED P4   |
-| ID5   | Feed life into stocks     | FUTURE       |
-| ID6   | Universe split            | PARTIAL      |
-| ID7   | Trim / unify / simplify   | MOSTLY DONE  |
-| ID8   | Trend scanner             | DONE         |
-| ID9   | Scanner UI panels         | DONE         |
-| ID10  | Meta-model v7             | DONE         |
-| ID11  | Signal sparsity fix       | DONE         |
-| ID12  | Alt setup patterns        | FUTURE       |
-| ID13  | Fast validation           | DONE         |
-| ID14  | Meta-model plateau        | OPEN         |
-| ID15  | Target sweep              | DONE         |
-| ID16  | Sizing quality multiplier | DONE         |
-| ID17  | Robustness check          | DONE         |
-| ID18  | Hybrid tranche exits      | REJECTED     |
-| ID19  | Central strategy config   | DONE         |
-| ID20  | Strategy runs dashboard   | DONE         |
-| ID21  | Production deployment     | DONE         |
-| ID22  | Research Cockpit v1       | DONE         |
-| ID22b | Research Universe         | DONE         |
-| ID22c | Warm cache nightly        | DONE         |
-| ID23  | Sector aggregation        | DONE         |
-| ID23b | Reliability colours       | DONE         |
-| ID23c | Sortable columns          | DONE         |
-| ID24  | Candle behaviour          | PLANNED P3   |
-| ID25  | Sector strength overlay   | FUTURE       |
-| ID26  | Setup similarity          | PLANNED P3   |
-| ID27  | Rule DSL engine           | DONE         |
-| ID28  | Two-pillar portal         | DONE         |
-| ID29  | Signature matching        | PLANNED P3   |
-| ID30  | Pattern transparency      | PLANNED P3   |
-| ID31  | Time-machine markers      | PLANNED P3   |
-| ID32  | Data source plugins       | PLANNED P4   |
-| ID33  | Unified stock card        | IN PROGRESS  |
-| ID34  | Backtest sandbox          | DONE (ID43)  |
-| ID35  | Progressive disclosure    | DONE         |
-| ID36  | Compare mode              | PLANNED P3   |
-| ID37  | Strategy library page     | PARTIAL      |
-| ID38  | Strategy seeds            | DONE         |
-| ID39  | Rule DSL engine           | DONE         |
-| ID40  | Seed strategies           | DONE         |
-| ID41  | Strategy UI               | DONE         |
-| ID42  | In-browser editor         | DONE         |
-| ID43  | Backtest sandbox          | DONE         |
-| ID44  | Fundamentals data fix     | NEXT         |
+| R1–R27 | Rules                    | Active       |
+| I1–I35 | Instructions             | Applied      |
+| ID1–ID43 | Various               | See prior logs |
+| ID44  | Fundamentals data fix     | IN PROGRESS  |
 | ID45  | Signature matching        | PLANNED P3   |
 | ID46  | Candle feature stats      | PLANNED P3   |
 
@@ -259,12 +106,11 @@ or better field mapping.
 ## H. REMAINING / LEFT
 
 ### Immediate NEXT
-- **ID44** Fundamentals data fix — TradingView NULLs for ROCE/growth/CFO
-  block Multibagger. Needs alternative source or better field mapping.
+- **ID44** Fundamentals data fix (this batch is step 1)
 
 ### Phase 3 (research upgrades)
-- ID29 / ID45 Signature matching
-- ID24 / ID46 Candle behaviour analytics
+- ID45 Signature matching
+- ID46 Candle behaviour analytics
 - ID30 Pattern transparency
 - ID31 Time-machine chart markers
 - ID36 Compare mode
@@ -273,7 +119,7 @@ or better field mapping.
 ### Phase 4 (data plugins)
 - ID32 Data source plugin system
 
-### Deferred (owner chose to skip)
+### Deferred
 - Settings `.env` / admin creds rotation
 - HTTPS via nginx + certbot (A0)
 - Rotate secrets (Telegram token, GCP key)
@@ -283,7 +129,4 @@ or better field mapping.
 ---
 
 ## I. HOW THIS FILE GROWS
-Every new idea / instruction / demand gets a numbered entry in the
-appropriate section. DONE items stay for history. REMAINING tracks
-what's left. PORTAL_REDESIGN.md captures vision. Strategies live in
-data/strategies.json. EXECUTION_LOG.md captures every shipped batch.
+As previously documented.

@@ -260,3 +260,43 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 2. Read `EXECUTION_LOG.md` — exactly what shipped.
 3. Read `PORTAL_REDESIGN.md` — vision & roadmap.
 4. Continue from the last entry's status.
+
+
+
+# EXECUTION LOG — durable record of every code batch
+
+Purpose: survives chat migrations. New session reads `backlog.md` +
+`EXECUTION_LOG.md` + `PORTAL_REDESIGN.md` and knows the full history.
+
+Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
+
+---
+
+## SESSION 1 — 2026-09-12 (morning)
+#001–#014 — as logged in prior versions. PO fixes, setup bug fix,
+all-weather, value radar, logging, handoff.
+
+## SESSION 2 — 2026-09-12 (midday → evening)
+#015–#041 — as logged. Feature C, value radar v2, sizing, positional,
+alerts, universe helper, trend scanner, target sweep, strategy config,
+deployment, research cockpit, sector aggregation.
+
+## SESSION 2 (continued) — 2026-09-12 (evening)
+#042–#050 — as logged. Portal Phase 1, rule engine, gap-up features,
+route fix, editor, backtest sandbox.
+
+### #051 · TV column probe (ID44 step 1)
+- Files: `tv_column_probe.py` (new)
+- What: probes ~100 candidate TradingView column names against 30 NSE
+  symbols. Reports which return real values, which are accepted but
+  null, which are rejected. Data-driven basis for rewriting
+  `fundamentals_tv.py`.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
+
+## HOW NEW SESSIONS USE THIS
+1. Read `backlog.md` — rules, instructions, current status.
+2. Read `EXECUTION_LOG.md` — exactly what shipped.
+3. Read `PORTAL_REDESIGN.md` — vision & roadmap.
+4. Continue from the last entry's status.
