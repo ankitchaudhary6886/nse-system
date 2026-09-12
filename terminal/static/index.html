@@ -37,7 +37,6 @@
     font-size:10px; letter-spacing:1.4px; color:#7f8da9;
     text-transform:uppercase; font-weight:700; }
 
-  /* Strategy runner */
   .strategy-block {
     border: 1px solid rgba(255,255,255,.08);
     border-radius: 14px;
@@ -68,6 +67,17 @@
   .strategy-row:hover { background: rgba(96,165,250,.06); }
   .chk-ok { color:#34d399; font-weight:700; margin-right:2px; }
   .chk-fail { color:#fb7185; font-weight:700; margin-right:2px; }
+
+  /* Modal selects / inputs */
+  #strategyEditorRoot select,
+  #strategyEditorRoot input {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 8px;
+    color: #edf3ff;
+    padding: 6px 8px;
+    font-family: inherit;
+  }
 </style>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -81,20 +91,16 @@
         <div class="brand-subtitle">Momentum Terminal</div>
       </div>
     </div>
-
     <nav class="nav">
       <div class="nav-group">Product lines</div>
       <button class="nav-btn" data-view="funda">💎 Funda</button>
       <button class="nav-btn" data-view="swing">🏄 Swing</button>
-
       <div class="nav-group">Analysis</div>
       <button class="nav-btn active" data-view="research">🔬 Research</button>
-
       <div class="nav-group">Record</div>
       <button class="nav-btn" data-view="ledger">📒 Ledger</button>
       <button class="nav-btn" data-view="system">⚙️ System</button>
     </nav>
-
     <div class="sidebar-footer">
       <div class="mini-label">System</div>
       <div class="mini-value" id="healthStatus">Checking...</div>
@@ -123,13 +129,13 @@
       <div class="metric-card"><span>Market Universe</span><strong id="mUniverse">—</strong></div>
     </div>
 
-    <!-- ================= FUNDA ================= -->
+    <!-- FUNDA -->
     <section id="view-funda" class="view">
       <div class="panel">
         <div class="panel-header">
           <div>
             <h2>🧠 Custom Strategies</h2>
-            <p>Owner-authored rules. Edit in <code>data/strategies.json</code>, run here.</p>
+            <p>Owner-authored rules. Edit or Run directly here.</p>
           </div>
           <span class="badge muted" id="fundamentalStrategyBadge">—</span>
         </div>
@@ -138,10 +144,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>💎 Value Radar</h2>
-            <p>Quality names in downturns — long-term accumulation candidates</p>
-          </div>
+          <div><h2>💎 Value Radar</h2><p>Quality names in downturns — long-term accumulation candidates</p></div>
           <span class="badge muted" id="valueRadarBadge">—</span>
         </div>
         <div class="card-list" id="valueRadarList"><p>Loading...</p></div>
@@ -149,33 +152,25 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>📊 Positional Picks</h2>
-            <p>Quality + trend + value composite. Tiers S/A/B/C.</p>
-          </div>
+          <div><h2>📊 Positional Picks</h2><p>Quality + trend + value composite. Tiers S/A/B/C.</p></div>
           <span class="badge muted" id="positionalBadge">—</span>
         </div>
         <div class="card-list" id="positionalList"><p>Loading...</p></div>
       </div>
 
       <div class="panel" style="margin-top:18px">
-        <div class="panel-header">
-          <div>
-            <h2>🌟 Today's Top Picks</h2>
-            <p>Composite: ML P(WIN) + accumulation + sector RS + delivery</p>
-          </div>
-        </div>
+        <div class="panel-header"><div><h2>🌟 Today's Top Picks</h2><p>Composite: ML P(WIN) + accumulation + sector RS + delivery</p></div></div>
         <div class="card-list" id="picksList"><p>Loading...</p></div>
       </div>
     </section>
 
-    <!-- ================= SWING ================= -->
+    <!-- SWING -->
     <section id="view-swing" class="view">
       <div class="panel">
         <div class="panel-header">
           <div>
             <h2>🧠 Custom Strategies</h2>
-            <p>Owner-authored rules. Edit in <code>data/strategies.json</code>, run here.</p>
+            <p>Owner-authored rules. Edit or Run directly here.</p>
           </div>
           <span class="badge muted" id="swingStrategyBadge">—</span>
         </div>
@@ -184,10 +179,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>🏄 Swing Desk</h2>
-            <p>Forward validation log — includes ALL-WEATHER setups</p>
-          </div>
+          <div><h2>🏄 Swing Desk</h2><p>Forward validation log — includes ALL-WEATHER setups</p></div>
           <button id="runSwingBtn">Run Swing Scan</button>
         </div>
         <div class="table-wrap">
@@ -202,22 +194,14 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>📈 Trend Scanner</h2>
-            <p>Stocks with current price above BOTH EMA50 and EMA200</p>
-          </div>
+          <div><h2>📈 Trend Scanner</h2><p>Stocks with current price above BOTH EMA50 and EMA200</p></div>
           <span class="badge muted" id="trendBadge">—</span>
         </div>
         <div class="card-list" id="trendList"><p>Loading...</p></div>
       </div>
 
       <div class="panel" style="margin-top:18px">
-        <div class="panel-header">
-          <div>
-            <h2>📡 Radar</h2>
-            <p>Momentum / volume / turnaround clusters</p>
-          </div>
-        </div>
+        <div class="panel-header"><div><h2>📡 Radar</h2><p>Momentum / volume / turnaround clusters</p></div></div>
         <div class="radar-layout">
           <div>
             <h3 style="font-size:13px; color:#9fb0cc; margin:0 0 8px;">Momentum</h3>
@@ -235,7 +219,7 @@
       </div>
     </section>
 
-    <!-- ================= RESEARCH ================= -->
+    <!-- RESEARCH -->
     <section id="view-research" class="view active-view">
       <div class="terminal-grid">
         <div class="panel large">
@@ -249,41 +233,23 @@
           <div id="chart"></div>
         </div>
         <div class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>Setup & Sizing</h2>
-              <p>Trigger, stop, target, position size</p>
-            </div>
-          </div>
-          <div class="setup-box" id="setupSummary">
-            <p>Select a stock to inspect setup levels.</p>
-          </div>
-          <div class="news-box">
-            <h3>Latest News</h3>
-            <div class="news-list" id="newsList">No symbol selected.</div>
-          </div>
+          <div class="panel-header"><div><h2>Setup & Sizing</h2><p>Trigger, stop, target, position size</p></div></div>
+          <div class="setup-box" id="setupSummary"><p>Select a stock to inspect setup levels.</p></div>
+          <div class="news-box"><h3>Latest News</h3><div class="news-list" id="newsList">No symbol selected.</div></div>
         </div>
       </div>
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>🔬 Research Cockpit — single symbol</h2>
-            <p>5y of historical setups on this symbol. P(trigger), hit rates, MFE/MAE.</p>
-          </div>
+          <div><h2>🔬 Research Cockpit — single symbol</h2><p>5y of historical setups on this symbol.</p></div>
           <button id="runResearchBtn">Compute for loaded symbol</button>
         </div>
-        <div class="setup-box" id="researchBox">
-          <p>Load a symbol and press "Compute" to see historical behaviour.</p>
-        </div>
+        <div class="setup-box" id="researchBox"><p>Load a symbol and press "Compute".</p></div>
       </div>
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>🌐 Research Universe — today's setups + historical stats</h2>
-            <p>Sortable. Colour-coded by sample size. Click a symbol to inspect.</p>
-          </div>
+          <div><h2>🌐 Research Universe</h2><p>Today's setups + historical stats. Sortable.</p></div>
           <div style="display:flex; gap:6px;">
             <button id="refreshResearchUniverse">Refresh</button>
             <button id="computeMissingBtn">Compute Missing</button>
@@ -295,10 +261,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>🏭 Research Sectors — pooled by sector</h2>
-            <p>All setups from every cached symbol, grouped by sector. Real pooling, not averages of averages.</p>
-          </div>
+          <div><h2>🏭 Research Sectors</h2><p>Pooled by sector. Real pooling.</p></div>
           <button id="refreshResearchSector">Refresh</button>
         </div>
         <div class="level" id="researchSectorBadge" style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
@@ -307,10 +270,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>🎯 Pattern Scanner</h2>
-            <p>HTF · Asc Triangle · Double Bottom · Inv H&S · H&S Top warning</p>
-          </div>
+          <div><h2>🎯 Pattern Scanner</h2><p>HTF · Asc Triangle · Double Bottom · Inv H&S · H&S Top warning</p></div>
           <button id="runPatternScan">Run Full Scan</button>
         </div>
         <div class="level" id="patternStatus"><span>Status</span><strong>loading…</strong></div>
@@ -319,10 +279,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div>
-            <h2>🧪 Screener</h2>
-            <p>Baseline + VCP checks — any symbol, DB-first</p>
-          </div>
+          <div><h2>🧪 Screener</h2><p>Baseline + VCP checks</p></div>
           <button id="runScreenerBtn">Run Screener</button>
         </div>
         <div class="terminal-grid" style="margin-top:10px;">
@@ -332,7 +289,7 @@
       </div>
     </section>
 
-    <!-- ================= LEDGER ================= -->
+    <!-- LEDGER -->
     <section id="view-ledger" class="view">
       <div class="terminal-grid">
         <div class="panel">
@@ -358,7 +315,7 @@
       </div>
     </section>
 
-    <!-- ================= SYSTEM ================= -->
+    <!-- SYSTEM -->
     <section id="view-system" class="view">
       <div class="panel">
         <div class="panel-header">
@@ -373,7 +330,6 @@
           <div class="level"><span>Portal redesign vision</span><strong>PORTAL_REDESIGN.md</strong></div>
           <div class="level"><span>Instructions &amp; rules</span><strong>backlog.md</strong></div>
           <div class="level"><span>Batch history</span><strong>EXECUTION_LOG.md</strong></div>
-          <div class="level"><span>Project overview</span><strong>PROJECT_HANDOFF.md</strong></div>
           <div class="level"><span>Strategies</span><strong>data/strategies.json</strong></div>
         </div>
       </div>
@@ -387,5 +343,6 @@
 <script src="/static/research_universe.js"></script>
 <script src="/static/research_sector.js"></script>
 <script src="/static/strategies.js"></script>
+<script src="/static/strategy_editor.js"></script>
 </body>
 </html>

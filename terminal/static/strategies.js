@@ -1,5 +1,5 @@
 // Strategy Runner — reads /api/strategies, runs a strategy, shows picks.
-// Used on both Funda and Swing tabs.
+// Also exposes Edit → strategy_editor.js
 
 async function loadStrategyListFor(kind) {
   const container = document.getElementById(kind + "StrategyList");
@@ -41,16 +41,19 @@ function _buildStrategyCard(strategy, kind) {
         <div class="strategy-desc">${strategy.description || ""}</div>
         <div class="strategy-cond">${condSummary}</div>
       </div>
-      <button class="strategy-run-btn" data-name="${strategy.name}">Run</button>
+      <div style="display:flex; gap:8px;">
+        <button class="strategy-edit-btn" data-name="${strategy.name}" style="padding:8px 14px; border-radius:10px; background:rgba(255,255,255,.05); color:#9fb0cc; border:1px solid rgba(255,255,255,.15); font-weight:700; cursor:pointer; font-size:12px;">Edit</button>
+        <button class="strategy-run-btn" data-name="${strategy.name}">Run</button>
+      </div>
     </div>
     <div class="strategy-picks" id="strat-picks-${_safeId(strategy.name)}">
       <p class="strategy-hint">Press <b>Run</b> to compute today's picks.</p>
     </div>`;
-  const btn = wrap.querySelector(".strategy-run-btn");
-  btn.addEventListener("click", async () => {
+  const runBtn = wrap.querySelector(".strategy-run-btn");
+  runBtn.addEventListener("click", async () => {
     const box = document.getElementById("strat-picks-" + _safeId(strategy.name));
-    btn.textContent = "Running...";
-    btn.disabled = true;
+    runBtn.textContent = "Running...";
+    runBtn.disabled = true;
     box.innerHTML = "<p>Computing across universe...</p>";
     try {
       const r = await api(`/api/strategies/${encodeURIComponent(strategy.name)}/run?limit=30`);
@@ -63,8 +66,14 @@ function _buildStrategyCard(strategy, kind) {
     } catch (e) {
       box.innerHTML = `<p class="strategy-error">${e.message}</p>`;
     }
-    btn.textContent = "Run";
-    btn.disabled = false;
+    runBtn.textContent = "Run";
+    runBtn.disabled = false;
+  });
+  const editBtn = wrap.querySelector(".strategy-edit-btn");
+  editBtn.addEventListener("click", () => {
+    if (window.openStrategyEditor) {
+      window.openStrategyEditor(strategy.name);
+    }
   });
   return wrap;
 }
@@ -128,7 +137,6 @@ async function seedStrategies() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Seed on first load if none exist, then render both tabs
   seedStrategies().then(() => {
     loadStrategyListFor("fundamental");
     loadStrategyListFor("swing");
