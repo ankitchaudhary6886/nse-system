@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="14.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="15.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -71,6 +71,80 @@ def health(user: str = Depends(verify_user)):
     conn.close()
     return {"ok": True, "prices_rows": n,
             "time": dt.datetime.now().isoformat()}
+
+
+@app.get("/api/deployment-check")
+def deployment_check(user: str = Depends(verify_user)):
+    conn = get_conn()
+    out = {"checks": [], "fails": 0}
+    today = dt.date.today()
+
+    def add(ok, label, detail=""):
+        out["checks"].append({"ok": ok, "label": label, "detail": detail})
+        if not ok:
+            out["fails"] += 1
+
+    for table, col, max_days in [
+        ("prices_daily", "date", 5),
+        ("technicals_daily", "date", 5),
+        ("universe_broad", "updated_at", 30),
+        ("fundamentals", "uploaded_at", 30),
+        ("swing_signals", "signal_date", 14),
+        ("trend_candidates", "date", 5),
+        ("value_radar", "date", 30),
+        ("positional_picks", "date", 30),
+        ("pwin_daily", "date", 14),
+    ]:
+        try:
+            r = conn.execute(f"SELECT MAX({col}) FROM {table}").fetchone()
+            latest = r[0] if r else None
+            if not latest:
+                add(False, table, "empty")
+                continue
+            d = dt.date.fromisoformat(str(latest)[:10])
+            age = (today - d).days
+            n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            add(age <= max_days, table,
+                f"latest {latest} ({age}d), {n} rows")
+        except Exception as e:
+            add(False, table, f"err: {e}")
+
+    # strategy_runs
+    try:
+        n = conn.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0]
+        add(n > 0, "strategy_runs", f"{n} runs")
+    except Exception as e:
+        add(False, "strategy_runs", str(e))
+
+    # today's signals
+    try:
+        iso = today.isoformat()
+        n = conn.execute(
+            "SELECT COUNT(*) FROM swing_signals WHERE signal_date=?",
+            (iso,)).fetchone()[0]
+        add(True, "swing signals today", f"{n} signals")
+        n2 = conn.execute(
+            "SELECT COUNT(*) FROM trend_candidates WHERE date=?",
+            (iso,)).fetchone()[0]
+        add(True, "trend candidates today", f"{n2} stocks")
+    except Exception as e:
+        add(False, "today's activity", str(e))
+
+    conn.close()
+
+    # alerts
+    try:
+        from alerts import _creds
+        tok, chat = _creds()
+        add(bool(tok and chat), "telegram creds",
+            "secret file" if tok else "MISSING")
+    except Exception as e:
+        add(False, "telegram creds", str(e))
+
+    out["summary"] = ("ALL CHECKS PASSED" if out["fails"] == 0
+                      else f"{out['fails']} checks failed")
+    out["time"] = dt.datetime.now().isoformat(timespec="seconds")
+    return out
 
 
 @app.get("/api/regime")

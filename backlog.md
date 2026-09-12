@@ -21,37 +21,26 @@
 - **R10** No pausing; keep momentum.
 - **R11** 3-4 file edits per response when possible.
 - **R12** Execute new ideas only AFTER the machine is functionally complete.
-- **R13** Fast feedback loops (funnels/diags ~5s), not multi-minute waits.
-- **R14** Verdicts are PF-driven. A 2R system with 40% WR and PF >=1.2 is
-          tradeable. Do not dismiss on win rate alone.
-- **R15** Parameter changes are swept, not picked. One variable at a time,
-          measure PF / expectancy / DD.
-- **R16** Non-monotonic sweep results are NOISE, not signal. Prefer the
-          simpler/earlier parameter when in doubt.
-- **R17** Multi-window walk-forward is the ground truth. A parameter set
-          that only works on one window is overfit.
-- **R18** When two approaches give statistically equivalent PF/expectancy
-          but one is more complex, keep the simpler one.
-- **R19** **System identifies. Owner decides.** No prescribed exits,
-          targets, sizing, or signals. The tool presents data.
-- **R20** Log every owner expectation/instruction in BACKLOG immediately,
-          even mid-conversation.
-- **R21** Every candidate presented with the full picture — predictability,
+- **R13** Fast feedback loops (~5s), not multi-minute waits.
+- **R14** Verdicts are PF-driven.
+- **R15** Parameters are swept, not picked.
+- **R16** Non-monotonic sweeps = noise. Prefer simpler parameter.
+- **R17** Multi-window WF is ground truth.
+- **R18** Equivalent results → simpler wins.
+- **R19** System identifies. Owner decides. No prescribed exits,
+          targets, sizing, or signals.
+- **R20** Log every owner instruction in BACKLOG immediately.
+- **R21** Every candidate presented with full picture — predictability,
           potential, historical hit rate at multiple R levels, candle
           behaviour, sector context.
-- **R22** All tunable parameters live in `strategy_config.py`. Edit one
-          file to change behavior.
+- **R22** All tunable parameters live in `strategy_config.py`.
 
 ---
 
 ## B. INSTRUCTIONS
 ### 2026-09-12
-I1–I18 (see EXECUTION_LOG)
-I19 Central config migration (this batch).
-I20 After ID19 → do ID21 (production deployment).
-I21 For every setup shown, present everything the owner needs to judge:
-     predictability, potential, historical hit rate at multiple R levels,
-     candle behaviour, sector context.
+I1–I21 (see EXECUTION_LOG)
+I22 ID21 deployment complete → verify → then ID22 (research cockpit).
 
 ---
 
@@ -62,34 +51,28 @@ D1 Ideas never lost · D2 Durable log · D3 Fast pace.
 
 ## D. IDEAS
 
-### ID1–ID10 · DONE
-### ID11 — Signal sparsity fix · **DONE** (0.4% → 8.0%)
-### ID12 — Alt setup patterns · **FUTURE**
-### ID13 — Fast validation · **DONE**
-### ID14 — Meta-model plateau · **OPEN** (AUC 0.629 stable)
-### ID15 — Target sweep · **DONE** (3R as default reference)
-### ID16 — Sizing quality multiplier · **DONE**
-### ID17 — Robustness check · **DONE** (PF 1.73 / 1.43 / 1.16 across windows)
-### ID18 — Hybrid tranche exits · **REJECTED** (per R16/R18)
-### ID19 — Central strategy config · **DONE this batch**
-All tunable parameters in `strategy_config.py`. Migrated modules:
-setup, backtest, scanner, sizing, all_weather.
+### ID1–ID20 · DONE / partial (see EXECUTION_LOG)
 
-### ID20 — Strategy runs dashboard · **DONE**
-### ID21 — Production deployment · **NEXT**
-Final consolidated sweep across windows, lock reference params,
-fresh full scan, verify first real signals land.
+### ID19 — Central strategy config · **DONE**
+All parameters in `strategy_config.py`. Behavior unchanged (verified:
+same 185 trades / PF 1.43).
 
-### ID22 — Research cockpit: full presentation · **PLANNED**
+### ID21 — Production deployment · **IN PROGRESS**
+- `verify_deployment.py` — CLI check + `--scan` + `--sweep`
+- `/api/deployment-check` endpoint
+- Deployment panel in Ledger view
+- Next: run `--scan` on VM to populate fresh data, then verify all-green.
+
+### ID22 — Research cockpit · **NEXT (after ID21)**
 For every setup shown, present the full picture:
-- Historical hit rate at +1R / +2R / +3R / +4R (from similar past setups)
+- Historical hit rate at +1R / +2R / +3R / +4R from similar past setups
 - Median time-to-target at each R level
-- Max favorable / adverse excursion distribution
+- Max favorable / adverse excursion distributions
 - Candle behaviour at signal (mother bar, tightness, volume profile)
-- Sector context (sector RS, similar sectors in same state)
+- Sector context (RS, similar sectors in same state)
 - Predictability score (from meta-model, decomposed)
 - Potential score (distance to 52w high, momentum alignment)
-Owner decides which to look at; system does not rank or recommend.
+Owner decides which to examine. No recommendations from the AI.
 
 ---
 
@@ -111,10 +94,11 @@ IM3 Self-documenting system · IM4 Research cockpit (ID22).
 ### FV Value Radar v2 · DONE
 ### FM Meta-Model v7 · DONE (AUC 0.629)
 ### FVAL Fast Validation · DONE
-### FSP Setup v3.5 · DONE (config-driven)
-### FWF Walk-forward v5 · DONE (config-driven)
+### FSP Setup v3.5 · DONE
+### FWF Walk-forward v5 · DONE
 ### FSR Strategy Runs ledger + UI · DONE
-### FCONF Central Config · DONE this batch
+### FCONF Central Config · DONE
+### FDEP Deployment Verification · **DONE this batch**
 
 ---
 
@@ -144,8 +128,8 @@ IM3 Self-documenting system · IM4 Research cockpit (ID22).
 | ID18 | Hybrid tranche exits      | REJECTED     |
 | ID19 | Central strategy config   | DONE         |
 | ID20 | Strategy runs dashboard   | DONE         |
-| ID21 | Production deployment     | NEXT         |
-| ID22 | Research cockpit          | PLANNED      |
+| ID21 | Production deployment     | IN PROGRESS  |
+| ID22 | Research cockpit          | NEXT         |
 
 ---
 
