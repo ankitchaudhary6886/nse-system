@@ -65,11 +65,10 @@ MIN_CONSOLIDATION_DAYS = 2
 # ============================================================
 # Benchmarks — fetch Nifty 50 returns once per scan
 # ============================================================
+_BENCH_CACHE = None
+
+
 def _fetch_benchmark_returns(years=2):
-    """
-    Return pandas Series of daily log returns for ^NSEI.
-    Cached at module level for the duration of one scan.
-    """
     global _BENCH_CACHE
     if _BENCH_CACHE is not None:
         return _BENCH_CACHE
@@ -87,17 +86,10 @@ def _fetch_benchmark_returns(years=2):
     return _BENCH_CACHE
 
 
-_BENCH_CACHE = None
-
-
 # ============================================================
 # Individual filters
 # ============================================================
 def _beta(sym_closes, bench_returns):
-    """
-    Beta = cov(sym_returns, bench_returns) / var(bench_returns)
-    Aligned by taking the tail of matching length.
-    """
     s_rets = pd.Series(sym_closes).pct_change().dropna()
     if len(s_rets) < 60 or len(bench_returns) < 60:
         return None
@@ -110,7 +102,6 @@ def _beta(sym_closes, bench_returns):
 
 
 def _amplitude(df, lookback=5):
-    """Amplitude = (max high - min low) / mean close over N sessions."""
     if len(df) < lookback:
         return None
     seg = df.tail(lookback)
@@ -138,7 +129,10 @@ def _sma(values, period):
 
 
 def _sma_series(values, period, n_points=6):
-    """Return last n_points of rolling SMA values (aligned to bars)."""
+    """
+    Return last `n_points` of rolling SMA values.
+    Ordered oldest → newest.
+    """
     out = []
     for i in range(n_points - 1, -1, -1):
         end = len(values) - i
@@ -150,13 +144,34 @@ def _sma_series(values, period, n_points=6):
     return out
 
 
+def _strictly_increasing(series):
+    """True if every consecutive pair is non-None and strictly rising."""
+    if not series or len(series) < 2:
+        return False
+    for i in range(len(series) - 1):
+        a = series[i]
+        b = series[i + 1]
+        if a is None or b is None:
+            return False
+        if not (a < b):
+            return False
+    return True
+
+
+def _strictly_decreasing(series):
+    if not series or len(series) < 2:
+        return False
+    for i in range(len(series) - 1):
+        a = series[i]
+        b = series[i + 1]
+        if a is None or b is None:
+            return False
+        if not (a > b):
+            return False
+    return True
+
+
 def _ma_trend(closes):
-    """
-    Returns dict:
-      {direction: 'UP'|'DOWN'|None,
-       close, sma10, sma20, sma50,
-       sma10_rising, sma20_rising, sma10_falling, sma20_falling}
-    """
     if len(closes) < 60:
         return None
     close = float(closes[-1])
@@ -167,14 +182,10 @@ def _ma_trend(closes):
         return None
     s10_hist = _sma_series(closes, 10, n_points=6)
     s20_hist = _sma_series(closes, 20, n_points=6)
-    s10_rising = all(v is not None and s10_hist[i] < s10_hist[i + 1]
-                     for i in range(len(s10_hist) - 1))
-    s10_falling = all(v is not None and s10_hist[i] > s10_hist[i + 1]
-                      for i in range(len(s10_hist) - 1))
-    s20_rising = all(v is not None and s20_hist[i] < s20_hist[i + 1]
-                     for i in range(len(s20_hist) - 1))
-    s20_falling = all(v is not None and s20_hist[i] > s20_hist[i + 1]
-                      for i in range(len(s20_hist) - 1))
+    s10_rising = _strictly_increasing(s10_hist)
+    s10_falling = _strictly_decreasing(s10_hist)
+    s20_rising = _strictly_increasing(s20_hist)
+    s20_falling = _strictly_decreasing(s20_hist)
 
     direction = None
     if close > s20 > s50 and s10 > s20 and s10_rising and s20_rising:
@@ -196,18 +207,11 @@ def _ma_trend(closes):
 # Counter-trend retracement
 # ============================================================
 def _counter_trend(df, direction):
-    """
-    UP trend: 2-3 consecutive lower highs (a pause within an uptrend)
-    DOWN trend: 2-3 consecutive higher lows
-    Returns dict with bars count + invalidation flag (>5 days).
-    """
     if len(df) < 6:
         return None
     highs = df["High"].values.astype(float)
     lows = df["Low"].values.astype(float)
     if direction == "UP":
-        # count from most recent backwards, how many consecutive sessions
-        # had a lower high than the prior session.
         n = 0
         for i in range(len(highs) - 1, 0, -1):
             if highs[i] < highs[i - 1]:
@@ -243,8 +247,8 @@ def _force_index(closes, volumes, period):
         return None
     k = 2.0 / (period + 1)
     e = raw[0]
-    for v in raw[1:]:
-        e = v * k + e * (1 - k)
+    for x in raw[1:]:
+        e = x * k + e * (1 - k)
     return float(e)
 
 
@@ -393,7 +397,6 @@ def scan(conn=None, limit=800):
     if own:
         conn = db.get_conn()
 
-    # Reset and fetch benchmark once
     global _BENCH_CACHE
     _BENCH_CACHE = None
     bench = _fetch_benchmark_returns(years=2)
