@@ -14,7 +14,6 @@ async function loadTradersIndex() {
       box.innerHTML = "<p>No traders registered yet.</p>";
       return;
     }
-    // Sidebar of traders + main panel
     let html = `<div class="traders-layout">
       <div class="traders-sidebar">`;
     _tradersCache.forEach((t, idx) => {
@@ -26,7 +25,6 @@ async function loadTradersIndex() {
     });
     html += `</div><div class="traders-main" id="traderMainPanel"></div></div>`;
     box.innerHTML = html;
-    // Wire tabs
     box.querySelectorAll(".trader-tab").forEach(btn => {
       btn.addEventListener("click", () => {
         box.querySelectorAll(".trader-tab").forEach(b => b.classList.remove("active"));
@@ -34,12 +32,12 @@ async function loadTradersIndex() {
         selectTrader(btn.dataset.slug);
       });
     });
-    // Load first
     selectTrader(_tradersCache[0].slug);
   } catch (e) {
     box.innerHTML = `<p>Error loading traders: ${e.message}</p>`;
   }
 }
+window.loadTradersIndex = loadTradersIndex;
 
 async function selectTrader(slug) {
   _currentTraderSlug = slug;
@@ -85,7 +83,7 @@ async function runTraderScan(slug) {
   const box = document.getElementById("traderSignals");
   if (!box) return;
   if (btn) { btn.textContent = "Scanning..."; btn.disabled = true; }
-  box.innerHTML = `<p>Scanning the band universe. This may take 30-60s...</p>`;
+  box.innerHTML = `<p>Scanning the band universe (~800 symbols). This may take 30-60s...</p>`;
   try {
     const r = await api(`/api/traders/${encodeURIComponent(slug)}/scan?limit=800`);
     if (r.error) {
@@ -106,7 +104,6 @@ function _renderTraderSignals(r) {
     return `<h3 style="font-size:14px;">Signals (0)</h3>
       <p class="strategy-hint">No signals across the universe today.</p>`;
   }
-  // Group by method
   const byMethod = {};
   sigs.forEach(s => {
     byMethod[s.method] = byMethod[s.method] || [];
@@ -160,16 +157,3 @@ function _bindTraderSignalRows(box) {
     });
   });
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  const rb = document.getElementById("refreshBtn");
-  if (rb) {
-    rb.addEventListener("click", () => {
-      // If on Traders view, re-run the current trader scan
-      const view = document.getElementById("view-traders");
-      if (view && view.classList.contains("active-view") && _currentTraderSlug) {
-        runTraderScan(_currentTraderSlug);
-      }
-    });
-  }
-});

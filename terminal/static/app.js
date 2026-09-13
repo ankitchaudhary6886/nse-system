@@ -26,6 +26,7 @@ function setView(name) {
     funda: "Funda — positional & long-term",
     swing: "Swing — midcap / smallcap momentum",
     research: "Research — analysis & pattern lab",
+    traders: "Traders — famous methods & signals",
     ledger: "Ledger — track record",
     system: "System — health & config",
   };
@@ -37,6 +38,7 @@ function setView(name) {
       funda: "Quality names in market downturns. Hold months to years.",
       swing: "Momentum setups in uptrending markets. Trade days to weeks.",
       research: "Deep-dive any symbol. Historical behaviour of similar setups.",
+      traders: "One page per famous trader. Their methods, scanned across the universe.",
       ledger: "Your strategy's real track record, walk-forward validation.",
       system: "Infrastructure health, data freshness, deployment checks.",
     };
@@ -46,6 +48,10 @@ function setView(name) {
   if (name === "ledger") loadLedger();
   if (name === "research") loadPatterns();
   if (name === "system") loadDeployment();
+  // Traders hook
+  if (name === "traders" && typeof window.loadTradersIndex === "function") {
+    window.loadTradersIndex();
+  }
 }
 window.setView = setView;
 
@@ -138,7 +144,7 @@ async function loadSwing() {
 }
 
 // ============================================================
-// Patterns — cards with checks
+// Patterns
 // ============================================================
 function dirBadge(d) {
   return d === "BULLISH" ? '<span class="outcome WIN">BULLISH</span>' : '<span class="outcome LOSS">BEARISH</span>';
@@ -266,7 +272,7 @@ async function runPatternScan() {
 }
 
 // ============================================================
-// Radar — unified card
+// Radar
 // ============================================================
 async function loadRadar() {
   try {
@@ -293,7 +299,7 @@ async function loadRadar() {
 }
 
 // ============================================================
-// Compare (ID50)
+// Compare
 // ============================================================
 async function runCompare() {
   const input = $("compareInput");
@@ -352,7 +358,7 @@ async function loadLedger() {
 }
 
 // ============================================================
-// Deployment (System)
+// Deployment
 // ============================================================
 async function loadDeployment() {
   const box = $("deploymentBox");
@@ -384,7 +390,7 @@ async function loadDeployment() {
 }
 
 // ============================================================
-// Chart / Cockpit
+// Chart
 // ============================================================
 function resetChart() {
   const el = $("chart");
@@ -678,7 +684,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const sym = (titleEl ? titleEl.textContent : "").split(" ")[0];
     if (sym && window.loadResearch) window.loadResearch(sym);
   });
-  // Compare
   const cmpBtn = $("compareRunBtn");
   if (cmpBtn) cmpBtn.addEventListener("click", runCompare);
   const cmpIn = $("compareInput");
