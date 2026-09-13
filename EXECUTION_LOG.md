@@ -573,6 +573,34 @@ route fix, editor, backtest sandbox.
   - Signals carry symbol, direction, order type, entry, stop,
     confidence, notes.
 - Status: DEPLOYED · AWAITING VERIFICATION
+
+### #062 · Trader #2 — Larry Spears (ID56)
+- Files:
+  - `traders/larry_spears.py` (new) — 7 setup-identification methods
+  - `traders/__init__.py` — registry now includes larry_spears
+  - `backlog.md` — logged R30, ID56
+  - `EXECUTION_LOG.md` — this entry
+- What:
+  - Classified as **Swing**.
+  - Methods:
+    1. Beta filter — symbol beta ≥1.30 vs ^NSEI (cov/var).
+    2. Amplitude filter — 5-day high-low range ≥5% of price.
+    3. Gap classification — open ≥0.5% from prior close.
+    4. MA trend alignment — SMA10/20/50 stacking + slopes.
+    5. Counter-trend retracement — 2-3 consecutive lower highs
+       (in uptrend) / higher lows (in downtrend), invalidated
+       beyond 5 days.
+    6. Force Index filter (Elder) — FI13 ≥0 and FI3 ≤0 (long);
+       FI13 ≤0 and FI3 ≥0 (short).
+    7. Composite setup — all six aligned → full Larry Spears setup.
+  - Execution, stop-loss, sizing, trailing intentionally excluded
+    per owner's request (recorded as R30).
+  - Benchmark returns for ^NSEI fetched once per scan and cached
+    at module level.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
+
 ---
 
 ## HOW NEW SESSIONS USE THIS

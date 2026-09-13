@@ -13,9 +13,11 @@ Signal dict shape:
 """
 
 from traders import john_crane
+from traders import larry_spears
 
 REGISTRY = [
     john_crane,
+    larry_spears,
 ]
 
 

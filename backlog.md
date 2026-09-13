@@ -5,6 +5,7 @@
 - Categories: RULES · INSTRUCTIONS · DEMANDS · IDEAS · IMAGINATIONS
 - DONE items stay. Execution details live in EXECUTION_LOG.md.
 - Portal redesign vision lives in PORTAL_REDESIGN.md.
+- Survives chat migration.
 
 ---
 
@@ -38,9 +39,11 @@
 - **R26** Strategies are JSON, not code.
 - **R27** Data source fixes are probed, not guessed.
 - **R28** No partial edits — every file is a full replacement.
-- **R29** **Famous-trader methods live under `traders/`** — one module per
-          trader, auto-registered, one page per trader in the Traders
-          tab. Each page lists their methods + live universe signals.
+- **R29** Famous-trader methods live under `traders/` — one module per
+          trader, auto-registered, one page per trader.
+- **R30** When a trader's method includes stop-loss / sizing / execution
+          rules, extract **only** the setup-identification logic unless
+          the owner explicitly asks otherwise.
 
 ---
 
@@ -56,50 +59,46 @@ I8–I34.
 I35–I45.
 
 ### Session 4 — 2026-09-14
-- **I46** Build a **Traders** section: one page per famous trader, one
-          sub-section per method. Identify whether each trader belongs
-          to Funda, Swing, or other. Owner will feed trader methods one
-          at a time (started with John Crane / Advanced Swing Trading).
-          Trader #1 (John Crane) classified as **Swing**.
-- **I47** (Pending) Owner will feed traders 2–10. Integrate each as its
-          own module + page.
+I46–I47.
+
+### Session 5 — 2026-09-15
+- **I48** Trader #1 (John Crane) shipped. Framework verified.
+- **I49** Trader #2 (Larry Spears). Extract only the setup-
+          identification logic. Classified Swing.
 
 ---
 
 ## C. DEMANDS
-D1–D6 as previously logged.
+
+- **D1** Ideas never lost.
+- **D2** Durable execution log across chat sessions.
+- **D3** Fast pace.
+- **D4** Portal presents, never recommends (R19).
+- **D5** Every panel serves a decision the owner will actually make.
+- **D6** Backlog and execution log stay current — no drift.
 
 ---
 
 ## D. IDEAS
 
-### ID1–ID53 as previously logged (all DONE or listed).
+### ID1–ID53 as previously logged.
 
-### ID54 — Famous Traders framework · **DONE this batch**
-New `traders/` package with registry. Each trader module exposes:
-  SLUG, NAME, PILLAR, SOURCE, METHODS, scan(conn, limit).
-Auto-registered via `traders/__init__.py`. New nav item **📚 Traders**
-with one page per trader.
+### ID54 — Famous Traders framework · **DONE**
+### ID55 — John Crane (Advanced Swing Trading) · **DONE**
+14 methods classified under Swing.
 
-### ID55 — John Crane (Advanced Swing Trading) · **DONE this batch**
-14 methods detected, classified under **Swing**:
-  1. Reaction Swing detection
-  2. Time Forecast (Reverse/Forward Count with holiday law)
-  3. Action / Reaction Lines (Andrews/Babson geometry)
-  4. Retracement Windows (60% / 30%)
-  5. Two-Day Rule
-  6. Peg-Leg
-  7. Gap and Go
-  8. Gap Reversal
-  9. Continuation Gapping
-  10. Trail Day Confirmation
-  11. Major Reversal
-  12. SSTO 20-Period Divergence
-  13. Master Decision Engine (Time × Price × Pattern)
+### ID56 — Larry Spears · **DONE this batch**
+7 setup-identification methods, classified under Swing:
+  1. Beta filter (≥1.30 vs ^NSEI)
+  2. Amplitude filter (5-day range ≥5% of price)
+  3. Gap classification (open ≥0.5% from prior close)
+  4. MA trend alignment (SMA10/20/50 stacking + slopes)
+  5. Counter-trend retracement (2-3 lower highs / higher lows)
+  6. Force Index filter (Elder FI13 ≥0 / FI3 ≤0)
+  7. Composite setup (all 6 aligned)
+Executed entry/stop/sizing logic intentionally excluded per R30.
 
-### ID52 — Data source plugins · **DEFERRED (Phase 4, post-traders)**
-Phase 4 was scheduled before the Traders request. Now deferred until
-all 10 trader pages are shipped, unless the owner says otherwise.
+### ID52 — Data source plugins · **DEFERRED (post-traders)**
 
 ---
 
@@ -109,7 +108,8 @@ IM1–IM6 as previously logged.
 ---
 
 ## F. FEATURES COMPLETED
-Prior list + **FTR** (Traders framework) + **FJC** (John Crane methods).
+Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
+**FLS** (Larry Spears).
 
 ---
 
@@ -117,12 +117,12 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane methods).
 
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
-| R1–R29 | Rules                    | Active       |
-| I1–I47 | Instructions             | Applied      |
-| ID1–ID53 | Various               | DONE / listed |
+| R1–R30 | Rules                    | Active       |
+| I1–I49 | Instructions             | Applied      |
 | ID54  | Traders framework         | DONE         |
 | ID55  | John Crane                | DONE         |
-| Traders 2–10 | Pending owner input | PENDING      |
+| ID56  | Larry Spears              | DONE         |
+| Traders 3–10 | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
 ---
@@ -130,8 +130,7 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane methods).
 ## H. REMAINING / LEFT
 
 ### Traders integration (current focus)
-- **Awaiting trader #2** from owner.
-- Framework handles each new trader as one module + a registry entry.
+- **Awaiting trader #3** from owner.
 
 ### Phase 4 (deferred until traders done)
 - ID52 Data source plugin system
