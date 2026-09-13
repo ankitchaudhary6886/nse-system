@@ -5,14 +5,13 @@
 - Categories: RULES · INSTRUCTIONS · DEMANDS · IDEAS · IMAGINATIONS
 - DONE items stay. Execution details live in EXECUTION_LOG.md.
 - Portal redesign vision lives in PORTAL_REDESIGN.md.
-- Survives chat migration.
 
 ---
 
 ## A. RULES  (always active)
 
 - **R1**  Whole files only. No patches. Ever.
-- **R2**  Plain English. Ask for screenshots when useful.
+- **R2**  Plain English.
 - **R3**  VS Code (Windows) + Oracle Cloud VM via SSH.
 - **R4**  Every change = full file + 1 laptop block + 1 VM block.
 - **R5**  Batch related commands into one block per machine.
@@ -23,23 +22,25 @@
 - **R10** No pausing; keep momentum.
 - **R11** 3-4 file edits per response when possible.
 - **R12** Execute new ideas only AFTER the machine is functionally complete.
-- **R13** Fast feedback loops (~5s), not multi-minute waits.
+- **R13** Fast feedback loops (~5s).
 - **R14** Verdicts are PF-driven.
-- **R15** Parameter changes are swept, not picked.
+- **R15** Parameter changes are swept.
 - **R16** Non-monotonic sweeps = noise.
 - **R17** Multi-window WF is ground truth.
 - **R18** Equivalent results → simpler wins.
 - **R19** **System identifies. Owner decides.**
-- **R20** Log every owner instruction in BACKLOG **immediately**.
+- **R20** Log every owner instruction in BACKLOG immediately.
 - **R21** Every candidate presented with full picture.
 - **R22** All tunable parameters in `strategy_config.py`.
-- **R23** Optional integrations skip gracefully if creds/files missing.
-- **R24** Research tables are sortable + colour-coded by sample size.
-- **R25** Portal is redesigned around the two-pillar model.
+- **R23** Optional integrations skip gracefully.
+- **R24** Research tables are sortable + colour-coded.
+- **R25** Portal is two-pillar (Funda / Swing).
 - **R26** Strategies are JSON, not code.
 - **R27** Data source fixes are probed, not guessed.
-- **R28** No partial edits — every file is sent as a full replacement,
-          including documentation files.
+- **R28** No partial edits — every file is a full replacement.
+- **R29** **Famous-trader methods live under `traders/`** — one module per
+          trader, auto-registered, one page per trader in the Traders
+          tab. Each page lists their methods + live universe signals.
 
 ---
 
@@ -52,136 +53,63 @@ I1–I7.
 I8–I34.
 
 ### Session 3 — 2026-09-13
-- **I35**–**I42** as previously logged.
-- **I43** Fix pattern_grader to handle BEARISH patterns (H&S top).
-- **I44** No partial edits — always full file replacements.
-- **I45** Proceed with ID50 (compare mode) + ID51 (unified stock card)
-          to finish Phase 3.
+I35–I45.
+
+### Session 4 — 2026-09-14
+- **I46** Build a **Traders** section: one page per famous trader, one
+          sub-section per method. Identify whether each trader belongs
+          to Funda, Swing, or other. Owner will feed trader methods one
+          at a time (started with John Crane / Advanced Swing Trading).
+          Trader #1 (John Crane) classified as **Swing**.
+- **I47** (Pending) Owner will feed traders 2–10. Integrate each as its
+          own module + page.
 
 ---
 
 ## C. DEMANDS
-
-- **D1** Ideas never lost.
-- **D2** Durable execution log across chat sessions.
-- **D3** Fast pace.
-- **D4** Portal presents, never recommends (R19).
-- **D5** Every panel serves a decision the owner will actually make.
-- **D6** Backlog and execution log stay current — no drift.
+D1–D6 as previously logged.
 
 ---
 
 ## D. IDEAS
 
-### ID1 — All-weather swing mode · **DONE**
-### ID2 — Long-term Value Radar · **DONE**
-### ID3 — Custom scanners: swing + positional · **PARTIAL**
-### ID4 — Free data source expansion · **PLANNED (Phase 4)**
-### ID5 — "Feeding of life into stocks" · **FUTURE**
-### ID6 — Universe split · **PARTIAL**
-### ID7 — Trim / unify / simplify · **MOSTLY DONE**
-### ID8 — Trend-regime scanner · **DONE**
-### ID9 — Scanner UI panels · **DONE**
-### ID10 — Meta-model v7 · **DONE**
-### ID11 — Signal sparsity fix · **DONE**
-### ID12 — Alt setup patterns · **FUTURE**
-### ID13 — Fast validation · **DONE**
-### ID14 — Meta-model plateau · **OPEN**
-### ID15 — Target sweep · **DONE**
-### ID16 — Sizing quality multiplier · **DONE**
-### ID17 — Robustness check · **DONE**
-### ID18 — Hybrid tranche exits · **REJECTED**
-### ID19 — Central strategy config · **DONE**
-### ID20 — Strategy runs dashboard · **DONE**
-### ID21 — Production deployment · **DONE**
-### ID22 — Research Cockpit v1 · **DONE**
-### ID22b — Research Universe · **DONE**
-### ID22c — Warm cache nightly · **DONE**
-### ID23 — Sector aggregation · **DONE**
-### ID23b — Reliability colour coding · **DONE**
-### ID23c — Sortable columns · **DONE**
-### ID24 — Candle behaviour analytics · **DONE** (as ID47)
-### ID25 — Sector strength overlay · **FUTURE**
-### ID26 — Setup similarity matching · **DONE** (as ID46)
-### ID27 — Rule DSL engine · **DONE**
-### ID28 — Two-pillar portal redesign · **DONE**
-### ID29 — Signature matching across symbols · **DONE** (as ID46)
-### ID30 — Pattern condition transparency · **DONE** (as ID48)
-### ID31 — Time-machine chart markers · **DONE** (as ID49)
-### ID32 — Data source plugin system · **NEXT (Phase 4)**
-### ID33 — Unified stock card · **DONE** (as ID51)
-### ID34 — Backtest sandbox per strategy · **DONE** (as ID43)
-### ID35 — Progressive disclosure · **DONE**
-### ID36 — Compare mode · **DONE** (as ID50)
-### ID37 — Strategy library page · **PARTIAL**
-### ID38 — Strategy seeds · **DONE**
-### ID39 — Rule DSL engine · **DONE**
-### ID40 — Seed strategies · **DONE**
-### ID41 — Strategy UI · **DONE**
-### ID42 — In-browser strategy editor · **DONE**
-### ID43 — Backtest sandbox per strategy · **DONE**
-### ID44 — Fundamentals data fix · **DONE**
-### ID45 — Score normalization (percentile) · **DONE**
-### ID46 — Signature matching · **DONE**
-### ID47 — Candle behaviour analytics · **DONE**
-### ID48 — Pattern condition transparency · **DONE**
-### ID49 — Time-machine chart markers · **DONE**
-### ID50 — Compare mode · **DONE**
-### ID51 — Unified stock card · **DONE**
-### ID52 — Data source plugins · **NEXT (Phase 4)**
-### ID53 — Bearish pattern grading · **DONE**
+### ID1–ID53 as previously logged (all DONE or listed).
+
+### ID54 — Famous Traders framework · **DONE this batch**
+New `traders/` package with registry. Each trader module exposes:
+  SLUG, NAME, PILLAR, SOURCE, METHODS, scan(conn, limit).
+Auto-registered via `traders/__init__.py`. New nav item **📚 Traders**
+with one page per trader.
+
+### ID55 — John Crane (Advanced Swing Trading) · **DONE this batch**
+14 methods detected, classified under **Swing**:
+  1. Reaction Swing detection
+  2. Time Forecast (Reverse/Forward Count with holiday law)
+  3. Action / Reaction Lines (Andrews/Babson geometry)
+  4. Retracement Windows (60% / 30%)
+  5. Two-Day Rule
+  6. Peg-Leg
+  7. Gap and Go
+  8. Gap Reversal
+  9. Continuation Gapping
+  10. Trail Day Confirmation
+  11. Major Reversal
+  12. SSTO 20-Period Divergence
+  13. Master Decision Engine (Time × Price × Pattern)
+
+### ID52 — Data source plugins · **DEFERRED (Phase 4, post-traders)**
+Phase 4 was scheduled before the Traders request. Now deferred until
+all 10 trader pages are shipped, unless the owner says otherwise.
 
 ---
 
 ## E. IMAGINATIONS
-
-- **IM1** Personal multi-strategy quant terminal.
-- **IM2** Bear-market accumulation engine.
-- **IM3** Self-documenting, self-improving system.
-- **IM4** Research cockpit (predictability, potential, candle behaviour).
-- **IM5** Two-pillar portal — Funda and Swing as distinct product lines.
-- **IM6** Owner-authored strategies — write rules, see results in-browser.
+IM1–IM6 as previously logged.
 
 ---
 
 ## F. FEATURES COMPLETED
-
-- **FC** Regime Spectrum (5 levels)
-- **FP** Fundamentals Pipeline
-- **FS** Sizing with quality multiplier
-- **FA** Unified Alerts
-- **FU** Canonical Universe
-- **FT** Trend Scanner v3
-- **FP2** Positional Scanner
-- **FV** Value Radar v2
-- **FM** Meta-Model v7
-- **FML** Price-Model
-- **FVAL** Fast Validation
-- **FSP** Setup v3.5
-- **FWF** Walk-forward v5
-- **FSR** Strategy Runs ledger
-- **FCONF** Central Config
-- **FDEP** Deployment Verification
-- **FRC** Research Cockpit v1
-- **FRU** Research Universe
-- **FRS** Sector Aggregation
-- **FSRT** Sortable + Reliability UI
-- **FP1** Portal Phase 1 (5-tab nav)
-- **FRE** Rule Engine (JSON strategy DSL)
-- **FSE** Seed strategies
-- **FSU** Strategy UI
-- **FED** In-browser strategy editor
-- **FBT** Strategy backtest sandbox
-- **FDF** Fundamentals v5
-- **FPS** Percentile scoring
-- **FCA** Candle behaviour analytics
-- **FSM** Signature matching
-- **FPB** Weekly pool rebuild scheduler job
-- **FPT** Pattern transparency
-- **FTM** Time-machine chart markers
-- **FBPG** Bearish pattern grading
-- **FCMP** Compare mode
-- **FUC** Unified stock card
+Prior list + **FTR** (Traders framework) + **FJC** (John Crane methods).
 
 ---
 
@@ -189,46 +117,29 @@ I8–I34.
 
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
-| R1–R28 | Rules                    | Active       |
-| I1–I45 | Instructions             | Applied      |
-| ID1–ID43 | Various               | DONE / listed |
-| ID44  | Fundamentals fix          | DONE         |
-| ID45  | Score normalization       | DONE         |
-| ID46  | Signature matching        | DONE         |
-| ID47  | Candle behaviour          | DONE         |
-| ID48  | Pattern transparency      | DONE         |
-| ID49  | Time-machine markers      | DONE         |
-| ID50  | Compare mode              | DONE         |
-| ID51  | Unified stock card        | DONE         |
-| ID52  | Data source plugins       | NEXT (P4)    |
-| ID53  | Bearish pattern grading   | DONE         |
+| R1–R29 | Rules                    | Active       |
+| I1–I47 | Instructions             | Applied      |
+| ID1–ID53 | Various               | DONE / listed |
+| ID54  | Traders framework         | DONE         |
+| ID55  | John Crane                | DONE         |
+| Traders 2–10 | Pending owner input | PENDING      |
+| ID52  | Data source plugins       | DEFERRED     |
 
 ---
 
 ## H. REMAINING / LEFT
 
-### Phase 3 — **COMPLETE**
-All items shipped.
+### Traders integration (current focus)
+- **Awaiting trader #2** from owner.
+- Framework handles each new trader as one module + a registry entry.
 
-### Phase 4 (next)
-- **ID52** Data source plugin system — standard interface for
-          TradingView / Yahoo / NSE / Chartink / ScanX / screener.in.
-          Auto-discovery, fallback chain, health dashboard in System tab.
-- Growth data source integration — needed for Multibagger growth
-  filters (revenue_growth_3y, profit_growth_3y). Currently empty on
-  TradingView's India scanner.
+### Phase 4 (deferred until traders done)
+- ID52 Data source plugin system
+- Growth data source integration
 
 ### Deferred (owner chose to skip)
 - Settings `.env` / admin creds rotation
 - HTTPS via nginx + certbot (A0)
-- Rotate secrets (Telegram token, GCP key)
-- Retire Streamlit app.py (nse.service)
-- Google Sheets sync (missing GCP key)
-
----
-
-## I. HOW THIS FILE GROWS
-Every new idea / instruction / demand gets a numbered entry in the
-appropriate section. DONE items stay for history. REMAINING tracks
-what's left. PORTAL_REDESIGN.md captures vision. Strategies live in
-data/strategies.json. EXECUTION_LOG.md captures every shipped batch.
+- Rotate secrets
+- Retire Streamlit app.py
+- Google Sheets sync

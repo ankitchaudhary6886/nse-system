@@ -546,7 +546,33 @@ route fix, editor, backtest sandbox.
 - Result: API `status: 200`, `rows: 3`. Phase 3 complete.
 
 ---
-
+### #060 · Famous Traders framework + John Crane (ID54 + ID55)
+- Files:
+  - `traders/__init__.py` (new) — registry
+  - `traders/base.py` (new) — shared utilities (pivots, trendlines,
+    weekday-holiday counting, SSTO)
+  - `traders/john_crane.py` (new) — 14 methods from Advanced Swing Trading
+  - `terminal_api.py` — new endpoints `/api/traders`,
+    `/api/traders/{slug}`, `/api/traders/{slug}/scan`
+  - `terminal/static/traders.js` (new) — Traders view: sidebar of
+    traders + method table + universe scan results
+  - `terminal/static/index.html` — added **📚 Traders** nav item + view
+  - `backlog.md` — logged R29, ID54, ID55
+  - `EXECUTION_LOG.md` — this entry
+- What:
+  - Framework: each trader = one module with SLUG, NAME, PILLAR,
+    SOURCE, METHODS, scan(conn, limit).
+  - John Crane classified as **Swing**. Methods implemented:
+    reaction swing, time forecast (Reverse→Forward count with weekday
+    holiday law), action/reaction lines, retracement windows (60%/30%),
+    two-day rule, peg-leg, gap and go, gap reversal, trail day,
+    continuation gap, major reversal, SSTO 20-period divergence,
+    and the master decision engine stub.
+  - Trader page: sidebar of traders, method table, "Run Scan" button
+    → signals across the band universe, grouped by method.
+  - Signals carry symbol, direction, order type, entry, stop,
+    confidence, notes.
+- Status: DEPLOYED · AWAITING VERIFICATION
 ---
 
 ## HOW NEW SESSIONS USE THIS

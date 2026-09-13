@@ -83,6 +83,21 @@
   .cmp-row:nth-child(even) td { background: rgba(255,255,255,.015); }
   .cmp-section td { padding:10px 8px 4px 8px; color:#60a5fa;
     text-transform: uppercase; letter-spacing:1.2px; font-size:11px; }
+
+  /* Traders layout */
+  .traders-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+  .traders-sidebar { display: flex; flex-direction: column; gap: 8px; }
+  .trader-tab { text-align: left; padding: 12px 14px; border-radius: 12px;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+    color: #dbe7ff; cursor: pointer; }
+  .trader-tab:hover { background: rgba(96,165,250,.08); }
+  .trader-tab.active { background: rgba(96,165,250,.14); border-color: rgba(96,165,250,.4); }
+  .trader-tab strong { display: block; font-size: 14px; }
+  .trader-meta { display: block; margin-top: 3px; font-size: 11px; color: #7f8da9; }
+  .trader-header { display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 12px; }
+  .trader-source { color: #9fb0cc; font-size: 12px; margin: 4px 0; }
+  .trader-pillar { color: #7f8da9; font-size: 12px; }
 </style>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -102,6 +117,7 @@
       <button class="nav-btn" data-view="swing">🏄 Swing</button>
       <div class="nav-group">Analysis</div>
       <button class="nav-btn active" data-view="research">🔬 Research</button>
+      <button class="nav-btn" data-view="traders">📚 Traders</button>
       <div class="nav-group">Record</div>
       <button class="nav-btn" data-view="ledger">📒 Ledger</button>
       <button class="nav-btn" data-view="system">⚙️ System</button>
@@ -307,6 +323,19 @@
       </div>
     </section>
 
+    <!-- ================= TRADERS ================= -->
+    <section id="view-traders" class="view">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>📚 Famous Traders — methods & signals</h2>
+            <p>Each trader's page lists their methods and scans the universe for live signals.</p>
+          </div>
+        </div>
+        <div id="tradersIndex" style="margin-top:14px;"><p>Loading traders...</p></div>
+      </div>
+    </section>
+
     <!-- ================= LEDGER ================= -->
     <section id="view-ledger" class="view">
       <div class="terminal-grid">
@@ -349,6 +378,7 @@
           <div class="level"><span>Instructions &amp; rules</span><strong>backlog.md</strong></div>
           <div class="level"><span>Batch history</span><strong>EXECUTION_LOG.md</strong></div>
           <div class="level"><span>Strategies</span><strong>data/strategies.json</strong></div>
+          <div class="level"><span>Traders</span><strong>traders/*.py</strong></div>
         </div>
       </div>
     </section>
@@ -363,5 +393,6 @@
 <script src="/static/research_sector.js"></script>
 <script src="/static/strategies.js"></script>
 <script src="/static/strategy_editor.js"></script>
+<script src="/static/traders.js"></script>
 </body>
 </html>

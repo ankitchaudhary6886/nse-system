@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="23.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="24.0",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -186,6 +186,43 @@ def macro_flow(user: str = Depends(verify_user)):
 
 
 # ============================================================
+# Traders (Phase 3.5 — framework for famous-trader methods)
+# ============================================================
+@app.get("/api/traders")
+def list_traders_api(user: str = Depends(verify_user)):
+    import traders
+    try:
+        return {"traders": traders.list_traders()}
+    except Exception as e:
+        return {"traders": [], "error": str(e)}
+
+
+@app.get("/api/traders/{slug}")
+def get_trader_api(slug: str, user: str = Depends(verify_user)):
+    import traders
+    t = traders.get_trader(slug)
+    if not t:
+        raise HTTPException(status_code=404, detail="trader not found")
+    return {"slug": t.SLUG, "name": t.NAME, "pillar": t.PILLAR,
+            "source": t.SOURCE, "methods": t.METHODS}
+
+
+@app.get("/api/traders/{slug}/scan")
+def scan_trader_api(slug: str, limit: int = 800,
+                    user: str = Depends(verify_user)):
+    import traders
+    t = traders.get_trader(slug)
+    if not t:
+        raise HTTPException(status_code=404, detail="trader not found")
+    try:
+        sigs = t.scan(limit=limit)
+        return {"slug": slug, "name": t.NAME, "n_signals": len(sigs),
+                "signals": sigs}
+    except Exception as e:
+        return {"slug": slug, "error": str(e), "signals": []}
+
+
+# ============================================================
 # Strategies
 # ============================================================
 @app.get("/api/strategies")
@@ -318,7 +355,7 @@ def research_cache_clear(symbol: str = None,
 
 
 # ============================================================
-# Compare (ID50)
+# Compare
 # ============================================================
 @app.get("/api/compare")
 def compare_api(symbols: str, user: str = Depends(verify_user)):
