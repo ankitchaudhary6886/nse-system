@@ -600,6 +600,27 @@ route fix, editor, backtest sandbox.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 ---
+### #063 · Fix Larry Spears `_ma_trend` slope-check bug — VERIFIED
+- Files: `traders/larry_spears.py`
+- What: `_strictly_increasing` / `_strictly_decreasing` helpers
+  replaced the buggy `all(v is not None and s10_hist[i] < s10_hist[i+1]
+  ...)` inline checks that referenced an undefined `v`.
+- Status: DEPLOYED · VERIFIED
+
+### #064 · Book extraction standard + feature registry (ID57 + ID58)
+- Files:
+  - `BOOK_EXTRACTION_PROMPT.md` (new) — the standard prompt for
+    extracting trading-book methods. Method-centric output, US→India
+    translation rules, structural invalidation, setup validity
+    window, logical structure, variants.
+  - `NEW_FEATURES_BACKLOG.md` (new) — registry of every feature the
+    system supports. Groups: price primitives, MAs, momentum,
+    structure, volume, patterns, cross-sectional, fundamentals,
+    trader-specific (John Crane, Larry Spears). Track requested /
+    pending features separately.
+  - `backlog.md` — added R31 (book extraction standard), ID57, ID58.
+  - `EXECUTION_LOG.md` — this entry.
+- Status: DEPLOYED · AWAITING VERIFICATION
 
 ---
 
