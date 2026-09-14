@@ -651,6 +651,22 @@ route fix, editor, backtest sandbox.
     scan (single pass over ~800 symbols).
 - Verification pending (owner to run: `python -c "import traders; print([t.SLUG for t in traders.REGISTRY])"`).
 - Status: DEPLOYED · AWAITING VERIFICATION
+
+
+### #065 · Trader #3 — James O'Shaughnessy — VERIFIED
+- Result: 256 signals across 46 symbols (test scan, limit=50).
+- Methods with hits (10): relative_price_strength_1y (46),
+  market_leaders_universe (45), low_pb_value (44),
+  high_dividend_yield (30), cornerstone_value_original (30),
+  cornerstone_value_improved (30), low_pe_value (10),
+  low_pe_plus_rs (10), dogs_of_the_dow (10), low_pb_plus_rs (1).
+- Methods with zero hits — expected, awaiting ID52 features:
+  low_psr_value, low_psr_plus_rs, cornerstone_growth_original,
+  cornerstone_growth_improved, worst_earnings_gains, low_pcf_value.
+- Registry check: traders.REGISTRY → 3 modules, 40 methods total
+  (Crane 13 + Spears 7 + O'Shaughnessy 19... actually Crane=13,
+  Spears=7, O'Shaughnessy=19 per METHODS list).
+- Status: VERIFIED · 2026-09-14
 ---
 
 ## HOW NEW SESSIONS USE THIS
