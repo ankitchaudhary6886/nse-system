@@ -5,6 +5,8 @@
 - Categories: RULES · INSTRUCTIONS · DEMANDS · IDEAS · IMAGINATIONS
 - DONE items stay. Execution details live in EXECUTION_LOG.md.
 - Portal redesign vision lives in PORTAL_REDESIGN.md.
+- Book-extraction standard lives in docs/BOOK_EXTRACTION_PROMPT.md.
+- Feature registry lives in NEW_FEATURES_BACKLOG.md.
 - Survives chat migration.
 
 ---
@@ -41,9 +43,17 @@
 - **R28** No partial edits — every file is a full replacement.
 - **R29** Famous-trader methods live under `traders/` — one module per
           trader, auto-registered, one page per trader.
-- **R30** When a trader's method includes stop-loss / sizing / execution
-          rules, extract **only** the setup-identification logic unless
-          the owner explicitly asks otherwise.
+- **R30** When a trader's method includes stop-loss / sizing /
+          execution rules, extract **only** the setup-identification
+          logic unless the owner explicitly asks otherwise.
+- **R31** **Book extraction standard.** Every trading book fed to
+          the system must be processed through
+          `docs/BOOK_EXTRACTION_PROMPT.md`. Output must be
+          method-centric (one complete block per setup, not scattered
+          across categories). Extraction output → new
+          `traders/<slug>.py` module + entries in
+          NEW_FEATURES_BACKLOG.md + updates to backlog.md +
+          EXECUTION_LOG.md.
 
 ---
 
@@ -63,8 +73,16 @@ I46–I47.
 
 ### Session 5 — 2026-09-15
 - **I48** Trader #1 (John Crane) shipped. Framework verified.
-- **I49** Trader #2 (Larry Spears). Extract only the setup-
-          identification logic. Classified Swing.
+- **I49** Trader #2 (Larry Spears). Extract only setup-identification
+          logic. Classified Swing.
+
+### Session 6 — 2026-09-16
+- **I50** Evolve book-extraction prompt: method-centric output
+          (one complete block per method), US→India translation
+          rules, structural invalidation field, setup validity
+          window, logical structure (AND/OR), variants.
+- **I51** Ship: docs/BOOK_EXTRACTION_PROMPT.md +
+          NEW_FEATURES_BACKLOG.md + R31 in backlog.
 
 ---
 
@@ -87,16 +105,18 @@ I46–I47.
 ### ID55 — John Crane (Advanced Swing Trading) · **DONE**
 14 methods classified under Swing.
 
-### ID56 — Larry Spears · **DONE this batch**
-7 setup-identification methods, classified under Swing:
-  1. Beta filter (≥1.30 vs ^NSEI)
-  2. Amplitude filter (5-day range ≥5% of price)
-  3. Gap classification (open ≥0.5% from prior close)
-  4. MA trend alignment (SMA10/20/50 stacking + slopes)
-  5. Counter-trend retracement (2-3 lower highs / higher lows)
-  6. Force Index filter (Elder FI13 ≥0 / FI3 ≤0)
-  7. Composite setup (all 6 aligned)
-Executed entry/stop/sizing logic intentionally excluded per R30.
+### ID56 — Larry Spears · **DONE**
+7 setup-identification methods, classified Swing.
+
+### ID57 — Book extraction standard · **DONE this batch**
+Method-centric output format, US→India translation, structural
+invalidation, setup validity window. Lives in
+`docs/BOOK_EXTRACTION_PROMPT.md`. All future book feeds use this
+format.
+
+### ID58 — Feature registry · **DONE this batch**
+`NEW_FEATURES_BACKLOG.md` — single source of truth for features the
+system supports. New book requests check here first.
 
 ### ID52 — Data source plugins · **DEFERRED (post-traders)**
 
@@ -109,7 +129,8 @@ IM1–IM6 as previously logged.
 
 ## F. FEATURES COMPLETED
 Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
-**FLS** (Larry Spears).
+**FLS** (Larry Spears) + **FBEP** (Book extraction prompt) +
+**FNFR** (New features registry).
 
 ---
 
@@ -117,11 +138,13 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
-| R1–R30 | Rules                    | Active       |
-| I1–I49 | Instructions             | Applied      |
+| R1–R31 | Rules                    | Active       |
+| I1–I51 | Instructions             | Applied      |
 | ID54  | Traders framework         | DONE         |
 | ID55  | John Crane                | DONE         |
 | ID56  | Larry Spears              | DONE         |
+| ID57  | Book extraction standard  | DONE         |
+| ID58  | Feature registry          | DONE         |
 | Traders 3–10 | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
