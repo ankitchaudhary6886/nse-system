@@ -781,6 +781,37 @@ markdown
   with documented proxies, 11 flagged (balance-sheet line items,
   10/20yr history, event feeds, bond/convertible/preferred).
 - Status: DEPLOYED · AWAITING VERIFICATION
+
+
+### #070 · Trader #6 — Curtis Faith (Way of the Turtle)
+- Files:
+  - `traders/way_of_the_turtle.py` (new) — 9 methods
+  - `traders/__init__.py` — registry now includes way_of_the_turtle
+  - `backlog.md`, `NEW_FEATURES_BACKLOG.md`, `EXECUTION_LOG.md`
+- Classified: **Multi** (daily-bar trend following).
+- What:
+  - **8 scanned** — all price-only, no data blocks:
+    - Turtle System 1 (20-day breakout) — skip rule omitted
+      (stateless scan; documented as aggressive variant)
+    - Turtle System 2 (55-day breakout)
+    - ATR Channel Breakout (350MA ± ATR)
+    - Bollinger Breakout (350MA ± 2.5σ)
+    - Donchian Trend (20d breakout + EMA25/EMA350 filter)
+    - Dual Moving Average (100MA/350MA cross)
+    - Triple Moving Average (150/250/350 MA stack)
+    - Support/Resistance Breakdown (twice-tested levels)
+  - 1 variant not scanned: `donchian_trend_time_exit` — same entry
+    as Donchian Trend, different exit rule (exit is trade
+    management, out of scope per R30).
+  - MIN_BARS = 360 for 350-day MA/lookback support.
+  - MIN_PRICE = ₹100 (penny-stock avoidance).
+  - Short signals emitted for F&O-actionable contexts; notes flag
+    "F&O only" for cash-equity limitation.
+  - Breakout detection is fresh-breakout-only (checks today vs
+    yesterday) to avoid re-firing on every day price stays above
+    the level.
+- Uses `universe_helper.band_universe` for the reference universe.
+- Status: DEPLOYED · AWAITING VERIFICATION
 ---
 
 ## HOW NEW SESSIONS USE THIS

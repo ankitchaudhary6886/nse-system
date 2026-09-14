@@ -111,8 +111,10 @@ I46–I47.
 - **I56** `#rule` — always send git and VM commands with every
           response. → captured as R34.
 - **I57** Trader #5 — Janet Lowe, *Value Investing Made Easy*
-          (1996). Classified Funda (+ Multi for special situations).
-          18 methods — 7 scanned with documented proxies, 11 flagged.
+          (1996). Classified Funda. 18 methods.
+- **I58** Trader #6 — Curtis Faith, *Way of the Turtle* (2007).
+          Classified Multi. 9 methods — 8 scanned, all price-only,
+          fully implementable today. No data blocks.
 
 ---
 
@@ -156,18 +158,20 @@ Trader #3. 19 methods. Classified Funda.
 Trader #4. 17 methods. Classified Funda (+ Multi).
 
 ### ID61 — Value Investing Made Easy (Janet Lowe) · **DONE**
-Trader #5. 18 methods. Classified Funda (+ Multi for special
-situations). 7 scanned with documented proxies (graham_deep_value_pb,
-graham_earnings_yield, graham_dividend_yield, intrinsic_value_formula,
-dividend_yield_assessment, balance_sheet_safety,
-management_quality_roic). 11 flagged — need balance-sheet line items,
-10/20-year historical series, or event feeds (IBC/NCLT/SAST).
-Auto-activate on ID52.
+Trader #5. 18 methods. Classified Funda (+ Multi).
+
+### ID62 — Way of the Turtle (Curtis Faith) · **DONE**
+Trader #6. 9 methods — 8 scanned (Turtle System 1, Turtle System 2,
+ATR Channel Breakout, Bollinger Breakout, Donchian Trend,
+Dual MA, Triple MA, Support/Resistance Breakdown), 1 variant
+(Donchian Time Exit). Classified Multi. Fully price-based, no
+data blocks — all methods implementable today. Turtle System 1's
+skip rule omitted (stateless scan); documented as aggressive
+variant per the book's own alternative.
 
 ### ID52 — Data source plugins · **DEFERRED (post-traders)**
 Directly unblocks: O'Shaughnessy (6 methods), Gray-Carlisle (10),
-Lowe (11). Also unlocks the shared `fundamentals_history` table
-(multi-year snapshot) which is the single largest unblocker.
+Lowe (11). Turtle doesn't need it.
 
 ---
 
@@ -181,7 +185,8 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 **FLS** (Larry Spears) + **FBEP** (Book extraction prompt) +
 **FNFR** (New features registry) + **FJO** (James O'Shaughnessy) +
 **FQV** (Quantitative Value — Gray & Carlisle) +
-**FVIME** (Value Investing Made Easy — Janet Lowe).
+**FVIME** (Value Investing Made Easy — Janet Lowe) +
+**FWOT** (Way of the Turtle — Curtis Faith).
 
 ---
 
@@ -190,7 +195,7 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R34 | Rules                    | Active       |
-| I1–I57 | Instructions             | Applied      |
+| I1–I58 | Instructions             | Applied      |
 | ID54  | Traders framework         | DONE         |
 | ID55  | John Crane                | DONE         |
 | ID56  | Larry Spears              | DONE         |
@@ -199,7 +204,8 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 | ID59  | James O'Shaughnessy       | DONE         |
 | ID60  | Quantitative Value        | DONE         |
 | ID61  | Value Investing Made Easy | DONE         |
-| Traders 6–10 | Pending owner input | PENDING      |
+| ID62  | Way of the Turtle         | DONE         |
+| Traders 7–10 | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
 ---
@@ -207,10 +213,10 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 ## H. REMAINING / LEFT
 
 ### Traders integration (current focus)
-- **Traders #1–#5 shipped**: John Crane (Swing), Larry Spears (Swing),
+- **Traders #1–#6 shipped**: John Crane (Swing), Larry Spears (Swing),
   James O'Shaughnessy (Funda), Gray & Carlisle (Funda),
-  Janet Lowe (Funda).
-- **Awaiting trader #6** from owner.
+  Janet Lowe (Funda), Curtis Faith (Multi).
+- **Awaiting trader #7** from owner.
 
 ### Phase 4 (deferred until traders done)
 - ID52 Data source plugin system
@@ -219,8 +225,7 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
   - O'Shaughnessy: lights up 6 empty methods.
   - Gray-Carlisle: lights up 10 flagged methods.
   - Lowe: lights up 11 flagged methods.
-  - Shared `fundamentals_history` table is the single largest
-    unblocker for all three funda traders.
+  - Turtle: no impact (fully implemented already).
 
 ### Deferred (owner chose to skip)
 - Settings `.env` / admin creds rotation

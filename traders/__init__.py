@@ -17,6 +17,7 @@ from traders import larry_spears
 from traders import oshaughnessy
 from traders import quantitative_value
 from traders import value_investing_made_easy
+from traders import way_of_the_turtle
 
 REGISTRY = [
     john_crane,
@@ -24,6 +25,7 @@ REGISTRY = [
     oshaughnessy,
     quantitative_value,
     value_investing_made_easy,
+    way_of_the_turtle,
 ]
 
 
