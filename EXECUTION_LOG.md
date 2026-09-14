@@ -667,6 +667,120 @@ route fix, editor, backtest sandbox.
   (Crane 13 + Spears 7 + O'Shaughnessy 19... actually Crane=13,
   Spears=7, O'Shaughnessy=19 per METHODS list).
 - Status: VERIFIED · 2026-09-14
+
+
+### #066 · Trader #4 — Wesley Gray & Tobias Carlisle
+- Files:
+  - `traders/quantitative_value.py` (new) — 17 methods from
+    *Quantitative Value* (2012)
+  - `traders/__init__.py` — registry now includes quantitative_value
+  - `backlog.md` — added I54, ID60, FQV; status table updated
+  - `NEW_FEATURES_BACKLOG.md` — 9 new BACKLOG feature entries
+  - `EXECUTION_LOG.md` — this entry
+- What:
+  - Classified **FUNDA** (annual-rebalance, long-only, fundamental).
+    Some methods (buyback, insider, 13D, short interest) span
+    Multi but primary use in the book is long-term value confirmation.
+  - **7 scanned now** (with proxies where book's primary ratio
+    unavailable — documented in signal notes):
+    - Graham Simple Value (clean, no proxy)
+    - Earnings Yield (EBIT/TEV proxy → 1/PE)
+    - Book-to-Market (clean)
+    - Magic Formula proxy (ROC + EBIT/TEV → ROCE + 1/PE)
+    - Quality & Price proxy (GPA + BM → ROE + 1/PB)
+    - Composite Price Ratios proxy (E/P + B/M + DY)
+    - ROCE Quality Gate (clean)
+  - **10 flagged** — emitted zero hits, log a data-coverage report
+    each scan: STA, SNOA, PROBM, PFD, F_SCORE, FS_SCORE, Franchise
+    Power, EBIT/TEV, Buyback Yield, Opportunistic Insider Buying,
+    Activist 13D, Low Short Interest. Auto-activate when ID52 lands.
+  - `quantitative_value_model` listed as portfolio construction,
+    not scanned.
+  - Uses `universe_helper.band_universe` for reference universe.
+    Sector exclusion: financials, banks, NBFCs, insurance, utilities,
+    power, gas distribution, water, electric, REITs.
+- Verification pending (owner to run the two-line test below).
+- Status: DEPLOYED · AWAITING VERIFICATION
+5. NEW_FEATURES_BACKLOG.md — append to Section B
+markdown
+### ebit  ·  [Quantitative Value — Gray & Carlisle]
+- **Status:** BACKLOG
+- **Formula:** Earnings Before Interest and Taxes
+- **Why it matters:** Primary field for EBIT/TEV — the book's best
+  price ratio. Also feeds Magic Formula and franchise metrics.
+- **Effort estimate:** M
+- **Blocks:** QV methods ebit_enterprise_multiple, magic_formula,
+  quantitative_value_model
+
+### total_enterprise_value (tev)  ·  [Quantitative Value]
+- **Status:** BACKLOG
+- **Formula:** market_cap + total_debt − excess_cash + preferred +
+  minority_interests
+- **Why it matters:** Denominator for EBIT/TEV.
+- **Effort estimate:** M (derivable once components land)
+
+### gross_profit  ·  [Quantitative Value]
+- **Status:** BACKLOG
+- **Formula:** revenue − COGS
+- **Why it matters:** GPA quality metric (Method 3).
+- **Effort estimate:** M
+
+### total_assets  ·  [Quantitative Value]
+- **Status:** BACKLOG
+- **Formula:** balance-sheet total
+- **Why it matters:** Denominator for GPA, SNOA, ROA, STA.
+- **Effort estimate:** S (available via TV; not stored)
+
+### current_assets / current_liabilities  ·  [Quantitative Value]
+- **Status:** BACKLOG
+- **Formula:** balance-sheet current portions
+- **Why it matters:** Net working capital, excess cash, STA.
+- **Effort estimate:** S
+
+### cash_and_equivalents  ·  [Quantitative Value]
+- **Status:** BACKLOG
+- **Formula:** cash + ST investments
+- **Why it matters:** Excess cash in TEV; SNOA.
+- **Effort estimate:** S
+
+### fundamentals_history  ·  [Quantitative Value]
+- **Status:** BACKLOG
+- **Formula:** Yearly snapshot of all fundamentals fields
+- **Why it matters:** Unlocks Piotroski F_SCORE, FS_SCORE, ΔROA,
+  ΔLEVER, ΔMARGIN, 8-year geometric metrics (Franchise Power),
+  PROBM, PFD, buyback yield.
+- **Effort estimate:** L (schema + multi-year ingest)
+- **Blocks:** the majority of Quantitative Value methods
+
+### insider_trades  ·  [Quantitative Value]
+- **Status:** BACKLOG
+- **Formula:** SEBI SAST disclosures — insider name, date, buy/sell,
+  quantity, price
+- **Why it matters:** Method 14 (Opportunistic Insider Buying).
+- **Effort estimate:** L (external feed)
+
+### short_interest  ·  [Quantitative Value]
+- **Status:** BACKLOG
+- **Formula:** NSE short interest / shares outstanding
+- **Why it matters:** Method 16 (Low Short Interest).
+- **Effort estimate:** M (NSE publishes; parsing needed)
+
+### activist_13d_filings  ·  [Quantitative Value]
+- **Status:** BACKLOG
+- **Formula:** SEBI SAST / substantial acquisition disclosures
+- **Why it matters:** Method 15 (Activist 13D Filing).
+- **Effort estimate:** L (external feed)
+
+
+### #069 · Trader #5 — Janet Lowe
+- Files:
+  - `traders/value_investing_made_easy.py` (new) — 18 methods
+  - `traders/__init__.py`
+  - `backlog.md`, `NEW_FEATURES_BACKLOG.md`, `EXECUTION_LOG.md`
+- Classified: Funda (+ Multi for special situations). 7 scanned
+  with documented proxies, 11 flagged (balance-sheet line items,
+  10/20yr history, event feeds, bond/convertible/preferred).
+- Status: DEPLOYED · AWAITING VERIFICATION
 ---
 
 ## HOW NEW SESSIONS USE THIS

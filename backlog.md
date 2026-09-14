@@ -64,6 +64,10 @@
           paste into a fresh editor tab with no further assembly.
           This applies to backlog.md, EXECUTION_LOG.md, and
           NEW_FEATURES_BACKLOG.md too, not just code files.
+- **R34** **Always end with git + VM blocks.** Every response that
+          ships files — code, docs, config, registry — ends with
+          one git block (laptop) and one VM block. No exceptions.
+          Docs-only changes count. This operationalizes R4.
 
 ---
 
@@ -96,19 +100,19 @@ I46–I47.
 
 ### Session 7 — 2026-09-14 (this chat — traders & books)
 - **I52** Trader #3 — James O'Shaughnessy, *What Works on Wall
-          Street* (3rd Edition). Classified Funda. 19 methods
-          (16 scanned, 3 portfolio constructions). Ship module
-          + registry + backlog + execution log + feature registry.
+          Street* (3rd Edition). Classified Funda. 19 methods.
 - **I53** This chat's scope = traders + book-strategy implementation
           & integration. Standard 6-artifact batch per trader.
           → captured as R32.
 - **I54** Trader #4 — Wesley Gray & Tobias Carlisle,
-          *Quantitative Value* (2012). Classified Funda (+ Multi
-          for smart-money methods). 17 methods — 7 scanned with
-          documented proxies, 10 flagged as BACKLOG (EBIT/TEV,
-          balance-sheet changes, 8y history, insider/SI/13D feeds).
+          *Quantitative Value* (2012). Classified Funda. 17 methods.
 - **I55** `#rule` — always give full copy-paste blocks, not
           patchwork. → captured as R33.
+- **I56** `#rule` — always send git and VM commands with every
+          response. → captured as R34.
+- **I57** Trader #5 — Janet Lowe, *Value Investing Made Easy*
+          (1996). Classified Funda (+ Multi for special situations).
+          18 methods — 7 scanned with documented proxies, 11 flagged.
 
 ---
 
@@ -121,6 +125,8 @@ I46–I47.
 - **D5** Every panel serves a decision the owner will actually make.
 - **D6** Backlog and execution log stay current — no drift.
 - **D7** No patchwork. Full files. Always. (reinforces R1, R28, R33)
+- **D8** Every response ends with actionable git + VM blocks.
+        (reinforces R4, R34)
 
 ---
 
@@ -138,36 +144,30 @@ I46–I47.
 ### ID57 — Book extraction standard · **DONE**
 Method-centric output format, US→India translation, structural
 invalidation, setup validity window. Lives in
-`docs/BOOK_EXTRACTION_PROMPT.md`. All future book feeds use this
-format.
+`docs/BOOK_EXTRACTION_PROMPT.md`.
 
 ### ID58 — Feature registry · **DONE**
-`NEW_FEATURES_BACKLOG.md` — single source of truth for features the
-system supports. New book requests check here first.
+`NEW_FEATURES_BACKLOG.md` — single source of truth for features.
 
-### ID59 — James O'Shaughnessy (What Works on Wall Street, 3rd ed.) · **DONE**
-Trader #3. 19 methods extracted. Classified Funda. 16 implementable
-as per-symbol scans; 3 portfolio constructions listed for reference.
-Data-availability gaps documented (PSR, EPS growth, shareholder yield,
-sales, cashflow per-share). Features flagged in feature registry for
-ID52 resolution.
+### ID59 — James O'Shaughnessy · **DONE**
+Trader #3. 19 methods. Classified Funda.
 
 ### ID60 — Quantitative Value (Gray & Carlisle) · **DONE**
-Trader #4. 17 methods extracted from *Quantitative Value* (2012).
-7 scanned immediately (Graham Simple Value, Earnings Yield proxy,
-Book-to-Market, Magic Formula proxy, Quality & Price proxy,
-Composite Price Ratios proxy, ROCE Quality Gate). 10 flagged —
-need EBIT/TEV, balance-sheet changes, 8-year fundamentals history,
-or non-price feeds (insider trades, short interest, 13D filings).
-These auto-activate when ID52 (Phase 4 data-source plugins) lands.
+Trader #4. 17 methods. Classified Funda (+ Multi).
+
+### ID61 — Value Investing Made Easy (Janet Lowe) · **DONE**
+Trader #5. 18 methods. Classified Funda (+ Multi for special
+situations). 7 scanned with documented proxies (graham_deep_value_pb,
+graham_earnings_yield, graham_dividend_yield, intrinsic_value_formula,
+dividend_yield_assessment, balance_sheet_safety,
+management_quality_roic). 11 flagged — need balance-sheet line items,
+10/20-year historical series, or event feeds (IBC/NCLT/SAST).
+Auto-activate on ID52.
 
 ### ID52 — Data source plugins · **DEFERRED (post-traders)**
-Directly unblocks: O'Shaughnessy Methods 6/12/14/15 (PSR),
-8 (EPS history), 17 (buyback history), 1 (sales/cashflow/shares);
-Gray-Carlisle Methods 2/3/11/12 (EBIT/TEV), 4/5 (balance-sheet
-changes), 6 (PROBM), 7 (PFD), 8/9 (F_SCORE/FS_SCORE),
-10 (Franchise Power), 13 (buyback yield), 14/15/16 (insider /
-13D / short interest).
+Directly unblocks: O'Shaughnessy (6 methods), Gray-Carlisle (10),
+Lowe (11). Also unlocks the shared `fundamentals_history` table
+(multi-year snapshot) which is the single largest unblocker.
 
 ---
 
@@ -180,7 +180,8 @@ IM1–IM6 as previously logged.
 Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 **FLS** (Larry Spears) + **FBEP** (Book extraction prompt) +
 **FNFR** (New features registry) + **FJO** (James O'Shaughnessy) +
-**FQV** (Quantitative Value — Gray & Carlisle).
+**FQV** (Quantitative Value — Gray & Carlisle) +
+**FVIME** (Value Investing Made Easy — Janet Lowe).
 
 ---
 
@@ -188,8 +189,8 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
-| R1–R33 | Rules                    | Active       |
-| I1–I55 | Instructions             | Applied      |
+| R1–R34 | Rules                    | Active       |
+| I1–I57 | Instructions             | Applied      |
 | ID54  | Traders framework         | DONE         |
 | ID55  | John Crane                | DONE         |
 | ID56  | Larry Spears              | DONE         |
@@ -197,7 +198,8 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 | ID58  | Feature registry          | DONE         |
 | ID59  | James O'Shaughnessy       | DONE         |
 | ID60  | Quantitative Value        | DONE         |
-| Traders 5–10 | Pending owner input | PENDING      |
+| ID61  | Value Investing Made Easy | DONE         |
+| Traders 6–10 | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
 ---
@@ -205,19 +207,20 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 ## H. REMAINING / LEFT
 
 ### Traders integration (current focus)
-- **Traders #1–#4 shipped**: John Crane (Swing), Larry Spears (Swing),
-  James O'Shaughnessy (Funda), Gray & Carlisle (Funda).
-- **Awaiting trader #5** from owner.
+- **Traders #1–#5 shipped**: John Crane (Swing), Larry Spears (Swing),
+  James O'Shaughnessy (Funda), Gray & Carlisle (Funda),
+  Janet Lowe (Funda).
+- **Awaiting trader #6** from owner.
 
 ### Phase 4 (deferred until traders done)
 - ID52 Data source plugin system
 - Growth data source integration
 - **Direct impact on shipped traders:**
-  - O'Shaughnessy: lights up 6 currently-empty methods (PSR, EPS
-    history, shareholder yield, sales, cashflow, shares).
-  - Gray-Carlisle: lights up 10 flagged methods (EBIT/TEV,
-    balance-sheet changes, PROBM, PFD, F_SCORE, FS_SCORE,
-    Franchise Power, buyback yield, insider/SI/13D feeds).
+  - O'Shaughnessy: lights up 6 empty methods.
+  - Gray-Carlisle: lights up 10 flagged methods.
+  - Lowe: lights up 11 flagged methods.
+  - Shared `fundamentals_history` table is the single largest
+    unblocker for all three funda traders.
 
 ### Deferred (owner chose to skip)
 - Settings `.env` / admin creds rotation
