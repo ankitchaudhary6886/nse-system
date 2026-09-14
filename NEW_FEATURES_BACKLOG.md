@@ -105,3 +105,93 @@ When a book requests a feature we don't have, add an entry:
 - **Why it matters:** [which method depends on it]
 - **Requested by:** [book title / author]
 - **Effort estimate:** S | M | L
+
+### price_to_sales  ·  [What Works on Wall Street — O'Shaughnessy]
+- **Status:** BACKLOG
+- **Formula:** market_cap / trailing_12m_sales
+- **Why it matters:** Required by Methods 6, 12, 14, 15 of the
+  O'Shaughnessy trader. The book calls PSR "the king of value factors."
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** M (requires revenue/sales feed — not on TV India)
+- **Blocks:** O'Shaughnessy methods low_psr_value, low_psr_plus_rs,
+  cornerstone_growth_original, cornerstone_growth_improved
+
+### eps_growth_1y  ·  [What Works on Wall Street]
+- **Status:** BACKLOG
+- **Formula:** (EPS_t − EPS_t−1) / |EPS_t−1|
+- **Why it matters:** Cornerstone Growth (Methods 14, 15) and
+  Worst-Earnings-Gains (Method 8) need YoY EPS change.
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** M (needs EPS history, not just latest FY)
+- **Blocks:** O'Shaughnessy methods worst_earnings_gains,
+  cornerstone_growth_original, cornerstone_growth_improved
+
+### shareholder_yield  ·  [What Works on Wall Street]
+- **Status:** BACKLOG
+- **Formula:** dividend_yield + net_buyback_yield
+  where net_buyback_yield = (shares_prior − shares_current) / shares_prior
+- **Why it matters:** Method 17 (Improved Cornerstone Value). Book's
+  highest-Sharpe value method (Sharpe 71).
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** M (needs shares-outstanding history)
+- **Blocks:** O'Shaughnessy method cornerstone_value_improved
+
+### price_to_cashflow  ·  [What Works on Wall Street]
+- **Status:** BACKLOG
+- **Formula:** market_cap / (net_income + depreciation_amortization)
+- **Why it matters:** Method 5 (Low P/CF) and several multifactor variants.
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** M (needs clean cashflow feed; current `fcf_fy`
+  units unverified)
+- **Blocks:** O'Shaughnessy method low_pcf_value
+
+### sales_ttm  ·  [What Works on Wall Street]
+- **Status:** BACKLOG
+- **Formula:** trailing 12-month revenue
+- **Why it matters:** Underpins PSR (see price_to_sales).
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** M
+
+### cashflow_fy  ·  [What Works on Wall Street]
+- **Status:** BACKLOG
+- **Formula:** operating income + depreciation & amortization
+- **Why it matters:** Market Leaders universe (Method 1) filter +
+  Low P/CF (Method 5).
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** M
+
+### shares_outstanding  ·  [What Works on Wall Street]
+- **Status:** BACKLOG
+- **Formula:** diluted shares outstanding (latest)
+- **Why it matters:** Market Leaders universe filter (Method 1).
+  Also foundational for shareholder_yield.
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** S (available via TV but not stored)
+
+### price_appreciation_1y  ·  [What Works on Wall Street]
+- **Status:** DONE (computable)
+- **Formula:** close_t / close_t−252 − 1
+- **Why it matters:** Relative strength factor (Methods 9, 10, 11, 12,
+  14, 15). Computed inline in oshaughnessy.py.
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** S
+- **Note:** computed on the fly; promote to a persistent feature if
+  other traders need it.
+
+### mom_120d  ·  [What Works on Wall Street]
+- **Status:** DONE (computable)
+- **Formula:** close_t / close_t−120 − 1
+- **Why it matters:** Improved Cornerstone Growth (Method 15) 6-month
+  RS filter.
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** S
+
+### market_cap_percentile  ·  [What Works on Wall Street]
+- **Status:** DONE (computable)
+- **Formula:** cross-sectional percentile rank of market_cap within
+  reference universe (Nifty 500 or band).
+- **Why it matters:** Market Leaders universe (Method 1) +
+  "40th percentile" gate used across all methods.
+- **Requested by:** James P. O'Shaughnessy
+- **Effort estimate:** S
+- **Note:** computed inline per scan.

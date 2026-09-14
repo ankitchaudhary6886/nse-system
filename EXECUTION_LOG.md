@@ -622,6 +622,35 @@ route fix, editor, backtest sandbox.
   - `EXECUTION_LOG.md` — this entry.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
+
+### #065 · Trader #3 — James O'Shaughnessy
+- Files:
+  - `traders/oshaughnessy.py` (new) — 19 methods from
+    *What Works on Wall Street* (3rd Edition)
+  - `traders/__init__.py` — registry now includes oshaughnessy
+  - `backlog.md` — added I52, I53, ID59, R32; status table updated
+  - `NEW_FEATURES_BACKLOG.md` — 10 new BACKLOG feature entries
+  - `EXECUTION_LOG.md` — this entry
+- What:
+  - Classified as **FUNDA** (annual-rebalance, long-only, fundamental).
+  - Methods implemented as scanned (16):
+    - Market Leaders Universe (top ~15% by mcap, non-utility)
+    - Dogs of the Dow (top 10 by yield in large-cap proxy)
+    - Low PE, Low P/B, Low PSR*, Low P/CF*, High Dividend Yield
+    - Worst 1Y Earnings Gains*
+    - 1-Year Relative Strength
+    - Low PE + RS, Low P/B + RS, Low PSR* + RS
+    - Cornerstone Growth original*, improved*
+    - Cornerstone Value original, improved*
+  - (*) = partial — awaits PSR / EPS history / cashflow standardization
+    / shares-outstanding history. These methods currently emit zero
+    hits and log a data-coverage report at scan start.
+  - Portfolio constructions listed but not scanned (Methods 13, 18, 19).
+  - Uses `universe_helper.band_universe` for the reference universe.
+  - Cross-sectional percentiles and top-N rankings computed once per
+    scan (single pass over ~800 symbols).
+- Verification pending (owner to run: `python -c "import traders; print([t.SLUG for t in traders.REGISTRY])"`).
+- Status: DEPLOYED · AWAITING VERIFICATION
 ---
 
 ## HOW NEW SESSIONS USE THIS

@@ -54,6 +54,10 @@
           `traders/<slug>.py` module + entries in
           NEW_FEATURES_BACKLOG.md + updates to backlog.md +
           EXECUTION_LOG.md.
+- **R32** This chat is dedicated to **traders and book-strategy
+          implementation & integration**. Every batch ships the
+          standard 6-artifact set: module + registry + backlog +
+          execution log + feature registry + laptop/VM blocks.
 
 ---
 
@@ -84,6 +88,15 @@ I46–I47.
 - **I51** Ship: docs/BOOK_EXTRACTION_PROMPT.md +
           NEW_FEATURES_BACKLOG.md + R31 in backlog.
 
+### Session 7 — 2026-09-14 (this session)
+- **I52** Trader #3 — James O'Shaughnessy, *What Works on Wall
+          Street* (3rd Edition). Classified Funda. 19 methods
+          (16 scanned, 3 portfolio constructions). Ship module
+          + registry + backlog + execution log + feature registry.
+- **I53** This chat's scope = traders + book-strategy implementation
+          & integration. Standard 6-artifact batch per trader.
+          → captured as R32.
+
 ---
 
 ## C. DEMANDS
@@ -108,15 +121,22 @@ I46–I47.
 ### ID56 — Larry Spears · **DONE**
 7 setup-identification methods, classified Swing.
 
-### ID57 — Book extraction standard · **DONE this batch**
+### ID57 — Book extraction standard · **DONE**
 Method-centric output format, US→India translation, structural
 invalidation, setup validity window. Lives in
 `docs/BOOK_EXTRACTION_PROMPT.md`. All future book feeds use this
 format.
 
-### ID58 — Feature registry · **DONE this batch**
+### ID58 — Feature registry · **DONE**
 `NEW_FEATURES_BACKLOG.md` — single source of truth for features the
 system supports. New book requests check here first.
+
+### ID59 — James O'Shaughnessy (What Works on Wall Street, 3rd ed.) · **DONE this batch**
+Trader #3. 19 methods extracted. Classified Funda. 16 implementable
+as per-symbol scans; 3 portfolio constructions listed for reference.
+Data-availability gaps documented (PSR, EPS growth, shareholder yield,
+sales, cashflow per-share). Features flagged in feature registry for
+ID52 resolution.
 
 ### ID52 — Data source plugins · **DEFERRED (post-traders)**
 
@@ -130,7 +150,7 @@ IM1–IM6 as previously logged.
 ## F. FEATURES COMPLETED
 Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 **FLS** (Larry Spears) + **FBEP** (Book extraction prompt) +
-**FNFR** (New features registry).
+**FNFR** (New features registry) + **FJO** (James O'Shaughnessy).
 
 ---
 
@@ -138,14 +158,15 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
-| R1–R31 | Rules                    | Active       |
-| I1–I51 | Instructions             | Applied      |
+| R1–R32 | Rules                    | Active       |
+| I1–I53 | Instructions             | Applied      |
 | ID54  | Traders framework         | DONE         |
 | ID55  | John Crane                | DONE         |
 | ID56  | Larry Spears              | DONE         |
 | ID57  | Book extraction standard  | DONE         |
 | ID58  | Feature registry          | DONE         |
-| Traders 3–10 | Pending owner input | PENDING      |
+| ID59  | James O'Shaughnessy       | DONE         |
+| Traders 4–10 | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
 ---
@@ -153,11 +174,16 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 ## H. REMAINING / LEFT
 
 ### Traders integration (current focus)
-- **Awaiting trader #3** from owner.
+- **Trader #3 shipped** — James O'Shaughnessy.
+- **Awaiting trader #4** from owner.
 
 ### Phase 4 (deferred until traders done)
 - ID52 Data source plugin system
 - Growth data source integration
+- **Direct impact on O'Shaughnessy methods:** PSR (Methods 6, 12,
+  14, 15), EPS growth 1y (Methods 8, 14, 15), shareholder yield
+  (Method 17), sales/cashflow/shares (Method 1). When ID52 lands,
+  these activate without code change.
 
 ### Deferred (owner chose to skip)
 - Settings `.env` / admin creds rotation

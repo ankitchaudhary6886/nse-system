@@ -4,7 +4,7 @@ Traders registry — each module declares:
   NAME     — display name
   PILLAR   — "swing" | "funda" | "multi"
   SOURCE   — book / reference
-  METHODS  — list of {id, name, description, direction}
+  METHODS  — list of {id, name, description, direction, scan?}
   scan(conn, limit) — returns list of signal dicts
 
 Signal dict shape:
@@ -14,10 +14,12 @@ Signal dict shape:
 
 from traders import john_crane
 from traders import larry_spears
+from traders import oshaughnessy
 
 REGISTRY = [
     john_crane,
     larry_spears,
+    oshaughnessy,
 ]
 
 
