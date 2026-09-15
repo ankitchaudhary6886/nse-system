@@ -2,7 +2,7 @@
 Wesley R. Gray & Tobias E. Carlisle — Quantitative Value (2012).
 Classified: FUNDA (long-horizon, annual-rebalanced value + quality).
 
-17 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md.
+20 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md.
 
 The book's core thesis: (1) cleanse the universe of frauds,
 manipulators, and financially distressed firms, then (2) rank the
@@ -21,15 +21,14 @@ Data availability (as of 2026-09-14):
 When those land (ID52 data-source plugins), flagged methods activate
 without code change. Scan() logs a data-coverage report each run.
 
-Proxy policy (R2 + R19):
-  Book's EBIT/TEV   → we use 1/PE (earnings yield) as the closest
-                       available price ratio. Notes field says so.
-  Book's ROC        → we use ROCE (return on capital employed) from
-                       TradingView, which is the same concept.
-  Book's GPA        → we use ROE as a profitability rank proxy.
-  Book's F_SCORE    → we implement the 2 signals we can compute
-                       (ROA>0, CFO>0) as a PARTIAL signal, clearly
-                       labeled. Not silently masqueraded as full.
+Bug fix 2026-09-15 (batch #072):
+  - `composite_price_ratios_proxy` allowed partial components in its
+    ranking, but its note string used `{val:.2f}` on potentially-None
+    values, raising "unsupported format string passed to NoneType".
+  - Fix: new `_fmt_num(v, dp)` helper returns "—" for None.
+  - Defense in depth: new `_try_emit(sigs, fn)` wraps each signal
+    emission, so a single method's failure cannot kill the whole
+    symbol's signal set.
 """
 import numpy as np
 import db
@@ -63,7 +62,7 @@ EXCLUDE_SECTOR_KEYWORDS = (
 
 
 # ----------------------------------------------------------------
-# METHODS registry — 17 total (7 scanned, 10 flagged)
+# METHODS registry — 20 total (7 scanned, 13 flagged)
 # ----------------------------------------------------------------
 METHODS = [
     # ---- SCANNED (7) ----
@@ -88,7 +87,7 @@ METHODS = [
     {"id": "roce_quality_gate", "name": "ROCE Quality Gate",
      "description": "ROCE ≥ 15%, non-financial, non-utility.",
      "direction": "long", "scan": True, "confidence": "HIGH"},
-    # ---- FLAGGED (10) — awaiting features ----
+    # ---- FLAGGED (13) — awaiting features ----
     {"id": "scaled_total_accruals", "name": "Scaled Total Accruals (STA)",
      "description": "Eliminate top 5% accruals. Needs balance-sheet changes.",
      "direction": "long", "scan": False, "confidence": "MED"},
@@ -151,6 +150,32 @@ def _safe_num(v):
         return f
     except (TypeError, ValueError):
         return None
+
+
+def _fmt_num(v, dp=2):
+    """Safe number formatting: returns '—' for None/NaN rather than
+    raising on `.Nf` format spec."""
+    if v is None:
+        return "—"
+    try:
+        f = float(v)
+        if np.isnan(f) or np.isinf(f):
+            return "—"
+        return f"{f:.{dp}f}"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _try_emit(sigs, fn):
+    """Call fn() and append its result to sigs. On exception, log a
+    warning and skip — one method's failure must not kill the whole
+    symbol's signal set."""
+    try:
+        s = fn()
+        if s is not None:
+            sigs.append(s)
+    except Exception as e:
+        log.warning(f"signal emit skipped: {e}")
 
 
 def _fundamentals_map(conn):
@@ -310,9 +335,6 @@ def _compute_rankings(features, ustats):
     combined = []
     for s in eligible:
         if s in roce_ranks and s in ey_ranks:
-            # Higher percentile = better; low combined rank = "lower is
-            # better" of (100 - rank). Book sums raw ranks 1..N. We
-            # mimic by summing "100 - pct_rank" (lower = better).
             score = (100 - roce_ranks[s]) + (100 - ey_ranks[s])
             combined.append((s, score))
     combined.sort(key=lambda x: x[1])
@@ -332,6 +354,10 @@ def _compute_rankings(features, ustats):
     out["quality_and_price_proxy"] = {s for s, _ in qp[:TOP_N]}
 
     # ---- Composite price ratios: 1/PE + 1/PB + Div yield ----
+    # NOTE: partial components are allowed — a symbol qualifies if
+    # ANY of the three ranks is available. This is by design (the
+    # book's composite averaging) but means the note string must be
+    # null-safe. See _fmt_num usage in _evaluate_symbol.
     dy_ranks = _percentile_rank_map(
         [(s, f.get("dividend_yield")) for s, f in eligible.items()])
     comp = []
@@ -360,7 +386,7 @@ def _compute_rankings(features, ustats):
 
 
 # ----------------------------------------------------------------
-# Per-symbol evaluation
+# Per-symbol evaluation — all emits go through _try_emit for safety
 # ----------------------------------------------------------------
 def _signal(sym, method_id, confidence, notes, raw):
     return {
@@ -379,62 +405,79 @@ def _signal(sym, method_id, confidence, notes, raw):
 def _evaluate_symbol(sym, f, rankings):
     sigs = []
 
+    # ---- Method 1: Graham Simple Value ----
     if sym in rankings.get("graham_simple_value", set()):
-        sigs.append(_signal(
+        _try_emit(sigs, lambda: _signal(
             sym, "graham_simple_value", "HIGH",
-            f"Graham: PE {f.get('pe'):.2f} ≤ {GRAHAM_PE_MAX}, "
-            f"D/E {f.get('debt_to_equity'):.2f} ≤ {GRAHAM_DE_MAX}, "
-            f"CFO+, margin positive",
+            f"Graham: PE {_fmt_num(f.get('pe'), 2)} ≤ {GRAHAM_PE_MAX}, "
+            f"D/E {_fmt_num(f.get('debt_to_equity'), 2)} ≤ "
+            f"{GRAHAM_DE_MAX}, CFO+, margin positive",
             {"pe": f.get("pe"),
              "debt_to_equity": f.get("debt_to_equity")}))
 
+    # ---- Method 2: Earnings Yield ----
     if sym in rankings.get("earnings_yield_value", set()):
-        sigs.append(_signal(
+        ey = f.get("earnings_yield")
+        ey_pct = ey * 100 if ey is not None else None
+        _try_emit(sigs, lambda: _signal(
             sym, "earnings_yield_value", "MED",
-            f"Earnings yield {f.get('earnings_yield') * 100:.2f}% "
+            f"Earnings yield {_fmt_num(ey_pct, 2)}% "
             f"(1/PE, proxy for EBIT/TEV)",
-            {"earnings_yield": f.get("earnings_yield"),
-             "pe": f.get("pe")}))
+            {"earnings_yield": ey, "pe": f.get("pe")}))
 
+    # ---- Method 3: Book-to-Market ----
     if sym in rankings.get("book_to_market_value", set()):
-        sigs.append(_signal(
+        bm = f.get("book_to_market")
+        _try_emit(sigs, lambda: _signal(
             sym, "book_to_market_value", "MED",
-            f"Book-to-market {f.get('book_to_market'):.3f} "
-            f"(1/PB = {f.get('pb'):.2f} P/B)",
-            {"book_to_market": f.get("book_to_market"),
-             "pb": f.get("pb")}))
+            f"Book-to-market {_fmt_num(bm, 3)} "
+            f"(P/B {_fmt_num(f.get('pb'), 2)})",
+            {"book_to_market": bm, "pb": f.get("pb")}))
 
+    # ---- Method 4: Magic Formula proxy ----
     if sym in rankings.get("magic_formula_proxy", set()):
-        sigs.append(_signal(
+        roce = f.get("roce")
+        ey = f.get("earnings_yield")
+        ey_pct = ey * 100 if ey is not None else None
+        _try_emit(sigs, lambda: _signal(
             sym, "magic_formula_proxy", "MED",
-            f"Magic Formula proxy: ROCE {f.get('roce'):.1f}% + "
-            f"E/Y {f.get('earnings_yield') * 100:.2f}%",
-            {"roce": f.get("roce"),
-             "earnings_yield": f.get("earnings_yield")}))
+            f"Magic Formula proxy: ROCE {_fmt_num(roce, 1)}% + "
+            f"E/Y {_fmt_num(ey_pct, 2)}%",
+            {"roce": roce, "earnings_yield": ey}))
 
+    # ---- Method 5: Quality & Price proxy ----
     if sym in rankings.get("quality_and_price_proxy", set()):
-        sigs.append(_signal(
+        roe = f.get("roe")
+        bm = f.get("book_to_market")
+        _try_emit(sigs, lambda: _signal(
             sym, "quality_and_price_proxy", "MED",
-            f"Q&P proxy: ROE {f.get('roe'):.1f}% + "
-            f"B/M {f.get('book_to_market'):.3f}",
-            {"roe": f.get("roe"),
-             "book_to_market": f.get("book_to_market")}))
+            f"Q&P proxy: ROE {_fmt_num(roe, 1)}% + "
+            f"B/M {_fmt_num(bm, 3)}",
+            {"roe": roe, "book_to_market": bm}))
 
+    # ---- Method 6: Composite Price Ratios ----
+    # Partial components allowed → must be null-safe in the note.
     if sym in rankings.get("composite_price_ratios_proxy", set()):
-        sigs.append(_signal(
+        ey = f.get("earnings_yield")
+        bm = f.get("book_to_market")
+        dy = f.get("dividend_yield")
+        ey_pct = ey * 100 if ey is not None else None
+        _try_emit(sigs, lambda: _signal(
             sym, "composite_price_ratios_proxy", "MED",
-            f"Composite: E/Y {f.get('earnings_yield') and f['earnings_yield']*100:.2f}% "
-            f"+ B/M {f.get('book_to_market'):.3f} "
-            f"+ DY {f.get('dividend_yield') or 0:.2f}%",
-            {"earnings_yield": f.get("earnings_yield"),
-             "book_to_market": f.get("book_to_market"),
-             "dividend_yield": f.get("dividend_yield")}))
+            f"Composite: E/Y {_fmt_num(ey_pct, 2)}% "
+            f"+ B/M {_fmt_num(bm, 3)} "
+            f"+ DY {_fmt_num(dy, 2)}%",
+            {"earnings_yield": ey,
+             "book_to_market": bm,
+             "dividend_yield": dy}))
 
+    # ---- Method 7: ROCE Quality Gate ----
     if sym in rankings.get("roce_quality_gate", set()):
-        sigs.append(_signal(
+        roce = f.get("roce")
+        _try_emit(sigs, lambda: _signal(
             sym, "roce_quality_gate", "HIGH",
-            f"ROCE {f.get('roce'):.1f}% ≥ {ROCE_QUALITY_MIN}",
-            {"roce": f.get("roce")}))
+            f"ROCE {_fmt_num(roce, 1)}% ≥ {ROCE_QUALITY_MIN}",
+            {"roce": roce}))
 
     return sigs
 
