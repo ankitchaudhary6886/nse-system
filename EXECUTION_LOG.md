@@ -863,7 +863,34 @@ markdown
 
 
 
-
+### #075 · Trader #8 — Apurva Parikh
+- Files:
+  - `traders/apurva_parikh.py` (new) — 1 composite strategy
+  - `traders/__init__.py` — registry now includes apurva_parikh
+  - `DATA_REQUESTS.md` — added DR-16 promoter/pledge,
+    DR-17 Nifty PE, DR-18 business age, DR-19 NOTE only
+  - `backlog.md`, `EXECUTION_LOG.md`
+- Classified: **FUNDA** (long-only, no intraday, no short).
+- **5 of 11 secrets testable today**:
+  - Secret 6 — D/E ≤ 0.30 ✅
+  - Secret 7 — CFO positive ✅
+  - Secret 8 — ROE ≥ 15% ✅
+  - Secret 9 — ROCE ≥ 20% ✅
+  - Secret 10 partial — PE ≤ sector-median (industry-PE proxy) ✅
+  - Secret 11 — RSI ≥ 60 + uptrend (close>SMA50>SMA200) ✅
+- **6 secrets flagged** (pending DR):
+  - Secret 1 business age → DR-18
+  - Secret 2 promoter ≥ 51%, pledge ≤ 20% → DR-16
+  - Secret 3 sales growth 10y → DR-01
+  - Secret 4 profit growth 10y → DR-01
+  - Secret 5 leadership quality → NOTE only (DR-19)
+  - Secret 10 Nifty PE gate → DR-17 (proxy constant set to 22.0)
+- **Exit rules shipped as informational metadata** on every signal
+  (`raw.exit_rules`) — the book's "sell on fundamental deterioration"
+  rules per R30/R19 (scanner identifies, owner decides).
+- Bug-safety per R35: `_fmt_num` + `_try_emit` from day one.
+- Uses `universe_helper.band_universe` for reference universe.
+- Status: DEPLOYED · AWAITING VERIFICATION
 
 
 

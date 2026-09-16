@@ -59,27 +59,32 @@ counter-trend retracement, force index (13 / 3 period).
 - `earnings_yield`, `book_to_market`, `roce_quality_gate`
 
 ### Trader-specific — Janet Lowe (computable today)
-- `graham_intrinsic_value` (inline in the module)
+- `graham_intrinsic_value` (inline)
 
-### Trader-specific — Way of the Turtle (computable today)
-All Turtle indicators computed inline in `way_of_the_turtle.py`:
-- `highest_high_prior_10d`, `highest_high_prior_20d`,
-  `highest_high_prior_55d`
-- `lowest_low_prior_10d`, `lowest_low_prior_20d`,
-  `lowest_low_prior_55d`
-- `atr_20` (Wilder-style EMA of true range)
-- `sma_100`, `sma_150`, `sma_250`, `sma_350`
-- `ema_25`, `ema_350`
-- `rolling_std_350d` (population std of close over 350 bars)
-- `channel_top_atr` = 350MA + 7 × ATR
-- `channel_bottom_atr` = 350MA − 3 × ATR
-- `channel_top_boll` = 350MA + 2.5 × σ
-- `channel_bottom_boll` = 350MA − 2.5 × σ
-- `swing_high_level`, `swing_low_level` (twice-tested pivot clusters)
+### Trader-specific — Way of the Turtle (computable today — inline)
+`highest_high_prior_{10,20,55}d`, `lowest_low_prior_{10,20,55}d`,
+`atr_20`, `sma_{100,150,250,350}`, `ema_{25,350}`,
+`rolling_std_350d`, `channel_{top,bottom}` (ATR & Bollinger),
+`swing_high_level`, `swing_low_level`.
 
-**Note:** these are computed inline per scan for performance. If
-other traders also need them (e.g. a future Ichimoku or a Keltner
-channel trader), promote them to a shared price-features module.
+### Trader-specific — 7 Simple Strategies (computable today — inline)
+All indicators computed inline in `seven_simple_strategies.py`:
+- `atr_14_wilder` — Wilder-style ATR (14-period EMA of true range)
+- `ema_9` — 9-period EMA
+- `dma_16`, `dma_24` — 16- and 24-period SMAs
+- `mean_100d` — 100-day simple mean (used as the mean-reversion line)
+- `trend_line` — line fitted through last 2 pivot lows/highs
+- `channel_lines` — parallel trend lines through pivots
+- `pivot_lows`, `pivot_highs` — pivot detection (k=3)
+- `hammer_pattern` — lower shadow >= 2x body, upper <= 0.2x body,
+  close in upper 25% of range
+- `bullish_doji_pattern` — body <= 0.5 x ATR, close > open,
+  close in upper 50% of range
+- `three_lower_closes` — 3 consecutive lower closes
+
+**Note:** the pivot/trend-line primitives are the same pattern used
+by John Crane's trendline helpers in `traders/base.py`. If a third
+module needs them, promote to `traders/base.py` to avoid duplication.
 
 ---
 
@@ -87,44 +92,38 @@ channel trader), promote them to a shared price-features module.
 
 ### Requested by: *What Works on Wall Street* (O'Shaughnessy)
 
-- **price_to_sales** — market_cap / trailing_12m_sales. M. Blocks
-  oshaughnessy: low_psr_value, low_psr_plus_rs,
-  cornerstone_growth_original, cornerstone_growth_improved
-- **eps_growth_1y** — (EPS_t − EPS_t−1) / |EPS_t−1|. M. Blocks
-  oshaughnessy: worst_earnings_gains, cornerstone_growth_original,
+- **price_to_sales** — M. Blocks oshaughnessy: low_psr_value,
+  low_psr_plus_rs, cornerstone_growth_original,
   cornerstone_growth_improved
-- **shareholder_yield** — dividend_yield + net_buyback_yield. M.
-  Blocks oshaughnessy: cornerstone_value_improved
-- **price_to_cashflow** — market_cap / (net_income + D&A). M. Blocks
-  oshaughnessy: low_pcf_value
-- **sales_ttm** — trailing 12-month revenue. M.
-- **cashflow_fy** — operating income + D&A. M. Blocks
-  oshaughnessy: market_leaders_universe (full), low_pcf_value
-- **shares_outstanding** — diluted shares. S.
+- **eps_growth_1y** — M. Blocks oshaughnessy:
+  worst_earnings_gains, cornerstone_growth_original,
+  cornerstone_growth_improved
+- **shareholder_yield** — M. Blocks oshaughnessy:
+  cornerstone_value_improved
+- **price_to_cashflow** — M. Blocks oshaughnessy: low_pcf_value
+- **sales_ttm** — M.
+- **cashflow_fy** — M. Blocks oshaughnessy:
+  market_leaders_universe (full), low_pcf_value
+- **shares_outstanding** — S.
 
 ### Requested by: *Quantitative Value* (Gray & Carlisle)
 
-- **ebit** — M. Blocks quantitative_value: ebit_enterprise_multiple,
-  magic_formula_proxy, quantitative_value_model
-- **total_enterprise_value (tev)** — M. Blocks
-  quantitative_value: ebit_enterprise_multiple
-- **gross_profit** — M. Blocks
-  quantitative_value: quality_and_price (full)
-- **total_assets** — S. Blocks
-  quantitative_value: STA, SNOA, F_SCORE, FS_SCORE
-- **current_assets** — S. Blocks quantitative_value: STA, F_SCORE
-- **current_liabilities** — S. Blocks quantitative_value: STA, F_SCORE
-- **cash_and_equivalents** — S. Blocks
-  quantitative_value: SNOA, ebit_enterprise_multiple
-- **fundamentals_history** — yearly snapshot of all fundamentals.
+- **ebit** — M. Blocks quantitative_value:
+  ebit_enterprise_multiple, magic_formula_proxy,
+  quantitative_value_model
+- **total_enterprise_value (tev)** — M.
+- **gross_profit** — M.
+- **total_assets** — S. Blocks quantitative_value: STA, SNOA,
+  F_SCORE, FS_SCORE
+- **current_assets** — S.
+- **current_liabilities** — S.
+- **cash_and_equivalents** — S.
+- **fundamentals_history** — yearly snapshot (multi-year storage).
   **L — single largest unblocker.** Unlocks ~11 methods across
   QV, O'Shaughnessy, Lowe.
-- **insider_trades** — SEBI SAST. L. Blocks
-  quantitative_value: insider_buying_opportunistic
-- **short_interest** — NSE feed. M. Blocks
-  quantitative_value: low_short_interest
-- **activist_13d_filings** — SEBI SAST. L. Blocks
-  quantitative_value: activist_13d_filing
+- **insider_trades** — SEBI SAST. L.
+- **short_interest** — NSE feed. M.
+- **activist_13d_filings** — SEBI SAST. L.
 
 ### Requested by: *Value Investing Made Easy* (Janet Lowe)
 
@@ -153,15 +152,19 @@ channel trader), promote them to a shared price-features module.
 
 ### Requested by: *Way of the Turtle* (Curtis Faith)
 
-None. All Turtle indicators are computed inline. No external feeds
-or historical series required.
+None. All Turtle indicators are computed inline.
+
+### Requested by: *7 Simple Strategies* (Patel & Kiri)
+
+None. All indicators (ATR, EMAs, SMAs, pivots, trend lines,
+channels, hammer, doji) are computed inline in the module.
 
 ---
 
 ## C. Feature count summary
 
-**Total features registered:** 88
-- **DONE (usable today):** 60 (includes all Turtle indicators)
+**Total features registered:** 100
+- **DONE (usable today):** 72 (includes all Turtle + 7SS indicators)
 - **BACKLOG (requested, awaiting ID52):** 28
   - O'Shaughnessy: 7
   - Gray & Carlisle: 13
@@ -171,4 +174,4 @@ or historical series required.
 snapshot table. Unlocks ~11 funda methods across three traders.
 
 **Traders with zero data blocks:** John Crane, Larry Spears,
-Way of the Turtle — full coverage.
+Way of the Turtle, 7 Simple Strategies — full coverage.

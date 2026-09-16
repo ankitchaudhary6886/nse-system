@@ -15,6 +15,7 @@ from traders import quantitative_value
 from traders import value_investing_made_easy
 from traders import way_of_the_turtle
 from traders import seven_simple_strategies
+from traders import apurva_parikh
 
 REGISTRY = [
     john_crane,
@@ -24,6 +25,7 @@ REGISTRY = [
     value_investing_made_easy,
     way_of_the_turtle,
     seven_simple_strategies,
+    apurva_parikh,
 ]
 
 
