@@ -1020,6 +1020,46 @@ shared `traders/chart_primitives.py` module.
 - R35 safety from day one.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
+
+### #081 · Trader #12 — William O'Neil
+- Files:
+  - `traders/oneil.py` (new) — 7 methods (6 scanned, 1 filter)
+  - `traders/__init__.py` — registry now 12 traders
+  - `backlog.md`, `EXECUTION_LOG.md`,
+    `NEW_FEATURES_BACKLOG.md`, `DATA_REQUESTS.md`
+- Classified: **Multi** (growth + chart pattern, long-only).
+- 7 methods:
+  1. CAN SLIM composite
+  2. Cup-with-Handle breakout
+  3. Double Bottom (W) breakout
+  4. Flat Base breakout
+  5. High Tight Flag breakout
+  6. Ascending Base breakout
+  7. Market Direction Filter (registered, not scanned)
+- **R42 (no proxies)** — every method implements O'Neil's exact
+  requirements. Methods 1-6 gate on Method 7's confirmed-uptrend
+  regime; without index data (DR-20), they emit zero signals.
+  Scan logs the data gap at startup.
+- **Exits — R40 format** with `_oneil_exits_block()`:
+  stop_out at 7.5% below entry (book's 7-8% rule),
+  target at 22.5% above entry (book's 20-25% rule),
+  offset on 5+ distribution days,
+  invalidation on close below 10-week MA,
+  exhaustion on climax top signals,
+  time_exit: None (with 8-week hold override for 20% in <3 weeks).
+- **Overlap marking — R41** on every signal:
+  - CAN SLIM → oshaughnessy (2 methods)
+  - Cup → patterns.HIGH_TIGHT_FLAG,
+    ishaan.pattern_breakout_playbook
+  - Double Bottom → patterns.DOUBLE_BOTTOM
+  - Flat Base → seven_simple_strategies.golden_entry_long
+  - HTF → patterns.HIGH_TIGHT_FLAG
+  - Ascending → patterns.ASCENDING_TRIANGLE
+- Adds 3 new DRs: DR-20 (Nifty 500 index), DR-21 (quarterly
+  fundamentals), DR-22 (RS rating + sponsorship).
+- R35 safety from day one.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
 ---
 ---
 

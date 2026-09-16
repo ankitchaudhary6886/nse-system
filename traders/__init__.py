@@ -14,6 +14,7 @@ from traders import apurva_parikh
 from traders import ishaan_agnihotri
 from traders import nison
 from traders import chande
+from traders import oneil
 
 REGISTRY = [
     john_crane,
@@ -27,6 +28,7 @@ REGISTRY = [
     ishaan_agnihotri,
     nison,
     chande,
+    oneil,
 ]
 
 
