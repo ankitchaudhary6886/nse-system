@@ -814,6 +814,60 @@ markdown
 - Status: DEPLOYED · AWAITING VERIFICATION
 ---
 
+### #073 · Trader #7 — Alpesh Patel & Paresh Kiri
+- Files:
+  - `traders/seven_simple_strategies.py` (new) — 11 methods
+  - `traders/__init__.py` — registry now includes
+    seven_simple_strategies
+  - `backlog.md`, `NEW_FEATURES_BACKLOG.md`, `EXECUTION_LOG.md`
+- Classified: **Swing** (long-only, no intraday, no shorting).
+- What:
+  - **11 methods, all scanned** — fully price-based, no data blocks:
+    1. Breakout With Momentum (20d breakout OR gap-up, close near
+       high, vol >= 1.5x)
+    2. Mean Reversion (100-day mean, price >= 2% below, bullish
+       reversal candle)
+    3. MA Crossover 50/200 (fresh cross)
+    4. MA Crossover 10 EMA / 24 SMA (fresh cross)
+    5. MA Crossover 9 EMA / 16 SMA (fresh cross)
+    6. Trend Line Trade (pivot-fit uptrend line touch + bullish candle)
+    7. Trend Line Break (downtrend line break >= 2 ATR + volume)
+    8. Channel Trade (lower-channel touch + bullish candle)
+    9. Golden Entry (consolidation range <= 10% over 20 bars,
+       breakout >= 2 ATR, vol >= 1.5x)
+    10. Bullish Hammer (3 lower closes + hammer shape)
+    11. Bullish Doji / Spinning Top (3 lower closes + small range
+        bullish candle)### #074 · DATA_REQUESTS.md (I62, R36)
+- Files:
+  - `DATA_REQUESTS.md` (new) — owner-facing live list
+  - `backlog.md` — added R36 + D10 + I62 + ID64; status updated
+  - `EXECUTION_LOG.md` — this entry
+- What:
+  - Consolidated every flagged feature across O'Shaughnessy,
+    Gray-Carlisle, and Lowe into 15 owner-actionable requests
+    (DR-01 → DR-15).
+  - Grouped by priority: P0 (3 requests, ~21 methods),
+    P1 (4 requests, ~7 methods), P2 (8 requests, ~11 methods).
+  - Duplication map: one fetch (fundamentals_history) unlocks
+    ~18 methods across 3 traders.
+  - Update protocol documented.
+- Rule added: **R36** — maintain live owner-data request list.
+- Demand added: **D10**.
+- Status: DEPLOYED · VERIFIED
+  - Bug-safety per R35: `_fmt_num` + `_try_emit` present from day one.
+  - MIN_BARS = 260 (200-SMA headroom).
+  - MIN_PRICE = ₹100 (penny avoidance).
+  - All long-only, cash-equity actionable.
+- Uses `universe_helper.band_universe` for reference universe.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+
+
+
+
+
+
+
 ## HOW NEW SESSIONS USE THIS
 1. Read `backlog.md` — rules, instructions, current status.
 2. Read `EXECUTION_LOG.md` — exactly what shipped.

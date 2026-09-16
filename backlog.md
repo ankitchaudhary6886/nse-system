@@ -7,6 +7,7 @@
 - Portal redesign vision lives in PORTAL_REDESIGN.md.
 - Book-extraction standard lives in docs/BOOK_EXTRACTION_PROMPT.md.
 - Feature registry lives in NEW_FEATURES_BACKLOG.md.
+- **Owner data request list lives in DATA_REQUESTS.md.**
 - Survives chat migration.
 
 ---
@@ -70,6 +71,14 @@
           that returns "—" for None. Wrap each signal emission in
           `_try_emit` so one method's failure never kills the whole
           symbol's signal set.
+- **R36** **Maintain a live owner-data request list.** Every
+          feature requested by any book/trader goes into
+          `DATA_REQUESTS.md` with: field+formula, trader impact
+          (which methods need it), why, impact, relevance,
+          duplication, priority, owner action, effort. This is the
+          owner-facing counterpart to `NEW_FEATURES_BACKLOG.md`.
+          Update on every new book extraction and on every owner
+          delivery. Log status flips in EXECUTION_LOG.md.
 
 ---
 
@@ -96,7 +105,7 @@ I46–I47.
 - **I51** Ship BOOK_EXTRACTION_PROMPT.md + NEW_FEATURES_BACKLOG.md
           + R31.
 
-### Session 7 — 2026-09-14 → 2026-09-15 (this chat — traders & books)
+### Session 7 — 2026-09-14 → 2026-09-17 (this chat — traders & books)
 - **I52** Trader #3 — James O'Shaughnessy. 19 methods. Funda.
 - **I53** Chat scope → R32.
 - **I54** Trader #4 — Gray & Carlisle. 20 methods. Funda (+ Multi).
@@ -110,7 +119,11 @@ I46–I47.
 - **I61** Trader #7 — Alpesh Patel & Paresh Kiri,
           *7 Simple Strategies of Highly Effective Traders* (2010).
           11 methods, all scanned. Swing, long-only, no intraday.
-          Fully price-based. No data blocks.
+- **I62** `#rule` — maintain a live owner-data request list
+          (`DATA_REQUESTS.md`) with field, formula, trader impact,
+          why, impact, relevance, duplication, priority, owner
+          action, effort. Update on every book + every delivery.
+          → captured as R36.
 
 ---
 
@@ -126,6 +139,8 @@ I46–I47.
 - **D8** Every response ends with actionable git + VM blocks.
 - **D9** Null-safe emission — one signal's format error must never
         drop other signals for the same symbol.
+- **D10** The owner always knows what data to fetch next.
+         (`DATA_REQUESTS.md` is live and accurate.) (reinforces R36)
 
 ---
 
@@ -145,7 +160,7 @@ Trader #3. 19 methods. Funda. 256 signals / 46 symbols.
 
 ### ID60 — Quantitative Value (Gray & Carlisle) · **DONE · VERIFIED**
 Trader #4. 20 methods. Funda (+ Multi). 7 scanned, 13 flagged.
-147 signals / 30 symbols after null-format fix.
+147 signals / 30 symbols.
 
 ### ID61 — Value Investing Made Easy (Janet Lowe) · **DONE · VERIFIED**
 Trader #5. 21 methods. Funda (+ Multi). 7 scanned, 14 flagged.
@@ -154,10 +169,15 @@ Trader #5. 21 methods. Funda (+ Multi). 7 scanned, 14 flagged.
 ### ID62 — Way of the Turtle (Curtis Faith) · **DONE · VERIFIED**
 Trader #6. 9 methods, 8 scanned. Multi. 16 signals / 8 symbols.
 
-### ID63 — 7 Simple Strategies (Patel & Kiri) · **DONE**
-Trader #7. **11 methods, all scanned.** Swing, long-only,
-no intraday, no shorting (per owner's extraction instructions).
-Fully price-based. No data blocks — full coverage.
+### ID63 — 7 Simple Strategies (Patel & Kiri) · **DONE · VERIFIED**
+Trader #7. 11 methods, all scanned. Swing, long-only.
+13 signals / 11 symbols (limit=50 sample).
+
+### ID64 — DATA_REQUESTS.md · **DONE this batch**
+Owner-facing live list of every data element needed to unlock
+remaining methods. 15 requests (DR-01 through DR-15), grouped
+by priority. Duplication map. Update protocol. One fetch
+(DR-01 fundamentals_history) unlocks ~18 methods.
 
 ### ID52 — Data source plugins · **DEFERRED (post-traders)**
 
@@ -170,7 +190,7 @@ IM1–IM6 as previously logged.
 
 ## F. FEATURES COMPLETED
 Prior list + FTR + FJC + FLS + FBEP + FNFR + FJO + FQV + FVIME +
-FWOT + F7SS (7 Simple Strategies).
+FWOT + F7SS + FDR (DATA_REQUESTS).
 
 ---
 
@@ -178,8 +198,8 @@ FWOT + F7SS (7 Simple Strategies).
 
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
-| R1–R35 | Rules                    | Active       |
-| I1–I61 | Instructions             | Applied      |
+| R1–R36 | Rules                    | Active       |
+| I1–I62 | Instructions             | Applied      |
 | ID54  | Traders framework         | DONE         |
 | ID55  | John Crane                | DONE         |
 | ID56  | Larry Spears              | DONE         |
@@ -189,7 +209,8 @@ FWOT + F7SS (7 Simple Strategies).
 | ID60  | Quantitative Value        | DONE · VERIFIED |
 | ID61  | Value Investing Made Easy | DONE · VERIFIED |
 | ID62  | Way of the Turtle         | DONE · VERIFIED |
-| ID63  | 7 Simple Strategies       | DONE         |
+| ID63  | 7 Simple Strategies       | DONE · VERIFIED |
+| ID64  | DATA_REQUESTS.md          | DONE         |
 | Traders 8–10 | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
@@ -198,17 +219,26 @@ FWOT + F7SS (7 Simple Strategies).
 ## H. REMAINING / LEFT
 
 ### Traders integration (current focus)
-- **Traders #1–#7 shipped** (#1–#6 verified).
+- **Traders #1–#7 shipped & verified.**
 - **Awaiting trader #8** from owner.
+
+### Owner data delivery (see DATA_REQUESTS.md)
+- **P0:** DR-01 fundamentals_history (unlocks ~18 methods),
+  DR-02 (subsumed by DR-01), DR-03 aaa_bond_yield (trivial)
+- **P1:** DR-04 shares_outstanding, DR-05 dividend_history,
+  DR-06 sales_ttm, DR-07 eps_growth_1y (all subsumed by DR-01)
+- **P2:** DR-08 insider, DR-09 short_interest, DR-10 activist,
+  DR-11 corporate_bond, DR-12 convertible/preferred,
+  DR-13 IBC/NCLT, DR-14 open_offer, DR-15 IPO
 
 ### Phase 4 (deferred until traders done)
 - ID52 Data source plugin system
 - Growth data source integration
 - **Direct impact on shipped traders:**
-  - O'Shaughnessy: lights up 6 empty methods.
-  - Gray-Carlisle: lights up 13 flagged methods.
-  - Lowe: lights up 14 flagged methods.
-  - Turtle / 7SS: no impact (fully implemented already).
+  - O'Shaughnessy: 6 methods
+  - Gray-Carlisle: 13 methods
+  - Lowe: 14 methods
+  - Turtle / 7SS: no impact
 
 ### Deferred (owner chose to skip)
 - Settings `.env` / admin creds rotation
