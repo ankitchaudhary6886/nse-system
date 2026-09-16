@@ -943,11 +943,53 @@ All indicators computed inline in `traders/nison.py`:
 unique to Nison. If a future trader needs them, promote to a
 shared `traders/chart_primitives.py` module.
 
+### #078 · Trader #10 — Steve Nison (Beyond Candlesticks)
+- Files:
+  - `traders/nison.py` (new) — 6 methods, all scanned
+  - `traders/__init__.py` — registry now 10 traders
+  - `backlog.md`, `EXECUTION_LOG.md`, `NEW_FEATURES_BACKLOG.md`,
+    `DATA_REQUESTS.md` (Nison confirmed zero new DRs)
+- Classified: **Multi** (Swing + Positional, long-only).
+- 6 methods, all price-only, fully implementable today:
+  1. Candlestick Reversal at Support (R/R ≥ 2:1 filter)
+  2. Rising Window as Support
+  3. Long White Candle Support Zone
+  4. Disparity Index Oversold Reversal
+  5. Golden Cross 13/26 EMA
+  6. New-Price Chart Trend (TLB / Renko / Kagi — consolidated)
+- **Structured exits per signal** (R38 — first trader under the rule).
+  Every signal carries `raw.exits`:
+  `stop_out` (price + condition), `target` (price + condition),
+  `offset` (opposite-pattern trigger), `invalidation` (setup death),
+  `exhaustion` (8-10 record-session rule), `time_exit` (N sessions).
+- **Overlap marked** on Nison's side:
+  `overlaps_with: ["ishaan_agnihotri.candlestick_reversal_at_support"]`.
+  Reverse marking noted as a backlog TODO.
+- Result: 13 signals / 12 symbols on limit=50 test.
+  Signal-type breakdown:
+  - TLB_WHITE_TURNAROUND: 7
+  - RENKO_WHITE_BRICK: 3
+  - KAGI_YANG: 1
+  - TREND_FOLLOW: 1 (golden cross)
+  - LONG_SETUP: 1 (long white candle zone)
+  Methods firing: nison_new_price_chart_trend (11),
+  nison_golden_cross (1), nison_long_white_candle_support (1).
+  Structured exits block verified in sample output.
+- Commit: 3c0bc69
+- Status: DEPLOYED · VERIFIED
 
+### #079 · Rule R39 + D12 logged
+- Files: `backlog.md`
+- Captured `#rule` — one file, one block, no bundling. Ship
+  DATA_REQUESTS.md only when it changes. Each file gets its own
+  dedicated section, never mixed with another file's update.
+- Status: DEPLOYED · VERIFIED
 
+---
 
 ## HOW NEW SESSIONS USE THIS
 1. Read `backlog.md` — rules, instructions, current status.
 2. Read `EXECUTION_LOG.md` — exactly what shipped.
-3. Read `PORTAL_REDESIGN.md` — vision & roadmap.
-4. Continue from the last entry's status.
+3. Read `DATA_REQUESTS.md` — what the owner provides next.
+4. Read `PORTAL_REDESIGN.md` — vision & roadmap.
+5. Continue from the last entry's status.

@@ -59,15 +59,21 @@
           explicit implement-this instruction is informational, not
           a build request.
 - **R38** **Exit strategies ship when the owner asks for them.**
-          For technical traders (Multi/Swing), the owner may
-          explicitly request exits to be included. When they do,
-          ship a structured `raw.exits` block per signal with:
-          `stop_out` (price + condition), `target` (price +
-          condition), `offset` (opposite-pattern exit trigger),
-          `invalidation` (setup-death condition), `exhaustion`
-          (record-session rule where applicable), `time_exit`
-          (N sessions or None). Nison (#10) is the first trader
-          under this rule.
+          For technical traders (Multi/Swing), ship a structured
+          `raw.exits` block per signal with: `stop_out` (price +
+          condition), `target` (price + condition), `offset`
+          (opposite-pattern exit trigger), `invalidation` (setup-
+          death condition), `exhaustion` (record-session rule where
+          applicable), `time_exit` (N sessions or None).
+          Nison (#10) is the first trader under this rule.
+- **R39** **One file, one block. No bundling.** Each file gets its
+          own dedicated section with its own full-file code block.
+          Do NOT mix DATA_REQUESTS.md with EXECUTION_LOG.md, or any
+          file with any other file. Only ship a file in a response
+          if that file actually changed in that response. If a file
+          is unchanged, note it in one line ("X — unchanged this
+          batch") rather than shipping its full content. This
+          applies to all .md docs and all .py files alike.
 
 ---
 
@@ -94,7 +100,7 @@ I46–I47.
 - **I51** Ship BOOK_EXTRACTION_PROMPT.md + NEW_FEATURES_BACKLOG.md
           + R31.
 
-### Session 7 — 2026-09-14 → 2026-09-17 (this chat — traders & books)
+### Session 7 — 2026-09-14 → 2026-09-17 (traders & books chat)
 - **I52**–**I61** as previously logged (traders #3–#7).
 - **I62** `#rule` → R36 live owner-data request list.
 - **I63** Trader #8 — Apurva Parikh.
@@ -104,11 +110,13 @@ I46–I47.
 - **I66** `#rule` — wait for explicit `trader N` instruction
           → R37.
 - **I67** Trader #10 — Steve Nison, *Beyond Candlesticks* (1994).
-          Classified Multi (Swing + Positional, long-only).
-          6 methods, all scanned. Structured exits per signal.
-          Overlap with Ishaan marked on Nison's side.
+          Classified Multi. 6 methods, all scanned. Structured
+          exits per signal. Overlap with Ishaan marked on Nison's
+          side.
 - **I68** `#rule` — exit strategies ship when owner asks for them
           → R38.
+- **I69** `#rule` — one file, one block, no bundling. Ship
+          DATA_REQUESTS.md only when it changes. → R39.
 
 ---
 
@@ -125,7 +133,7 @@ I46–I47.
 - **D9** Null-safe emission.
 - **D10** The owner always knows what data to fetch next.
 - **D11** Wait for explicit go on a book before shipping it.
-- **D12** Exits ship when explicitly requested (technical traders).
+- **D12** One file per block, no bundling. Ship only changed files.
 
 ---
 
@@ -151,28 +159,22 @@ Traders framework · Book extraction standard · Feature registry.
 
 ### ID64 — DATA_REQUESTS.md · DONE
 
-### ID65 — 11 Secrets (Apurva Parikh) · DONE · AWAITING VERIFICATION
-1 composite strategy. Funda.
+### ID65 — 11 Secrets (Apurva Parikh) · DONE · VERIFIED
+1 composite strategy. Funda. 5 of 11 secrets testable today.
+0 signals on limit=50 test (strict composite — expected).
 
-### ID66 — A Technical Trader's Handbook (Ishaan Agnihotri) · DONE · AWAITING VERIFICATION
-5 methods, all scanned. Swing.
+### ID66 — A Technical Trader's Handbook (Ishaan Agnihotri) · DONE · VERIFIED
+5 methods, all scanned. Swing. 3 signals / 3 symbols on test.
 
 ### ID67 — Greenwald book · **REJECTED by owner (I65)**
 
-### ID68 — Beyond Candlesticks (Steve Nison) · DONE
+### ID68 — Beyond Candlesticks (Steve Nison) · DONE · VERIFIED
 Trader #10. **6 methods, all scanned.** Multi (Swing + Positional,
 long-only). Fully price-only. No data blocks.
-**Structured exits per signal** — the first trader under R38.
-Methods:
-1. Candlestick Reversal at Support (with R/R ≥ 2:1 filter)
-2. Rising Window as Support
-3. Long White Candle Support Zone
-4. Disparity Index Oversold Reversal
-5. Golden Cross 13/26 EMA
-6. New-Price Chart Trend (TLB / Renko / Kagi — consolidated)
+**Structured exits per signal** (R38 — first trader under the rule).
 **Overlap marking:** Nison's candle-reversal signals carry
 `overlaps_with: ["ishaan_agnihotri.candlestick_reversal_at_support"]`.
-Owner decides later whether to prune.
+Result: 13 signals / 12 symbols on limit=50 test.
 
 ### ID52 — Data source plugins · DEFERRED (post-traders)
 
@@ -193,8 +195,8 @@ FWOT + F7SS + FDR + F11S + FATT + FNIS (Nison).
 
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
-| R1–R38 | Rules                    | Active       |
-| I1–I68 | Instructions             | Applied      |
+| R1–R39 | Rules                    | Active       |
+| I1–I69 | Instructions             | Applied      |
 | ID54–ID58 | Framework docs        | DONE         |
 | ID59  | James O'Shaughnessy       | DONE · VERIFIED |
 | ID60  | Quantitative Value        | DONE · VERIFIED |
@@ -202,10 +204,10 @@ FWOT + F7SS + FDR + F11S + FATT + FNIS (Nison).
 | ID62  | Way of the Turtle         | DONE · VERIFIED |
 | ID63  | 7 Simple Strategies       | DONE · VERIFIED |
 | ID64  | DATA_REQUESTS.md          | DONE         |
-| ID65  | Apurva Parikh             | DONE · AWAITING VERIFICATION |
-| ID66  | Ishaan Agnihotri          | DONE · AWAITING VERIFICATION |
+| ID65  | Apurva Parikh             | DONE · VERIFIED |
+| ID66  | Ishaan Agnihotri          | DONE · VERIFIED |
 | ID67  | Greenwald                 | REJECTED     |
-| ID68  | Steve Nison               | DONE         |
+| ID68  | Steve Nison               | DONE · VERIFIED |
 | Traders 11+ | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
@@ -214,8 +216,8 @@ FWOT + F7SS + FDR + F11S + FATT + FNIS (Nison).
 ## H. REMAINING / LEFT
 
 ### Traders integration
-- **Traders #1–#10 shipped.**
-- **#1–#7 verified. #8, #9, #10 awaiting VM verification.**
+- **Traders #1–#10 shipped. All verified.**
+- **10 traders · 112 methods · 81 scanned.**
 
 ### Backlog TODOs
 - **Reverse-mark the Ishaan↔Nison candle overlap** in
@@ -224,7 +226,7 @@ FWOT + F7SS + FDR + F11S + FATT + FNIS (Nison).
   (respects R28 whole-file discipline + R11 batch size).
 
 ### Owner data delivery (see DATA_REQUESTS.md)
-- P0: DR-01 (~21 methods), DR-02, DR-03
+- P0: DR-01 (~20 methods), DR-02, DR-03
 - P1: DR-04–DR-07, DR-16, DR-17
 - P2: DR-08–DR-15, DR-18, DR-19
 
