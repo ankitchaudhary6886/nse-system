@@ -6,10 +6,6 @@ Traders registry — each module declares:
   SOURCE   — book / reference
   METHODS  — list of {id, name, description, direction, scan?}
   scan(conn, limit) — returns list of signal dicts
-
-Signal dict shape:
-  {symbol, trader, method, direction, signal_type,
-   entry, stop, target, confidence, notes, raw}
 """
 
 from traders import john_crane
@@ -18,6 +14,7 @@ from traders import oshaughnessy
 from traders import quantitative_value
 from traders import value_investing_made_easy
 from traders import way_of_the_turtle
+from traders import seven_simple_strategies
 
 REGISTRY = [
     john_crane,
@@ -26,6 +23,7 @@ REGISTRY = [
     quantitative_value,
     value_investing_made_easy,
     way_of_the_turtle,
+    seven_simple_strategies,
 ]
 
 

@@ -62,12 +62,14 @@
           being updated, ship the WHOLE file, not "append this to
           Section X". Every file sent to the owner must be ready to
           paste into a fresh editor tab with no further assembly.
-          This applies to backlog.md, EXECUTION_LOG.md, and
-          NEW_FEATURES_BACKLOG.md too, not just code files.
 - **R34** **Always end with git + VM blocks.** Every response that
           ships files — code, docs, config, registry — ends with
-          one git block (laptop) and one VM block. No exceptions.
-          Docs-only changes count. This operationalizes R4.
+          one git block (laptop) and one VM block.
+- **R35** **Null-safe formatting in every signal note.** No
+          `f"{value:.Nf}"` where `value` can be None. Use `_fmt_num`
+          that returns "—" for None. Wrap each signal emission in
+          `_try_emit` so one method's failure never kills the whole
+          symbol's signal set.
 
 ---
 
@@ -87,34 +89,28 @@ I46–I47.
 
 ### Session 5 — 2026-09-15
 - **I48** Trader #1 (John Crane) shipped. Framework verified.
-- **I49** Trader #2 (Larry Spears). Extract only setup-identification
-          logic. Classified Swing.
+- **I49** Trader #2 (Larry Spears). Swing. Setup-ID only.
 
 ### Session 6 — 2026-09-16
-- **I50** Evolve book-extraction prompt: method-centric output
-          (one complete block per method), US→India translation
-          rules, structural invalidation field, setup validity
-          window, logical structure (AND/OR), variants.
-- **I51** Ship: docs/BOOK_EXTRACTION_PROMPT.md +
-          NEW_FEATURES_BACKLOG.md + R31 in backlog.
+- **I50** Evolve book-extraction prompt (method-centric output).
+- **I51** Ship BOOK_EXTRACTION_PROMPT.md + NEW_FEATURES_BACKLOG.md
+          + R31.
 
-### Session 7 — 2026-09-14 (this chat — traders & books)
-- **I52** Trader #3 — James O'Shaughnessy, *What Works on Wall
-          Street* (3rd Edition). Classified Funda. 19 methods.
-- **I53** This chat's scope = traders + book-strategy implementation
-          & integration. Standard 6-artifact batch per trader.
-          → captured as R32.
-- **I54** Trader #4 — Wesley Gray & Tobias Carlisle,
-          *Quantitative Value* (2012). Classified Funda. 17 methods.
-- **I55** `#rule` — always give full copy-paste blocks, not
-          patchwork. → captured as R33.
-- **I56** `#rule` — always send git and VM commands with every
-          response. → captured as R34.
-- **I57** Trader #5 — Janet Lowe, *Value Investing Made Easy*
-          (1996). Classified Funda. 18 methods.
-- **I58** Trader #6 — Curtis Faith, *Way of the Turtle* (2007).
-          Classified Multi. 9 methods — 8 scanned, all price-only,
-          fully implementable today. No data blocks.
+### Session 7 — 2026-09-14 → 2026-09-15 (this chat — traders & books)
+- **I52** Trader #3 — James O'Shaughnessy. 19 methods. Funda.
+- **I53** Chat scope → R32.
+- **I54** Trader #4 — Gray & Carlisle. 20 methods. Funda (+ Multi).
+- **I55** `#rule` full copy-paste blocks → R33.
+- **I56** `#rule` always send git + VM → R34.
+- **I57** Trader #5 — Janet Lowe. 21 methods. Funda (+ Multi).
+- **I58** Trader #6 — Curtis Faith (Way of the Turtle).
+          9 methods, 8 scanned. Multi.
+- **I59** Doc count corrections: QV actual = 20, Lowe actual = 21.
+- **I60** QV null-format bug fix → R35.
+- **I61** Trader #7 — Alpesh Patel & Paresh Kiri,
+          *7 Simple Strategies of Highly Effective Traders* (2010).
+          11 methods, all scanned. Swing, long-only, no intraday.
+          Fully price-based. No data blocks.
 
 ---
 
@@ -126,9 +122,10 @@ I46–I47.
 - **D4** Portal presents, never recommends (R19).
 - **D5** Every panel serves a decision the owner will actually make.
 - **D6** Backlog and execution log stay current — no drift.
-- **D7** No patchwork. Full files. Always. (reinforces R1, R28, R33)
+- **D7** No patchwork. Full files. Always.
 - **D8** Every response ends with actionable git + VM blocks.
-        (reinforces R4, R34)
+- **D9** Null-safe emission — one signal's format error must never
+        drop other signals for the same symbol.
 
 ---
 
@@ -136,42 +133,33 @@ I46–I47.
 
 ### ID1–ID53 as previously logged.
 
-### ID54 — Famous Traders framework · **DONE**
-### ID55 — John Crane (Advanced Swing Trading) · **DONE**
-14 methods classified under Swing.
+### ID54–ID58 as previously logged.
+- **ID54** Traders framework · DONE
+- **ID55** John Crane · DONE
+- **ID56** Larry Spears · DONE
+- **ID57** Book extraction standard · DONE
+- **ID58** Feature registry · DONE
 
-### ID56 — Larry Spears · **DONE**
-7 setup-identification methods, classified Swing.
+### ID59 — James O'Shaughnessy · **DONE · VERIFIED**
+Trader #3. 19 methods. Funda. 256 signals / 46 symbols.
 
-### ID57 — Book extraction standard · **DONE**
-Method-centric output format, US→India translation, structural
-invalidation, setup validity window. Lives in
-`docs/BOOK_EXTRACTION_PROMPT.md`.
+### ID60 — Quantitative Value (Gray & Carlisle) · **DONE · VERIFIED**
+Trader #4. 20 methods. Funda (+ Multi). 7 scanned, 13 flagged.
+147 signals / 30 symbols after null-format fix.
 
-### ID58 — Feature registry · **DONE**
-`NEW_FEATURES_BACKLOG.md` — single source of truth for features.
+### ID61 — Value Investing Made Easy (Janet Lowe) · **DONE · VERIFIED**
+Trader #5. 21 methods. Funda (+ Multi). 7 scanned, 14 flagged.
+25 signals / 20 symbols.
 
-### ID59 — James O'Shaughnessy · **DONE**
-Trader #3. 19 methods. Classified Funda.
+### ID62 — Way of the Turtle (Curtis Faith) · **DONE · VERIFIED**
+Trader #6. 9 methods, 8 scanned. Multi. 16 signals / 8 symbols.
 
-### ID60 — Quantitative Value (Gray & Carlisle) · **DONE**
-Trader #4. 17 methods. Classified Funda (+ Multi).
-
-### ID61 — Value Investing Made Easy (Janet Lowe) · **DONE**
-Trader #5. 18 methods. Classified Funda (+ Multi).
-
-### ID62 — Way of the Turtle (Curtis Faith) · **DONE**
-Trader #6. 9 methods — 8 scanned (Turtle System 1, Turtle System 2,
-ATR Channel Breakout, Bollinger Breakout, Donchian Trend,
-Dual MA, Triple MA, Support/Resistance Breakdown), 1 variant
-(Donchian Time Exit). Classified Multi. Fully price-based, no
-data blocks — all methods implementable today. Turtle System 1's
-skip rule omitted (stateless scan); documented as aggressive
-variant per the book's own alternative.
+### ID63 — 7 Simple Strategies (Patel & Kiri) · **DONE**
+Trader #7. **11 methods, all scanned.** Swing, long-only,
+no intraday, no shorting (per owner's extraction instructions).
+Fully price-based. No data blocks — full coverage.
 
 ### ID52 — Data source plugins · **DEFERRED (post-traders)**
-Directly unblocks: O'Shaughnessy (6 methods), Gray-Carlisle (10),
-Lowe (11). Turtle doesn't need it.
 
 ---
 
@@ -181,12 +169,8 @@ IM1–IM6 as previously logged.
 ---
 
 ## F. FEATURES COMPLETED
-Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
-**FLS** (Larry Spears) + **FBEP** (Book extraction prompt) +
-**FNFR** (New features registry) + **FJO** (James O'Shaughnessy) +
-**FQV** (Quantitative Value — Gray & Carlisle) +
-**FVIME** (Value Investing Made Easy — Janet Lowe) +
-**FWOT** (Way of the Turtle — Curtis Faith).
+Prior list + FTR + FJC + FLS + FBEP + FNFR + FJO + FQV + FVIME +
+FWOT + F7SS (7 Simple Strategies).
 
 ---
 
@@ -194,18 +178,19 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
-| R1–R34 | Rules                    | Active       |
-| I1–I58 | Instructions             | Applied      |
+| R1–R35 | Rules                    | Active       |
+| I1–I61 | Instructions             | Applied      |
 | ID54  | Traders framework         | DONE         |
 | ID55  | John Crane                | DONE         |
 | ID56  | Larry Spears              | DONE         |
 | ID57  | Book extraction standard  | DONE         |
 | ID58  | Feature registry          | DONE         |
-| ID59  | James O'Shaughnessy       | DONE         |
-| ID60  | Quantitative Value        | DONE         |
-| ID61  | Value Investing Made Easy | DONE         |
-| ID62  | Way of the Turtle         | DONE         |
-| Traders 7–10 | Pending owner input | PENDING      |
+| ID59  | James O'Shaughnessy       | DONE · VERIFIED |
+| ID60  | Quantitative Value        | DONE · VERIFIED |
+| ID61  | Value Investing Made Easy | DONE · VERIFIED |
+| ID62  | Way of the Turtle         | DONE · VERIFIED |
+| ID63  | 7 Simple Strategies       | DONE         |
+| Traders 8–10 | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
 ---
@@ -213,19 +198,17 @@ Prior list + **FTR** (Traders framework) + **FJC** (John Crane) +
 ## H. REMAINING / LEFT
 
 ### Traders integration (current focus)
-- **Traders #1–#6 shipped**: John Crane (Swing), Larry Spears (Swing),
-  James O'Shaughnessy (Funda), Gray & Carlisle (Funda),
-  Janet Lowe (Funda), Curtis Faith (Multi).
-- **Awaiting trader #7** from owner.
+- **Traders #1–#7 shipped** (#1–#6 verified).
+- **Awaiting trader #8** from owner.
 
 ### Phase 4 (deferred until traders done)
 - ID52 Data source plugin system
 - Growth data source integration
 - **Direct impact on shipped traders:**
   - O'Shaughnessy: lights up 6 empty methods.
-  - Gray-Carlisle: lights up 10 flagged methods.
-  - Lowe: lights up 11 flagged methods.
-  - Turtle: no impact (fully implemented already).
+  - Gray-Carlisle: lights up 13 flagged methods.
+  - Lowe: lights up 14 flagged methods.
+  - Turtle / 7SS: no impact (fully implemented already).
 
 ### Deferred (owner chose to skip)
 - Settings `.env` / admin creds rotation
