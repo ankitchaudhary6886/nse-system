@@ -893,6 +893,30 @@ markdown
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 
+### #076 · Trader #9 — Ishaan Agnihotri
+- Files:
+  - `traders/ishaan_agnihotri.py` (new) — 5 methods
+  - `traders/__init__.py` — registry now 9 traders
+  - `DATA_REQUESTS.md` — no new requests (all price-based)
+  - `backlog.md`, `EXECUTION_LOG.md`
+- Classified: **Swing** (+ Positional for Method 4).
+- 5 methods, all scanned:
+  1. EMA Reversal Playbook — 9 EMA + RSI oversold OR MACD cross
+     OR EMA9/21 cross + retest
+  2. Pattern Breakout Playbook — horizontal resistance / double
+     bottom / inverse H&S breakout + vol ≥ 1.5x
+  3. Candlestick Reversal @ Support — validated support + hammer
+     / dragonfly doji / long-legged doji / bullish engulfing
+  4. Trend Pullback Playbook — uptrend + pullback to SMA180 or
+     broken resistance + bullish bounce
+  5. Momentum Divergence Playbook — price lower low + RSI higher
+     low + close above EMA9
+- All indicators inline. R35 safety from day one.
+- MIN_BARS = 200 (room for SMA180).
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+
+
 
 
 ## HOW NEW SESSIONS USE THIS

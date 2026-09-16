@@ -60,12 +60,9 @@
 - **R33** **Full copy-paste blocks, not patchwork.**
 - **R34** **Always end with git + VM blocks.**
 - **R35** **Null-safe formatting + `_try_emit` in every trader
-          module.** One method's failure must never kill the whole
-          symbol's signal set.
+          module.**
 - **R36** **Maintain a live owner-data request list in
-          `DATA_REQUESTS.md`.** Update on every new book extraction
-          and on every owner delivery. Log status flips in
-          EXECUTION_LOG.md.
+          `DATA_REQUESTS.md`.**
 
 ---
 
@@ -88,7 +85,7 @@ I46–I47.
 - **I49** Trader #2 (Larry Spears). Swing. Setup-ID only.
 
 ### Session 6 — 2026-09-16
-- **I50** Evolve book-extraction prompt (method-centric).
+- **I50** Evolve book-extraction prompt.
 - **I51** Ship BOOK_EXTRACTION_PROMPT.md + NEW_FEATURES_BACKLOG.md
           + R31.
 
@@ -99,16 +96,15 @@ I46–I47.
 - **I55** `#rule` full copy-paste blocks → R33.
 - **I56** `#rule` always send git + VM → R34.
 - **I57** Trader #5 — Janet Lowe. 21 methods. Funda (+ Multi).
-- **I58** Trader #6 — Curtis Faith (Way of the Turtle). 9 methods.
+- **I58** Trader #6 — Curtis Faith. 9 methods. Multi.
 - **I59** Doc count corrections.
 - **I60** QV null-format bug fix → R35.
-- **I61** Trader #7 — Patel & Kiri. 11 methods. Swing, long-only.
+- **I61** Trader #7 — Patel & Kiri. 11 methods. Swing.
 - **I62** `#rule` — live owner-data request list → R36.
-- **I63** Trader #8 — Apurva Parikh, *11 Secrets to find Value
-          Stocks*. 1 composite strategy (all 11 secrets merged
-          per owner's extraction). Funda, long-only. 5 of 11
-          secrets testable today; 6 flagged pending DR-01/DR-16/
-          DR-17/DR-18. Exit rules shipped as informational metadata.
+- **I63** Trader #8 — Apurva Parikh. 1 composite. Funda.
+- **I64** Trader #9 — Ishaan Agnihotri, *A Technical Trader's
+          Handbook*. 5 methods. Swing (+ Positional for Method 4).
+          Fully price-based. Long-only extraction.
 
 ---
 
@@ -122,8 +118,7 @@ I46–I47.
 - **D6** Backlog and execution log stay current — no drift.
 - **D7** No patchwork. Full files. Always.
 - **D8** Every response ends with actionable git + VM blocks.
-- **D9** Null-safe emission — one signal's format error must never
-        drop other signals for the same symbol.
+- **D9** Null-safe emission.
 - **D10** The owner always knows what data to fetch next.
 
 ---
@@ -131,35 +126,33 @@ I46–I47.
 ## D. IDEAS
 
 ### ID54–ID58 as previously logged.
-- Traders framework · Book extraction standard · Feature registry
 
 ### ID59 — James O'Shaughnessy · DONE · VERIFIED
-19 methods. Funda. 256 signals / 46 symbols.
+19 methods. 256 signals / 46 symbols.
 
-### ID60 — Quantitative Value (Gray & Carlisle) · DONE · VERIFIED
-20 methods. Funda (+ Multi). 7 scanned, 13 flagged.
-147 signals / 30 symbols.
+### ID60 — Quantitative Value · DONE · VERIFIED
+20 methods. 147 signals / 30 symbols.
 
-### ID61 — Value Investing Made Easy (Janet Lowe) · DONE · VERIFIED
-21 methods. Funda (+ Multi). 7 scanned, 14 flagged.
-25 signals / 20 symbols.
+### ID61 — Value Investing Made Easy · DONE · VERIFIED
+21 methods. 25 signals / 20 symbols.
 
-### ID62 — Way of the Turtle (Curtis Faith) · DONE · VERIFIED
-9 methods, 8 scanned. Multi. 16 signals / 8 symbols.
+### ID62 — Way of the Turtle · DONE · VERIFIED
+9 methods. 16 signals / 8 symbols.
 
-### ID63 — 7 Simple Strategies (Patel & Kiri) · DONE · VERIFIED
-11 methods, all scanned. Swing. 13 signals / 11 symbols.
+### ID63 — 7 Simple Strategies · DONE · VERIFIED
+11 methods. 13 signals / 11 symbols.
 
 ### ID64 — DATA_REQUESTS.md · DONE
-Owner-facing live list (R36).
 
-### ID65 — 11 Secrets to find Value Stocks (Apurva Parikh) · DONE
-Trader #8. **1 composite strategy** (all 11 secrets merged).
-Funda, long-only. **5 of 11 secrets testable today**
-(6: D/E≤0.30, 7: CFO+, 8: ROE≥15%, 9: ROCE≥20%, 10 partial:
-PE≤sector-median, 11: RSI≥60 + uptrend). **6 flagged** —
-Secrets 1, 2, 3, 4, 5 and the Nifty PE gate (DR-01/DR-16/DR-17/
-DR-18). Exit rules shipped as informational metadata per R30.
+### ID65 — 11 Secrets (Apurva Parikh) · DONE · AWAITING VERIFICATION
+1 composite strategy. Funda. 5 of 11 secrets testable today.
+
+### ID66 — A Technical Trader's Handbook (Ishaan Agnihotri) · DONE
+Trader #9. **5 methods, all scanned.** Swing (+ Positional for
+Method 4). Long-only extraction (no intraday, no shorting).
+Fully price-based — every indicator (EMA9, EMA21, MACD, RSI,
+DMA180, pivots, support levels, candlestick patterns, chart
+patterns) computes inline. No new data requests.
 
 ### ID52 — Data source plugins · DEFERRED (post-traders)
 
@@ -172,7 +165,7 @@ IM1–IM6 as previously logged.
 
 ## F. FEATURES COMPLETED
 Prior list + FTR + FJC + FLS + FBEP + FNFR + FJO + FQV + FVIME +
-FWOT + F7SS + FDR + F11S (11 Secrets Parikh).
+FWOT + F7SS + FDR + F11S + FATT (A Technical Trader's Handbook).
 
 ---
 
@@ -181,7 +174,7 @@ FWOT + F7SS + FDR + F11S (11 Secrets Parikh).
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R36 | Rules                    | Active       |
-| I1–I63 | Instructions             | Applied      |
+| I1–I64 | Instructions             | Applied      |
 | ID54–ID58 | Framework docs        | DONE         |
 | ID59  | James O'Shaughnessy       | DONE · VERIFIED |
 | ID60  | Quantitative Value        | DONE · VERIFIED |
@@ -189,8 +182,9 @@ FWOT + F7SS + FDR + F11S (11 Secrets Parikh).
 | ID62  | Way of the Turtle         | DONE · VERIFIED |
 | ID63  | 7 Simple Strategies       | DONE · VERIFIED |
 | ID64  | DATA_REQUESTS.md          | DONE         |
-| ID65  | 11 Secrets (Apurva Parikh)| DONE         |
-| Traders 9–10 | Pending owner input | PENDING      |
+| ID65  | Apurva Parikh             | DONE · AWAITING VERIFICATION |
+| ID66  | Ishaan Agnihotri          | DONE         |
+| Trader #10 | Pending owner input    | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
 ---
@@ -198,14 +192,14 @@ FWOT + F7SS + FDR + F11S (11 Secrets Parikh).
 ## H. REMAINING / LEFT
 
 ### Traders integration (current focus)
-- **Traders #1–#8 shipped** (#1–#7 verified).
-- **Awaiting trader #9** from owner.
+- **Traders #1–#9 shipped.**
+- **#1–#7 verified. #8 + #9 awaiting VM verification.**
+- **Awaiting trader #10** from owner.
 
 ### Owner data delivery (see DATA_REQUESTS.md)
-- **P0:** DR-01 fundamentals_history (~20 methods), DR-02, DR-03
-- **P1:** DR-04, DR-05, DR-06, DR-07, DR-16 promoter/pledge,
-  DR-17 Nifty PE
-- **P2:** DR-08 through DR-15, DR-18 business age, DR-19 NOTE
+- P0: DR-01, DR-02, DR-03
+- P1: DR-04 through DR-07, DR-16, DR-17
+- P2: DR-08 through DR-15, DR-18, DR-19
 
 ### Phase 4 (deferred until traders done)
 - ID52 Data source plugin system
