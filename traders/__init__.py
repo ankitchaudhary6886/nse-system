@@ -12,6 +12,7 @@ from traders import way_of_the_turtle
 from traders import seven_simple_strategies
 from traders import apurva_parikh
 from traders import ishaan_agnihotri
+from traders import nison
 
 REGISTRY = [
     john_crane,
@@ -23,6 +24,7 @@ REGISTRY = [
     seven_simple_strategies,
     apurva_parikh,
     ishaan_agnihotri,
+    nison,
 ]
 
 

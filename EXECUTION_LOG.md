@@ -916,6 +916,33 @@ markdown
 - Status: DEPLOYED · AWAITING VERIFICATION
 
 
+### Trader-specific — Steve Nison (inline — added #078)
+All indicators computed inline in `traders/nison.py`:
+- **Candles**: `hammer`, `morning_star`, `piercing`,
+  `bullish_engulfing`, `dragonfly_doji`
+- **Support levels**: `pivot_lows`, `pivot_highs`,
+  `nearest_support`, `nearest_resistance`
+- **Trend filter**: `prior_downtrend` (below-20-SMA count +
+  lower-lows over 10 bars)
+- **Window**: `rising_window` (gap detection with volume
+  confirmation)
+- **Long candle**: `long_white_candle` (body ≥ 3× avg prior 10)
+- **Oscillator**: `disparity_index_13` = (close − SMA13) /
+  SMA13 × 100
+- **Trend**: `ema_13`, `ema_26`, `golden_cross_13_26`
+- **Non-time charts**:
+  - `tlb_state` — three-line break construction
+  - `tlb_white_turnaround` — 3 blacks followed by white
+  - `renko_state` — brick state with size = max(1×ATR, 3%×price)
+  - `renko_white_brick` — new white brick
+  - `kagi_state` — trend flip state machine
+  - `kagi_yang` — down→up trend flip
+- **Risk/reward**: `rr_from_entry_stop_target`
+
+**Note:** the non-time chart primitives (TLB, Renko, Kagi) are
+unique to Nison. If a future trader needs them, promote to a
+shared `traders/chart_primitives.py` module.
+
 
 
 
