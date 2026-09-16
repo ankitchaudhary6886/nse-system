@@ -985,6 +985,42 @@ shared `traders/chart_primitives.py` module.
   dedicated section, never mixed with another file's update.
 - Status: DEPLOYED · VERIFIED
 
+
+
+### #080 · Trader #11 — Tushar Chande
+- Files:
+  - `traders/chande.py` (new) — 5 methods, all scanned
+  - `traders/__init__.py` — registry now 11 traders
+  - `backlog.md`, `EXECUTION_LOG.md`,
+    `NEW_FEATURES_BACKLOG.md`
+- Classified: **Multi** (Swing + Positional, long-only).
+- 5 methods, all price-only, fully implementable today:
+  1. 65sma-3cc Trend-Following (RAVI ≥ 0.5 filter)
+  2. Channel Breakout-Pullback (CB-PB)
+  3. ADX Burst (Wilder ADX18 inline)
+  4. Bottom-Fishing (wide-range + strong-close reversal)
+  5. Extraordinary Opportunity (7/50 SMA 3% band + 20d breakout)
+- **Exit strategy — R40 format** (first trader under R40):
+  every signal carries `raw.exits` with `thesis` (plain English,
+  cites the book), `hard_number` (computed price where the rule
+  permits), and `condition` (textual trigger). Blocks: stop_out,
+  target, offset, invalidation, exhaustion, time_exit. Exits are
+  SUGGESTIVE, not directive.
+- **Overlap marking — R41** on every signal:
+  - 65sma-3cc → turtle_system_1_20d, nison_golden_cross
+  - CB-PB → turtle_system_1_20d,
+    breakout_with_momentum_long, trend_pullback_playbook
+  - ADX Burst → larry_spears.force_index
+  - Bottom-Fishing → nison_candlestick_reversal_at_support,
+    ishaan candlestick_reversal_at_support,
+    bullish_hammer_long
+  - Extraordinary → breakout_with_momentum_long
+- Methods 4 (Gold-Bond) and 7 (Trend-Antitrend) removed by owner
+  during extraction — not implemented.
+- R35 safety from day one.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
+---
 ---
 
 ## HOW NEW SESSIONS USE THIS
