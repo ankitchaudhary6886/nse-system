@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Wisdom — NSE Intelligence</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(1000px 500px at 80% -10%, #14315433, transparent),
+      radial-gradient(800px 400px at 0% 100%, #0f3d3322, transparent),
+      #0a0f1c;
+    color: #edf3ff;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+  h1 {
+    font-size: 34px; font-weight: 800; letter-spacing: -1px;
+    margin: 0 0 6px;
+    background: linear-gradient(90deg, #60a5fa, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .sub { color: #7f8da9; margin: 0 0 26px; font-size: 15px; }
+  .axioms {
+    border: 1px solid rgba(96,165,250,.28);
+    background: rgba(96,165,250,.06);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .axioms h2 {
+    margin: 0 0 12px; font-size: 15px; color: #60a5fa;
+    letter-spacing: 1.2px; text-transform: uppercase;
+  }
+  .axiom {
+    padding: 8px 0; font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .axiom:last-child { border: none; }
+  .axiom strong { color: #edf3ff; }
+  .axiom .d { color: #7f8da9; font-size: 13px; margin-top: 2px; }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 22px; align-items: center;
+  }
+  .theme-btn {
+    padding: 8px 14px; border-radius: 999px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    color: #cbd7ef; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .15s ease;
+  }
+  .theme-btn:hover { background: rgba(96,165,250,.12); }
+  .theme-btn.active {
+    background: rgba(96,165,250,.18);
+    border-color: rgba(96,165,250,.5);
+    color: #fff;
+  }
+  input[type=search] {
+    margin-left: auto;
+    padding: 9px 14px; min-width: 220px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 999px; color: #edf3ff; font-size: 13px;
+    outline: none;
+  }
+  input[type=search]:focus { border-color: rgba(96,165,250,.5); }
+
+  .theme-group { margin-bottom: 30px; }
+  .theme-group h3 {
+    font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase;
+    color: #60a5fa; margin: 0 0 12px;
+  }
+  .card {
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.035);
+    border-radius: 14px;
+    transition: border-color .15s ease;
+  }
+  .card:hover { border-color: rgba(96,165,250,.35); }
+  .principle { font-size: 15px; font-weight: 700; color: #edf3ff; }
+  .quant {
+    display: inline-block; margin-top: 8px; padding: 6px 12px;
+    background: rgba(52,211,153,.12);
+    border: 1px solid rgba(52,211,153,.3);
+    border-radius: 10px;
+    font-size: 12px; color: #34d399; font-weight: 600;
+  }
+  .row { margin-top: 8px; font-size: 13px; color: #dbe7ff; }
+  .row .label {
+    color: #7f8da9; font-weight: 600; margin-right: 6px;
+    text-transform: uppercase; font-size: 11px; letter-spacing: 1px;
+  }
+  .sources { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .src {
+    padding: 2px 8px; border-radius: 999px;
+    background: rgba(255,255,255,.06);
+    font-size: 11px; color: #9fb0cc;
+  }
+  .violated {
+    margin-top: 8px; padding: 8px 12px;
+    border-left: 3px solid #fb7185;
+    background: rgba(251,113,133,.06);
+    font-size: 12px; color: #fecdd3;
+    border-radius: 0 8px 8px 0;
+  }
+  .empty {
+    padding: 40px 20px; text-align: center;
+    color: #7f8da9; font-size: 14px;
+  }
+  @media (max-width: 640px) {
+    h1 { font-size: 26px; }
+    .wrap { padding: 20px 16px 60px; }
+    input[type=search] { min-width: 100%; margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Market Wisdom</h1>
+  <p class="sub">Timeless principles across 13 books. Quantified where possible. Read once. Skim before a scan.</p>
+
+  <div class="axioms" id="axioms"></div>
+
+  <div class="toolbar" id="toolbar"></div>
+
+  <div id="list"></div>
+</div>
+
+<script>
+// -----------------------------------------------------------------
+// Data — inlined. Mirrors traders/wisdom.py exactly.
+// -----------------------------------------------------------------
+
+const AXIOMS = [
+  {principle: "Trade with the primary trend, never against it.",
+   detail: "The trend is the frame; patterns inside it are just timing."},
+  {principle: "Risk first, reward second.",
+   detail: "A 50% loss needs a 100% gain to recover. Small losses preserve optionality."},
+  {principle: "Volume confirms price.",
+   detail: "A move without volume is a move without conviction."},
+  {principle: "Buy near support, sell near resistance. Never chase.",
+   detail: "The middle of a move is the worst place to enter."},
+  {principle: "Consistency beats brilliance.",
+   detail: "Half the edge is execution discipline, not signal generation."},
+];
+
+const THEMES = {
+  trend:      "Trend",
+  risk:       "Risk & Position Sizing",
+  entry:      "Entry Timing",
+  exit:       "Exit Discipline",
+  volume:     "Volume",
+  value:      "Value & Fundamentals",
+  quality:    "Quality & Franchise",
+  regime:     "Market Regime",
+  psychology: "Psychology & Discipline",
+  process:    "Process & Validation",
+};
+
+const WISDOM = [
+  // ---- TREND ----
+  {theme:"trend", principle:"Trade with the primary trend, never against it.",
+   quant:"Trend = higher highs + higher lows, or price above 200 DMA.",
+   sources:["McAllen","O'Neil","Patel & Kiri","Ishaan","Turtle"],
+   why:"Fighting the primary trend is the most expensive error in trading.",
+   violated_when:"Buying 'cheap' stocks; shorting strong uptrends; ignoring the index."},
+  {theme:"trend", principle:"The 200 DMA is the long-term heartbeat.",
+   quant:"Above 200 DMA = offence. Below = defence. Rising slope > flat.",
+   sources:["McAllen","O'Neil","Chande"],
+   why:"Cross above = new regime. Cross below = regime change.",
+   violated_when:"Buying below 200 DMA in a bull regime; ignoring slope."},
+  {theme:"trend", principle:"Secondary pullbacks inside a primary uptrend are noise.",
+   quant:"3-10 sessions, 6-25% deep, within an uptrend.",
+   sources:["McAllen","Ishaan","Patel & Kiri"],
+   why:"Buying the pullback gets tighter stop than buying the breakout.",
+   violated_when:"Panicking on normal pullbacks; averaging down."},
+  {theme:"trend", principle:"Higher highs + higher lows = intact uptrend.",
+   quant:"Last 3 swing highs rising AND last 3 swing lows rising.",
+   sources:["McAllen","O'Neil","Chande","Turtle"],
+   why:"Simple, structural. No indicators needed.",
+   violated_when:"Ignoring a lower high because news sounds good."},
+  {theme:"trend", principle:"MA stacking: 10 > 20 > 50 > 200.",
+   quant:"Full stack aligned = strong trend. Any inversion = weakening.",
+   sources:["Patel & Kiri","Ishaan","O'Neil"],
+   why:"Shows alignment across time horizons.",
+   violated_when:"Buying reversals while MAs are bearishly stacked."},
+  {theme:"trend", principle:"Golden cross = regime change to bullish.",
+   quant:"50 DMA crosses above 200 DMA. Fresh > old.",
+   sources:["McAllen (implied)","Patel & Kiri","Nison (13/26 EMA)","Chande (100/350)"],
+   why:"Long-term regime change. New money is safe.",
+   violated_when:"Chasing a cross that already happened."},
+  {theme:"trend", principle:"Death cross = regime change to bearish.",
+   quant:"50 DMA crosses below 200 DMA. Exit longs, raise cash.",
+   sources:["McAllen","O'Neil (M gate)","Patel & Kiri"],
+   why:"Internal strength has flipped. Not a top tick — a regime.",
+   violated_when:"Continuing to buy 'dips' through the cross."},
+
+  // ---- RISK ----
+  {theme:"risk", principle:"Cut every loss at a fixed percentage. No exception.",
+   quant:"7-8% below entry (O'Neil). 2× ATR (Chande, Patel).",
+   sources:["O'Neil","Chande","Patel & Kiri","McAllen"],
+   why:"The insurance-premium rule. The single most important defensive rule.",
+   violated_when:"Averaging down; 'waiting for it to come back'; overriding the stop."},
+  {theme:"risk", principle:"Never let a 15-20% gain become a loss.",
+   quant:"At +15-20%, move stop to breakeven or above.",
+   sources:["O'Neil"],
+   why:"Watching a winner turn red is the worst regret in trading.",
+   violated_when:"'It'll come back' — it won't necessarily."},
+  {theme:"risk", principle:"Risk ≤ 2% of capital per trade.",
+   quant:"Size = (capital × 0.02) / (entry − stop).",
+   sources:["Patel & Kiri","O'Neil","Chande","Turtle"],
+   why:"20 losses at 2% ≈ 33% DD — survivable. At 5% = ~64% — fatal.",
+   violated_when:"Sizing up because 'this one feels certain'."},
+  {theme:"risk", principle:"A 50% loss needs a 100% gain to recover.",
+   quant:"10%→11%. 25%→33%. 50%→100%. 75%→300%. 90%→900%.",
+   sources:["Patel & Kiri"],
+   why:"Compounding is asymmetric. The math of recovery is brutal.",
+   violated_when:"'It's only a paper loss' while it's still small."},
+  {theme:"risk", principle:"Small losses are the cost of doing business.",
+   quant:"Winning trades need only be ~40% if avg win is 3× avg loss.",
+   sources:["O'Neil","Turtle","Chande"],
+   why:"A positive-expectancy system expects most trades to lose.",
+   violated_when:"Trying to avoid all losses — kills the win rate."},
+  {theme:"risk", principle:"Position size by volatility, not conviction.",
+   quant:"Volatile stocks get smaller positions.",
+   sources:["Turtle (1N rule)","Chande"],
+   why:"Same dollar risk across all trades.",
+   violated_when:"Sizing up on 'the best setup of the year'."},
+  {theme:"risk", principle:"Half-Kelly with caps beats full Kelly.",
+   quant:"Half the Kelly fraction. Cap at 25% of capital. Fallback WR = 0.35.",
+   sources:["O'Neil","Gray & Carlisle"],
+   why:"75% of the growth with 50% of the variance.",
+   violated_when:"Going all-in because 'math says so'."},
+
+  // ---- ENTRY ----
+  {theme:"entry", principle:"Buy on the breakout close, not intraday.",
+   quant:"Signal on daily close above pivot + 0.05%. Enter next open.",
+   sources:["O'Neil","Ishaan","Patel & Kiri","Nison"],
+   why:"Intraday breakouts frequently reverse by close.",
+   violated_when:"Anticipating the breakout before the close."},
+  {theme:"entry", principle:"Wait for confirmation. Do not pre-empt.",
+   quant:"Breakout requires volume ≥ 1.4-1.5× average.",
+   sources:["Ishaan","O'Neil","Patel & Kiri","McAllen"],
+   why:"Unconfirmed breakouts have high false-positive rates.",
+   violated_when:"FOMO into a breakout you 'know' will work."},
+  {theme:"entry", principle:"Buy near new highs, not lows. (O'Neil Paradox.)",
+   quant:"Within 5% of 52-week high.",
+   sources:["O'Neil","O'Shaughnessy (RS)","Turtle"],
+   why:"New highs attract institutional attention. Old lows attract value traps.",
+   violated_when:"Bottom-fishing because 'it can't go lower'. It can."},
+  {theme:"entry", principle:"Entry at pivot + 0.05%. Never more than 5% extended.",
+   quant:"Buy zone = pivot to pivot × 1.05.",
+   sources:["O'Neil"],
+   why:"Extended buys have wider stops, worse R/R.",
+   violated_when:"Chasing a stock that ran 15% above the pivot."},
+  {theme:"entry", principle:"Volume ≥ 1.4× average on breakout.",
+   quant:"140% of 20-day average. Ideal 2×+.",
+   sources:["O'Neil","Ishaan","Patel & Kiri","McAllen"],
+   why:"Volume = institutional participation.",
+   violated_when:"Ignoring volume because 'pattern is perfect'."},
+  {theme:"entry", principle:"Wait for gap fill before entering.",
+   quant:"Breakaway gap → wait for fill → enter on confirmation.",
+   sources:["McAllen","Nison (windows)"],
+   why:"Gaps are vacuums. Fills shake loose weak hands.",
+   violated_when:"Buying the gap on day 1 because 'it might not fill'."},
+  {theme:"entry", principle:"Reversal candles need context: support + volume.",
+   quant:"Hammer/engulfing at validated support (≥2 touches) + volume ≥ 1.2×.",
+   sources:["Nison","Ishaan","McAllen","Patel & Kiri"],
+   why:"A candle alone is a shape. Context makes it a signal.",
+   violated_when:"Trading candle patterns in isolation."},
+
+  // ---- EXIT ----
+  {theme:"exit", principle:"Take profits at 20-25% into strength.",
+   quant:"Target = entry × 1.225 (midpoint).",
+   sources:["O'Neil"],
+   why:"Most big winners give back 30-50% on reversal.",
+   violated_when:"'It's still going up — let it run'."},
+  {theme:"exit", principle:"Big leaders: hold ≥8 weeks after 20% in <3 weeks.",
+   quant:"Gain of 20% in under 15 sessions → hold 40 sessions.",
+   sources:["O'Neil"],
+   why:"Speed is the signal that this is not a normal trade.",
+   violated_when:"Applying usual profit-taking to a big leader."},
+  {theme:"exit", principle:"Three consecutive closes below 65-SMA = exit.",
+   quant:"3 below 65-SMA. Faster: 3 below 50-SMA.",
+   sources:["Chande"],
+   why:"Three consecutive closes = real trend change.",
+   violated_when:"Holding a clearly-broken position because fundamentals look fine."},
+  {theme:"exit", principle:"Trailing stop after +2R. Trail at the 5-day low.",
+   quant:"+2R in profit → trail at lowest low of last 5 sessions.",
+   sources:["Chande","Turtle (10-day variant)"],
+   why:"Locks in gains without giving back the whole move.",
+   violated_when:"Fixed stops hit on normal pullbacks."},
+  {theme:"exit", principle:"Climax top signals = tighten stops.",
+   quant:"Largest daily run-up · heaviest volume · exhaustion gap · stock split.",
+   sources:["O'Neil","McAllen"],
+   why:"Climax = everyone who wanted in is already in.",
+   violated_when:"Buying into the climax because 'it's on the news'."},
+  {theme:"exit", principle:"Distribution day count ≥ 4-5 in 4-5 weeks = correction.",
+   quant:"Index down >0.2% on higher volume. Threshold: 4-5 days.",
+   sources:["O'Neil"],
+   why:"Distribution days are institutions selling.",
+   violated_when:"Buying breakouts into a distribution cluster."},
+  {theme:"exit", principle:"Sell your worst performer first; keep your best longest.",
+   quant:"When raising cash, cut the weakest setup first.",
+   sources:["O'Neil","Greenberg (Chieftain)"],
+   why:"Your best performers earned their hold. Dead money has not.",
+   violated_when:"Selling winners to 'lock in gains' while holding losers."},
+
+  // ---- VOLUME ----
+  {theme:"volume", principle:"Volume confirms price.",
+   quant:"Heavier on advances in uptrends; heavier on declines in downtrends.",
+   sources:["McAllen","O'Neil","Nison","Ishaan"],
+   why:"Volume = participation. Conviction is either there or it isn't.",
+   violated_when:"Trading a move with below-average volume."},
+  {theme:"volume", principle:"Volume dry-up in a flag or base = coiled spring.",
+   quant:"Flag volume ≤ 70% of 20-day average.",
+   sources:["O'Neil","Chande","McAllen"],
+   why:"Supply is exhausted. Breakout is inevitable (in context).",
+   violated_when:"Buying a base with rising volume — that's distribution."},
+  {theme:"volume", principle:"Low-volume breakouts fail more.",
+   quant:"<1.2× average has ~2× failure rate of high-volume breakouts.",
+   sources:["O'Neil","Ishaan","Patel & Kiri"],
+   why:"No follow-through without volume.",
+   violated_when:"'It looks like it broke out' — volume was mediocre."},
+  {theme:"volume", principle:"Volume climax at extension = exhaustion.",
+   quant:"Heaviest daily volume of the move at the top of an advance.",
+   sources:["O'Neil","McAllen"],
+   why:"Last buyers capitulate to the price. Supply is about to overwhelm.",
+   violated_when:"Reading a top-tick volume spike as confirmation."},
+  {theme:"volume", principle:"Delivery% (NSE) = institutional conviction proxy.",
+   quant:"Delivery ≥ 40-50% of traded quantity.",
+   sources:["India adaptation"],
+   why:"High delivery = shares moved into stronger hands.",
+   violated_when:"Reading traded quantity as accumulation — intraday churn inflates it."},
+
+  // ---- VALUE ----
+  {theme:"value", principle:"Buy a dollar for 50 cents.",
+   quant:"Price ≤ 50% of intrinsic value.",
+   sources:["Graham","Lowe","Greenwald","O'Shaughnessy"],
+   why:"Margin of safety protects against error — yours and the market's.",
+   violated_when:"'Close enough' at 20% discount."},
+  {theme:"value", principle:"Margin of safety is the cornerstone of investment success.",
+   quant:"Value: 33-50% below intrinsic. Swing: R/R ≥ 2:1.",
+   sources:["Graham","Buffett (via Greenwald)","Lowe"],
+   why:"The single most important principle in value investing.",
+   violated_when:"Trading on 'opportunity' without a safety margin."},
+  {theme:"value", principle:"Price is dominant. Never let quality override price.",
+   quant:"EBIT/TEV decile 1 (cheapest 10%) beats any quality overlay.",
+   sources:["Gray & Carlisle","O'Shaughnessy"],
+   why:"Even wonderful companies are bad investments at the wrong price.",
+   violated_when:"Paying up for 'quality' — Magic Formula's structural flaw."},
+  {theme:"value", principle:"Low PSR (P/S) is the king of value factors.",
+   quant:"PSR < 1.0. Beats low PE/PB/P/CF on risk-adjusted returns over 50 years.",
+   sources:["O'Shaughnessy"],
+   why:"Sales are the hardest number to manipulate.",
+   violated_when:"Using PE alone and ignoring revenue."},
+  {theme:"value", principle:"Combine value with relative strength.",
+   quant:"Low PE + top-decile 1-yr RS = Sharpe 61 vs 46 for All Stocks.",
+   sources:["O'Shaughnessy"],
+   why:"Value + momentum = the best risk-adjusted combo.",
+   violated_when:"Using value alone and buying falling knives."},
+  {theme:"value", principle:"Avoid permanent loss first. Cleanse the universe.",
+   quant:"Eliminate top 5% on PROBM, PFD, STA, SNOA.",
+   sources:["Gray & Carlisle"],
+   why:"The best picker in the world can't recover from a bankruptcy.",
+   violated_when:"Chasing yield in distressed names."},
+  {theme:"value", principle:"Growth outside the franchise destroys value.",
+   quant:"Only ROC > cost of capital creates value. Typically ROCE ≥ 15%.",
+   sources:["Greenwald","Buffett (via Greenwald)"],
+   why:"Growth requires capital. Low return on that capital = value tax.",
+   violated_when:"Buying growth in commodity industries (airlines, textiles)."},
+
+  // ---- QUALITY ----
+  {theme:"quality", principle:"ROCE ≥ 15-20% sustained = franchise proxy.",
+   quant:"ROCE ≥ 15% sustained 5-10 years. Prefer ≥ 20%.",
+   sources:["Greenwald","Lowe","Parikh","O'Shaughnessy"],
+   why:"Consistent high ROCE means competitive advantage protects returns.",
+   violated_when:"One-year high ROCE without checking consistency."},
+  {theme:"quality", principle:"ROE ≥ 17% and rising = compounder candidate.",
+   quant:"ROE ≥ 17% (prefer 25-50%). Rising trend over 3-5 years.",
+   sources:["O'Neil","Lowe","Parikh"],
+   why:"Rising ROE = improving business quality.",
+   violated_when:"Flat-ROE businesses and expecting compounding."},
+  {theme:"quality", principle:"8-year geometric ROA/ROC = volatility-adjusted quality.",
+   quant:"8-year geometric mean (not arithmetic) of ROA and ROC.",
+   sources:["Gray & Carlisle"],
+   why:"Arithmetic means hide volatility. Geometric means reveal it.",
+   violated_when:"Using last year's ROE as a quality proxy."},
+  {theme:"quality", principle:"Franchise = EPV − reproduction cost.",
+   quant:"Earnings Power Value minus reproduction cost of assets.",
+   sources:["Greenwald"],
+   why:"The gap IS the franchise. Zero gap = no competitive advantage.",
+   violated_when:"Paying for 'quality' without checking if it's a franchise."},
+  {theme:"quality", principle:"Promoter holding ≥ 51% = skin in the game (India).",
+   quant:"Promoter ≥ 51%. Pledge ≤ 20%.",
+   sources:["Parikh"],
+   why:"Founders who own the business make decisions like owners.",
+   violated_when:"Ignoring promoter holding because 'business looks good'."},
+
+  // ---- REGIME ----
+  {theme:"regime", principle:"Three out of four stocks move with the market.",
+   quant:"Never fight the primary index trend. Filter gates all setups.",
+   sources:["O'Neil","McAllen"],
+   why:"Individual stocks are corralled by the market's direction.",
+   violated_when:"Buying 'obvious' breakouts in a market correction."},
+  {theme:"regime", principle:"Index above EMA10 = bullish regime.",
+   quant:"Close > EMA10 with rising slope = ×1.0 size. Below = ×0.5 to ×0.25.",
+   sources:["Internal (regime.py)","Turtle"],
+   why:"Fastest regime signal available.",
+   violated_when:"Ignoring regime and trading full size."},
+  {theme:"regime", principle:"Distribution day count ≥ 4-5 in 4-5 weeks = correction.",
+   quant:"Index down >0.2% on higher volume. Threshold: 4-5 days.",
+   sources:["O'Neil"],
+   why:"Distribution days are institutions selling. Count them.",
+   violated_when:"Staying long through a distribution cluster."},
+  {theme:"regime", principle:"Follow-through day = new uptrend confirmation.",
+   quant:"Day 4-7 of rally: index up ≥1.5% on higher volume.",
+   sources:["O'Neil"],
+   why:"One up-day after a decline isn't a trend change.",
+   violated_when:"Buying the first up-day and getting whipsawed."},
+  {theme:"regime", principle:"Breadth > 50% = healthy market.",
+   quant:"% above 50-EMA ≥ 50% AND advances ≥ declines.",
+   sources:["Internal (breadth.py)","O'Neil (implied)"],
+   why:"Breadth measures participation. Narrow rallies are fragile.",
+   violated_when:"Buying breakouts when 70% of stocks are below 50-EMA."},
+  {theme:"regime", principle:"Never fight the index's primary trend.",
+   quant:"No new entries in confirmed correction.",
+   sources:["O'Neil","McAllen","Turtle"],
+   why:"Market direction dominates stock direction.",
+   violated_when:"Conviction about a stock overrides market context."},
+
+  // ---- PSYCHOLOGY ----
+  {theme:"psychology", principle:"Know your circle of competence.",
+   quant:"Only trade setups you can explain in 60 seconds.",
+   sources:["Buffett (via Greenwald)","Lowe","Turtle"],
+   why:"Edge comes from understanding.",
+   violated_when:"Trading a 'hot' theme you don't understand."},
+  {theme:"psychology", principle:"Be consistent. Half the edge is execution.",
+   quant:"Execute every signal. Missing one big winner can wipe out a year.",
+   sources:["Turtle","Chande"],
+   why:"Good system executed poorly < mediocre system executed well.",
+   violated_when:"Skipping signals based on 'feel'."},
+  {theme:"psychology", principle:"No overriding the model.",
+   quant:"System says buy → buy. System says sell → sell.",
+   sources:["Chande","Gray & Carlisle","O'Shaughnessy"],
+   why:"Discretion is where systematic edges die.",
+   violated_when:"'I know this one better'."},
+  {theme:"psychology", principle:"When in doubt, stay out.",
+   quant:"If setup requires interpretation beyond rules, skip it.",
+   sources:["McAllen","Turtle"],
+   why:"Missing a trade costs zero. A bad trade costs real money.",
+   violated_when:"Forcing trades because you're bored."},
+  {theme:"psychology", principle:"No FOMO. There is always another setup.",
+   quant:"Wait for the entry criteria. Not before.",
+   sources:["McAllen","Turtle","O'Neil"],
+   why:"Missing a move costs nothing. Chasing costs real money.",
+   violated_when:"Buying extended because 'it keeps going up'."},
+  {theme:"psychology", principle:"Learning from losses is the fastest path.",
+   quant:"Review every loss. Log the failure condition.",
+   sources:["Turtle","Chande","O'Neil"],
+   why:"Losses are the tuition. Ignoring wastes it.",
+   violated_when:"Blaming the market, news, or broker."},
+
+  // ---- PROCESS ----
+  {theme:"process", principle:"Positive expectation required.",
+   quant:"Expectancy = (WR × avg_win) − ((1−WR) × avg_loss). Must be > 0.",
+   sources:["Chande","Turtle","Patel & Kiri"],
+   why:"Negative-expectancy systems lose no matter how pretty the entries.",
+   violated_when:"Trading because 'entries look great' without expectancy check."},
+  {theme:"process", principle:"Small rulesets beat complex systems.",
+   quant:"≤5 rules per strategy.",
+   sources:["Chande","Turtle","O'Shaughnessy"],
+   why:"Simple systems survive parameter shifts. Complex systems are curve-fit.",
+   violated_when:"Adding rules to 'improve' a system."},
+  {theme:"process", principle:"Robust parameters, no curve-fitting.",
+   quant:"Performance must not collapse on ±20% parameter changes.",
+   sources:["Chande","Turtle"],
+   why:"A parameter that only works at 20.0 and not 18.0 or 22.0 is noise.",
+   violated_when:"Optimising to the last decimal."},
+  {theme:"process", principle:"Backtest with slippage, commission, survivorship bias.",
+   quant:"Slippage 0.1%, commission 0.05%, delisted included.",
+   sources:["Chande","Gray & Carlisle","O'Shaughnessy"],
+   why:"A backtest without these is a fairy tale.",
+   violated_when:"Claiming '20% CAGR' from a clean-data backtest."},
+  {theme:"process", principle:"Log every run. Evidence over opinion.",
+   quant:"strategy_runs table: date, params, PF, DD, verdict.",
+   sources:["Internal (strategy_runs)","Chande"],
+   why:"Memory is unreliable. Logs are the audit trail.",
+   violated_when:"Relying on 'I remember the PF was around 1.4'."},
+];
+
+// -----------------------------------------------------------------
+// Rendering
+// -----------------------------------------------------------------
+
+let activeTheme = "all";
+let searchQuery = "";
+
+function renderAxioms() {
+  const box = document.getElementById("axioms");
+  let html = '<h2>THE 5 AXIOMS</h2>';
+  AXIOMS.forEach((a, i) => {
+    html += `<div class="axiom">
+      <strong>${i + 1}. ${a.principle}</strong>
+      <div class="d">${a.detail}</div>
+    </div>`;
+  });
+  box.innerHTML = html;
+}
+
+function renderToolbar() {
+  const bar = document.getElementById("toolbar");
+  const total = WISDOM.length;
+  let html = `<button class="theme-btn active" data-t="all">All · ${total}</button>`;
+  for (const [key, label] of Object.entries(THEMES)) {
+    const count = WISDOM.filter(w => w.theme === key).length;
+    html += `<button class="theme-btn" data-t="${key}">${label} · ${count}</button>`;
+  }
+  html += `<input type="search" id="wisdomSearch" placeholder="Search principles…">`;
+  bar.innerHTML = html;
+
+  bar.querySelectorAll(".theme-btn").forEach(b => {
+    b.addEventListener("click", () => {
+      bar.querySelectorAll(".theme-btn").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      activeTheme = b.dataset.t;
+      renderList();
+    });
+  });
+
+  const search = document.getElementById("wisdomSearch");
+  search.addEventListener("input", (e) => {
+    searchQuery = e.target.value.toLowerCase().trim();
+    renderList();
+  });
+}
+
+function matchesFilter(w) {
+  if (activeTheme !== "all" && w.theme !== activeTheme) return false;
+  if (!searchQuery) return true;
+  const blob = [
+    w.principle, w.quant, w.why, w.violated_when,
+    (w.sources || []).join(" ")
+  ].join(" ").toLowerCase();
+  return blob.includes(searchQuery);
+}
+
+function renderList() {
+  const box = document.getElementById("list");
+  const filtered = WISDOM.filter(matchesFilter);
+  if (!filtered.length) {
+    box.innerHTML = '<div class="empty">No principles match this filter.</div>';
+    return;
+  }
+
+  // Group by theme
+  const groups = {};
+  filtered.forEach(w => {
+    groups[w.theme] = groups[w.theme] || [];
+    groups[w.theme].push(w);
+  });
+
+  // Preserve canonical theme order
+  const order = Object.keys(THEMES);
+  let html = "";
+  order.forEach(themeKey => {
+    const arr = groups[themeKey];
+    if (!arr || !arr.length) return;
+    html += `<div class="theme-group">
+      <h3>${THEMES[themeKey]} · ${arr.length}</h3>`;
+    arr.forEach(w => {
+      const sources = (w.sources || [])
+        .map(s => `<span class="src">${s}</span>`).join("");
+      html += `<div class="card">
+        <div class="principle">${w.principle}</div>
+        <div class="quant">${w.quant}</div>
+        <div class="row"><span class="label">Why</span>${w.why}</div>
+        <div class="sources">${sources}</div>
+        <div class="violated"><span class="label">Violated when</span>${w.violated_when}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  box.innerHTML = html;
+}
+
+renderAxioms();
+renderToolbar();
+renderList();
+</script>
+</body>
+</html>
