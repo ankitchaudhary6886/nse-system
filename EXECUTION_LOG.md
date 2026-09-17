@@ -1060,6 +1060,25 @@ shared `traders/chart_primitives.py` module.
 - R35 safety from day one.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
+
+
+### Trader-specific — Fred McAllen (added #082)
+All detectors computed inline in `traders/mcallen.py`:
+- `_detect_saucer` — long rounding bottom over 12-26 weeks
+- `_detect_island_bottom` — gap-down + gap-up isolation
+- `_is_three_white_soldiers` — 3 consecutive long bull candles
+- `_is_three_black_crows` — 3 consecutive long bear candles
+- `_is_bullish_harami` — inside-body bullish reversal
+- `_is_bearish_harami` — inside-body bearish reversal
+- `_is_hanging_man` — hammer shape at top
+- `_is_shooting_star` — inverted hammer at top
+- `_detect_exhaustion_gap` — gap up after extended advance
+- `_detect_spike_top` — parabolic >45° advance (linear-regression
+  slope / mean-price threshold)
+- `_detect_descending_triangle` — lower highs + flat support
+- `_prior_downtrend`, `_prior_uptrend`, `_candle_shape`,
+  `_pivots`, `_sma`, `_atr`, `_vol_ratio`
+
 ---
 ---
 
