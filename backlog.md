@@ -8,20 +8,15 @@
 - Book-extraction standard lives in docs/BOOK_EXTRACTION_PROMPT.md.
 - Feature registry lives in NEW_FEATURES_BACKLOG.md.
 - Owner data request list lives in DATA_REQUESTS.md.
+- McAllen's theses live in MCALLEN_THESES.md + `traders/mcallen_theses.py`.
+- Market wisdom lives in MARKET_WISDOM.md + `traders/wisdom.py` + `/static/wisdom.html`.
 - Survives chat migration.
 
 ---
 
 ## A. RULES  (always active)
 
-- **R1**–**R42** as previously logged.
-- **R43** **Scanner emits both entry and top-warning signals.**
-          `LONG_ENTRY` signals are actionable long setups.
-          `TOP_WARNING` signals are informational — they flag a
-          stock that now shows a top-formation pattern, for the
-          owner to review existing positions. They are NOT short
-          entries. Short entries remain out of scope across all
-          traders.
+- **R1**–**R43** as previously logged.
 
 ---
 
@@ -29,42 +24,39 @@
 
 ### Session 1–6 as previously logged.
 
-### Session 7 — 2026-09-14 → 2026-09-18 (this chat — traders & books)
-- **I52**–**I72** as previously logged (traders #3–#12, rules
-  R32–R42).
-- **I73** Trader #13 — Fred McAllen, *Charting and Technical
-          Analysis*. Classified Multi. **Option B — net-new
-          patterns only** (11 methods). **No shorting** — bearish
-          patterns ship as TOP_WARNING signals (not short entries).
-          Exit strategy per R40. → R43.
+### Session 7 — 2026-09-14 → 2026-09-18 (traders & books chat)
+- **I52**–**I74** as previously logged (traders #3–#13, rules R32–R43).
+- **I75** Trader #14 — Aseem Singhal, *51 Trading Strategies*.
+          Classified Multi. **18 methods implemented:**
+          7 Ch 1 swing + 4 Ch 4 positional + 7 Ch 7 more.
+          Skipped: Ch 2 (intraday), Ch 3 (SMC/Elliott/etc),
+          Ch 5 (scalping), Ch 6 (options). All indicators inline.
 
 ---
 
 ## C. DEMANDS
 
-- **D1**–**D15** as previously logged.
-- **D16** Scanner distinguishes entry signals from informational
-         top-warnings. (reinforces R43)
+- **D1**–**D17** as previously logged.
 
 ---
 
 ## D. IDEAS
 
-### ID54–ID70 as previously logged.
+### ID54–ID73 as previously logged.
 
-### ID71 — Strip existing proxies from shipped traders · BACKLOG
-
-### ID72 — Charting and Technical Analysis (McAllen) · DONE
-Trader #13. **11 methods (4 entries + 7 top-warnings).** Multi,
-long-only. Fully price-only. **Option B — net-new patterns only**
-(skips the ~15 patterns already covered by patterns.py, Nison,
-Ishaan, Patel & Kiri, Turtle, O'Neil).
-**Long entries:** saucer bottom, island bottom, three white
-soldiers, bullish harami.
-**Top warnings:** three black crows, bearish harami, hanging man,
-shooting star, exhaustion gap, spike top, descending triangle.
-**Overlap marking (R41):** every signal carries cross-links.
-**R43** logged — scanner emits both entries and top-warnings.
+### ID74 — 51 Trading Strategies (Aseem Singhal) · DONE
+Trader #14. **18 methods.** Multi, long-only, daily-bar.
+7 swing (BB+9EMA, Williams+MACD+SMA, MACD+Fib, Triangle BO,
+Gap Retracement, BB Width, Ichimoku Cloud) +
+4 positional (Macro Pivot, Supertrend+RSI, Sector RS, M&W RSI) +
+7 more (9/21 EMA, Positional BO, Pin Bar, Pullback-Retest,
+Repo, VCP, Two-Leg).
+**Indicators inline (R42):** Bollinger, Williams %R, MACD,
+Fibonacci, Ichimoku, Supertrend, Pivot Points, Pin Bar, VCP,
+Two-leg.
+**New DR-23:** RBI repo rate (Method 49 silent until supplied).
+**Overlaps marked (R41).**
+**Exits per R40.**
 
 ### ID52 — Data source plugins · DEFERRED (post-traders)
 
@@ -77,8 +69,8 @@ IM1–IM6 as previously logged.
 
 ## F. FEATURES COMPLETED
 Prior + FTR + FJC + FLS + FBEP + FNFR + FJO + FQV + FVIME +
-FWOT + F7SS + FDR + F11S + FATT + FNIS + FCH + FONL + FMCA
-(McAllen).
+FWOT + F7SS + FDR + F11S + FATT + FNIS + FCH + FONL + FMCA +
+FMT + FWIS + FSIN (Singhal).
 
 ---
 
@@ -87,8 +79,12 @@ FWOT + F7SS + FDR + F11S + FATT + FNIS + FCH + FONL + FMCA
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R43 | Rules                    | Active       |
-| I1–I73 | Instructions             | Applied      |
-| ID59–ID63 | Traders #3–#7         | DONE · VERIFIED |
+| I1–I75 | Instructions             | Applied      |
+| ID59  | James O'Shaughnessy       | DONE · VERIFIED |
+| ID60  | Quantitative Value        | DONE · VERIFIED |
+| ID61  | Value Investing Made Easy | DONE · VERIFIED |
+| ID62  | Way of the Turtle         | DONE · VERIFIED |
+| ID63  | 7 Simple Strategies       | DONE · VERIFIED |
 | ID64  | DATA_REQUESTS.md          | DONE         |
 | ID65  | Apurva Parikh             | DONE · VERIFIED |
 | ID66  | Ishaan Agnihotri          | DONE · VERIFIED |
@@ -97,8 +93,10 @@ FWOT + F7SS + FDR + F11S + FATT + FNIS + FCH + FONL + FMCA
 | ID69  | Tushar Chande             | DONE · VERIFIED |
 | ID70  | William O'Neil            | DONE · VERIFIED |
 | ID71  | Strip existing proxies    | BACKLOG      |
-| ID72  | Fred McAllen              | DONE         |
-| Traders 14+ | Pending owner input | PENDING      |
+| ID72  | Fred McAllen              | DONE · VERIFIED |
+| ID73  | McAllen theses capture    | DONE         |
+| ID74  | Aseem Singhal             | DONE         |
+| Traders 15+ | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
 ---
@@ -106,17 +104,16 @@ FWOT + F7SS + FDR + F11S + FATT + FNIS + FCH + FONL + FMCA
 ## H. REMAINING / LEFT
 
 ### Traders integration
-- **Traders #1–#12 all shipped and verified.**
-- **Trader #13 (McAllen) shipped — awaiting VM verification.**
-- **135 methods across 13 traders.**
+- **Traders #1–#14 shipped and verified (#14 awaiting VM).**
 
 ### Backlog TODOs
 - Reverse-mark overlaps in existing traders.
 - Strip existing proxies once real data arrives (ID71).
 
 ### Owner data delivery (see DATA_REQUESTS.md)
-- P0: DR-01 (~20 methods), DR-02, DR-03
+- P0: DR-01, DR-02, DR-03
 - P1: DR-04–DR-07, DR-16, DR-17, DR-20, DR-21, DR-22
+- **P1 (new): DR-23 RBI repo rate**
 - P2: DR-08–DR-15, DR-18, DR-19
 
 ### Phase 4 (deferred until traders done)

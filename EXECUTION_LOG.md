@@ -1079,6 +1079,29 @@ All detectors computed inline in `traders/mcallen.py`:
 - `_prior_downtrend`, `_prior_uptrend`, `_candle_shape`,
   `_pivots`, `_sma`, `_atr`, `_vol_ratio`
 
+
+### #085 · Trader #14 — Aseem Singhal
+- Files:
+  - `traders/singhal.py` (new) — 18 methods
+  - `traders/__init__.py` — registry now 14 traders
+  - `backlog.md`, `EXECUTION_LOG.md`,
+    `NEW_FEATURES_BACKLOG.md`, `DATA_REQUESTS.md`
+- Classified: **Multi** (Swing + Positional, long-only, daily-bar).
+- 18 methods:
+  - Ch 1 (7): BB+9EMA, Williams+MACD+SMA, MACD+Fib,
+    Triangle BO, Gap Retracement, BB Width, Ichimoku Cloud
+  - Ch 4 (4): Macro Pivot, Supertrend+RSI, Sector RS, M&W RSI
+  - Ch 7 (7): 9/21 EMA, Positional BO, Pin Bar,
+    Pullback-Retest, Repo, VCP, Two-Leg
+- Skipped: Ch 2 (intraday 5-30m), Ch 3 (SMC/Elliott/Gann/
+  Fractal/Renko/Donchian), Ch 5 (scalping 1-5m), Ch 6 (options).
+- All indicators computed inline (R42): Bollinger, Williams %R,
+  MACD, Fibonacci, Ichimoku, Supertrend, Pivot Points,
+  Pin Bar, VCP, Two-leg.
+- New DR-23 (RBI repo rate) — Method 49 silent until supplied.
+- R35, R40, R41 safety from day one.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
 ---
 ---
 

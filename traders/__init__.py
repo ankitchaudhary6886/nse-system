@@ -16,6 +16,7 @@ from traders import nison
 from traders import chande
 from traders import oneil
 from traders import mcallen
+from traders import singhal
 
 REGISTRY = [
     john_crane,
@@ -31,6 +32,7 @@ REGISTRY = [
     chande,
     oneil,
     mcallen,
+    singhal,
 ]
 
 
@@ -47,4 +49,5 @@ def list_traders():
 def get_trader(slug):
     for t in REGISTRY:
         if t.SLUG == slug:
-            return
+            return t
+    return None
