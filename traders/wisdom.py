@@ -7,6 +7,9 @@ Cross-book principles, not a scanner. Consumed by:
   - future AI sessions reading the codebase
 
 Content mirrors MARKET_WISDOM.md exactly.
+
+Rule R45: every book extraction contributes to this file. Singhal
+(#14) is the first book under the rule.
 """
 
 AXIOMS = [
@@ -37,7 +40,7 @@ WISDOM = [
      "quant": "No fixed rule. Trend = higher highs + higher lows, "
               "or price above the 200 DMA.",
      "sources": ["McAllen", "O'Neil", "Patel & Kiri", "Ishaan",
-                 "Turtle"],
+                 "Turtle", "Singhal"],
      "why": "Fighting the primary trend is the most expensive error "
             "in trading.",
      "violated_when": "Buying 'cheap' stocks; shorting strong "
@@ -46,7 +49,7 @@ WISDOM = [
      "principle": "The 200 DMA is the long-term heartbeat.",
      "quant": "Price above 200 DMA = offence. Below = defence. "
               "Rising slope > flat.",
-     "sources": ["McAllen", "O'Neil", "Chande"],
+     "sources": ["McAllen", "O'Neil", "Chande", "Singhal"],
      "why": "Cross above = new regime. Cross below = regime change.",
      "violated_when": "Buying below 200 DMA in a bull regime; "
                       "ignoring slope."},
@@ -54,14 +57,14 @@ WISDOM = [
      "principle": "Secondary pullbacks inside a primary uptrend are "
                   "noise.",
      "quant": "3-10 sessions, 6-25% deep, within an uptrend.",
-     "sources": ["McAllen", "Ishaan", "Patel & Kiri"],
+     "sources": ["McAllen", "Ishaan", "Patel & Kiri", "Singhal"],
      "why": "Buying pullback gets tighter stop than buying breakout.",
      "violated_when": "Panicking on normal pullbacks; averaging down."},
     {"theme": "trend", "id": "hh_hl_structure",
      "principle": "Higher highs + higher lows = intact uptrend.",
      "quant": "Last 3 swing highs rising AND last 3 swing lows "
               "rising.",
-     "sources": ["McAllen", "O'Neil", "Chande", "Turtle"],
+     "sources": ["McAllen", "O'Neil", "Chande", "Turtle", "Singhal"],
      "why": "Simple, structural. No indicators needed.",
      "violated_when": "Ignoring a lower high because news sounds "
                       "good."},
@@ -69,7 +72,7 @@ WISDOM = [
      "principle": "MA stacking: 10 > 20 > 50 > 200.",
      "quant": "Full stack aligned = strong trend. Any inversion = "
               "weakening.",
-     "sources": ["Patel & Kiri", "Ishaan", "O'Neil"],
+     "sources": ["Patel & Kiri", "Ishaan", "O'Neil", "Singhal"],
      "why": "Shows alignment across time horizons.",
      "violated_when": "Buying reversals while MAs are bearishly "
                       "stacked."},
@@ -77,7 +80,8 @@ WISDOM = [
      "principle": "Golden cross = regime change to bullish.",
      "quant": "50 DMA crosses above 200 DMA. Fresh > old.",
      "sources": ["McAllen (implicit)", "Patel & Kiri",
-                 "Nison (13/26 EMA)", "Chande (100/350)"],
+                 "Nison (13/26 EMA)", "Chande (100/350)",
+                 "Singhal (9/21 EMA)"],
      "why": "Long-term regime change.",
      "violated_when": "Chasing a cross that already happened."},
     {"theme": "trend", "id": "death_cross",
@@ -86,13 +90,24 @@ WISDOM = [
      "sources": ["McAllen", "O'Neil (M gate)", "Patel & Kiri"],
      "why": "Internal strength has flipped.",
      "violated_when": "Continuing to buy 'dips' through the cross."},
+    {"theme": "trend", "id": "market_sideways_70pct",
+     "principle": "70% of the time the market is sideways.",
+     "quant": "Range-bound != trending. Trend-following works 30% "
+              "of the time; range-trading works 70%.",
+     "sources": ["Singhal"],
+     "why": "Most losing trades come from applying trending tools "
+            "in a range-bound market.",
+     "violated_when": "Trend-following during confirmed sideways "
+                      "regimes."},
 
     # ---------------- RISK & SIZING ----------------
     {"theme": "risk", "id": "cut_losses_fixed",
      "principle": "Cut every loss at a fixed percentage. No "
                   "exception.",
-     "quant": "7-8% below entry (O'Neil). 2× ATR (Chande, Patel).",
-     "sources": ["O'Neil", "Chande", "Patel & Kiri", "McAllen"],
+     "quant": "7-8% below entry (O'Neil). 2x ATR (Chande, Patel, "
+              "Singhal).",
+     "sources": ["O'Neil", "Chande", "Patel & Kiri", "McAllen",
+                 "Singhal"],
      "why": "The insurance-premium rule. The single most important "
             "defensive rule.",
      "violated_when": "Averaging down; 'waiting for it to come "
@@ -104,22 +119,24 @@ WISDOM = [
      "why": "Watching a winner turn red is the worst regret.",
      "violated_when": "'It'll come back' — it won't necessarily."},
     {"theme": "risk", "id": "two_percent_rule",
-     "principle": "Risk ≤ 2% of capital per trade.",
-     "quant": "Size = (capital × 0.02) / (entry − stop).",
-     "sources": ["Patel & Kiri", "O'Neil", "Chande", "Turtle"],
-     "why": "20 losses at 2% ≈ 33% DD. Survivable. At 5% = ~64%. "
+     "principle": "Risk <= 2% of capital per trade.",
+     "quant": "Size = (capital x 0.02) / (entry - stop).",
+     "sources": ["Patel & Kiri", "O'Neil", "Chande", "Turtle",
+                 "Singhal"],
+     "why": "20 losses at 2% ~ 33% DD. Survivable. At 5% = ~64%. "
             "Fatal.",
      "violated_when": "Sizing up because 'this one feels certain'."},
     {"theme": "risk", "id": "loss_recovery_math",
      "principle": "A 50% loss needs a 100% gain to recover.",
-     "quant": "10%→11%. 25%→33%. 50%→100%. 75%→300%. 90%→900%.",
-     "sources": ["Patel & Kiri"],
+     "quant": "10%->11%. 25%->33%. 50%->100%. 75%->300%. "
+              "90%->900%.",
+     "sources": ["Patel & Kiri", "Singhal"],
      "why": "Compounding is asymmetric.",
      "violated_when": "'It's only a paper loss' — while it's still "
                       "small."},
     {"theme": "risk", "id": "small_losses_cost",
      "principle": "Small losses are the cost of doing business.",
-     "quant": "Winning trades need only be ~40% if avg win is 3× "
+     "quant": "Winning trades need only be ~40% if avg win is 3x "
               "avg loss.",
      "sources": ["O'Neil", "Turtle", "Chande"],
      "why": "A positive-expectancy system expects most trades to "
@@ -144,13 +161,15 @@ WISDOM = [
      "principle": "Buy on the breakout close, not intraday.",
      "quant": "Signal on daily close above pivot + 0.05%. Enter "
               "next open.",
-     "sources": ["O'Neil", "Ishaan", "Patel & Kiri", "Nison"],
+     "sources": ["O'Neil", "Ishaan", "Patel & Kiri", "Nison",
+                 "Singhal"],
      "why": "Intraday breakouts frequently reverse by close.",
      "violated_when": "Anticipating the breakout."},
     {"theme": "entry", "id": "wait_confirmation",
      "principle": "Wait for confirmation. Do not pre-empt.",
-     "quant": "Breakout requires volume ≥ 1.4-1.5× average.",
-     "sources": ["Ishaan", "O'Neil", "Patel & Kiri", "McAllen"],
+     "quant": "Breakout requires volume >= 1.4-1.5x average.",
+     "sources": ["Ishaan", "O'Neil", "Patel & Kiri", "McAllen",
+                 "Singhal"],
      "why": "Unconfirmed breakouts have high false-positive rates.",
      "violated_when": "FOMO into a breakout you 'know' will work."},
     {"theme": "entry", "id": "buy_new_highs",
@@ -164,44 +183,75 @@ WISDOM = [
     {"theme": "entry", "id": "pivot_buffer",
      "principle": "Entry at pivot + 0.05%. Never more than 5% "
                   "extended.",
-     "quant": "Buy zone = pivot to pivot × 1.05.",
-     "sources": ["O'Neil"],
+     "quant": "Buy zone = pivot to pivot x 1.05.",
+     "sources": ["O'Neil", "Singhal"],
      "why": "Extended buys have wider stops, worse R/R.",
      "violated_when": "Chasing a stock that ran 15% above pivot."},
     {"theme": "entry", "id": "volume_breakout",
-     "principle": "Volume ≥ 1.4× average on breakout.",
-     "quant": "140% of 20-day average. Ideal 2×+.",
-     "sources": ["O'Neil", "Ishaan", "Patel & Kiri", "McAllen"],
+     "principle": "Volume >= 1.4x average on breakout.",
+     "quant": "140% of 20-day average. Ideal 2x+.",
+     "sources": ["O'Neil", "Ishaan", "Patel & Kiri", "McAllen",
+                 "Singhal"],
      "why": "Volume = institutional participation.",
      "violated_when": "Ignoring volume because 'pattern is "
                       "perfect'."},
     {"theme": "entry", "id": "wait_gap_fill",
      "principle": "Wait for gap fill before entering.",
-     "quant": "Breakaway gap → wait for fill → enter on "
+     "quant": "Breakaway gap -> wait for fill -> enter on "
               "confirmation (higher high).",
-     "sources": ["McAllen", "Nison (windows)"],
+     "sources": ["McAllen", "Nison (windows)", "Singhal "
+                 "(institutional gap retracement)"],
      "why": "Gaps are vacuums. Fills shake loose weak hands.",
      "violated_when": "Buying the gap on day 1."},
     {"theme": "entry", "id": "reversal_candle_context",
      "principle": "Reversal candles need context: support + "
                   "volume.",
-     "quant": "Hammer/engulfing at validated support (≥2 prior "
-              "touches) + volume ≥ 1.2× average.",
+     "quant": "Hammer/engulfing at validated support (>=2 prior "
+              "touches) + volume >= 1.2x average.",
      "sources": ["Nison", "Ishaan", "McAllen", "Patel & Kiri"],
      "why": "A candle alone is a shape. Context makes it a signal.",
      "violated_when": "Trading candle patterns in isolation."},
+    {"theme": "entry", "id": "first_retracement_only",
+     "principle": "First retracement only.",
+     "quant": "When trading gap retracements, take the first "
+              "retrace only. Second or third is a trap.",
+     "sources": ["Singhal"],
+     "why": "When the market touches the gap zone the second or "
+            "third time, it can block funds and lead to sideways "
+            "markets.",
+     "violated_when": "Re-entering a gap zone after the first "
+                      "failed bounce."},
+    {"theme": "entry", "id": "longer_consolidation_stronger",
+     "principle": "Longer consolidation = more reliable breakout.",
+     "quant": "Base length correlates with breakout reliability. "
+              "Minimum 5-7 weeks for swing bases.",
+     "sources": ["Singhal", "O'Neil (flat base)", "Chande"],
+     "why": "Longer consolidation = more significant buildup of "
+            "buying/selling pressure.",
+     "violated_when": "Trading breakouts from 3-day ranges as if "
+                      "they were real bases."},
+    {"theme": "entry", "id": "confluence_2_3_indicators",
+     "principle": "At least two or three indicators must agree.",
+     "quant": "Confluence of 2-3 signals. Never trade on a single "
+              "indicator.",
+     "sources": ["Singhal"],
+     "why": "Single indicators have high false-positive rates. "
+            "Confluence filters noise.",
+     "violated_when": "Acting on RSI alone, MACD alone, or any "
+                      "single signal."},
 
     # ---------------- EXIT DISCIPLINE ----------------
     {"theme": "exit", "id": "take_profits",
      "principle": "Take profits at 20-25% into strength.",
-     "quant": "Target = entry × 1.225 (midpoint).",
+     "quant": "Target = entry x 1.225 (midpoint).",
      "sources": ["O'Neil"],
      "why": "Most winners give back 30-50% on reversal.",
      "violated_when": "'It's still going up — let it run'."},
     {"theme": "exit", "id": "big_leaders_hold",
-     "principle": "Big leaders: hold ≥8 weeks after 20% in <3 "
+     "principle": "Big leaders: hold >=8 weeks after 20% in <3 "
                   "weeks.",
-     "quant": "Gain of 20% in under 15 sessions → hold 40 sessions.",
+     "quant": "Gain of 20% in under 15 sessions -> hold 40 "
+              "sessions.",
      "sources": ["O'Neil"],
      "why": "Speed is the signal that this is not a normal trade.",
      "violated_when": "Applying usual profit-taking to a big "
@@ -216,21 +266,21 @@ WISDOM = [
     {"theme": "exit", "id": "trailing_stop_2r",
      "principle": "Trailing stop after +2R. Trail at the 5-day "
                   "low.",
-     "quant": "Once +2× initial risk in profit, trail at lowest "
+     "quant": "Once +2x initial risk in profit, trail at lowest "
               "low of last 5 sessions.",
-     "sources": ["Chande", "Turtle (10-day variant)"],
+     "sources": ["Chande", "Turtle (10-day variant)", "Singhal"],
      "why": "Locks in gains without giving back the whole move.",
      "violated_when": "Fixed stops hit on normal pullbacks."},
     {"theme": "exit", "id": "climax_top",
      "principle": "Climax top signals = tighten stops.",
-     "quant": "Largest daily run-up · heaviest volume · exhaustion "
-              "gap · stock split.",
+     "quant": "Largest daily run-up, heaviest volume, exhaustion "
+              "gap, stock split.",
      "sources": ["O'Neil", "McAllen"],
      "why": "Climax means everyone who wanted in is already in.",
      "violated_when": "Buying into the climax because 'it's on the "
                       "news'."},
     {"theme": "exit", "id": "distribution_days",
-     "principle": "Distribution day count ≥ 4-5 in 4-5 weeks = "
+     "principle": "Distribution day count >= 4-5 in 4-5 weeks = "
                   "correction.",
      "quant": "Index down >0.2% on higher volume. Count. "
               "Threshold: 4-5 days.",
@@ -247,29 +297,54 @@ WISDOM = [
             "has not.",
      "violated_when": "Selling winners to 'lock in gains' while "
                       "holding losers."},
+    {"theme": "exit", "id": "exit_on_opposite_signal",
+     "principle": "Exit on opposite signal.",
+     "quant": "When the entry's confirming signal flips "
+              "(Supertrend, MACD, EMA cross), exit.",
+     "sources": ["Singhal", "Nison", "Chande"],
+     "why": "The setup's reason for existing has disappeared.",
+     "violated_when": "Holding through a confirmed reversal."},
+    {"theme": "exit", "id": "time_based_exit_intraday",
+     "principle": "Time-based exits for intraday setups.",
+     "quant": "Exit at 3:15 PM (or 3:29 PM) for intraday "
+              "positions. Options exits at 9:55 AM on expiry day.",
+     "sources": ["Singhal"],
+     "why": "Intraday positions held past close become overnight "
+            "positions with different risk.",
+     "violated_when": "Carrying an intraday setup into the next "
+                      "session."},
+    {"theme": "exit", "id": "structural_stop_pattern_low",
+     "principle": "Structural stop at pattern's low.",
+     "quant": "Stop below the pattern's structural low (swing low, "
+              "candle low, cloud bottom).",
+     "sources": ["Singhal", "Nison", "McAllen"],
+     "why": "The setup is invalidated if the structural low is "
+            "breached.",
+     "violated_when": "Using a fixed % stop that gets hit before "
+                      "the pattern is actually invalid."},
 
     # ---------------- VOLUME ----------------
     {"theme": "volume", "id": "vol_confirms",
      "principle": "Volume confirms price.",
      "quant": "Heavier on advances in uptrends; heavier on "
               "declines in downtrends.",
-     "sources": ["McAllen", "O'Neil", "Nison", "Ishaan"],
+     "sources": ["McAllen", "O'Neil", "Nison", "Ishaan", "Singhal"],
      "why": "Volume = participation. Conviction or not.",
      "violated_when": "Trading a move with below-average volume."},
     {"theme": "volume", "id": "vol_dryup_flag",
      "principle": "Volume dry-up in a flag or base = coiled "
                   "spring.",
-     "quant": "Flag volume ≤ 70% of 20-day average.",
-     "sources": ["O'Neil", "Chande", "McAllen"],
+     "quant": "Flag volume <= 70% of 20-day average.",
+     "sources": ["O'Neil", "Chande", "McAllen", "Singhal (VCP)"],
      "why": "Supply is exhausted. Breakout is inevitable (in "
             "context).",
      "violated_when": "Buying a base with rising volume — that's "
                       "distribution."},
     {"theme": "volume", "id": "low_vol_breakout_fails",
      "principle": "Low-volume breakouts fail more.",
-     "quant": "<1.2× average has ~2× failure rate of high-volume "
+     "quant": "<1.2x average has ~2x failure rate of high-volume "
               "breakouts.",
-     "sources": ["O'Neil", "Ishaan", "Patel & Kiri"],
+     "sources": ["O'Neil", "Ishaan", "Patel & Kiri", "Singhal"],
      "why": "No follow-through without volume.",
      "violated_when": "'It looks like it broke out' — volume was "
                       "mediocre."},
@@ -285,24 +360,25 @@ WISDOM = [
     {"theme": "volume", "id": "delivery_pct",
      "principle": "Delivery% (NSE) = institutional conviction "
                   "proxy.",
-     "quant": "Delivery ≥ 40-50% of traded quantity. Sustained "
+     "quant": "Delivery >= 40-50% of traded quantity. Sustained "
               "high = accumulation.",
-     "sources": ["India adaptation"],
+     "sources": ["India adaptation", "Singhal"],
      "why": "High delivery = shares moved into stronger hands.",
      "violated_when": "Reading traded quantity as accumulation."},
 
     # ---------------- VALUE ----------------
     {"theme": "value", "id": "dollar_for_fifty",
      "principle": "Buy a dollar for 50 cents.",
-     "quant": "Price ≤ 50% of intrinsic value.",
+     "quant": "Price <= 50% of intrinsic value.",
      "sources": ["Graham", "Lowe", "Greenwald", "O'Shaughnessy"],
      "why": "Margin of safety protects against error.",
      "violated_when": "'Close enough' at 20% discount."},
     {"theme": "value", "id": "margin_cornerstone",
      "principle": "Margin of safety is the cornerstone of "
                   "investment success.",
-     "quant": "Value: 33-50% below intrinsic. Swing: R/R ≥ 2:1.",
-     "sources": ["Graham", "Buffett (via Greenwald)", "Lowe"],
+     "quant": "Value: 33-50% below intrinsic. Swing: R/R >= 2:1.",
+     "sources": ["Graham", "Buffett (via Greenwald)", "Lowe",
+                 "Singhal (1:2 minimum)"],
      "why": "The single most important principle in value "
             "investing.",
      "violated_when": "Trading on 'opportunity' without a safety "
@@ -327,7 +403,7 @@ WISDOM = [
     {"theme": "value", "id": "value_plus_rs",
      "principle": "Combine value with relative strength.",
      "quant": "Low PE + top-decile 1-yr RS = Sharpe 61 vs 46.",
-     "sources": ["O'Shaughnessy"],
+     "sources": ["O'Shaughnessy", "Singhal (sector RS)"],
      "why": "Value + momentum = best risk-adjusted combo.",
      "violated_when": "Using value alone and buying falling "
                       "knives."},
@@ -342,7 +418,7 @@ WISDOM = [
     {"theme": "value", "id": "growth_needs_franchise",
      "principle": "Growth outside the franchise destroys value.",
      "quant": "Only ROC > cost of capital creates value. "
-              "Typically ROCE ≥ 15%.",
+              "Typically ROCE >= 15%.",
      "sources": ["Greenwald", "Buffett (via Greenwald)"],
      "why": "Growth requires capital. Low return on that capital "
             "= value tax.",
@@ -350,15 +426,15 @@ WISDOM = [
 
     # ---------------- QUALITY ----------------
     {"theme": "quality", "id": "roce_floor",
-     "principle": "ROCE ≥ 15-20% sustained = franchise proxy.",
-     "quant": "ROCE ≥ 15% sustained 5-10 years. Prefer ≥ 20%.",
+     "principle": "ROCE >= 15-20% sustained = franchise proxy.",
+     "quant": "ROCE >= 15% sustained 5-10 years. Prefer >= 20%.",
      "sources": ["Greenwald", "Lowe", "Parikh", "O'Shaughnessy"],
      "why": "Consistent high ROCE means competitive advantage.",
      "violated_when": "One-year high ROCE without checking "
                       "consistency."},
     {"theme": "quality", "id": "roe_rising",
-     "principle": "ROE ≥ 17% and rising = compounder candidate.",
-     "quant": "ROE ≥ 17% (prefer 25-50%). Rising trend over "
+     "principle": "ROE >= 17% and rising = compounder candidate.",
+     "quant": "ROE >= 17% (prefer 25-50%). Rising trend over "
               "3-5 years.",
      "sources": ["O'Neil", "Lowe", "Parikh"],
      "why": "Rising ROE = improving business quality.",
@@ -374,7 +450,7 @@ WISDOM = [
             "arithmetic.",
      "violated_when": "Using last year's ROE as a quality proxy."},
     {"theme": "quality", "id": "franchise_gap",
-     "principle": "Franchise = EPV − reproduction cost.",
+     "principle": "Franchise = EPV - reproduction cost.",
      "quant": "Earnings Power Value minus reproduction cost of "
               "assets.",
      "sources": ["Greenwald"],
@@ -382,9 +458,9 @@ WISDOM = [
      "violated_when": "Paying for 'quality' without checking "
                       "franchise."},
     {"theme": "quality", "id": "promoter_skin",
-     "principle": "Promoter holding ≥ 51% = skin in the game "
+     "principle": "Promoter holding >= 51% = skin in the game "
                   "(India).",
-     "quant": "Promoter ≥ 51%. Pledge ≤ 20%.",
+     "quant": "Promoter >= 51%. Pledge <= 20%.",
      "sources": ["Parikh"],
      "why": "Founders who own the business make owner decisions.",
      "violated_when": "Ignoring promoter holding because "
@@ -401,13 +477,13 @@ WISDOM = [
                       "correction."},
     {"theme": "regime", "id": "ema10_regime",
      "principle": "Index above EMA10 = bullish regime.",
-     "quant": "Close > EMA10 with rising slope = ×1.0 size. "
-              "Below = ×0.5 to ×0.25.",
+     "quant": "Close > EMA10 with rising slope = x1.0 size. "
+              "Below = x0.5 to x0.25.",
      "sources": ["Internal (regime.py)", "Turtle"],
      "why": "Fastest regime signal available.",
      "violated_when": "Ignoring regime and trading full size."},
     {"theme": "regime", "id": "distribution_correction",
-     "principle": "Distribution day count ≥ 4-5 in 4-5 weeks = "
+     "principle": "Distribution day count >= 4-5 in 4-5 weeks = "
                   "correction.",
      "quant": "Index down >0.2% on higher volume. Threshold: "
               "4-5 days.",
@@ -417,7 +493,7 @@ WISDOM = [
                       "cluster."},
     {"theme": "regime", "id": "follow_through",
      "principle": "Follow-through day = new uptrend confirmation.",
-     "quant": "Day 4-7 of rally: index up ≥1.5% on higher volume "
+     "quant": "Day 4-7 of rally: index up >=1.5% on higher volume "
               "than prior day.",
      "sources": ["O'Neil"],
      "why": "One up-day after decline isn't a trend change.",
@@ -425,7 +501,7 @@ WISDOM = [
                       "whipsawed."},
     {"theme": "regime", "id": "breadth_healthy",
      "principle": "Breadth > 50% = healthy market.",
-     "quant": "% above 50-EMA ≥ 50% AND advances ≥ declines.",
+     "quant": "% above 50-EMA >= 50% AND advances >= declines.",
      "sources": ["Internal (breadth.py)", "O'Neil (implied)"],
      "why": "Breadth measures participation. Narrow rallies are "
             "fragile.",
@@ -438,6 +514,22 @@ WISDOM = [
      "why": "Market direction dominates stock direction.",
      "violated_when": "Conviction about a stock overrides market "
                       "context."},
+    {"theme": "regime", "id": "high_vix_skip_trades",
+     "principle": "High VIX = skip trades.",
+     "quant": "India VIX > 40 is extreme. Adjust or skip.",
+     "sources": ["Singhal"],
+     "why": "High VIX increases drawdowns and whipsaws.",
+     "violated_when": "Taking full-size positions during "
+                      "volatility spikes."},
+    {"theme": "regime", "id": "sector_rotation",
+     "principle": "Sector rotation: buy the leading sector.",
+     "quant": "Sector index RS above Nifty 50 -> buy "
+              "highest-weight stock in that sector.",
+     "sources": ["Singhal"],
+     "why": "Money rotates between sectors. The leader gets the "
+            "flow.",
+     "violated_when": "Buying a stock in a lagging sector just "
+                      "because the chart looks good."},
 
     # ---------------- PSYCHOLOGY ----------------
     {"theme": "psychology", "id": "circle_competence",
@@ -451,13 +543,13 @@ WISDOM = [
      "principle": "Be consistent. Half the edge is execution.",
      "quant": "Execute every signal. Missing one big winner can "
               "wipe out a year.",
-     "sources": ["Turtle", "Chande"],
+     "sources": ["Turtle", "Chande", "Singhal"],
      "why": "Good system executed poorly < mediocre system "
             "executed well.",
      "violated_when": "Skipping signals based on 'feel'."},
     {"theme": "psychology", "id": "no_override",
      "principle": "No overriding the model.",
-     "quant": "System says buy → buy. System says sell → sell.",
+     "quant": "System says buy -> buy. System says sell -> sell.",
      "sources": ["Chande", "Gray & Carlisle", "O'Shaughnessy"],
      "why": "Discretion is where systematic edges die.",
      "violated_when": "'I know this one better'."},
@@ -483,11 +575,52 @@ WISDOM = [
      "sources": ["Turtle", "Chande", "O'Neil"],
      "why": "Losses are the tuition. Ignoring wastes it.",
      "violated_when": "Blaming the market, news, or broker."},
+    {"theme": "psychology", "id": "never_trade_without_plan",
+     "principle": "Never trade without a plan.",
+     "quant": "No plan = guaranteed capital erosion.",
+     "sources": ["Singhal"],
+     "why": "An intraday trader with no plan has a high "
+            "probability of eroding capital.",
+     "violated_when": "Discretionary trades without predefined "
+                      "entry, stop, target."},
+    {"theme": "psychology", "id": "avoid_overtrading",
+     "principle": "Avoid overtrading.",
+     "quant": "Limit trades per session. Book caps at 3 per "
+              "session for scalping/options.",
+     "sources": ["Singhal"],
+     "why": "Most losses come from too many trades, not bad "
+            "ones.",
+     "violated_when": "Taking multiple correlated signals in one "
+                      "session."},
+    {"theme": "psychology", "id": "avoid_analysis_paralysis",
+     "principle": "Avoid analysis paralysis.",
+     "quant": "Keep systems simple. Use <=3-5 indicators per "
+              "strategy.",
+     "sources": ["Singhal", "Chande", "Turtle"],
+     "why": "Simple systems survive. Complex systems confuse.",
+     "violated_when": "Adding indicators to 'improve' a working "
+                      "system."},
+    {"theme": "psychology", "id": "trading_journal",
+     "principle": "Keep a trading journal.",
+     "quant": "Record every trade - setup, entry, exit, "
+              "reasoning, outcome.",
+     "sources": ["Singhal"],
+     "why": "Pattern recognition improves when you review your "
+            "own history.",
+     "violated_when": "Relying on memory for past trades."},
+    {"theme": "psychology", "id": "start_small",
+     "principle": "Start small.",
+     "quant": "Paper or demo first. Small capital before "
+              "scaling.",
+     "sources": ["Singhal"],
+     "why": "Losses on small capital are cheaper tuition.",
+     "violated_when": "Deploying full capital on a new strategy "
+                      "before backtesting."},
 
     # ---------------- PROCESS ----------------
     {"theme": "process", "id": "positive_expectation",
      "principle": "Positive expectation required.",
-     "quant": "Expectancy = (WR × avg_win) − ((1−WR) × avg_loss). "
+     "quant": "Expectancy = (WR x avg_win) - ((1-WR) x avg_loss). "
               "Must be > 0.",
      "sources": ["Chande", "Turtle", "Patel & Kiri"],
      "why": "Negative-expectancy systems lose no matter how "
@@ -496,13 +629,13 @@ WISDOM = [
                       "without expectancy check."},
     {"theme": "process", "id": "simple_rulesets",
      "principle": "Small rulesets beat complex systems.",
-     "quant": "≤5 rules per strategy.",
+     "quant": "<=5 rules per strategy.",
      "sources": ["Chande", "Turtle", "O'Shaughnessy"],
      "why": "Simple systems survive parameter shifts.",
      "violated_when": "Adding rules to 'improve' a system."},
     {"theme": "process", "id": "robust_params",
      "principle": "Robust parameters, no curve-fitting.",
-     "quant": "Performance must not collapse on ±20% parameter "
+     "quant": "Performance must not collapse on +/-20% parameter "
               "changes.",
      "sources": ["Chande", "Turtle"],
      "why": "Parameter that only works at 20.0 is noise.",
@@ -510,14 +643,17 @@ WISDOM = [
     {"theme": "process", "id": "backtest_realistic",
      "principle": "Backtest with slippage, commission, "
                   "survivorship bias.",
-     "quant": "Slippage 0.1%, commission 0.05%, delisted included.",
-     "sources": ["Chande", "Gray & Carlisle", "O'Shaughnessy"],
+     "quant": "Slippage 0.1%, commission 0.05%, delisted "
+              "included.",
+     "sources": ["Chande", "Gray & Carlisle", "O'Shaughnessy",
+                 "Singhal"],
      "why": "A backtest without these is a fairy tale.",
      "violated_when": "Claiming '20% CAGR' from clean-data "
                       "backtest."},
     {"theme": "process", "id": "log_everything",
      "principle": "Log every run. Evidence over opinion.",
-     "quant": "strategy_runs table: date, params, PF, DD, verdict.",
+     "quant": "strategy_runs table: date, params, PF, DD, "
+              "verdict.",
      "sources": ["Internal", "Chande"],
      "why": "Memory is unreliable. Logs are the audit trail.",
      "violated_when": "Relying on 'I remember the PF was ~1.4'."},

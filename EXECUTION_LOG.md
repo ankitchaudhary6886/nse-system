@@ -1102,6 +1102,32 @@ All detectors computed inline in `traders/mcallen.py`:
 - R35, R40, R41 safety from day one.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
+
+
+### #086 · R44 + R45 — Exit logic + wisdom extraction mandatory
+- Files:
+  - `EXIT_LOGIC.md` (new) — retroactive narrative for traders #1–#14
+  - `MARKET_WISDOM.md` (updated) — Singhal's contribution folded in;
+    62 → 76 principles across 10 themes
+  - `traders/wisdom.py` (updated) — 14 new entries mirrored
+  - `backlog.md` — added R44, R45 + D18, D19 + I76, I77 + ID75, ID76
+  - `EXECUTION_LOG.md` — this entry
+- Rules added:
+  - **R44** — Exit logic capture per trader (narrative form, in
+    EXIT_LOGIC.md). Complements the R40 per-signal block.
+  - **R45** — Wisdom extraction mandatory. Every book ships a
+    wisdom artifact that folds into MARKET_WISDOM.md.
+- Content:
+  - EXIT_LOGIC.md: 14 trader sections + 7 cross-cutting themes.
+  - MARKET_WISDOM.md: Singhal's Part B contributed ~10 new
+    principles + 6 strengthened existing ones. Wisdom count went
+    from 62 → 76.
+- **Note:** `terminal/static/wisdom.html` is out of sync with
+  `wisdom.py` (14 new entries not yet inlined). Queued for regen
+  in a future batch — the HTML is 1000+ lines and doesn't warrant
+  a full re-ship just for the Singhal additions.
+- Status: DEPLOYED · AWAITING VERIFICATION
+
 ---
 ---
 

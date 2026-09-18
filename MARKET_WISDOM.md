@@ -1,9 +1,12 @@
-# MARKET WISDOM — Timeless Principles Across 13 Books
+# MARKET WISDOM — Timeless Principles Across 15 Books
 
-**Purpose:** every quantified, actionable market principle the system
-has absorbed, organised by theme, sourced across all books.
+**Purpose:** every quantified, actionable market principle the
+system has absorbed, organised by theme, sourced across all books.
 
 **Not** a trader. **Not** a scanner. A learning reference.
+
+**Rule R45:** every book ships a wisdom artifact that folds into
+this file. Singhal (#14) is the first book under the rule.
 
 **Sources:**
 - Fred McAllen — *Charting and Technical Analysis*
@@ -20,6 +23,7 @@ has absorbed, organised by theme, sourced across all books.
 - Patel & Kiri — *7 Simple Strategies*
 - Larry Spears — *Swing-trading methodology*
 - John Crane — *Advanced Swing Trading*
+- Aseem Singhal — *51 Trading Strategies*
 
 **How to use:**
 1. Read once top-to-bottom.
@@ -31,489 +35,404 @@ has absorbed, organised by theme, sourced across all books.
 
 ## THE 5 AXIOMS
 
-Every other principle in this document is a consequence of these.
-
-1. **Trade with the primary trend, never against it.** The trend is
-   the frame; patterns inside it are just timing.
-2. **Risk first, reward second.** A 50% loss needs a 100% gain to
-   recover. Small losses preserve optionality.
-3. **Volume confirms price.** A move without volume is a move
-   without conviction.
+1. **Trade with the primary trend, never against it.** The trend
+   is the frame; patterns inside it are just timing.
+2. **Risk first, reward second.** A 50% loss needs a 100% gain.
+3. **Volume confirms price.** No volume, no conviction.
 4. **Buy near support, sell near resistance. Never chase.**
-   The middle of a move is the worst place to enter.
-5. **Consistency beats brilliance.** Half the edge is execution
-   discipline, not signal generation.
+5. **Consistency beats brilliance.** Half the edge is execution.
 
 ---
 
 ## THEME 1 · TREND
 
 ### 1.1 Trade with the primary trend, never against it.
-- **Quant:** No fixed rule. The trend is defined by higher highs +
-  higher lows, or price above the 200 DMA.
-- **Sources:** McAllen, O'Neil, Patel & Kiri, Ishaan, Turtle
-- **Why:** Fighting the primary trend is the most expensive error
-  in trading. The market's collective direction is stronger than
-  any single trade idea.
-- **Violated when:** Buying a stock just because it "looks cheap";
-  shorting a strong uptrend; ignoring the index.
+- **Quant:** Trend = higher highs + higher lows, or price above 200 DMA.
+- **Sources:** McAllen, O'Neil, Patel & Kiri, Ishaan, Turtle, **Singhal**
+- **Why:** Fighting the primary trend is the most expensive error.
+- **Violated when:** Buying 'cheap'; shorting strong uptrends; ignoring the index.
 
 ### 1.2 The 200 DMA is the long-term heartbeat.
-- **Quant:** Price above 200 DMA = offence. Below = defence. A
-  rising 200 DMA is a stronger signal than a flat one.
-- **Sources:** McAllen, O'Neil, Chande
-- **Why:** The 200 DMA smooths out noise. Cross above = new regime.
-  Cross below = regime change.
-- **Violated when:** Buying a stock with price below 200 DMA in a
-  bull regime; ignoring the slope.
+- **Quant:** Above 200 DMA = offence. Below = defence. Rising slope > flat.
+- **Sources:** McAllen, O'Neil, Chande, **Singhal**
+- **Why:** Cross above = new regime. Cross below = regime change.
+- **Violated when:** Buying below 200 DMA in a bull regime.
 
 ### 1.3 Secondary pullbacks inside a primary uptrend are noise.
-- **Quant:** Pullback of 3-10 sessions, 6-25% deep, within an
-  uptrend, is a buying opportunity.
-- **Sources:** McAllen, Ishaan, Patel & Kiri
-- **Why:** The primary trend resolves. Buying the pullback gets
-  you in with a tighter stop than buying the breakout.
-- **Violated when:** Panicking on a normal pullback; averaging
-  down beyond the primary trendline break.
+- **Quant:** 3-10 sessions, 6-25% deep, within an uptrend.
+- **Sources:** McAllen, Ishaan, Patel & Kiri, **Singhal**
+- **Why:** Buying the pullback gets tighter stop than buying the breakout.
+- **Violated when:** Panicking on normal pullbacks; averaging down.
 
 ### 1.4 Higher highs + higher lows = intact uptrend.
-- **Quant:** Last 3 swing highs rising AND last 3 swing lows
-  rising. Pattern is broken when either fails.
-- **Sources:** McAllen, O'Neil, Chande, Turtle
-- **Why:** Simple, structural. Doesn't need indicators.
-- **Violated when:** Ignoring a lower high "because the news
-  sounds good".
+- **Quant:** Last 3 swing highs rising AND last 3 swing lows rising.
+- **Sources:** McAllen, O'Neil, Chande, Turtle, **Singhal**
+- **Why:** Simple, structural. No indicators needed.
+- **Violated when:** Ignoring a lower high because news sounds good.
 
 ### 1.5 MA stacking: 10 > 20 > 50 > 200.
-- **Quant:** Full stack aligned = trend is strong at every
-  timescale. Any inversion = weakening.
-- **Sources:** Patel & Kiri, Ishaan, O'Neil
-- **Why:** Shows alignment across all time horizons. Alignment =
-  trend consensus.
-- **Violated when:** Buying a "reversal" while MAs are still
-  bearishly stacked.
+- **Quant:** Full stack aligned = strong trend. Any inversion = weakening.
+- **Sources:** Patel & Kiri, Ishaan, O'Neil, **Singhal**
+- **Why:** Shows alignment across time horizons.
+- **Violated when:** Buying reversals while MAs are bearishly stacked.
 
 ### 1.6 Golden cross = regime change to bullish.
-- **Quant:** 50 DMA crosses above 200 DMA. Fresh cross is stronger
-  than a long-standing one.
-- **Sources:** McAllen (implicit), Patel & Kiri, Nison (13/26 EMA
-  variant), Chande (100/350 variant)
-- **Why:** Long-term regime change. New money is safe.
-- **Violated when:** Chasing a golden cross that already happened
-  3+ months ago.
+- **Quant:** 50 DMA crosses above 200 DMA. Fresh > old.
+- **Sources:** McAllen, Patel & Kiri, Nison (13/26 EMA), Chande (100/350), **Singhal (9/21 EMA)**
+- **Why:** Long-term regime change.
+- **Violated when:** Chasing a cross that already happened.
 
 ### 1.7 Death cross = regime change to bearish.
-- **Quant:** 50 DMA crosses below 200 DMA. Exit longs, raise cash.
-- **Sources:** McAllen, O'Neil (M gate), Patel & Kiri (inverse)
-- **Why:** Internal strength has flipped. Not a top tick —
-  a regime.
-- **Violated when:** Continuing to buy "dips" through the cross.
+- **Quant:** 50 DMA crosses below 200 DMA.
+- **Sources:** McAllen, O'Neil (M gate), Patel & Kiri
+- **Why:** Internal strength has flipped.
+- **Violated when:** Continuing to buy 'dips' through the cross.
+
+### 1.8 70% of the time the market is sideways.
+- **Quant:** Range-bound ≠ trending. Trend-following works 30% of the time; range-trading works 70%.
+- **Sources:** **Singhal**
+- **Why:** Most losing trades come from applying trending tools in a range-bound market.
+- **Violated when:** Trend-following during confirmed sideways regimes.
 
 ---
 
 ## THEME 2 · RISK & POSITION SIZING
 
 ### 2.1 Cut every loss at a fixed percentage. No exception.
-- **Quant:** 7-8% below entry (O'Neil). Or 2× ATR (Chande,
-  Patel & Kiri). Whichever is tighter.
-- **Sources:** O'Neil, Chande, Patel & Kiri, McAllen
-- **Why:** The insurance-premium rule. Failing to enforce it kills
-  the portfolio over a cycle.
-- **Violated when:** Averaging down; "waiting for it to come
-  back"; overriding the stop on conviction.
+- **Quant:** 7-8% below entry (O'Neil). 2× ATR (Chande, Patel, Singhal).
+- **Sources:** O'Neil, Chande, Patel & Kiri, McAllen, **Singhal**
+- **Why:** The insurance-premium rule. The single most important defensive rule.
+- **Violated when:** Averaging down; overriding the stop.
 
 ### 2.2 Never let a 15-20% gain become a loss.
-- **Quant:** Once a position reaches +15-20%, move stop to
-  breakeven or above.
+- **Quant:** At +15-20%, move stop to breakeven or above.
 - **Sources:** O'Neil
-- **Why:** The worst regret in trading is watching a winner turn
-  red. Lock in the win.
-- **Violated when:** "It'll come back" — it won't necessarily.
+- **Why:** Watching a winner turn red is the worst regret.
+- **Violated when:** 'It'll come back' — it won't necessarily.
 
 ### 2.3 Risk ≤ 2% of capital per trade.
-- **Quant:** Position size = (capital × 0.02) / (entry − stop).
-- **Sources:** Patel & Kiri, O'Neil (2% rule), Chande (money
-  management), Turtle (1N = 1%)
-- **Why:** 20 consecutive losses at 2% each = ~33% drawdown.
-  Survivable. 20 losses at 5% = ~64% drawdown. Fatal.
-- **Violated when:** "This one feels certain" — sizing up.
+- **Quant:** Size = (capital × 0.02) / (entry − stop).
+- **Sources:** Patel & Kiri, O'Neil, Chande, Turtle, **Singhal**
+- **Why:** 20 losses at 2% ≈ 33% DD. At 5% = ~64% — fatal.
+- **Violated when:** Sizing up because 'this one feels certain'.
 
 ### 2.4 A 50% loss needs a 100% gain to recover.
-- **Quant:** Loss vs recovery: 10%→11%, 25%→33%, 50%→100%,
-  75%→300%, 90%→900%.
-- **Sources:** Patel & Kiri (Love your small losses)
-- **Why:** Compounding is asymmetric. The math of recovery is
-  brutal.
-- **Violated when:** "It's only a paper loss" — refusing to take
-  the small loss while it's still small.
+- **Quant:** 10%→11%. 25%→33%. 50%→100%. 75%→300%. 90%→900%.
+- **Sources:** Patel & Kiri, **Singhal**
+- **Why:** Compounding is asymmetric.
+- **Violated when:** 'It's only a paper loss' — while it's still small.
 
 ### 2.5 Small losses are the cost of doing business.
-- **Quant:** Winning trades need only be ~40% of total if average
-  win is 3× average loss.
+- **Quant:** Winning trades need only be ~40% if avg win is 3× avg loss.
 - **Sources:** O'Neil, Turtle, Chande
-- **Why:** A positive-expectancy system expects most trades to
-  lose. That's a feature, not a bug.
-- **Violated when:** Trying to avoid all losses — this kills the
-  win rate by chasing certainties that don't exist.
+- **Why:** A positive-expectancy system expects most trades to lose.
+- **Violated when:** Trying to avoid all losses.
 
 ### 2.6 Position size by volatility, not conviction.
 - **Quant:** Volatile stocks get smaller positions (larger ATR).
-  Stable stocks get bigger positions (smaller ATR).
-- **Sources:** Turtle (1N rule), Chande
-- **Why:** Same dollar risk across all trades. No trade is "more
-  certain" than another — conviction is a feeling, not a fact.
-- **Violated when:** Sizing up on "the best setup of the year".
+- **Sources:** Turtle (1N), Chande
+- **Why:** Same dollar risk across all trades.
+- **Violated when:** Sizing up on 'the best setup of the year'.
 
 ### 2.7 Half-Kelly with caps beats full Kelly.
-- **Quant:** Half of the Kelly fraction, capped at 25% of capital.
-  Fallback win-rate = 0.35 when data is missing.
-- **Sources:** O'Neil (pragmatic), Gray & Carlisle (systematic)
-- **Why:** Full Kelly maximises growth but has extreme volatility.
-  Half-Kelly gives 75% of the growth with 50% of the variance.
-- **Violated when:** Going all-in because "the math says so".
+- **Quant:** Half of Kelly fraction. Cap at 25% of capital. Fallback WR = 0.35.
+- **Sources:** O'Neil (pragmatic), Gray & Carlisle
+- **Why:** 75% of growth with 50% of variance.
+- **Violated when:** Going all-in because 'math says so'.
 
 ---
 
 ## THEME 3 · ENTRY TIMING
 
 ### 3.1 Buy on the breakout close, not intraday.
-- **Quant:** Signal fires on daily close above the pivot + 0.05%.
-  Entry is next open.
-- **Sources:** O'Neil, Ishaan, Patel & Kiri, Nison
-- **Why:** Intraday breakouts frequently reverse by close. The
-  close is the market's verdict.
-- **Violated when:** Anticipating the breakout before the close.
+- **Quant:** Signal on daily close above pivot + 0.05%. Enter next open.
+- **Sources:** O'Neil, Ishaan, Patel & Kiri, Nison, **Singhal**
+- **Why:** Intraday breakouts frequently reverse by close.
+- **Violated when:** Anticipating the breakout.
 
 ### 3.2 Wait for confirmation. Do not pre-empt.
-- **Quant:** Breakout requires volume ≥ 1.4-1.5× average. Without
-  it, wait.
-- **Sources:** Ishaan, O'Neil, Patel & Kiri, McAllen
+- **Quant:** Breakout requires volume ≥ 1.4-1.5× average.
+- **Sources:** Ishaan, O'Neil, Patel & Kiri, McAllen, **Singhal**
 - **Why:** Unconfirmed breakouts have high false-positive rates.
-  One extra day of waiting costs little.
-- **Violated when:** FOMO into a breakout you "know" will work.
+- **Violated when:** FOMO into a breakout you 'know' will work.
 
-### 3.3 Buy near new highs, not lows. (The O'Neil Paradox.)
-- **Quant:** Stock within 5% of its 52-week high. Counter-intuitive
-  but empirically proven.
+### 3.3 Buy near new highs, not lows. (O'Neil Paradox.)
+- **Quant:** Within 5% of 52-week high.
 - **Sources:** O'Neil, O'Shaughnessy (RS), Turtle
-- **Why:** New highs attract institutional attention. Old lows
-  attract value traps. Price momentum persists at the highs.
-- **Violated when:** Bottom-fishing because "it can't go lower".
-  It can.
+- **Why:** New highs attract institutional attention.
+- **Violated when:** Bottom-fishing because 'it can't go lower'.
 
 ### 3.4 Entry at pivot + 0.05%. Never more than 5% extended.
-- **Quant:** Buy zone = pivot to pivot × 1.05. Beyond that, wait
-  for the next base.
-- **Sources:** O'Neil
-- **Why:** Buying extended means a wider stop, worse R/R, and
-  the wrong entry point for the pattern.
-- **Violated when:** Chasing a stock that ran 15% above the pivot.
+- **Quant:** Buy zone = pivot to pivot × 1.05.
+- **Sources:** O'Neil, **Singhal**
+- **Why:** Extended buys have wider stops, worse R/R.
+- **Violated when:** Chasing a stock that ran 15% above pivot.
 
 ### 3.5 Volume ≥ 1.4× average on breakout.
-- **Quant:** Breakout day's volume ≥ 140% of 20-day average.
-  Ideal is 2× or more.
-- **Sources:** O'Neil, Ishaan, Patel & Kiri, McAllen
-- **Why:** Volume = institutional participation. Low-volume
-  breakouts fail disproportionately.
-- **Violated when:** Ignoring volume because "the pattern is
-  perfect".
+- **Quant:** 140% of 20-day average. Ideal 2×+.
+- **Sources:** O'Neil, Ishaan, Patel & Kiri, McAllen, **Singhal**
+- **Why:** Volume = institutional participation.
+- **Violated when:** Ignoring volume because 'pattern is perfect'.
 
 ### 3.6 Wait for gap fill before entering.
-- **Quant:** Breakaway gap → wait for the fill → enter on
-  confirmation (higher high).
-- **Sources:** McAllen, Nison (windows)
-- **Why:** Gaps are vacuums. Fills shake loose the weak hands
-  before the trend resumes.
-- **Violated when:** Buying the gap on day 1 because "it might
-  not fill".
+- **Quant:** Breakaway gap → wait for fill → enter on confirmation.
+- **Sources:** McAllen, Nison (windows), **Singhal (institutional gap retracement)**
+- **Why:** Gaps are vacuums. Fills shake loose weak hands.
+- **Violated when:** Buying the gap on day 1.
 
 ### 3.7 Reversal candles need context: support + volume.
-- **Quant:** Hammer/engulfing at validated support (≥2 prior
-  touches) + volume ≥ 1.2× average.
+- **Quant:** Hammer/engulfing at validated support (≥2 touches) + volume ≥ 1.2× average.
 - **Sources:** Nison, Ishaan, McAllen, Patel & Kiri
-- **Why:** A candle alone is a shape. At support, after a
-  decline, on volume — it's a signal.
+- **Why:** A candle alone is a shape. Context makes it a signal.
 - **Violated when:** Trading candle patterns in isolation.
+
+### 3.8 First retracement only.
+- **Quant:** When trading gap retracements, take the first retrace only. Second or third is a trap.
+- **Sources:** **Singhal**
+- **Why:** Re-entering a gap zone blocks funds and leads to sideways markets.
+- **Violated when:** Re-entering a gap zone after the first failed bounce.
+
+### 3.9 Longer consolidation = more reliable breakout.
+- **Quant:** Base length correlates with breakout reliability. Minimum 5-7 weeks for swing bases.
+- **Sources:** **Singhal**, O'Neil (flat base), Chande
+- **Why:** Longer consolidation = more significant buildup of buying/selling pressure.
+- **Violated when:** Trading breakouts from 3-day ranges as if they were real bases.
+
+### 3.10 At least two or three indicators must agree.
+- **Quant:** Confluence of 2-3 signals. Never trade on a single indicator.
+- **Sources:** **Singhal**
+- **Why:** Single indicators have high false-positive rates. Confluence filters noise.
+- **Violated when:** Acting on RSI alone, MACD alone, or any single signal.
 
 ---
 
 ## THEME 4 · EXIT DISCIPLINE
 
 ### 4.1 Take profits at 20-25% into strength.
-- **Quant:** Book target = entry × 1.225 (midpoint). Beyond that,
-  you're overstaying.
+- **Quant:** Target = entry × 1.225 (midpoint).
 - **Sources:** O'Neil
-- **Why:** Most big winners give back 30-50% of gains on reversal.
-  Taking the middle avoids the reversal.
-- **Violated when:** "It's still going up — let it run".
+- **Why:** Most big winners give back 30-50% on reversal.
+- **Violated when:** 'It's still going up — let it run'.
 
-### 4.2 Big leaders: hold ≥8 weeks after a 20% gain in <3 weeks.
-- **Quant:** If a stock gains 20% in under 15 sessions, treat as
-  a leader and hold for at least 40 sessions.
+### 4.2 Big leaders: hold ≥8 weeks after 20% in <3 weeks.
+- **Quant:** Gain of 20% in under 15 sessions → hold 40 sessions.
 - **Sources:** O'Neil
-- **Why:** The speed of the move is the signal that this is not a
-  normal trade. Cutting it early costs the biggest wins.
-- **Violated when:** Applying the usual 20-25% profit-taking to
-  a stock that just tripled its usual speed.
+- **Why:** Speed is the signal that this is not a normal trade.
+- **Violated when:** Applying usual profit-taking to a big leader.
 
 ### 4.3 Three consecutive closes below 65-SMA = exit.
-- **Quant:** 3 consecutive sessions closing below the 65-day SMA
-  (or 3 below the 50-SMA as a faster variant).
+- **Quant:** 3 below 65-SMA. Faster: 3 below 50-SMA.
 - **Sources:** Chande
-- **Why:** A single close below can be noise. Three consecutive
-  closes = a real trend change.
-- **Violated when:** Holding a position that has clearly broken
-  because "the fundamentals look fine".
+- **Why:** Three consecutive closes = real trend change.
+- **Violated when:** Holding a clearly-broken position because fundamentals look fine.
 
 ### 4.4 Trailing stop after +2R. Trail at the 5-day low.
-- **Quant:** After the trade is +2× the initial risk in profit,
-  trail the stop at the lowest low of the last 5 sessions.
-- **Sources:** Chande, Turtle (trail at 10-day low variant)
+- **Quant:** +2R in profit → trail at lowest low of last 5 sessions.
+- **Sources:** Chande, Turtle (10-day variant), **Singhal**
 - **Why:** Locks in gains without giving back the whole move.
-  Adaptive to the trade's own rhythm.
-- **Violated when:** Fixed stops that get hit on normal
-  pullbacks.
+- **Violated when:** Fixed stops hit on normal pullbacks.
 
 ### 4.5 Climax top signals = tighten stops.
-- **Quant:** Any of: largest daily run-up of the move, heaviest
-  volume day, exhaustion gap, stock split announcement.
+- **Quant:** Largest daily run-up · heaviest volume · exhaustion gap · stock split.
 - **Sources:** O'Neil, McAllen
 - **Why:** Climax means everyone who wanted in is already in.
-  Supply dries up after.
-- **Violated when:** Buying into the climax because "it's on the
-  news".
+- **Violated when:** Buying into the climax because 'it's on the news'.
 
 ### 4.6 Distribution day count ≥ 4-5 in 4-5 weeks = correction.
-- **Quant:** Index closes down >0.2% on higher volume. Count.
-  Threshold: 4-5 days in a 4-5 week window.
+- **Quant:** Index down >0.2% on higher volume. Threshold: 4-5 days in a 4-5 week window.
 - **Sources:** O'Neil
-- **Why:** Distribution days are institutions selling. The count
-  is the market telling you it's changed direction.
+- **Why:** Distribution days are institutions selling.
 - **Violated when:** Buying breakouts into a distribution cluster.
 
 ### 4.7 Sell your worst performer first; keep your best longest.
-- **Quant:** When raising cash, cut the weakest setup first —
-  not the one that's slightly down.
-- **Sources:** O'Neil, Greenberg (Chieftain approach)
-- **Why:** Your best performers have earned their hold.
-  Dead money has not.
-- **Violated when:** Selling winners to "lock in gains" while
-  holding losers.
+- **Quant:** When raising cash, cut the weakest setup first.
+- **Sources:** O'Neil, Greenberg (Chieftain)
+- **Why:** Best performers earned their hold. Dead money has not.
+- **Violated when:** Selling winners to 'lock in gains' while holding losers.
+
+### 4.8 Exit on opposite signal.
+- **Quant:** When the entry's confirming signal flips (Supertrend, MACD, EMA cross), exit.
+- **Sources:** **Singhal**, Nison, Chande
+- **Why:** The setup's reason for existing has disappeared.
+- **Violated when:** Holding through a confirmed reversal.
+
+### 4.9 Time-based exits for intraday setups.
+- **Quant:** Exit at 3:15 PM (or 3:29 PM) for intraday positions. Options exits at 9:55 AM on expiry day.
+- **Sources:** **Singhal**
+- **Why:** Intraday positions held past close become overnight positions with different risk.
+- **Violated when:** Carrying an intraday setup into the next session.
+
+### 4.10 Structural stop at pattern's low.
+- **Quant:** Stop below the pattern's structural low (swing low, candle low, cloud bottom).
+- **Sources:** **Singhal**, Nison, McAllen
+- **Why:** The setup is invalidated if the structural low is breached.
+- **Violated when:** Using a fixed % stop that gets hit before the pattern is actually invalid.
 
 ---
 
 ## THEME 5 · VOLUME
 
 ### 5.1 Volume confirms price.
-- **Quant:** Heavier volume on advances in uptrends; heavier on
-  declines in downtrends. Same-volume moves are suspect.
-- **Sources:** McAllen, O'Neil, Nison, Ishaan
-- **Why:** Volume = participation. Conviction is either there or
-  it isn't.
+- **Quant:** Heavier on advances in uptrends; heavier on declines in downtrends.
+- **Sources:** McAllen, O'Neil, Nison, Ishaan, **Singhal**
+- **Why:** Volume = participation. Conviction or not.
 - **Violated when:** Trading a move with below-average volume.
 
 ### 5.2 Volume dry-up in a flag or base = coiled spring.
-- **Quant:** Volume in the flag ≤ 70% of 20-day average.
-- **Sources:** O'Neil, Chande, McAllen
-- **Why:** Drying up means no one wants to sell. Supply is
-  exhausted. The breakout is inevitable (in the right context).
-- **Violated when:** Buying a base with rising volume — this is
-  distribution, not accumulation.
+- **Quant:** Flag volume ≤ 70% of 20-day average.
+- **Sources:** O'Neil, Chande, McAllen, **Singhal (VCP)**
+- **Why:** Supply is exhausted. Breakout is inevitable (in context).
+- **Violated when:** Buying a base with rising volume — that's distribution.
 
 ### 5.3 Low-volume breakouts fail more.
-- **Quant:** Breakouts on <1.2× average volume have ~2× the
-  failure rate of high-volume breakouts.
-- **Sources:** O'Neil, Ishaan, Patel & Kiri
-- **Why:** Without volume, there's no follow-through. The move
-  was retail-driven, not institutional.
-- **Violated when:** "It looks like it broke out" — but volume
-  was mediocre.
+- **Quant:** <1.2× average has ~2× failure rate of high-volume breakouts.
+- **Sources:** O'Neil, Ishaan, Patel & Kiri, **Singhal**
+- **Why:** No follow-through without volume.
+- **Violated when:** 'It looks like it broke out' — volume was mediocre.
 
 ### 5.4 Volume climax at extension = exhaustion.
-- **Quant:** Heaviest daily volume of the entire move, occurring
-  at the top of an extended advance.
+- **Quant:** Heaviest daily volume of the move at the top of an advance.
 - **Sources:** O'Neil, McAllen
-- **Why:** The climax is where the last buyers capitulate to the
-  price. Supply is about to overwhelm demand.
-- **Violated when:** Reading a volume spike at the top as
-  "confirmation" instead of exhaustion.
+- **Why:** Last buyers capitulate. Supply overwhelms.
+- **Violated when:** Reading a top-tick volume spike as confirmation.
 
 ### 5.5 Delivery% (NSE) = institutional conviction proxy.
-- **Quant:** Delivery ≥ 40-50% of traded quantity. Sustained
-  high delivery = accumulation.
-- **Sources:** India adaptation (NSE-specific)
-- **Why:** NSE publishes delivery data. High delivery = shares
-  moved from sellers into stronger hands.
-- **Violated when:** Reading pure traded quantity as accumulation
-  (intraday churn inflates it).
+- **Quant:** Delivery ≥ 40-50% of traded quantity. Sustained high = accumulation.
+- **Sources:** India adaptation, **Singhal**
+- **Why:** High delivery = shares moved into stronger hands.
+- **Violated when:** Reading traded quantity as accumulation.
 
 ---
 
 ## THEME 6 · VALUE & FUNDAMENTALS
 
 ### 6.1 Buy a dollar for 50 cents.
-- **Quant:** Price ≤ 50% of intrinsic value. Graham's margin of
-  safety was 1/3 to 1/2.
+- **Quant:** Price ≤ 50% of intrinsic value.
 - **Sources:** Graham, Lowe, Greenwald, O'Shaughnessy
-- **Why:** The margin of safety protects against error — yours
-  and the market's.
-- **Violated when:** "Close enough" at 20% discount.
+- **Why:** Margin of safety protects against error.
+- **Violated when:** 'Close enough' at 20% discount.
 
 ### 6.2 Margin of safety is the cornerstone of investment success.
-- **Quant:** Never buy without a specific, quantifiable margin.
-  For value: 33-50% below intrinsic. For swing: R/R ≥ 2:1.
-- **Sources:** Graham, Buffett (via Greenwald), Lowe
+- **Quant:** Value: 33-50% below intrinsic. Swing: R/R ≥ 2:1.
+- **Sources:** Graham, Buffett (via Greenwald), Lowe, **Singhal (1:2 minimum)**
 - **Why:** The single most important principle in value investing.
-  All other principles serve it.
-- **Violated when:** Trading on "opportunity" without a defined
-  safety margin.
+- **Violated when:** Trading on 'opportunity' without a safety margin.
 
 ### 6.3 Price is dominant. Never let quality override price.
-- **Quant:** EBIT/TEV decile 1 (cheapest 10%) beats any quality
-  overlay.
+- **Quant:** EBIT/TEV decile 1 (cheapest 10%) beats any quality overlay.
 - **Sources:** Gray & Carlisle, O'Shaughnessy
-- **Why:** Even wonderful companies are bad investments at the
-  wrong price. Glamour is always a bad bet.
-- **Violated when:** Paying up for "quality" — the Magic Formula's
-  structural flaw.
+- **Why:** Even wonderful companies are bad at the wrong price.
+- **Violated when:** Paying up for 'quality' — Magic Formula's structural flaw.
 
 ### 6.4 Low PSR (P/S) is the king of value factors.
-- **Quant:** PSR < 1.0. Beats low PE, low PB, low P/CF on risk-
-  adjusted returns over 50 years.
+- **Quant:** PSR < 1.0. Beats low PE/PB/P/CF over 50 years.
 - **Sources:** O'Shaughnessy
-- **Why:** Sales are the hardest number to manipulate. Low PSR
-  stocks have the lowest expectations and highest consistency.
-- **Violated when:** Using PE alone and ignoring revenue-based
-  valuation.
+- **Why:** Sales are the hardest number to manipulate.
+- **Violated when:** Using PE alone and ignoring revenue.
 
 ### 6.5 Combine value with relative strength.
-- **Quant:** Low PE + top-decile 1-year RS = Sharpe 61 vs 46 for
-  All Stocks. Low PB + RS = Sharpe 57. Low PSR + RS = Sharpe 60.
-- **Sources:** O'Shaughnessy
-- **Why:** Value + momentum = the best risk-adjusted combo in
-  long-horizon equity. Neither alone is as strong.
+- **Quant:** Low PE + top-decile 1-yr RS = Sharpe 61 vs 46 for All Stocks.
+- **Sources:** O'Shaughnessy, **Singhal (sector RS)**
+- **Why:** Value + momentum = best risk-adjusted combo.
 - **Violated when:** Using value alone and buying falling knives.
 
 ### 6.6 Avoid permanent loss first. Cleanse the universe.
-- **Quant:** Eliminate top 5% on: PROBM (manipulation), PFD
-  (distress), STA (accruals), SNOA (bloated balance sheet).
+- **Quant:** Eliminate top 5% on PROBM, PFD, STA, SNOA.
 - **Sources:** Gray & Carlisle
-- **Why:** The best stock picker in the world can't recover from a
-  bankruptcy. Avoid catastrophic loss before optimising.
+- **Why:** The best picker in the world can't recover from a bankruptcy.
 - **Violated when:** Chasing yield in distressed names.
 
 ### 6.7 Growth outside the franchise destroys value.
-- **Quant:** Only growth where ROC > cost of capital (typically
-  ROCE ≥ 15%) creates value. Everything else is value-neutral or
-  value-destroying.
+- **Quant:** Only ROC > cost of capital creates value. Typically ROCE ≥ 15%.
 - **Sources:** Greenwald, Buffett (via Greenwald)
-- **Why:** Growth requires capital. If the return on that capital
-  is below the cost of capital, growth is a tax.
-- **Violated when:** Buying growth stocks in commodity industries
-  (airlines, textiles).
+- **Why:** Growth requires capital. Low return on that capital = value tax.
+- **Violated when:** Buying growth in commodity industries.
 
 ---
 
 ## THEME 7 · QUALITY & FRANCHISE
 
 ### 7.1 ROCE ≥ 15-20% sustained = franchise proxy.
-- **Quant:** ROCE ≥ 15% sustained (5-10 years). Prefer ≥ 20%.
+- **Quant:** ROCE ≥ 15% sustained 5-10 years. Prefer ≥ 20%.
 - **Sources:** Greenwald, Lowe, Parikh, O'Shaughnessy
-- **Why:** Consistent high ROCE means competitive advantage —
-  something protects the returns.
-- **Violated when:** Buying one-year high ROCE without checking
-  consistency.
+- **Why:** Consistent high ROCE means competitive advantage.
+- **Violated when:** One-year high ROCE without consistency.
 
 ### 7.2 ROE ≥ 17% and rising = compounder candidate.
-- **Quant:** ROE ≥ 17% (prefer 25-50%). Rising trend over 3-5
-  years.
+- **Quant:** ROE ≥ 17% (prefer 25-50%). Rising trend 3-5 years.
 - **Sources:** O'Neil, Lowe, Parikh
-- **Why:** ROE is the return per rupee of equity. Rising ROE =
-  improving business quality.
-- **Violated when:** Buying flat-ROE businesses and expecting
-  compounding.
+- **Why:** Rising ROE = improving business quality.
+- **Violated when:** Flat-ROE businesses and expecting compounding.
 
 ### 7.3 8-year geometric ROA/ROC = volatility-adjusted quality.
-- **Quant:** 8-year geometric mean (not arithmetic) of ROA and
-  ROC. Penalises volatility.
+- **Quant:** 8-year geometric mean (not arithmetic) of ROA and ROC.
 - **Sources:** Gray & Carlisle
-- **Why:** Arithmetic means hide volatility. Geometric means
-  reveal it — a business with 33% average ROA but wild swings is
-  worse than one with steady 25%.
+- **Why:** Geometric means reveal volatility hidden by arithmetic.
 - **Violated when:** Using last year's ROE as a quality proxy.
 
 ### 7.4 Franchise = EPV − reproduction cost.
-- **Quant:** Earnings Power Value (adjusted EBIT / cost of capital)
-  minus reproduction cost of assets.
+- **Quant:** Earnings Power Value minus reproduction cost of assets.
 - **Sources:** Greenwald
-- **Why:** The gap IS the franchise. Where the gap is zero, the
-  company has no competitive advantage.
-- **Violated when:** Paying for "quality" without checking if it's
-  a franchise or just good management.
+- **Why:** The gap IS the franchise.
+- **Violated when:** Paying for 'quality' without checking franchise.
 
 ### 7.5 Promoter holding ≥ 51% = skin in the game (India).
-- **Quant:** Promoter holding ≥ 51%. Pledge ≤ 20%.
+- **Quant:** Promoter ≥ 51%. Pledge ≤ 20%.
 - **Sources:** Parikh
-- **Why:** Founders who own the business make decisions like
-  owners, not managers. Pledge signals distress.
-- **Violated when:** Ignoring promoter holding because "the
-  business looks good".
+- **Why:** Founders who own the business make owner decisions.
+- **Violated when:** Ignoring promoter holding because 'business looks good'.
 
 ---
 
 ## THEME 8 · MARKET REGIME
 
 ### 8.1 Three out of four stocks move with the market.
-- **Quant:** Never fight the primary index trend. Market filter
-  gates all other setups.
+- **Quant:** Never fight the primary index trend. Filter gates all setups.
 - **Sources:** O'Neil, McAllen
-- **Why:** Individual stocks are corralled by the market's
-  direction. Ignoring this is the #1 cause of "good pick, bad
-  timing".
-- **Violated when:** Buying "obvious" breakouts during a market
-  correction.
+- **Why:** Individual stocks are corralled by the market's direction.
+- **Violated when:** Buying 'obvious' breakouts in a market correction.
 
 ### 8.2 Index above EMA10 = bullish regime.
-- **Quant:** Index close > EMA10 with rising slope. Size multiplier
-  ×1.0. Below: ×0.5 to ×0.25.
+- **Quant:** Close > EMA10 with rising slope = ×1.0 size. Below = ×0.5 to ×0.25.
 - **Sources:** Internal (regime.py), Turtle
-- **Why:** Fastest regime signal available. Catches shifts early.
-- **Violated when:** Ignoring the regime and trading full size
-  anyway.
+- **Why:** Fastest regime signal available.
+- **Violated when:** Ignoring regime and trading full size.
 
 ### 8.3 Distribution day count ≥ 4-5 in 4-5 weeks = correction.
-- **Quant:** Count days where index closes down >0.2% on higher
-  volume. Threshold: 4-5 days in a 4-5 week rolling window.
+- **Quant:** Index down >0.2% on higher volume. Threshold: 4-5 days.
 - **Sources:** O'Neil
-- **Why:** Distribution days are institutions selling. Count
-  them. When they cluster, the tide has turned.
+- **Why:** Distribution days are institutions selling.
 - **Violated when:** Staying long through a distribution cluster.
 
 ### 8.4 Follow-through day = new uptrend confirmation.
-- **Quant:** Day 4-7 of a rally attempt: index up ≥1.5% on
-  higher volume than prior day.
+- **Quant:** Day 4-7 of rally: index up ≥1.5% on higher volume.
 - **Sources:** O'Neil
-- **Why:** A single up-day after a decline isn't a trend change.
-  A follow-through day confirms the new uptrend.
+- **Why:** One up-day after decline isn't a trend change.
 - **Violated when:** Buying the first up-day and getting whipsawed.
 
 ### 8.5 Breadth > 50% = healthy market.
-- **Quant:** % of tracked universe above 50-EMA ≥ 50% AND
-  advances ≥ declines.
+- **Quant:** % above 50-EMA ≥ 50% AND advances ≥ declines.
 - **Sources:** Internal (breadth.py), O'Neil (implied)
-- **Why:** Breadth measures participation. Narrow rallies are
-  fragile.
-- **Violated when:** Buying breakouts when 70% of stocks are
-  below their 50-EMA.
+- **Why:** Breadth measures participation. Narrow rallies are fragile.
+- **Violated when:** Buying breakouts when 70% of stocks are below 50-EMA.
 
 ### 8.6 Never fight the index's primary trend.
-- **Quant:** No new entries when index is in a confirmed
-  correction. Manage open positions only.
+- **Quant:** No new entries in confirmed correction.
 - **Sources:** O'Neil, McAllen, Turtle
-- **Why:** The market's direction dominates. Being right about a
-  stock but wrong about the market still loses money.
-- **Violated when:** Conviction about a stock overrides the
-  market context.
+- **Why:** Market direction dominates stock direction.
+- **Violated when:** Stock conviction overrides market context.
+
+### 8.7 High VIX = skip trades.
+- **Quant:** India VIX > 40 is extreme. Adjust or skip.
+- **Sources:** **Singhal**
+- **Why:** High VIX increases drawdowns and whipsaws.
+- **Violated when:** Taking full-size positions during volatility spikes.
+
+### 8.8 Sector rotation: buy the leading sector.
+- **Quant:** Sector index RS above Nifty 50 → buy highest-weight stock in that sector.
+- **Sources:** **Singhal**
+- **Why:** Money rotates between sectors. The leader gets the flow.
+- **Violated when:** Buying a stock in a lagging sector just because the chart looks good.
 
 ---
 
@@ -521,129 +440,132 @@ Every other principle in this document is a consequence of these.
 
 ### 9.1 Know your circle of competence.
 - **Quant:** Only trade setups you can explain in 60 seconds.
-  Anything else is speculation.
 - **Sources:** Buffett (via Greenwald), Lowe, Turtle
-- **Why:** Edge comes from understanding. Outside your circle,
-  you're gambling.
-- **Violated when:** Trading a "hot" theme you don't understand.
+- **Why:** Edge comes from understanding.
+- **Violated when:** Trading a 'hot' theme you don't understand.
 
 ### 9.2 Be consistent. Half the edge is execution.
-- **Quant:** Execute every signal. Missing one big winner can
-  wipe out a year's discipline.
-- **Sources:** Turtle (systematic execution), Chande
-- **Why:** A good system executed poorly underperforms a mediocre
-  system executed well.
-- **Violated when:** Skipping signals based on "feel".
+- **Quant:** Execute every signal. Missing one big winner can wipe out a year.
+- **Sources:** Turtle, Chande, **Singhal**
+- **Why:** Good system executed poorly < mediocre system executed well.
+- **Violated when:** Skipping signals based on 'feel'.
 
 ### 9.3 No overriding the model.
-- **Quant:** If the system says buy, buy. If it says sell, sell.
-  No discretionary overlays.
+- **Quant:** System says buy → buy. System says sell → sell.
 - **Sources:** Chande, Gray & Carlisle, O'Shaughnessy
-- **Why:** Discretion is where systematic edges die. Even experts
-  underperform models when they override.
-- **Violated when:** "I know this one better" — no you don't.
+- **Why:** Discretion is where systematic edges die.
+- **Violated when:** 'I know this one better'.
 
 ### 9.4 When in doubt, stay out.
-- **Quant:** If a setup requires interpretation beyond the rules,
-  skip it. There is always another.
+- **Quant:** If setup requires interpretation beyond rules, skip it.
 - **Sources:** McAllen, Turtle
-- **Why:** The cost of missing a trade is zero. The cost of a
-  bad trade is real money.
-- **Violated when:** Forcing trades because you're bored or
-  chasing the market.
+- **Why:** Missing a trade costs zero. A bad trade costs real money.
+- **Violated when:** Forcing trades because you're bored.
 
 ### 9.5 No FOMO. There is always another setup.
 - **Quant:** Wait for the entry criteria. Not before.
 - **Sources:** McAllen, Turtle, O'Neil
-- **Why:** Missing a move costs nothing. Chasing costs real
-  money on the pullback.
-- **Violated when:** Buying extended because "it keeps going up".
+- **Why:** Missing a move costs nothing. Chasing costs real money.
+- **Violated when:** Buying extended because 'it keeps going up'.
 
 ### 9.6 Learning from losses is the fastest path.
-- **Quant:** Review every loss. Log the failure condition. Don't
-  repeat it.
-- **Sources:** Turtle, Chande, O'Neil (21 mistakes chapter)
-- **Why:** Losses are the tuition. Ignoring the lesson wastes it.
-- **Violated when:** Blaming the market, the news, or the broker.
+- **Quant:** Review every loss. Log the failure condition.
+- **Sources:** Turtle, Chande, O'Neil
+- **Why:** Losses are the tuition. Ignoring wastes it.
+- **Violated when:** Blaming the market, news, or broker.
+
+### 9.7 Never trade without a plan.
+- **Quant:** No plan = guaranteed capital erosion.
+- **Sources:** **Singhal**
+- **Why:** An intraday trader with no plan has a high probability of eroding capital.
+- **Violated when:** Discretionary trades without predefined entry, stop, target.
+
+### 9.8 Avoid overtrading.
+- **Quant:** Limit trades per session. Book caps at 3 per session for scalping/options.
+- **Sources:** **Singhal**
+- **Why:** Most losses come from too many trades, not bad ones.
+- **Violated when:** Taking multiple correlated signals in one session.
+
+### 9.9 Avoid analysis paralysis.
+- **Quant:** Keep systems simple. Use ≤3-5 indicators per strategy.
+- **Sources:** **Singhal**, Chande, Turtle
+- **Why:** Simple systems survive. Complex systems confuse.
+- **Violated when:** Adding indicators to 'improve' a working system.
+
+### 9.10 Keep a trading journal.
+- **Quant:** Record every trade — setup, entry, exit, reasoning, outcome.
+- **Sources:** **Singhal**
+- **Why:** Pattern recognition improves when you review your own history.
+- **Violated when:** Relying on memory for past trades.
+
+### 9.11 Start small.
+- **Quant:** Paper or demo first. Small capital before scaling.
+- **Sources:** **Singhal**
+- **Why:** Losses on small capital are cheaper tuition.
+- **Violated when:** Deploying full capital on a new strategy before backtesting.
 
 ---
 
 ## THEME 10 · PROCESS & VALIDATION
 
-### 10.1 Positive expectation required. Average trade must be
-profitable.
-- **Quant:** Expectancy = (WR × avg_win) − ((1−WR) × avg_loss).
-  Must be > 0 after costs.
+### 10.1 Positive expectation required.
+- **Quant:** Expectancy = (WR × avg_win) − ((1−WR) × avg_loss). Must be > 0.
 - **Sources:** Chande, Turtle, Patel & Kiri
-- **Why:** A negative-expectancy system loses money no matter
-  how good the entries look.
-- **Violated when:** Trading a system because "the entries look
-  great" without verifying expectancy.
+- **Why:** Negative-expectancy systems lose regardless of entries.
+- **Violated when:** Trading without expectancy check.
 
 ### 10.2 Small rulesets beat complex systems.
-- **Quant:** ≤ 5 rules per strategy. Each additional rule
-  reduces the sample size and often reduces profit.
+- **Quant:** ≤5 rules per strategy.
 - **Sources:** Chande, Turtle, O'Shaughnessy
-- **Why:** Simple systems survive parameter shifts. Complex
-  systems are curve-fit.
-- **Violated when:** Adding rules to "improve" a system.
+- **Why:** Simple systems survive parameter shifts.
+- **Violated when:** Adding rules to 'improve' a system.
 
 ### 10.3 Robust parameters, no curve-fitting.
-- **Quant:** Performance must not collapse on ±20% parameter
-  changes. Sweep 5×5 grid — expect smooth response surface.
-- **Sources:** Chande (data scrambling), Turtle (optimization
-  paradox)
-- **Why:** A parameter that only works at 20.0 and not 18.0 or
-  22.0 is noise.
+- **Quant:** Performance must not collapse on ±20% parameter changes.
+- **Sources:** Chande, Turtle
+- **Why:** A parameter that only works at 20.0 and not 18.0 or 22.0 is noise.
 - **Violated when:** Optimising to the last decimal.
 
 ### 10.4 Backtest with slippage, commission, survivorship bias.
-- **Quant:** Slippage 0.1%, commission 0.05%, delisted stocks
-  included.
-- **Sources:** Chande, Gray & Carlisle, O'Shaughnessy
-- **Why:** A backtest without these is a fairy tale. Real returns
-  are always lower.
-- **Violated when:** Claiming "20% CAGR" from a clean-data
-  backtest.
+- **Quant:** Slippage 0.1%, commission 0.05%, delisted included.
+- **Sources:** Chande, Gray & Carlisle, O'Shaughnessy, **Singhal**
+- **Why:** A backtest without these is a fairy tale.
+- **Violated when:** Claiming '20% CAGR' from a clean-data backtest.
 
 ### 10.5 Log every run. Evidence over opinion.
-- **Quant:** strategy_runs table. Every WF run logged with date,
-  params, PF, DD, verdict.
-- **Sources:** Internal (strategy_runs), Chande (systematic
-  approach)
+- **Quant:** strategy_runs table: date, params, PF, DD, verdict.
+- **Sources:** Internal, Chande
 - **Why:** Memory is unreliable. Logs are the audit trail.
-- **Violated when:** Relying on "I remember the PF was around
-  1.4".
+- **Violated when:** Relying on 'I remember the PF was around 1.4'.
 
 ---
 
 ## THEME REFERENCE
 
-| Theme | Count | Key books |
-|---|---|---|
-| Trend | 7 | McAllen, O'Neil, Chande, Turtle |
-| Risk & Sizing | 7 | O'Neil, Turtle, Chande, Patel |
-| Entry Timing | 7 | O'Neil, Nison, Ishaan, McAllen |
-| Exit Discipline | 7 | O'Neil, Chande, McAllen |
-| Volume | 5 | McAllen, O'Neil, Nison |
-| Value | 7 | Graham, O'Shaughnessy, Gray-Carlisle |
-| Quality | 5 | Greenwald, O'Neil, Gray-Carlisle |
-| Market Regime | 6 | O'Neil, McAllen, Turtle |
-| Psychology | 6 | Turtle, Chande, McAllen |
-| Process | 5 | Chande, Turtle, O'Shaughnessy |
+| Theme | Count |
+|---|---|
+| Trend | 8 |
+| Risk & Sizing | 7 |
+| Entry Timing | 10 |
+| Exit Discipline | 10 |
+| Volume | 5 |
+| Value | 7 |
+| Quality | 5 |
+| Market Regime | 8 |
+| Psychology | 11 |
+| Process | 5 |
 
-**Total: 62 principles across 10 themes.**
+**Total: 76 principles across 10 themes.**
 
 ---
 
 ## THE ONE-SCREEN VERSION
 
-If you read nothing else, remember these five:
-
 1. **Trend is the frame.** Trade with it.
 2. **Risk first.** 2% per trade. 7% max loss. No exceptions.
 3. **Volume confirms.** No volume, no trade.
 4. **Price is dominant.** Never pay up for quality.
-5. **Consistency beats brilliance.** Execute the system.
+5. **Confluence, not single signals.** 2-3 must agree.
+6. **Consistency beats brilliance.** Execute the system.
 
 Everything else is detail.
