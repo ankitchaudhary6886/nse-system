@@ -12,6 +12,7 @@ Sections:
   REGIME      — market regime spectrum thresholds
   ALL_WEATHER — defensive-regime reversal detection
   SIZING      — capital allocation
+  LEAGUE      — Trader League paper league + pre-deployment backtest
 
 Note: this is a *measuring tool* config, not a recommendation set.
 The owner decides what values to use based on their own research.
@@ -122,6 +123,43 @@ SIZING = {
 }
 
 
+# ============================================================
+# LEAGUE — Trader League (trader_league.py): 14 books + our system,
+# Rs 10 lakh play money each. Used by the backtest AND the live league.
+# ============================================================
+LEAGUE = {
+    "CAPITAL": 1_000_000,            # Rs 10 lakh per player
+    "RISK_PER_TRADE": 0.01,          # 1% of equity lost if the stop hits
+    "MAX_POSITIONS": 10,
+    "MAX_POSITION_PCT": 0.20,        # no stock above 20% of equity
+    "MAX_STOP_PCT": 0.15,            # skip trades with a stop > 15% away
+    "ORDER_VALID_BARS": 3,           # unfilled buy orders expire
+    "MAX_HOLD_BARS": 60,             # safety time stop (books without one)
+    "SLIPPAGE_PCT": 0.002,           # 0.2% per side, small/mid caps
+    "INTRABAR": "path",              # "worst" = stop always first (stress)
+    # Indian equity-delivery charges (Zerodha, verified Sep 2026)
+    "BROKERAGE_PER_ORDER": 0.0,      # set 20 if your broker charges Rs 20
+    "BROKERAGE_PCT": 0.0,
+    "STT_PCT": 0.001,                # 0.1% on buy AND sell
+    "STAMP_PCT": 0.00015,            # 0.015% on buy
+    "EXCH_PCT": 0.0000297,           # NSE transaction charge
+    "SEBI_PCT": 0.000001,            # Rs 10 per crore
+    "GST_PCT": 0.18,
+    "DP_CHARGE": 15.93,              # per stock per sell day
+    "MIN_PRICE": 20.0,
+    "MIN_TURNOVER": 1e7,             # Rs 1 cr avg daily value (point in time)
+    "REPLAY_YEARS": 3,
+    "REPLAY_SYMBOLS": 300,           # band stocks for the books' replay
+    "LIVE_START": None,              # "YYYY-MM-DD" or None = first evening
+    "BENCHMARK": "^NSEI",
+    # real-money checklist thresholds
+    "READY_MIN_TRADES": 50,
+    "READY_MIN_PF": 1.3,
+    "READY_MAX_DD": 0.25,
+    "READY_MC_DD95": 0.35,
+    "READY_MIN_LIVE_TRADES": 30,
+}
+
 def dump():
     """Print entire config for inspection."""
     import json
@@ -132,6 +170,7 @@ def dump():
         "REGIME": REGIME,
         "ALL_WEATHER": ALL_WEATHER,
         "SIZING": SIZING,
+        "LEAGUE": LEAGUE,
     }, indent=2, default=str))
 
 

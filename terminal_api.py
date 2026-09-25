@@ -4,7 +4,7 @@ import datetime as dt
 import pandas as pd
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Header
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Header, Query
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -26,7 +26,7 @@ async def lifespan(app):
     scheduler_bg.stop()
 
 
-app = FastAPI(title="NSE Intelligence Terminal", version="24.0",
+app = FastAPI(title="NSE Intelligence Terminal", version="24.1",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
@@ -220,6 +220,70 @@ def scan_trader_api(slug: str, limit: int = 800,
                 "signals": sigs}
     except Exception as e:
         return {"slug": slug, "error": str(e), "signals": []}
+
+
+# ============================================================
+# Trader League (#087) — Rs 10 lakh paper league + pre-deployment
+# backtest of our system. Engine: trader_league.py. The heavy replay
+# runs as a low-priority background process; the rest are DB reads.
+# ============================================================
+def _league_mode(mode, ex):
+    return (mode if mode in ("backtest", "live") else "backtest",
+            ex if ex in ("book", "common") else "book")
+
+
+@app.get("/api/league/overview")
+def league_overview(mode: str = "backtest",
+                    ex: str = Query("book", alias="exit"),
+                    user: str = Depends(verify_user)):
+    import trader_league as TL
+    mode, ex = _league_mode(mode, ex)
+    try:
+        return TL.overview(mode, ex)
+    except Exception as e:
+        return {"mode": mode, "exit": ex, "rows": [], "error": str(e)}
+
+
+@app.get("/api/league/player/{slug}")
+def league_player(slug: str, mode: str = "backtest",
+                  ex: str = Query("book", alias="exit"),
+                  user: str = Depends(verify_user)):
+    import trader_league as TL
+    mode, ex = _league_mode(mode, ex)
+    try:
+        return TL.player_detail(slug, mode, ex)
+    except Exception as e:
+        return {"slug": slug, "playing": False, "error": str(e)}
+
+
+@app.get("/api/league/status")
+def league_status(user: str = Depends(verify_user)):
+    import trader_league as TL
+    try:
+        return TL.status()
+    except Exception as e:
+        return {"players": [], "error": str(e)}
+
+
+@app.post("/api/league/simulate")
+def league_simulate(mode: str = "backtest",
+                    user: str = Depends(verify_user)):
+    import trader_league as TL
+    mode, _ = _league_mode(mode, "book")
+    return TL.start_simulation(mode)
+
+
+@app.post("/api/league/replay")
+def league_replay(years: float = 3, symbols: int = 300, workers: int = 1,
+                  user: str = Depends(verify_user)):
+    import trader_league as TL
+    years = min(max(float(years), 0.5), 10.0)
+    symbols = min(max(int(symbols), 20), 1500)
+    workers = min(max(int(workers), 1), 8)
+    try:
+        return TL.start_replay_process(years, symbols, workers)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================

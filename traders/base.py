@@ -188,15 +188,19 @@ def bars_to_dicts(df):
         indexed by date (string or timestamp).
     Returns: list of dicts with integer index + date + OHLCV.
     """
-    out = []
-    for i, (idx, row) in enumerate(df.iterrows()):
-        out.append({
-            "index": i,
-            "date": str(idx)[:10],
-            "Open": float(row["Open"]),
-            "High": float(row["High"]),
-            "Low": float(row["Low"]),
-            "Close": float(row["Close"]),
-            "Volume": float(row.get("Volume", 0)),
-        })
-    return out
+    # v2 (2026-09-25): column-wise instead of df.iterrows() — same output,
+    # ~20x faster. Matters for the Trader League replay, which calls
+    # John Crane's scanner once per stock per historical day.
+    n = len(df)
+    if n == 0:
+        return []
+    dates = [str(x)[:10] for x in df.index]
+    o = df["Open"].astype(float).tolist()
+    h = df["High"].astype(float).tolist()
+    lo = df["Low"].astype(float).tolist()
+    c = df["Close"].astype(float).tolist()
+    v = (df["Volume"].astype(float).tolist() if "Volume" in df.columns
+         else [0.0] * n)
+    return [{"index": i, "date": dates[i], "Open": o[i], "High": h[i],
+             "Low": lo[i], "Close": c[i], "Volume": v[i]}
+            for i in range(n)]

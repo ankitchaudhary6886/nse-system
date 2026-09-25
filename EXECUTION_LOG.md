@@ -1128,6 +1128,102 @@ All detectors computed inline in `traders/mcallen.py`:
   a full re-ship just for the Singhal additions.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
+### #087 · Trader League + pre-deployment backtest (D20, ID77)
+- Owner ask: "Make the 14 authors compete on real NSE data. Each book
+  gets Rs 10 lakh of play money and trades its own signals every
+  evening" + "we have to make something to backtest our system before
+  deploying real money."
+- Files:
+  - `trader_league.py` (new) — engine + CLI + built-in selftest
+  - `TRADER_LEAGUE.md` (new) — owner guide (commands, checklist, limits)
+  - `terminal/static/league.js` (new) — 🏆 League tab
+  - `terminal/static/index.html` — League nav + section + styles,
+    app.js?v=16, league.js?v=16
+  - `terminal/static/app.js` — league title/subtitle + view hook
+  - `terminal_api.py` — v24.1: /api/league/overview, /player/{slug},
+    /status, POST /simulate, POST /replay
+  - `scheduler_bg.py` — Mon-Fri 19:00 trader_league.run_live();
+    Sat 11:00 scorecard
+  - `strategy_config.py` — LEAGUE section (costs, sizing, checklist)
+  - `traders/base.py` — bars_to_dicts without iterrows (10x faster,
+    output verified identical on 200 random frames)
+  - `traders/singhal.py` — VCP helper renamed `_vcp_pattern`; it was
+    shadowed by the method wrapper `_detect_vcp`, so VCP never emitted
+  - `.gitignore` — data/league_replay.pid
+- How it works:
+  - Replay: for every stock and past day, calls each chart book's own
+    `_scan_symbol` on a chart that ENDS that day (O'Neil gets his own
+    market-regime logic fed only past index rows; Spears gets past
+    Nifty returns; Singhal gets point-in-time sector ranks). Our system
+    = Swing Desk pipeline point-in-time (regime ^NSEI -> breadth ->
+    sector top-3 -> Stage-2 screener -> SetupDetector -> fresh only).
+    Only real BUY setups are kept (filters/forecasts/warnings dropped;
+    McAllen top-warnings, Crane sell-stops etc. become exits).
+  - Simulator: pure function, per player; next-day fills, buy-stop /
+    limit / market orders, gap-through stops at the open, intrabar
+    order by candle colour (+ worst-case re-run), 1% risk sizing,
+    20% cap, 10 positions, liquidity cap, Indian delivery costs.
+  - Per-book exit profiles from EXIT_LOGIC.md + a common-exit mode.
+  - Stats: CAGR, max DD, Sharpe/Sortino, PF, expectancy (R), costs,
+    exposure, yearly/monthly, by method, by regime, by exit reason,
+    Monte Carlo DD95, benchmark comparison, readiness verdict.
+- Tests (sandbox, synthetic 150-stock DB — no internet there):
+  - selftest 26/26 (costs, fills, gaps, sizing, caps, time/trailing
+    stops, partials, O'Neil 8-week rule, equity reconciliation,
+    no-lookahead replay check)
+  - independent audit of every simulated trade vs raw bars: entry/exit
+    inside the day's range, equity = capital + P&L, cash >= 0,
+    positions <= 10 — PASSED for all players, both scoreboards
+  - multi-process replay == single-process replay (identical signals);
+    resume adds only missing days; no duplicate rows
+  - live collect ran all 14 books' real scan() + Swing Desk import
+  - API: auth enforced, 5 endpoints 5-36 ms; UI screenshotted
+    (desktop + phone) with headless Chromium
+- Status: DEPLOYED ON BRANCH · AWAITING REAL-DATA RUN ON VM
+
+### #088 · Copy-paste blocks rule (R47) + league replay hardening
+- Owner ask: "give me copy paste whole blocks always for git and vm
+  sections everytime needed." → rule R47 (PROJECT_HANDOFF §1 + backlog).
+- Files:
+  - `trader_league.py`:
+    - `replay --background` — same launcher as the League button: own
+      session (SSH logout doesn't stop it), nice 10 set by the replay
+      itself (no preexec_fn inside the multi-threaded web server)
+    - a replay typed in SSH registers in `data/league_replay.pid` →
+      the League tab shows it and a second replay is refused
+    - fix (bug in #087): a finished web-started replay showed RUNNING
+      forever — the unreaped child stayed a zombie and kill(pid, 0)
+      still succeeded. Now the server reaps its child and
+      `_pid_alive` checks /proc/<pid>/cmdline (also covers a pid
+      recycled by another program after a reboot)
+    - `replay --changed` — redo (fresh) only players whose code or
+      settings hash changed; status hint points to it
+  - `TRADER_LEAGUE.md` — §2 / §4 / §8 rewritten as copy-paste Blocks
+    A–K (laptop SSH, deploy, selftest, start, progress, verdict, stop,
+    re-test after settings changes, slow VM, scorecard) with expected
+    output after each block
+  - `terminal/static/league.js` — hints use `--background` / `--changed`;
+    `index.html` league.js?v=17
+  - `PROJECT_HANDOFF.md` — §1 rule, §14 runbook, changelog 2026-09-26a
+  - `backlog.md` — R47, I79
+- Tests (sandbox, synthetic 80-stock DB):
+  - selftest 26/26; py_compile; node --check league.js
+  - `--background`: returns at once; child has its own session
+    (SID = PID) and nice 10; pid file written; a second start is
+    refused (both `--background` and foreground, exit 1); status shows
+    "Replay running"; after it finished (auto-simulated) it doesn't
+  - zombie reproduced with the web launcher: finished child in state Z,
+    kill(pid, 0) still succeeded (old check = RUNNING forever); new
+    check → not running, child reaped (returncode 0)
+  - pid file pointing at a live unrelated process or a dead pid → a new
+    replay starts
+  - `--changed`: nothing changed → "nothing to redo"; after editing
+    traders/nison.py → only nison replayed fresh
+  - API (TestClient): POST /api/league/replay starts, second POST
+    refused, status flips to not running after the finish, POST again
+    starts
+- Status: ON BRANCH (PR #1) · AWAITING MERGE + VM RUN
+
 ---
 ---
 

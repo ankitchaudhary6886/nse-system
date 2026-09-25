@@ -17,6 +17,10 @@
 ## A. RULES  (always active)
 
 - **R1**–**R43** as previously logged.
+- **R47** Git + VM steps → ALWAYS whole copy-paste blocks, every time
+          (2026-09-26). One block per place (Laptop PowerShell · SSH ·
+          VM); each block complete on its own (cd, venv), one command
+          per line, no placeholders, expected output after each block.
 
 ---
 
@@ -32,11 +36,24 @@
           Skipped: Ch 2 (intraday), Ch 3 (SMC/Elliott/etc),
           Ch 5 (scalping), Ch 6 (options). All indicators inline.
 
+### Session 8 — 2026-09-25 (Arena agent chat)
+- **I78** Build the Trader League: each of the 14 books gets
+          Rs 10 lakh of play money and trades its own signals on real
+          NSE data every evening (chosen from the "something unique"
+          ideas list).
+- **I79** "give me copy paste whole blocks always for git and vm
+          sections everytime needed" → rule **R47** (also in
+          PROJECT_HANDOFF.md §1). TRADER_LEAGUE.md rewritten as
+          copy-paste Blocks A–K.
+
 ---
 
 ## C. DEMANDS
 
-- **D1**–**D17** as previously logged.
+- **D1**–**D17** as previously logged (D18, D19 see #086).
+- **D20** "We have to make something to backtest our system before
+  deploying real money." → `trader_league.py` backtest + real-money
+  checklist (TRADER_LEAGUE.md). DONE · awaiting real-data run.
 
 ---
 
@@ -58,6 +75,14 @@ Two-leg.
 **Overlaps marked (R41).**
 **Exits per R40.**
 
+### ID77 — Trader League (Rs 10 lakh paper league) · DONE
+14 books + our system, Rs 10 lakh each. Point-in-time replay of the
+10 chart books + our Swing Desk pipeline (fundamentals books live
+only, DR-01). Realistic simulator (next-day fills, gap-through stops,
+Indian delivery costs, slippage, 1% risk sizing). Book exits vs same
+exits scoreboards, results by regime, real-money verdict. Nightly live
+league 19:00, Sat scorecard, 🏆 League tab. See #087.
+
 ### ID52 — Data source plugins · DEFERRED (post-traders)
 
 ---
@@ -70,7 +95,7 @@ IM1–IM6 as previously logged.
 ## F. FEATURES COMPLETED
 Prior + FTR + FJC + FLS + FBEP + FNFR + FJO + FQV + FVIME +
 FWOT + F7SS + FDR + F11S + FATT + FNIS + FCH + FONL + FMCA +
-FMT + FWIS + FSIN (Singhal).
+FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 
 ---
 
@@ -79,6 +104,7 @@ FMT + FWIS + FSIN (Singhal).
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R43 | Rules                    | Active       |
+| R47   | Whole copy-paste blocks (git/VM) | Active |
 | I1–I75 | Instructions             | Applied      |
 | ID59  | James O'Shaughnessy       | DONE · VERIFIED |
 | ID60  | Quantitative Value        | DONE · VERIFIED |
@@ -96,6 +122,8 @@ FMT + FWIS + FSIN (Singhal).
 | ID72  | Fred McAllen              | DONE · VERIFIED |
 | ID73  | McAllen theses capture    | DONE         |
 | ID74  | Aseem Singhal             | DONE         |
+| ID77  | Trader League             | DONE · awaiting VM run |
+| D20   | Backtest before real money | DONE · awaiting VM run |
 | Traders 15+ | Pending owner input | PENDING      |
 | ID52  | Data source plugins       | DEFERRED     |
 
@@ -109,6 +137,14 @@ FMT + FWIS + FSIN (Singhal).
 ### Backlog TODOs
 - Reverse-mark overlaps in existing traders.
 - Strip existing proxies once real data arrives (ID71).
+
+### Trader League (ID77)
+- Run the pre-season replay on the VM (TRADER_LEAGUE.md Block D).
+- Re-check `python trader_league.py ready` after 30+ live paper trades.
+- Not started (proposed in the same chat): Council score (vote
+  weighted by each method's regime track record), Wisdom Court
+  (test MARKET_WISDOM principles), Quiet Accumulation (pullback +
+  falling volume + rising delivery%), Discipline Coach.
 
 ### Owner data delivery (see DATA_REQUESTS.md)
 - P0: DR-01, DR-02, DR-03
