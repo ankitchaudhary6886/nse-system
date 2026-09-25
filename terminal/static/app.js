@@ -28,6 +28,7 @@ function setView(name) {
     research: "Research — analysis & pattern lab",
     traders: "Traders — famous methods & signals",
     ledger: "Ledger — track record",
+    league: "League — ₹10 lakh trader league",
     system: "System — health & config",
   };
   const t = $("viewTitle");
@@ -40,6 +41,7 @@ function setView(name) {
       research: "Deep-dive any symbol. Historical behaviour of similar setups.",
       traders: "One page per famous trader. Their methods, scanned across the universe.",
       ledger: "Your strategy's real track record, walk-forward validation.",
+      league: "14 books vs our system. Backtest before real money, then live paper trading.",
       system: "Infrastructure health, data freshness, deployment checks.",
     };
     subtitle.textContent = subs[name] || "Gabani Stage-2 / VCP Pullback System";
@@ -51,6 +53,10 @@ function setView(name) {
   // Traders hook
   if (name === "traders" && typeof window.loadTradersIndex === "function") {
     window.loadTradersIndex();
+  }
+  // League hook (#087)
+  if (name === "league" && typeof window.loadLeague === "function") {
+    window.loadLeague();
   }
 }
 window.setView = setView;

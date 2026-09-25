@@ -451,8 +451,10 @@ def _consolidation(df, n=20):
     return rng, vr
 
 
-def _detect_vcp(df, min_pullbacks=3):
-    """Return dict {pullback_count, ranges, range_pct} or None."""
+def _vcp_pattern(df, min_pullbacks=3):
+    """Return dict {pullback_count, ranges, range_pct} or None.
+    (2026-09-25: renamed from _detect_vcp - the method wrapper of the
+    same name further down shadowed it, so VCP never emitted.)"""
     n = len(df)
     if n < 60:
         return None
@@ -1370,7 +1372,7 @@ def _detect_vcp(sym, df):
     highs = df["high"].values.astype(float)
     if len(closes) < 80:
         return []
-    vcp = _detect_vcp(df, min_pullbacks=3)
+    vcp = _vcp_pattern(df, min_pullbacks=3)
     if vcp is None:
         return []
     # Uptrend context

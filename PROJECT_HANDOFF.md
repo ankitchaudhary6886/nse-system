@@ -85,6 +85,11 @@ retrain. Mondays: 08:00 Monte-Carlo. 1st of month: 10:00 walk-forward.
 - sizing.py — half-Kelly position sizing with caps.
 - pwin_cache.py — daily P(WIN) cache.
 - validate.py — Monte-Carlo + walk-forward validation harness.
+- trader_league.py — Trader League (#087): 14 books + our system, Rs 10 lakh each. Point-in-time replay of every
+  past day (resumable), realistic portfolio simulator (next-day fills, gaps through stops, Indian delivery costs,
+  1% risk sizing), real-money readiness checklist, nightly live paper league + Sat Telegram scorecard.
+  CLI: status | replay | backtest | simulate | table | ready | player | live | scorecard | selftest.
+  Guide: TRADER_LEAGUE.md. UI: terminal/static/league.js (🏆 League tab).
 - model_report.py — model_runs ledger.
 - db.py — sqlite helper + central SCHEMA (all tables; data/app.db per machine).
 - app.py — legacy Streamlit dashboard (backup only; all optional panels guarded with try/except).
@@ -152,6 +157,14 @@ data_quality_log(run_at,status,severity,check_name,message) ·
 validation_log(run_date,mode,payload, PRIMARY KEY(run_date,mode)) ·
 webhook_events(created_at,source,symbol,kind,price,payload)
 
+Trader League (created by trader_league.ensure_tables, CREATE TABLE IF NOT EXISTS):
+league_signals(source,player,date,symbol,method,kind,entry,stop,target,confidence,time_exit,valid_bars,
+  close,atr,turnover,size_mult,created_at, PK(source,player,date,symbol,method,kind)) ·
+league_progress(player,symbol,first_date,last_date,n_signals,code_hash,updated_at) ·
+league_runs(run_id,player,mode,exit_mode,start,end,created_at,stats) · league_trades(run_id,player,...) ·
+league_equity(run_id,player,date,equity,cash,n_pos) · league_open(run_id,player,...) ·
+league_index(symbol,date,close)  [^NSEI cache]
+
 ## 7. STRATEGY SPEC (OFFICIAL v3 + gates)
 Setup checklist (ALL must pass): impulse 25-50% within 90 bars, price mostly above EMA10 during impulse;
 pullback 12-20% over 6-15 days, orderly, no >=15% crash in any 3-day window; price touching EMA10/EMA20 zone;
@@ -183,6 +196,7 @@ Top Picks composite = 0.45*P(WIN) + 0.25*accum + 0.15*sectorRS + 0.15*delivery
 15:30 data_quality · 15:45 daily_update · 16:00 delivery fetch · 16:15 swing scan + drift check ·
 16:45 institutional · 17:30 macro FII/DII · 18:05 patterns · 18:35 templates ·
 Sat 08:00 fundamentals refresh · Sat 09:00 meta retrain · Mon 08:00 Monte-Carlo · 1st 10:00 walk-forward.
+Mon-Fri 19:00 trader league (store 14 books + Swing Desk signals, re-simulate live) · Sat 11:00 league scorecard.
 Verify: sudo journalctl -u nse-terminal -n 50 --no-pager | grep -i scheduler
 
 ## 10. CURRENT STATUS SNAPSHOT (2026-09-12)
@@ -232,7 +246,8 @@ python swing_live.py · python swing_live.py backfill · python institutional.py
 python macro.py [set F D] · python fundamentals_refresh.py csv|yahoo|auto · python ingest_missing.py ·
 python sectors_refresh.py · python swing_alerts.py (test message) · python delivery.py backfill 30 ·
 python patterns.py run · python template_match.py run · python validate.py all ·
-python model_report.py lift · tail -20 data/logs/scheduler.log
+python model_report.py lift · tail -20 data/logs/scheduler.log ·
+python trader_league.py selftest|status|ready|table [--mode live] · python trader_league.py replay --years 3 --symbols 300
 
 ## 15. RULES FOR THE NEXT AI CHAT
 - Obey §4 golden rules absolutely (whole files; restart rules; verification).
@@ -276,3 +291,4 @@ NEW TABLES: top_picks(ext), pwin_daily, validation_log, model_runs, ledger uses 
 2026-09-17a: BULL_FLAG KILLED by evidence — rescue variants 53.0-55.9% WR (n=127-1572), all below 60% bar; detector removed (patterns v5); historical tags/grades retained for audit; live pattern library now HTF / AscTriangle / DoubleBottom / InvH&S (+H&S-top warning).
 2026-09-12b: PO fixes — regime.py + screener_engine.py yfinance period (use start/end dates); db.py central schema (all tables); meta_model feature-count guard + bundle format + retrained v6 (30 features); events.py uses latest technicals date; swing_live.py veto-before-insert + staleness guard; deepdive.py try/except; backtest.py stale-signal guard + diagnostic counters; screener_engine.py index fallback list; app.py optional-panel guards (safe_rows/safe_call helpers) + CSS @import moved inside <style>.
 2026-09-12c: Structured logging — log_utils.py (rotating TimedRotatingFileHandler → data/logs/<name>.log, 14-day retention); daily_update.py + scheduler_bg.py migrated to log_utils.get_logger(); requirements.txt split into core (requirements.txt) + requirements-optional.txt (streamlit, plotly, transformers, torch, feedparser, matplotlib, gspread).
+2026-09-25a: Trader League (#087) — trader_league.py: 14 books + our system with Rs 10 lakh each; point-in-time replay (each past day sees only data up to that day), portfolio simulator (next-day fills, gap-through stops, STT/stamp/NSE/SEBI/GST/DP costs, 0.2% slippage, 1% risk sizing, 10 positions), book-exit vs same-exit scoreboards, results by regime, Monte Carlo + worst-case-fill checks, real-money verdict (READY / PAPER FIRST / NOT READY); nightly live league 19:00 + Sat 11:00 Telegram scorecard; /api/league/* (5 endpoints, terminal_api v24.1); 🏆 League tab (league.js, app.js v16); strategy_config.LEAGUE; guide TRADER_LEAGUE.md. Also: traders/base.py bars_to_dicts 10x faster (identical output); singhal.py VCP fix (two functions named _detect_vcp — the method shadowed the helper, so VCP never emitted).

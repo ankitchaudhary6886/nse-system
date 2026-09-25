@@ -1128,6 +1128,59 @@ All detectors computed inline in `traders/mcallen.py`:
   a full re-ship just for the Singhal additions.
 - Status: DEPLOYED · AWAITING VERIFICATION
 
+### #087 · Trader League + pre-deployment backtest (D20, ID77)
+- Owner ask: "Make the 14 authors compete on real NSE data. Each book
+  gets Rs 10 lakh of play money and trades its own signals every
+  evening" + "we have to make something to backtest our system before
+  deploying real money."
+- Files:
+  - `trader_league.py` (new) — engine + CLI + built-in selftest
+  - `TRADER_LEAGUE.md` (new) — owner guide (commands, checklist, limits)
+  - `terminal/static/league.js` (new) — 🏆 League tab
+  - `terminal/static/index.html` — League nav + section + styles,
+    app.js?v=16, league.js?v=16
+  - `terminal/static/app.js` — league title/subtitle + view hook
+  - `terminal_api.py` — v24.1: /api/league/overview, /player/{slug},
+    /status, POST /simulate, POST /replay
+  - `scheduler_bg.py` — Mon-Fri 19:00 trader_league.run_live();
+    Sat 11:00 scorecard
+  - `strategy_config.py` — LEAGUE section (costs, sizing, checklist)
+  - `traders/base.py` — bars_to_dicts without iterrows (10x faster,
+    output verified identical on 200 random frames)
+  - `traders/singhal.py` — VCP helper renamed `_vcp_pattern`; it was
+    shadowed by the method wrapper `_detect_vcp`, so VCP never emitted
+  - `.gitignore` — data/league_replay.pid
+- How it works:
+  - Replay: for every stock and past day, calls each chart book's own
+    `_scan_symbol` on a chart that ENDS that day (O'Neil gets his own
+    market-regime logic fed only past index rows; Spears gets past
+    Nifty returns; Singhal gets point-in-time sector ranks). Our system
+    = Swing Desk pipeline point-in-time (regime ^NSEI -> breadth ->
+    sector top-3 -> Stage-2 screener -> SetupDetector -> fresh only).
+    Only real BUY setups are kept (filters/forecasts/warnings dropped;
+    McAllen top-warnings, Crane sell-stops etc. become exits).
+  - Simulator: pure function, per player; next-day fills, buy-stop /
+    limit / market orders, gap-through stops at the open, intrabar
+    order by candle colour (+ worst-case re-run), 1% risk sizing,
+    20% cap, 10 positions, liquidity cap, Indian delivery costs.
+  - Per-book exit profiles from EXIT_LOGIC.md + a common-exit mode.
+  - Stats: CAGR, max DD, Sharpe/Sortino, PF, expectancy (R), costs,
+    exposure, yearly/monthly, by method, by regime, by exit reason,
+    Monte Carlo DD95, benchmark comparison, readiness verdict.
+- Tests (sandbox, synthetic 150-stock DB — no internet there):
+  - selftest 26/26 (costs, fills, gaps, sizing, caps, time/trailing
+    stops, partials, O'Neil 8-week rule, equity reconciliation,
+    no-lookahead replay check)
+  - independent audit of every simulated trade vs raw bars: entry/exit
+    inside the day's range, equity = capital + P&L, cash >= 0,
+    positions <= 10 — PASSED for all players, both scoreboards
+  - multi-process replay == single-process replay (identical signals);
+    resume adds only missing days; no duplicate rows
+  - live collect ran all 14 books' real scan() + Swing Desk import
+  - API: auth enforced, 5 endpoints 5-36 ms; UI screenshotted
+    (desktop + phone) with headless Chromium
+- Status: DEPLOYED ON BRANCH · AWAITING REAL-DATA RUN ON VM
+
 ---
 ---
 

@@ -253,6 +253,28 @@ def _drift_check():
         log.warning(f"[DRIFT] check skipped: {e}")
 
 
+def _league_job():
+    """Trader League (#087): store today's signals from the 14 books +
+    our Swing Desk, then re-simulate the live Rs 10 lakh paper league."""
+    log.info("trader league started")
+    try:
+        import trader_league
+        rep = trader_league.run_live()
+        log.info(f"trader league complete: {rep}")
+    except Exception as e:
+        log.exception(f"trader league failed: {e}")
+
+
+def _league_scorecard_job():
+    """Weekly Telegram scorecard of the league."""
+    try:
+        import trader_league
+        ok = trader_league.send_scorecard()
+        log.info(f"league scorecard sent={ok}")
+    except Exception as e:
+        log.exception(f"league scorecard failed: {e}")
+
+
 def start():
     global _scheduler
     if _scheduler is not None:
@@ -289,6 +311,10 @@ def start():
     _scheduler.add_job(_template_job,
                        CronTrigger(hour=18, minute=35, timezone=IST),
                        id="template_scan", replace_existing=True)
+    _scheduler.add_job(_league_job,
+                       CronTrigger(day_of_week="mon-fri", hour=19,
+                                   minute=0, timezone=IST),
+                       id="trader_league", replace_existing=True)
     # ---- Weekend jobs ----
     _scheduler.add_job(_pool_rebuild_job,
                        CronTrigger(day_of_week="sun", hour=6, minute=0,
@@ -310,6 +336,10 @@ def start():
                        CronTrigger(day_of_week="sun", hour=9, minute=0,
                                    timezone=IST),
                        id="value_radar", replace_existing=True)
+    _scheduler.add_job(_league_scorecard_job,
+                       CronTrigger(day_of_week="sat", hour=11, minute=0,
+                                   timezone=IST),
+                       id="league_scorecard", replace_existing=True)
     # ---- Monthly ----
     _scheduler.add_job(_validate_mc_job,
                        CronTrigger(day_of_week="mon", hour=8, minute=0,
@@ -323,6 +353,7 @@ def start():
     log.info("scheduler started — dq@15:30, daily@15:45, trend@15:50, "
              "delivery@16:00, swing@16:15, research@16:20, "
              "inst@16:45, macro@17:30, patterns@18:05, templates@18:35, "
+             "league@Mon-Fri19:00, leagueCard@Sat11:00, "
              "poolRebuild@Sun06:00, fund@Sat08:00, retrain@Sat09:00, "
              "positional@Sat10:00, valueRadar@Sun09:00, "
              "mc@Mon08:00, wf@1st10:00 IST")
