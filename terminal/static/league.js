@@ -85,7 +85,7 @@
     return `<div class="lg-home"><h3>🏁 No ${S.mode === "live" ? "live" : "backtest"} results yet</h3>
       <p class="lg-note">${S.mode === "live"
         ? "The live league fills itself: every weekday at 19:00 IST the scheduler stores each book's signals and trades them on paper. First trades appear the day after the first run."
-        : "Run the pre-season replay (below, or on the VM: <code>python trader_league.py replay</code>). It replays every past day for each book using only the data known that day, then simulates ₹10 lakh portfolios."}</p></div>`;
+        : "Run the pre-season replay (below, or on the VM: <code>python trader_league.py replay --background</code>). It replays every past day for each book using only the data known that day, then simulates ₹10 lakh portfolios."}</p></div>`;
   }
 
   function homeHtml(ov) {
@@ -147,7 +147,7 @@
   function replayHtml(st, openByDefault) {
     const job = (st && st.replay_job) || {};
     const rows = ((st && st.players) || []).filter((p) => p.backtest).map((p) => `
-      <tr><td>${esc(p.name)}${p.code_changed ? ' <span class="chk-fail" title="Trader code changed since the replay — run replay --fresh for this player">⚠</span>' : ""}</td>
+      <tr><td>${esc(p.name)}${p.code_changed ? ' <span class="chk-fail" title="Code or settings changed since the replay — on the VM run: python trader_league.py replay --changed --background">⚠</span>' : ""}</td>
       <td style="text-align:right">${(p.replay_signals || 0).toLocaleString("en-IN")}</td>
       <td style="text-align:right">${p.replay_stocks || 0}</td>
       <td class="lg-hide-sm">${p.replay_from ? esc(p.replay_from) + " → " + esc(p.replay_to) : "—"}</td>

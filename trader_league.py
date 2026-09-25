@@ -2515,6 +2515,7 @@ _SIM_STATE = {"running": False, "mode": None, "started": None,
               "finished": None, "error": None}
 _REPLAY_PID = BASE / "data" / "league_replay.pid"
 _REPLAY_LOG = BASE / "data" / "logs" / "league_replay.out"
+_REPLAY_PROC = {}          # Popen of a replay started by this process
 
 
 def start_simulation(mode="backtest"):
@@ -2558,13 +2559,23 @@ def _pid_alive(pid):
             return False
     try:
         os.kill(int(pid), 0)
-        return True
     except OSError:
         return False
+    # kill(pid, 0) also "finds" a finished child nobody reaped (zombie) and,
+    # after a reboot, an unrelated program that got the same pid. On Linux,
+    # make sure it really is a live trader_league process.
+    try:
+        with open(f"/proc/{int(pid)}/cmdline", "rb") as fh:
+            return b"trader_league" in fh.read()
+    except OSError:
+        return not os.path.isdir("/proc")   # no /proc (macOS): trust kill
 
 
 def replay_job_state():
     st = {"running": False}
+    proc = _REPLAY_PROC.get("proc")
+    if proc is not None and proc.poll() is not None:
+        _REPLAY_PROC.pop("proc", None)      # finished: reaped, pid is free
     try:
         if _REPLAY_PID.exists():
             info = json.loads(_REPLAY_PID.read_text())
@@ -2582,9 +2593,11 @@ def replay_job_state():
     return st
 
 
-def start_replay_process(years=None, symbols=None, workers=1, slugs=None):
+def start_replay_process(years=None, symbols=None, workers=1, slugs=None,
+                         fresh=False):
     """Launch the (hours-long) replay as a low-priority background
-    process so the web terminal stays responsive."""
+    process so the web terminal stays responsive. Used by the League tab
+    button and by `python trader_league.py replay --background` (SSH)."""
     import subprocess
     st = replay_job_state()
     if st.get("running"):
@@ -2599,6 +2612,8 @@ def start_replay_process(years=None, symbols=None, workers=1, slugs=None):
            "--workers", str(workers)]
     if slugs:
         cmd += ["--players", ",".join(slugs)]
+    if fresh:
+        cmd.append("--fresh")
     _REPLAY_LOG.parent.mkdir(parents=True, exist_ok=True)
     out = open(_REPLAY_LOG, "w", encoding="utf-8")
     kw = {"cwd": str(BASE), "stdout": out, "stderr": subprocess.STDOUT}
@@ -2606,12 +2621,43 @@ def start_replay_process(years=None, symbols=None, workers=1, slugs=None):
     if os.name == "nt":
         kw["creationflags"] = 0x00004000       # BELOW_NORMAL_PRIORITY_CLASS
     else:
-        kw["preexec_fn"] = lambda: os.nice(10)
-    proc = subprocess.Popen(cmd, env=env, **kw)
+        # own session: closing SSH doesn't stop it. Low priority is set by
+        # the replay itself (os.nice in main) — no preexec_fn in a
+        # multi-threaded web server.
+        kw["start_new_session"] = True
+    try:
+        proc = subprocess.Popen(cmd, env=env, **kw)
+    finally:
+        out.close()                            # the child has its own copy
+    _REPLAY_PROC["proc"] = proc
     info = {"pid": proc.pid, "started": _now(), "years": years,
             "symbols": symbols, "workers": workers}
     _REPLAY_PID.write_text(json.dumps(info))
     return {"started": True, "state": dict(info, running=True)}
+
+
+def _claim_replay(years=None, symbols=None, workers=1):
+    """A replay typed in SSH registers in the same pid file as the web
+    button: the League tab shows it, and two replays never run at once."""
+    st = replay_job_state()
+    me = os.getpid()
+    if st.get("running") and int(st.get("pid") or 0) != me:
+        print(f"A replay is already running (pid {st.get('pid')}, started "
+              f"{st.get('started')}). Not starting a second one.")
+        print("See its progress: python trader_league.py status")
+        return False
+    if int(st.get("pid") or 0) != me:          # not launched by the button
+        C = config()
+        info = {"pid": me, "started": _now(),
+                "years": float(years or C["REPLAY_YEARS"]),
+                "symbols": int(symbols or C["REPLAY_SYMBOLS"]),
+                "workers": max(1, int(workers or 1))}
+        try:
+            _REPLAY_PID.parent.mkdir(parents=True, exist_ok=True)
+            _REPLAY_PID.write_text(json.dumps(info))
+        except Exception:
+            pass
+    return True
 
 
 # ============================================================
@@ -2845,6 +2891,12 @@ def main(argv=None):
     r.add_argument("--workers", type=int, default=1)
     r.add_argument("--fresh", action="store_true",
                    help="forget stored replay signals for these players")
+    r.add_argument("--changed", action="store_true",
+                   help="redo (fresh) only players whose code or settings "
+                        "changed since their replay")
+    r.add_argument("--background", action="store_true",
+                   help="start in the background at low priority and return "
+                        "(same as the League tab button; survives SSH logout)")
     b = sub.add_parser("backtest", help="simulate stored signals (fast)")
     b.add_argument("--exit", default="book", choices=["book", "common"])
     b.add_argument("--players", type=str)
@@ -2870,7 +2922,40 @@ def main(argv=None):
     lst = (lambda s: [x.strip() for x in s.split(",") if x.strip()]
            if s else None)
     if a.cmd == "replay":
-        replay(a.years, a.symbols, lst(a.players), a.workers, a.fresh)
+        slugs, fresh = lst(a.players), a.fresh
+        if a.changed:
+            slugs = [p["slug"] for p in status()["players"]
+                     if p["code_changed"]]
+            if not slugs:
+                print("No player's code or settings changed since its "
+                      "replay — nothing to redo.")
+                return
+            fresh = True
+            print("Code/settings changed for: " + ", ".join(slugs)
+                  + " — replaying them fresh.")
+        if a.background:
+            res = start_replay_process(a.years, a.symbols, a.workers, slugs,
+                                       fresh)
+            st = res.get("state") or {}
+            if res.get("started"):
+                print(f"Replay started in the background (pid {st.get('pid')}"
+                      f", {st.get('years'):g} years, {st.get('symbols')} "
+                      f"stocks).")
+                print("You can close SSH now — it keeps running.")
+                print("Progress: python trader_league.py status")
+                print(f"Log file: {_REPLAY_LOG}")
+            else:
+                print(f"Not started: {res.get('reason')} (pid "
+                      f"{st.get('pid')}, started {st.get('started')}).")
+                print("See its progress: python trader_league.py status")
+            return
+        if not _claim_replay(a.years, a.symbols, a.workers):
+            sys.exit(1)
+        try:
+            os.nice(10)             # low priority: the web terminal stays fast
+        except Exception:
+            pass
+        replay(a.years, a.symbols, slugs, a.workers, fresh)
     elif a.cmd == "backtest":
         res = simulate_all("backtest", a.exit, lst(a.players))
         if res.get("error"):
@@ -2909,7 +2994,8 @@ def main(argv=None):
             rng_txt = (f"{p['replay_from']} -> {p['replay_to']}"
                        if p["replay_from"] else
                        ("—" if p["backtest"] else "live only"))
-            flag = "  (code changed: replay --fresh)" if p["code_changed"] else ""
+            flag = ("  (code changed: replay --changed)" if p["code_changed"]
+                    else "")
             print(f"{p['name'][:28]:<28}{p['replay_signals']:>15,}"
                   f"{p['replay_stocks']:>8}  {rng_txt:<25}"
                   f"{p['live_signals']:>13,}{flag}")

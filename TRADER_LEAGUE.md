@@ -24,52 +24,94 @@ Two scoreboards:
 
 ---
 
-## 2. First time (on the VM) — copy-paste
+## 2. First time — copy-paste blocks
 
-**Step 1 — deploy** (laptop pushes, then on the VM):
+Every block is complete on its own: paste the **whole** block, let it
+finish, then compare with **You should see**. If you see something else
+(or any `Traceback`), stop and send the output.
+
+**Block A — Laptop (PowerShell): connect to the VM**
 ```
-cd ~/nse-system && git pull
+ssh -i C:\Users\Ankit\.ssh\nse.pem ubuntu@140.238.226.249
+```
+You should see: a prompt like `ubuntu@...:~$`. Paste all VM blocks there.
+
+**Block B — VM: get the new code and restart the terminal**
+```
+cd ~/nse-system
+git pull
 sudo systemctl restart nse-terminal
+sleep 20
+sudo systemctl status nse-terminal --no-pager | head -5
+sudo journalctl -u nse-terminal --since "3 min ago" --no-pager | grep -o "league@Mon-Fri19:00, leagueCard@Sat11:00"
+```
+You should see: `git pull` listing the changed files (or `Already up to date.`),
+`Active: active (running)`, and as the last line
+`league@Mon-Fri19:00, leagueCard@Sat11:00` (the two league jobs are scheduled).
+If that last line is missing, the terminal was still starting — wait 30 seconds and paste:
+```
+sudo journalctl -u nse-terminal --since "5 min ago" --no-pager | grep -o "league@Mon-Fri19:00, leagueCard@Sat11:00"
 ```
 
-**Step 2 — check the accounting** (no database needed, takes 2 seconds):
+**Block C — VM: check the accounting (a few seconds, no data needed)**
 ```
-cd ~/nse-system && source venv/bin/activate
+cd ~/nse-system
+source venv/bin/activate
 python trader_league.py selftest
 ```
-Expected last line: `26/26 checks passed`. If any check says FAIL, stop and report it.
+You should see as the last line: `26/26 checks passed`. If any line says FAIL, stop and send it.
 
-**Step 3 — start the pre-season replay.** Easiest: open the terminal → **🏆 League**
-→ **⚙️ Pre-season replay** → **▶ Start / continue replay** (defaults: 3 years, 300 stocks,
-1 core). It runs in the background at low priority; you can close the page.
+**Block D — VM: start the pre-season replay (runs in the background)**
+```
+cd ~/nse-system
+source venv/bin/activate
+python trader_league.py replay --years 3 --symbols 300 --background
+```
+You should see:
+```
+Replay started in the background (pid 12345, 3 years, 300 stocks).
+You can close SSH now — it keeps running.
+```
+Same as the button in the terminal: **🏆 League → ⚙️ Pre-season replay → ▶ Start**.
+Only one replay can run at a time — a second start just says `Not started: a replay is already running`.
 
-Same thing from SSH (keeps running after you disconnect):
+⏱ Time: about 1–1.5 hours on a fast core (300 stocks × 3 years); the free VM can take 2–4 hours.
+It is **resumable**: if it stops (restart, reboot), paste Block D again and it continues where it
+stopped. Later runs only add the new days.
+
+**Block E — VM: check progress (any time)**
 ```
-nohup python trader_league.py replay --years 3 --symbols 300 > data/logs/league_replay.out 2>&1 &
-```
-Check progress any time:
-```
+cd ~/nse-system
+source venv/bin/activate
 python trader_league.py status
 tail -3 data/logs/league_replay.out
 ```
-Expected progress lines look like:
-`[ 40%] 480/1200 stocks · 61,204 signals · 38m10s elapsed · ETA 57m`
+You should see: `Replay running (pid …)` under the table, and progress lines like
+`[ 40%] 480/1200 stocks · 61,204 signals · 38m10s elapsed · ETA 57m15s`.
+When it has finished, the last lines show the `VERDICT:` and `Replay running` is gone.
 
-⏱ Time: about 1–1.5 hours for 300 stocks × 3 years on one fast core (the 10
-chart books take ~2 ms per stock per day each); a free-tier VM can take 2–4 hours. It is **resumable**: if it stops (restart, reboot), press
-Start again and it continues where it stopped. Later runs only add new days.
-
-**Step 4 — read the verdict.** When the replay finishes it simulates automatically.
-Open **🏆 League** or run:
+**Block F — VM: read the verdict (after the replay finished)**
 ```
+cd ~/nse-system
+source venv/bin/activate
 python trader_league.py ready
 python trader_league.py table
-python trader_league.py table --mode backtest --exit common
+python trader_league.py table --exit common
 python trader_league.py player home
 ```
+You should see: the real-money checklist ending in `VERDICT: READY`, `PAPER FIRST` or
+`NOT READY`, then the league table with book exits, the table with the same exits for all,
+and our system's full report. The **🏆 League** tab shows the same.
 
-**Step 5 — nothing.** The live league starts by itself at 19:00 IST on the next
-weekday. First trades appear the day after the first run.
+**Block G — VM: stop the replay (only if you must)**
+```
+pkill -f "trader_league.py replay"
+```
+You should see: nothing. Block E no longer shows `Replay running`. Block D continues later
+from where it stopped.
+
+**Then — nothing.** The live league starts by itself at 19:00 IST on the next weekday.
+First trades appear the day after the first run.
 
 ---
 
@@ -105,9 +147,32 @@ weekday. First trades appear the day after the first run.
 **Verdicts**
 - 🟢 **READY** — every check passes. Start with **25% of planned capital**, scale up after 3 good months.
 - 🟡 **PAPER FIRST** — backtest passes, but fewer than 30 live paper trades. Keep watching the live league.
-- 🔴 **NOT READY** — the verdict line lists what failed. Change one thing in `strategy_config.py`, re-run
-  `python trader_league.py backtest` (seconds — signals are stored), compare. Changing SETUP / SCREENER
-  values changes the signals themselves → run `python trader_league.py replay --players home --fresh`.
+- 🔴 **NOT READY** — the verdict line lists what failed. Change ONE thing in `strategy_config.py`
+  on the laptop, push it, then run the matching block on the VM and compare.
+
+**Block H — VM: after changing exit / sizing / cost settings** (`BACKTEST` or `LEAGUE`) — seconds,
+the stored signals are re-traded:
+```
+cd ~/nse-system
+git pull
+sudo systemctl restart nse-terminal
+source venv/bin/activate
+python trader_league.py backtest
+```
+You should see: the checklist and the new `VERDICT:` line.
+
+**Block I — VM: after changing signal settings** (`SETUP` or `SCREENER`, or any trader's code) —
+those change the signals themselves, so only the changed players are replayed again:
+```
+cd ~/nse-system
+git pull
+sudo systemctl restart nse-terminal
+source venv/bin/activate
+python trader_league.py replay --changed --background
+```
+You should see: `Code/settings changed for: …` naming what you changed (e.g. `home` = our
+system), then `Replay started in the background …`. Watch it with Block E; it simulates by
+itself at the end. (`nothing to redo` means no signal setting or trader code changed — use Block H.)
 
 ---
 
@@ -167,10 +232,27 @@ O'Neil's 8-week rule, equity reconciliation, and a "no peeking" replay test).
 
 | You see | Do this |
 |---|---|
-| "No backtest yet" | Start the replay (step 3) |
-| ⚠ next to a player in the replay table | That trader's code changed after its replay → `python trader_league.py replay --players SLUG --fresh` |
-| Replay stopped after `systemctl restart` | Normal (restart stops child jobs). Press Start again — it resumes |
-| VM too slow | Start with `--symbols 150`, add more later (only new stocks are replayed) |
+| "No backtest yet" | Start the replay — Block D |
+| ⚠ next to a player in the replay table | That trader's code or settings changed after its replay — Block I |
+| Replay stopped after `systemctl restart` | Normal (a restart stops child jobs) — Block D again, it resumes |
+| VM too slow | Block G, then Block J (fewer stocks; add more later — only new stocks are replayed) |
 | Live table all ₹10,00,000 | Normal on day 1 — orders fill the next trading day |
 | Disk space | Replay signals take ~100–150 MB for 300 stocks × 3 years (table `league_signals`) |
-| Scorecard not on Telegram | `python trader_league.py scorecard --print` shows the text; Telegram creds as in §3 of the handoff |
+| Scorecard not on Telegram | Block K shows the text; Telegram creds as in §3 of the handoff |
+
+**Block J — VM: lighter replay for a slow VM**
+```
+cd ~/nse-system
+source venv/bin/activate
+python trader_league.py replay --years 3 --symbols 150 --background
+```
+You should see: `Replay started in the background (pid …, 3 years, 150 stocks).`
+
+**Block K — VM: print the weekly scorecard without sending it**
+```
+cd ~/nse-system
+source venv/bin/activate
+python trader_league.py scorecard --print
+```
+You should see: the league table text that Telegram gets every Saturday 11:00 IST
+(`No league run yet.` until the first run).

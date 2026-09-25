@@ -1181,6 +1181,49 @@ All detectors computed inline in `traders/mcallen.py`:
     (desktop + phone) with headless Chromium
 - Status: DEPLOYED ON BRANCH · AWAITING REAL-DATA RUN ON VM
 
+### #088 · Copy-paste blocks rule (R47) + league replay hardening
+- Owner ask: "give me copy paste whole blocks always for git and vm
+  sections everytime needed." → rule R47 (PROJECT_HANDOFF §1 + backlog).
+- Files:
+  - `trader_league.py`:
+    - `replay --background` — same launcher as the League button: own
+      session (SSH logout doesn't stop it), nice 10 set by the replay
+      itself (no preexec_fn inside the multi-threaded web server)
+    - a replay typed in SSH registers in `data/league_replay.pid` →
+      the League tab shows it and a second replay is refused
+    - fix (bug in #087): a finished web-started replay showed RUNNING
+      forever — the unreaped child stayed a zombie and kill(pid, 0)
+      still succeeded. Now the server reaps its child and
+      `_pid_alive` checks /proc/<pid>/cmdline (also covers a pid
+      recycled by another program after a reboot)
+    - `replay --changed` — redo (fresh) only players whose code or
+      settings hash changed; status hint points to it
+  - `TRADER_LEAGUE.md` — §2 / §4 / §8 rewritten as copy-paste Blocks
+    A–K (laptop SSH, deploy, selftest, start, progress, verdict, stop,
+    re-test after settings changes, slow VM, scorecard) with expected
+    output after each block
+  - `terminal/static/league.js` — hints use `--background` / `--changed`;
+    `index.html` league.js?v=17
+  - `PROJECT_HANDOFF.md` — §1 rule, §14 runbook, changelog 2026-09-26a
+  - `backlog.md` — R47, I79
+- Tests (sandbox, synthetic 80-stock DB):
+  - selftest 26/26; py_compile; node --check league.js
+  - `--background`: returns at once; child has its own session
+    (SID = PID) and nice 10; pid file written; a second start is
+    refused (both `--background` and foreground, exit 1); status shows
+    "Replay running"; after it finished (auto-simulated) it doesn't
+  - zombie reproduced with the web launcher: finished child in state Z,
+    kill(pid, 0) still succeeded (old check = RUNNING forever); new
+    check → not running, child reaped (returncode 0)
+  - pid file pointing at a live unrelated process or a dead pid → a new
+    replay starts
+  - `--changed`: nothing changed → "nothing to redo"; after editing
+    traders/nison.py → only nison replayed fresh
+  - API (TestClient): POST /api/league/replay starts, second POST
+    refused, status flips to not running after the finish, POST again
+    starts
+- Status: ON BRANCH (PR #1) · AWAITING MERGE + VM RUN
+
 ---
 ---
 

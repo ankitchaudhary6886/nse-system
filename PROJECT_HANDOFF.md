@@ -10,6 +10,10 @@ Doc date: 2026-09-12 · System version: 3.x · READ EVERYTHING BEFORE TOUCHING C
 - Owner: Ankit. Beginner coder. Windows 11 laptop. Uses phone as main screen.
 - MUST send WHOLE files for any change. NEVER partial find/replace fragments (a fragment once caused a full outage).
 - Minimize back-and-forth: give complete copy-paste-ready code + exact commands + expected output.
+- Git + VM steps: EVERY time, WHOLE copy-paste blocks (owner rule R47) — one block per place
+  (Laptop PowerShell · SSH connect · VM). Each block works on its own (starts with cd; source
+  venv/bin/activate before python), one command per line, no placeholders, expected output after
+  each block. Never inline snippets or "same as before".
 - Verify every deploy with command output (status/journal/grep) before declaring success.
 - Plain English, lists, no jargon without explanation.
 
@@ -247,7 +251,10 @@ python macro.py [set F D] · python fundamentals_refresh.py csv|yahoo|auto · py
 python sectors_refresh.py · python swing_alerts.py (test message) · python delivery.py backfill 30 ·
 python patterns.py run · python template_match.py run · python validate.py all ·
 python model_report.py lift · tail -20 data/logs/scheduler.log ·
-python trader_league.py selftest|status|ready|table [--mode live] · python trader_league.py replay --years 3 --symbols 300
+python trader_league.py selftest|status|ready|table [--mode live] ·
+python trader_league.py replay --years 3 --symbols 300 --background (same as the League button) ·
+python trader_league.py replay --changed --background (after trader code / SETUP / SCREENER changes) ·
+copy-paste Blocks A–K with expected output: TRADER_LEAGUE.md §2, §4, §8
 
 ## 15. RULES FOR THE NEXT AI CHAT
 - Obey §4 golden rules absolutely (whole files; restart rules; verification).
@@ -292,3 +299,4 @@ NEW TABLES: top_picks(ext), pwin_daily, validation_log, model_runs, ledger uses 
 2026-09-12b: PO fixes — regime.py + screener_engine.py yfinance period (use start/end dates); db.py central schema (all tables); meta_model feature-count guard + bundle format + retrained v6 (30 features); events.py uses latest technicals date; swing_live.py veto-before-insert + staleness guard; deepdive.py try/except; backtest.py stale-signal guard + diagnostic counters; screener_engine.py index fallback list; app.py optional-panel guards (safe_rows/safe_call helpers) + CSS @import moved inside <style>.
 2026-09-12c: Structured logging — log_utils.py (rotating TimedRotatingFileHandler → data/logs/<name>.log, 14-day retention); daily_update.py + scheduler_bg.py migrated to log_utils.get_logger(); requirements.txt split into core (requirements.txt) + requirements-optional.txt (streamlit, plotly, transformers, torch, feedparser, matplotlib, gspread).
 2026-09-25a: Trader League (#087) — trader_league.py: 14 books + our system with Rs 10 lakh each; point-in-time replay (each past day sees only data up to that day), portfolio simulator (next-day fills, gap-through stops, STT/stamp/NSE/SEBI/GST/DP costs, 0.2% slippage, 1% risk sizing, 10 positions), book-exit vs same-exit scoreboards, results by regime, Monte Carlo + worst-case-fill checks, real-money verdict (READY / PAPER FIRST / NOT READY); nightly live league 19:00 + Sat 11:00 Telegram scorecard; /api/league/* (5 endpoints, terminal_api v24.1); 🏆 League tab (league.js, app.js v16); strategy_config.LEAGUE; guide TRADER_LEAGUE.md. Also: traders/base.py bars_to_dicts 10x faster (identical output); singhal.py VCP fix (two functions named _detect_vcp — the method shadowed the helper, so VCP never emitted).
+2026-09-26a: Owner rule R47 — git/VM steps always as WHOLE copy-paste blocks (§1). Trader League follow-up (#088): TRADER_LEAGUE.md §2/§4/§8 rewritten as copy-paste Blocks A–K; `replay --background` (same launcher as the League button: own session, low priority, survives SSH logout); a replay typed in SSH registers in data/league_replay.pid (tab shows it, never two at once); fixed a finished web-started replay showing RUNNING forever (unreaped child + recycled-pid check); `replay --changed` redoes only players whose code/settings changed; league.js v=17.

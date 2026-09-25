@@ -17,6 +17,10 @@
 ## A. RULES  (always active)
 
 - **R1**–**R43** as previously logged.
+- **R47** Git + VM steps → ALWAYS whole copy-paste blocks, every time
+          (2026-09-26). One block per place (Laptop PowerShell · SSH ·
+          VM); each block complete on its own (cd, venv), one command
+          per line, no placeholders, expected output after each block.
 
 ---
 
@@ -37,6 +41,10 @@
           Rs 10 lakh of play money and trades its own signals on real
           NSE data every evening (chosen from the "something unique"
           ideas list).
+- **I79** "give me copy paste whole blocks always for git and vm
+          sections everytime needed" → rule **R47** (also in
+          PROJECT_HANDOFF.md §1). TRADER_LEAGUE.md rewritten as
+          copy-paste Blocks A–K.
 
 ---
 
@@ -96,6 +104,7 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 | ID    | Item                      | Status       |
 |-------|---------------------------|--------------|
 | R1–R43 | Rules                    | Active       |
+| R47   | Whole copy-paste blocks (git/VM) | Active |
 | I1–I75 | Instructions             | Applied      |
 | ID59  | James O'Shaughnessy       | DONE · VERIFIED |
 | ID60  | Quantitative Value        | DONE · VERIFIED |
@@ -130,7 +139,7 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 - Strip existing proxies once real data arrives (ID71).
 
 ### Trader League (ID77)
-- Run the pre-season replay on the VM (TRADER_LEAGUE.md step 3).
+- Run the pre-season replay on the VM (TRADER_LEAGUE.md Block D).
 - Re-check `python trader_league.py ready` after 30+ live paper trades.
 - Not started (proposed in the same chat): Council score (vote
   weighted by each method's regime track record), Wisdom Court
