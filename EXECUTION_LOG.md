@@ -1307,7 +1307,17 @@ All detectors computed inline in `traders/mcallen.py`:
   test_data_sources -v` passed (10 tests); preview verified mapping,
   duplicate and sentinel counts; live fundamentals were unchanged in
   importer tests.
-- Import applied to the local database; deployment to the VM is pending.
+- Import applied to both local and VM databases. Pre-import backups:
+  `data/app.db.pre-kite-20260927-001232.bak` locally and
+  `/home/ubuntu/nse-system/data/app.db.pre-kite-20260926-184400.bak`
+  on the VM.
+- VM verification: 500 KITE rows (366 mapped, 134 unmapped), zero rows
+  with financial-period/publication dates; existing VM fundamentals
+  (961 rows) and prices (811,835 rows) remain present. All 10 focused
+  tests passed on the VM; `nse-terminal.service` remains active.
+- Code and documentation were deployed to main/VM at `19b79ec`; the
+  importer writes only to the new snapshot table, so no service restart
+  was needed.
 
 ---
 
