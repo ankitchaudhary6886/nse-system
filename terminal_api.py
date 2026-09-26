@@ -73,6 +73,13 @@ def health(user: str = Depends(verify_user)):
             "time": dt.datetime.now().isoformat()}
 
 
+@app.get("/api/sources")
+def source_health(user: str = Depends(verify_user)):
+    from data_sources import get_registry
+    return {"sources": get_registry().health(),
+            "time": dt.datetime.now().isoformat()}
+
+
 @app.get("/api/deployment-check")
 def deployment_check(user: str = Depends(verify_user)):
     conn = get_conn()

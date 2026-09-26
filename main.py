@@ -6,10 +6,10 @@ Entry point:
 """
 import sys
 import re
-import requests
 import pandas as pd
 from datetime import datetime, timedelta
 
+from data_sources import ProviderFetchError, get_registry
 import db
 from regime import MarketRegime
 from scanner import Screener
@@ -34,11 +34,10 @@ DEFAULT_UNIVERSE = smallcap_universe() or FALLBACK_UNIVERSE
 
 def extract_symbols_from_chartink(url):
     try:
-        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"},
-                         timeout=20)
-        return sorted(set(re.findall(r"/stocks/NSE/([A-Z0-9]+)",
-                                     r.text)))
-    except Exception as e:
+        result = get_registry().fetch(
+            "universe.chartink_symbols", ("chartink",), url=url)
+        return result.data
+    except ProviderFetchError as e:
         print("Chartink scrape failed:", e)
         return []
 

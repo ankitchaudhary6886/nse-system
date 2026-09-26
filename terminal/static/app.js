@@ -50,7 +50,10 @@ function setView(name, options = {}) {
   if (name === "research" && chart) setTimeout(() => chart.timeScale().fitContent(), 50);
   if (name === "ledger") loadLedger();
   if (name === "research") loadPatterns();
-  if (name === "system") loadDeployment();
+  if (name === "system") {
+    loadDeployment();
+    loadSourceHealth();
+  }
   // Traders hook
   if (name === "traders" && typeof window.loadTradersIndex === "function") {
     window.loadTradersIndex();
@@ -474,6 +477,41 @@ async function loadDeployment() {
   }
 }
 
+async function loadSourceHealth() {
+  const box = $("sourceHealthBox");
+  if (!box) return;
+  box.textContent = "Loading data-source health...";
+  try {
+    const data = await api("/api/sources");
+    const sources = data.sources || [];
+    box.replaceChildren();
+    if (!sources.length) {
+      box.textContent = "No source adapters are registered.";
+      return;
+    }
+    sources.forEach(source => {
+      const row = document.createElement("div");
+      row.className = "level";
+      row.style.padding = "8px 12px";
+      const name = document.createElement("strong");
+      name.textContent = source.provider;
+      const details = document.createElement("span");
+      details.style.cssText = "flex:1; margin-left:12px; color:#9fb0cc";
+      details.textContent = `${source.state} · rate limit ${source.rate_limit_ok ? "available" : "reached"} · ${source.calls} calls / ${source.failures} failures`;
+      row.append(name, details);
+      if (source.last_error) {
+        const error = document.createElement("small");
+        error.style.cssText = "display:block; color:#fb7185; margin-left:12px";
+        error.textContent = source.last_error;
+        row.appendChild(error);
+      }
+      box.appendChild(row);
+    });
+  } catch (error) {
+    box.textContent = `Data-source health unavailable: ${error.message}`;
+  }
+}
+
 // ============================================================
 // Chart
 // ============================================================
@@ -813,6 +851,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   const rb = $("refreshBtn");
   if (rb) rb.addEventListener("click", refreshAll);
+  const sourceHealthBtn = $("refreshSourceHealthBtn");
+  if (sourceHealthBtn) {
+    sourceHealthBtn.addEventListener("click", loadSourceHealth);
+  }
   const lsb = $("loadSymbolBtn");
   if (lsb) lsb.addEventListener("click", () => {
     setView("research");

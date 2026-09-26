@@ -27,14 +27,12 @@ Derived:
 import sys
 import time
 import datetime as dt
-import requests
 import db
+from data_sources import ProviderFetchError, get_registry
 from log_utils import get_logger
 
 log = get_logger("fundamentals")
 
-URL = "https://scanner.tradingview.com/india/scan"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 BATCH_SIZE = 100
 
 COLUMNS = [
@@ -51,13 +49,13 @@ COLUMNS = [
 
 
 def _fetch_batch(tickers, retries=3):
-    body = {"symbols": {"tickers": tickers}, "columns": COLUMNS}
     last_err = None
     for attempt in range(retries):
         try:
-            r = requests.post(URL, headers=HEADERS, json=body, timeout=30)
-            r.raise_for_status()
-            return r.json().get("data", [])
+            result = get_registry().fetch(
+                "fundamentals.tv_batch", ("tradingview",),
+                tickers=tickers, columns=COLUMNS)
+            return result.data
         except Exception as e:
             last_err = e
             wait = 2 * (attempt + 1)
@@ -65,7 +63,8 @@ def _fetch_batch(tickers, retries=3):
                         f"{e}; retrying in {wait}s")
             time.sleep(wait)
     log.error(f"batch failed permanently: {last_err}")
-    return []
+    raise ProviderFetchError(
+        "fundamentals.tv_batch", {"tradingview": str(last_err)}) from last_err
 
 
 def _sector_map(conn):
@@ -107,8 +106,10 @@ def run(limit=None):
     for b in range(0, total, BATCH_SIZE):
         batch = symbols[b:b + BATCH_SIZE]
         tickers = ["NSE:" + s for s in batch]
-        data = _fetch_batch(tickers)
-        if not data:
+        try:
+            data = _fetch_batch(tickers)
+        except ProviderFetchError as exc:
+            log.error(f"batch {b // BATCH_SIZE + 1} unavailable: {exc}")
             failed_batches += 1
             continue
         ok_batches += 1
