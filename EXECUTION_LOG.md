@@ -1279,8 +1279,14 @@ All detectors computed inline in `traders/mcallen.py`:
 - Validation: `python -m unittest discover -v` (7 tests),
   `python -m py_compile` for changed Python modules, and
   `node --check terminal/static/app.js` passed.
-- Status: committed on rebased topic branch as `cf67655`; not yet
-  deployed to main or the VM.
+- Deployment: merged and pushed to `main` at `3d886e3`; VM pulled that
+  commit and `nse-terminal.service` is active.
+- Runtime verification: `/api/health`, `/api/deployment-check`, and
+  `/api/sources` each returned 401 without credentials and 200 with
+  credentials; deployment checks reported `ALL CHECKS PASSED`; source
+  endpoint listed all six registered adapters.
+- Status: DEPLOYED · VERIFIED. Remaining provider migrations and
+  official dated-filing ingestion are still open.
 
 ---
 

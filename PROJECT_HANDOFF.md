@@ -232,7 +232,7 @@ CURRENT OPEN WORK (see `backlog.md` and `DATA_REQUESTS.md` for details):
 - Owner data still required: DR-01/02 and outstanding DR-03–DR-23; the ScanX snapshot is research-only and is
   not point-in-time history.
 - Source adapter framework and first TradingView, Yahoo-price, NSE-constituent, and Chartink adapters are
-  implemented on the topic branch; remaining direct Yahoo consumers and official dated-filing ingestion remain
+  deployed on main and the VM; remaining direct Yahoo consumers and official dated-filing ingestion remain
   open (DR-01/DR-21). See EXECUTION_LOG #091.
 - Decisions recorded 2026-09-26: official NSE/BSE filings are authoritative for dated fundamentals; Funda and
   Swing use separate broad-quality and liquid-mid/small-cap universes (exact thresholds open); Multibagger
@@ -319,4 +319,4 @@ NEW TABLES: top_picks(ext), pwin_daily, validation_log, model_runs, ledger uses 
 2026-09-26a: Owner rule R47 — git/VM steps always as WHOLE copy-paste blocks (§1). Trader League follow-up (#088): TRADER_LEAGUE.md §2/§4/§8 rewritten as copy-paste Blocks A–K; `replay --background` (same launcher as the League button: own session, low priority, survives SSH logout); a replay typed in SSH registers in data/league_replay.pid (tab shows it, never two at once); fixed a finished web-started replay showing RUNNING forever (unreaped child + recycled-pid check); `replay --changed` redoes only players whose code/settings changed; league.js v=17.
 2026-09-26b: Trader League real-data replay and readiness re-checked on VM: replay through 2026-09-25 is complete; 178 home trades, -6.2% return vs Nifty +5.5%, PF 0.93, worst-case-fill PF 0.72, 0 live paper trades; verdict NOT READY. Logged in EXECUTION_LOG #090.
 2026-09-26c: Terminal data-clickability pass deployed to main and VM (merge 04cd982): navigation/history, company research links, detail dialogs, and keyboard-accessible data rows; static page 200 and service active. Logged in EXECUTION_LOG #089.
-2026-09-26d: Owner decisions recorded and source adapter framework implemented on topic branch: auto-discovered provider contract, health/rate-limit reporting, explicit fallback, initial TradingView/Yahoo/NSE/Chartink migrations, and authenticated System-page source health. Official dated fundamentals ingestion and remaining Yahoo consumers still open; not deployed. Logged in EXECUTION_LOG #091.
+2026-09-26d: Owner decisions recorded and source adapter framework deployed to main and VM at 3d886e3: auto-discovered provider contract, health/rate-limit reporting, explicit fallback, initial TradingView/Yahoo/NSE/Chartink migrations, and authenticated System-page source health. `/api/health`, `/api/deployment-check`, and `/api/sources` verified; official dated fundamentals ingestion and remaining Yahoo consumers still open. Logged in EXECUTION_LOG #091.
