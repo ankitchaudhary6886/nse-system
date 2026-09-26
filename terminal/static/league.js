@@ -46,6 +46,7 @@
     root.innerHTML = `
       ${controlsHtml()}
       <div class="lg-run">${runLine(ov)}</div>
+      ${genomeHtml(ov.genome)}
       ${ov.error ? `<p class="strategy-error">${esc(ov.error)}</p>` : ""}
       ${ov.run ? homeHtml(ov) : emptyHtml()}
       ${ov.run ? tableHtml(ov) : ""}
@@ -79,6 +80,34 @@
     return `${S.mode === "live" ? "Live paper league" : "Backtest"} ${esc(r.start)} → ${esc(r.end)}
       · ${r.days || "—"} trading days · ${r.stocks || "—"} stocks traded${b}
       · ₹10,00,000 each, after all costs · saved ${esc((r.created_at || "").replace("T", " "))}`;
+  }
+
+  function genomeHtml(genome) {
+    if (!genome) return "";
+    const table = (rows) => rows.length ? `
+      <div class="lg-scroll"><table class="strategy-table lg-genome-table">
+        <thead><tr><th>Playbook</th><th>Market mood</th><th>Method</th>
+          <th style="text-align:right">Shared exits · N</th>
+          <th style="text-align:right">Win</th><th style="text-align:right">Avg R</th>
+          <th style="text-align:right">PF</th><th style="text-align:right">Book exits · Avg R</th>
+        </tr></thead><tbody>${rows.map((cell) => `
+          <tr><td>${esc(cell.name)}</td><td>${esc(cell.regime)}</td>
+            <td>${esc(cell.method)}</td>
+            <td style="text-align:right">${cell.common.trades}</td>
+            <td style="text-align:right">${pctAbs(cell.common.win_rate, 0)}</td>
+            <td style="text-align:right" class="${cls(cell.common.avg_r)}">${num(cell.common.avg_r, 2)}R</td>
+            <td style="text-align:right">${num(cell.common.pf)}</td>
+            <td style="text-align:right" class="${cls(cell.book && cell.book.avg_r)}">${cell.book ? `${num(cell.book.avg_r, 2)}R · N=${cell.book.trades}` : "—"}</td>
+          </tr>`).join("")}</tbody></table></div>` : `<p class="lg-note">Not enough executed trades yet. A context needs at least ${genome.minimum_trades} shared-exit trades to appear.</p>`;
+    const leaders = table(genome.leaders || []);
+    const weak = table(genome.weak_spots || []);
+    return `<details class="lg-details lg-genome">
+      <summary>🧬 Signal Genome — where methods met market regimes</summary>
+      <p class="lg-note">Contexts with the strongest and weakest historical average R under shared exits, requiring at least ${genome.minimum_trades} closed trades. Book-exit results are shown alongside to compare the full recipe. These are retrospective descriptions, not predictions.</p>
+      <h4 class="lg-h4">Strongest historical contexts</h4>${leaders}
+      <h4 class="lg-h4">Weakest historical contexts</h4>${weak}
+      <p class="lg-note">${esc(genome.note || "")}</p>
+    </details>`;
   }
 
   function emptyHtml() {
@@ -141,7 +170,7 @@
       <th style="text-align:right">PF</th><th style="text-align:right">Trades</th><th>Verdict</th></tr></thead>
       <tbody>${body}</tbody></table></div>${idleHtml}
       <p class="lg-note">Tap a player for the equity curve, every trade and which methods actually made money.
-      ${S.exit === "common" ? "Same exits for all = setup stop (or 2×ATR), 2R target, 20-day time stop: compares ENTRIES only." : "Book exits = each book's own exit rules (EXIT_LOGIC.md)."}</p>`;
+      ${S.exit === "common" ? "Same exits for all = setup stop (or 2×ATR), 2R target, 20-day time stop: a more comparable entry view, though fill timing and portfolio capacity still matter." : "Book exits = each book's own exit rules (EXIT_LOGIC.md)."}</p>`;
   }
 
   function replayHtml(st, openByDefault) {
@@ -174,7 +203,8 @@
       <b>CAGR</b> — yearly growth rate. <b>Max DD</b> — worst fall from a peak (can you sit through it?).<br>
       <b>PF (profit factor)</b> — rupees won per rupee lost. Below 1.0 loses money; 1.3+ is the bar for real money.<br>
       <b>Verdict</b> — the real-money checklist: enough trades, PF, drawdown, beats Nifty, most years profitable, a Monte-Carlo bad-luck test, and live paper trades that confirm the backtest.<br>
-      <b>Honest limits</b> — the backtest uses today's stock list (stocks that died are missing, so results look better than reality). The 4 fundamentals books and O'Neil's earnings checks need historical fundamentals we don't store, so they play only in the live league.
+      <b>Signal Genome</b> — groups executed trades by playbook, method, and market regime. Shared exits make entry approaches more comparable; Book exits measure each implemented recipe. It is historical description, not a prediction or causal test.<br>
+      <b>Honest limits</b> — the backtest uses today's stock list (stocks that died are missing, so results look better than reality). The 4 fundamentals books and O'Neil's earnings checks need historical fundamentals we don't store, so they play only in the live league. Daily OHLC bars cannot reveal exact intraday price order; the conservative stop-first stress view helps show that uncertainty.
     </div></details>`;
   }
 

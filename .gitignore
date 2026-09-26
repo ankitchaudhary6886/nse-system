@@ -13,6 +13,7 @@ data/gcp_key.json
 data/daily_log.txt
 data/uploaded_fundamentals.csv
 data/charts/
+data/incoming/
 
 # local artifacts
 project_dump.txt
