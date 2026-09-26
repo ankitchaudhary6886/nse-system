@@ -7,8 +7,8 @@ import argparse
 import csv
 import datetime as dt
 import json
+import math
 import re
-import shutil
 import sqlite3
 import unicodedata
 from collections import defaultdict
@@ -77,6 +77,93 @@ ALIASES = {
     "Mrs. Bectors Food": "BECTORFOOD",
     "Restaurant Brand Asia (Burger King)": "RBA",
     "Advanced Enzyme Tech": "ADVENZYMES",
+}
+
+# Out-of-range values are quarantined from structured use, never clipped;
+# the exact source strings remain in raw_json for review.
+STRUCTURED_FIELDS = {
+    "roe_avg_3y": ("Average ROE 3Years", -100, 100),
+    "roe_avg_10y": ("Average ROE 10Years", -100, 100),
+    "roa_avg_3y": ("Return on assets 3years", -100, 100),
+    "roa_avg_5y": ("Return on assets 5years", -100, 100),
+    "opm_avg_5y": ("OPM 5Year", -100, 100),
+    "opm_avg_10y": ("OPM 10 Year", -100, 100),
+    "roce_growth_5y": ("ROCE Growth % (5 Year)", -100, 500),
+    "roe_growth_5y": ("ROE Growth % (5 Year)", -100, 300),
+    "quarter_sales_yoy_growth": ("YoY last Quarterly Sales Growth", -100, 1000),
+    "quarter_profit_yoy_growth": ("YoY last Quarterly Profit Growth", -100, 1000),
+    "annual_revenue_growth": ("Revenue Growth (Year)", -100, 1000),
+    "sales_growth_qoq": ("Sales growth (QoQ)", -100, 1000),
+    "profit_growth_qoq": ("Profit growth QoQ", -100, 1000),
+    "free_cash_flow": ("Free Cash Flow", None, None),
+    "net_income_quarterly": ("Net Income (Quarterly)", None, None),
+    "profit_after_tax": ("Profit After Tax (PAT)", None, None),
+    "net_change_in_cash": ("Net Change in Cash", None, None),
+    "change_in_working_capital": ("Change In Working Capital", None, None),
+    "annual_sales": ("Sales", None, None),
+    "current_assets": ("Current Assets", None, None),
+    "current_liabilities": ("Current Liabilities", None, None),
+    "total_assets": ("Total Assets", None, None),
+    "total_liabilities": ("Total Liabilities", None, None),
+    "total_equity": ("Total Equity", None, None),
+    "inventory": ("Total Inventory", None, None),
+    "capex_growth": ("Increase in CAPEX %", -100, 2000),
+    "fixed_assets": ("Fixed Assets", None, None),
+    "investments": ("Investments", None, None),
+    "investing_cash_flow": ("Investing Cash Flow", None, None),
+    "financing_cash_flow": ("Finanacing Cash Flow", None, None),
+    "dividend_per_share": ("Dividend Per Share", 0, None),
+    "payout_ratio": ("Payout Ratio", 0, 500),
+    "ev_ebitda": ("EV/EBITDA", 0, 200),
+    "pe_sector_ratio": ("PE/Sector PE", 0, 20),
+    "market_cap_sales": ("Market Cap/Sales", 0, 200),
+    "industry_eps": ("Industry EPS", None, None),
+    "industry_pe": ("Industry PE Ratio", 0, 500),
+    "industry_pb": ("Industry PB Ratio", 0, 100),
+    "industry_dividend_yield": ("Industry Dividend Yield", 0, 100),
+    "industry_operating_margin": ("Industry Operating Margin", -100, 100),
+    "dii_holding_change": ("Change in DII holding", -100, 100),
+    "fii_holding_change": ("Change in FII holding", -100, 100),
+    "public_holding": ("Public / Retail Holding %", 0, 100),
+    "promoter_holding_change": ("Change in promoter holding", -100, 100),
+}
+
+# These export columns were identically zero across all 750 source rows.
+ZERO_SENTINEL_FIELDS = {
+    "Payout Ratio": "payout_ratio",
+    "Change in promoter holding": "promoter_holding_change",
+}
+
+SNAPSHOT_BASE_COLUMNS = {
+    "as_of_date": "TEXT NOT NULL",
+    "symbol": "TEXT NOT NULL",
+    "isin": "TEXT",
+    "scanx_name": "TEXT",
+    "company_name": "TEXT",
+    "sector": "TEXT",
+    "financial_period_end": "TEXT",
+    "published_at": "TEXT",
+    "current_price": "REAL",
+    "market_cap_cr": "REAL",
+    "pe": "REAL",
+    "pb": "REAL",
+    "roe": "REAL",
+    "roce": "REAL",
+    "debt_to_equity": "REAL",
+    "operating_margin": "REAL",
+    "net_profit_margin": "REAL",
+    "promoter_holding": "REAL",
+    "fii_holding": "REAL",
+    "dii_holding": "REAL",
+    "dividend_yield": "REAL",
+    "operating_cash_flow": "REAL",
+    "cfo_positive": "INTEGER",
+    **{name: "REAL" for name in STRUCTURED_FIELDS},
+    "data_quality_flags": "TEXT NOT NULL DEFAULT '[]'",
+    "raw_json": "TEXT NOT NULL",
+    "match_method": "TEXT NOT NULL",
+    "source_file": "TEXT NOT NULL",
+    "imported_at": "TEXT NOT NULL",
 }
 
 
@@ -167,22 +254,35 @@ def _number(row, *names):
             continue
         value = value.replace(",", "").replace("%", "").strip()
         try:
-            return float(value)
+            parsed = float(value)
+            return parsed if math.isfinite(parsed) else None
         except ValueError:
             continue
     return None
 
 
-def _snapshot_values(item, as_of):
+def _zero_sentinel_fields(rows):
+    sentinels = set()
+    for source_name in ZERO_SENTINEL_FIELDS:
+        values = [_number(row, source_name) for row in rows]
+        if values and all(value == 0 for value in values):
+            sentinels.add(source_name)
+    return sentinels
+
+
+def _snapshot_values(item, as_of, sentinel_fields=None):
     row = item["row"]
+    sentinel_fields = sentinel_fields or set()
     cfo = _number(row, "Operating Cash Flow")
-    return {
+    snapshot = {
         "as_of_date": as_of,
         "symbol": item["symbol"],
         "isin": item["isin"],
         "scanx_name": item["scanx_name"],
         "company_name": item["company_name"],
         "sector": row.get("Industry") or None,
+        "financial_period_end": None,
+        "published_at": None,
         "current_price": _number(row, "Close Price", "Price"),
         "market_cap_cr": _number(row, "Market Cap (Cr.)"),
         "pe": _number(row, "P/E Ratio"),
@@ -201,6 +301,24 @@ def _snapshot_values(item, as_of):
         "raw_json": json.dumps(row, ensure_ascii=False, sort_keys=True),
         "match_method": item["match_method"],
     }
+    quality_flags = []
+    for source_name, column in ZERO_SENTINEL_FIELDS.items():
+        if source_name in sentinel_fields:
+            quality_flags.append(f"unavailable_sentinel:{column}")
+    for column, (source_name, minimum, maximum) in STRUCTURED_FIELDS.items():
+        if source_name in sentinel_fields:
+            value = None
+        else:
+            value = _number(row, source_name)
+        if value is not None and (
+                (minimum is not None and value < minimum)
+                or (maximum is not None and value > maximum)):
+            quality_flags.append(f"out_of_range:{column}")
+            value = None
+        snapshot[column] = value
+    snapshot["data_quality_flags"] = json.dumps(
+        sorted(quality_flags), separators=(",", ":"))
+    return snapshot
 
 
 def _backup(path):
@@ -218,58 +336,26 @@ def _backup(path):
 
 def _apply(path, snapshots, source_file):
     conn = sqlite3.connect(str(path))
-    conn.row_factory = sqlite3.Row
     try:
-        conn.execute("PRAGMA foreign_keys=ON")
-        cols = {row[1] for row in conn.execute(
-            "PRAGMA table_info(fundamentals)")}
-        if not cols:
-            raise RuntimeError("fundamentals table is missing")
         imported_at = dt.datetime.now().isoformat(timespec="seconds")
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS scanx_fundamentals_snapshots (
-                as_of_date TEXT NOT NULL,
-                symbol TEXT NOT NULL,
-                isin TEXT,
-                scanx_name TEXT,
-                company_name TEXT,
-                sector TEXT,
-                current_price REAL,
-                market_cap_cr REAL,
-                pe REAL,
-                pb REAL,
-                roe REAL,
-                roce REAL,
-                debt_to_equity REAL,
-                operating_margin REAL,
-                net_profit_margin REAL,
-                promoter_holding REAL,
-                fii_holding REAL,
-                dii_holding REAL,
-                dividend_yield REAL,
-                operating_cash_flow REAL,
-                cfo_positive INTEGER,
-                raw_json TEXT NOT NULL,
-                match_method TEXT NOT NULL,
-                source_file TEXT NOT NULL,
-                imported_at TEXT NOT NULL,
-                PRIMARY KEY (as_of_date, symbol)
-            )
-        """)
-        conn.execute("BEGIN")
-        snapshot_cols = [
-            "as_of_date", "symbol", "isin", "scanx_name", "company_name",
-            "sector", "current_price", "market_cap_cr", "pe", "pb", "roe",
-            "roce", "debt_to_equity", "operating_margin",
-            "net_profit_margin", "promoter_holding", "fii_holding",
-            "dii_holding", "dividend_yield", "operating_cash_flow",
-            "cfo_positive", "raw_json", "match_method", "source_file",
-            "imported_at",
-        ]
-        existing_symbols = {
-            row[0] for row in conn.execute("SELECT symbol FROM fundamentals")
+        definitions = ", ".join(
+            f"{column} {kind}" for column, kind in SNAPSHOT_BASE_COLUMNS.items())
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS scanx_fundamentals_snapshots ("
+            f"{definitions}, PRIMARY KEY (as_of_date, symbol))")
+        table_columns = {
+            row[1] for row in conn.execute(
+                "PRAGMA table_info(scanx_fundamentals_snapshots)")
         }
-        merged = 0
+        for column, kind in SNAPSHOT_BASE_COLUMNS.items():
+            if column in table_columns:
+                continue
+            conn.execute(
+                "ALTER TABLE scanx_fundamentals_snapshots "
+                f"ADD COLUMN {column} {kind}")
+        conn.commit()
+        conn.execute("BEGIN")
+        snapshot_cols = list(SNAPSHOT_BASE_COLUMNS)
         for snapshot in snapshots:
             values = dict(snapshot)
             values.update(source_file=Path(source_file).name,
@@ -282,40 +368,8 @@ def _apply(path, snapshots, source_file):
                 ",".join(f"{key}=excluded.{key}" for key in snapshot_cols
                          if key not in ("as_of_date", "symbol")),
                 [values.get(key) for key in snapshot_cols])
-
-            fundamental = {
-                "symbol": snapshot["symbol"],
-                "name": snapshot["company_name"],
-                "sector": snapshot["sector"],
-                "current_price": snapshot["current_price"],
-                "market_cap_cr": snapshot["market_cap_cr"],
-                "pe": snapshot["pe"],
-                "pb": snapshot["pb"],
-                "roe": snapshot["roe"],
-                "roce": snapshot["roce"],
-                "debt_to_equity": snapshot["debt_to_equity"],
-                "operating_margin": snapshot["operating_margin"],
-                "net_profit_margin": snapshot["net_profit_margin"],
-                "promoter_holding": snapshot["promoter_holding"],
-                "fii_holding": snapshot["fii_holding"],
-                "dividend_yield": snapshot["dividend_yield"],
-                "cfo_positive": snapshot["cfo_positive"],
-                "uploaded_at": f"scanx:{imported_at}",
-            }
-            if "data_source" in cols:
-                fundamental["data_source"] = "scanx"
-            if snapshot["symbol"] not in existing_symbols:
-                continue
-            fundamental = {key: value for key, value in fundamental.items()
-                           if key in cols and key != "symbol"}
-            assignments = ",".join(
-                f"{key}=COALESCE(?,{key})" for key in fundamental)
-            conn.execute(
-                f"UPDATE fundamentals SET {assignments} WHERE symbol=?",
-                [*fundamental.values(), snapshot["symbol"]])
-            merged += 1
         conn.commit()
-        return imported_at, merged
+        return imported_at, len(snapshots)
     except Exception:
         conn.rollback()
         raise
@@ -345,29 +399,35 @@ def main(argv=None):
     mapped, unmatched = _resolve(rows, by_name, by_symbol)
     if not mapped:
         raise RuntimeError("No ScanX company names could be mapped")
-    snapshots = [_snapshot_values(item, as_of) for item in mapped]
+    sentinels = _zero_sentinel_fields(rows)
+    snapshots = [_snapshot_values(item, as_of, sentinels) for item in mapped]
     if args.apply:
         target = Path(args.db).resolve()
         if not target.is_file():
             raise FileNotFoundError(f"Target database does not exist: {target}")
         backup = _backup(target)
-        imported_at, merged = _apply(target, snapshots, source)
+        imported_at, written = _apply(target, snapshots, source)
         print(f"Imported {len(snapshots)} dated ScanX snapshots "
               f"({as_of}; {imported_at}) into {target}")
-        print(f"Updated {merged} existing fundamentals rows; new rows were "
-              "not added to the active trading universe.")
+        print(f"Inserted/updated {written} rows only in "
+              "scanx_fundamentals_snapshots; live fundamentals and trading "
+              "universe tables were not changed.")
         print(f"Pre-import database backup: {backup}")
     else:
         print(f"Dry run: {len(snapshots)} unique mapped rows; "
-              f"{len(unmatched)} unmatched; snapshot date {as_of}")
+              f"{len(unmatched)} unmatched; snapshot date {as_of}; "
+              f"{len(STRUCTURED_FIELDS)} structured research fields")
+    if sentinels:
+        print("All-zero source columns withheld from structured metrics "
+              "(original values remain in raw_json):")
+        for name in sorted(sentinels):
+            print(f"  {name}")
     if unmatched:
         print("Unmatched company names (not imported):")
         for name in unmatched:
             print(f"  {name}")
-    print("Snapshot records preserve source fields and source names. "
-          "Compatible fields are merged only for symbols already in "
-          "fundamentals; "
-          "quarterly/yearly metrics are not relabeled as 3-year growth.")
+    print("The export date is not a financial period-end or filing date. "
+          "ScanX metrics do not feed live scoring, vetoes, or backtests.")
 
 
 if __name__ == "__main__":

@@ -8,6 +8,32 @@ to unlock remaining methods across all traders.
 
 ---
 
+## ScanX snapshot enrichment (2026-09-26)
+
+The 750-row export is retained in `scanx_fundamentals_snapshots` with the
+original row JSON and normalized, structured research fields for multi-year
+quality, quarterly growth, cash flow, balance-sheet context, peer valuation,
+and ownership changes. These fields are **research-only**: importing a ScanX
+file does not write to `fundamentals`, change the trading universe, or affect
+scores, vetoes, signals, or backtests.
+
+The export date is not the underlying financial period-end or public filing
+date. Those dates remain unknown, so this snapshot must not be used as
+point-in-time historical fundamentals in backtests. DR-01 and DR-21 remain
+open until period- and filing-dated histories are available.
+
+The importer preserves every source value in `raw_json`, but withholds
+system-wide all-zero sentinel fields (currently payout ratio and promoter
+holding change) and out-of-range structured metrics from analysis, recording
+quality flags on each snapshot row. The raw values remain available for
+auditing. These guards are conservative data-quality checks, not claims that
+every unusual source value is wrong.
+
+Run `python scanx_snapshot_report.py --db data/app.db` to inspect per-field
+coverage and quality-flag counts for the latest imported export.
+
+---
+
 ## Traders with zero data requests
 
 John Crane, Larry Spears, Way of the Turtle, 7 Simple Strategies,
