@@ -1,5 +1,6 @@
 let chart = null, candleSeries = null, ema10 = null, ema20 = null, ema50 = null, ema200 = null;
 const $ = (id) => document.getElementById(id);
+let _restoringNavigation = false;
 
 async function api(path, options = {}) {
   const res = await fetch(path, { credentials: "same-origin", headers: { "Content-Type": "application/json" }, ...options });
@@ -14,7 +15,7 @@ function _normalizeView(name) {
   return name;
 }
 
-function setView(name) {
+function setView(name, options = {}) {
   name = _normalizeView(name);
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active-view"));
   const el = $("view-" + name);
@@ -58,8 +59,67 @@ function setView(name) {
   if (name === "league" && typeof window.loadLeague === "function") {
     window.loadLeague();
   }
+  if (options.record !== false && location.hash !== `#${name}`) {
+    history.pushState({ view: name }, "", `#${name}`);
+  }
 }
 window.setView = setView;
+
+function _restoreNavigation() {
+  const [rawView, rawSymbol] = location.hash.slice(1).split("/");
+  const view = _normalizeView(rawView || "research");
+  _restoringNavigation = true;
+  try {
+    setView(view, { record: false });
+    if (rawSymbol) loadSymbol(decodeURIComponent(rawSymbol));
+  } catch (error) {
+    console.warn("Unable to restore terminal navigation:", error);
+    setView("research", { record: false });
+  } finally {
+    _restoringNavigation = false;
+  }
+}
+
+function _showDataDialog(title, payload) {
+  const dialog = $("dataDetailDialog");
+  const heading = $("dataDetailTitle");
+  const body = $("dataDetailBody");
+  if (!dialog || !heading || !body) return;
+  heading.textContent = title || "Data details";
+  body.textContent = JSON.stringify(payload, null, 2);
+  if (!dialog.open) dialog.showModal();
+}
+
+async function _openDataDetail(button) {
+  const url = button.dataset.detailUrl;
+  if (!url || !url.startsWith("/api/")) return;
+  const title = button.dataset.detailTitle || "Data details";
+  const dialog = $("dataDetailDialog");
+  const heading = $("dataDetailTitle");
+  const body = $("dataDetailBody");
+  if (!dialog || !heading || !body) return;
+  heading.textContent = title;
+  body.textContent = "Loading related data…";
+  if (!dialog.open) dialog.showModal();
+  try {
+    const data = await api(url);
+    const related = button.dataset.detailRelated;
+    const payload = related
+      ? { [title]: data, [related]: await api(related) }
+      : data;
+    body.textContent = JSON.stringify(payload, null, 2);
+  } catch (error) {
+    body.textContent = `Could not load ${title}: ${error.message}`;
+  }
+}
+
+window.openDataDetail = _showDataDialog;
+window.openSymbolResearch = function(symbol) {
+  setView("research");
+  loadSymbol(symbol);
+  const chartEl = $("chart");
+  if (chartEl) chartEl.scrollIntoView({ behavior: "smooth", block: "start" });
+};
 
 async function loadHealth() {
   try {
@@ -217,6 +277,9 @@ async function loadPatterns() {
       rows.forEach((p, idx) => {
         const div = document.createElement("div");
         div.className = "stock-card";
+        div.tabIndex = 0;
+        div.setAttribute("role", "button");
+        div.setAttribute("aria-label", `Open research for ${p.symbol}`);
         const sauce = sauceLine(p);
         const hasChecks = p.checks && p.checks.length;
         const checkId = `checks-${idx}-${_safeId(p.symbol)}-${_safeId(p.pattern)}`;
@@ -233,6 +296,13 @@ async function loadPatterns() {
           setView("research");
           loadSymbol(p.symbol);
         });
+        div.addEventListener("keydown", (e) => {
+          if ((e.key === "Enter" || e.key === " ") && e.target === div) {
+            e.preventDefault();
+            setView("research");
+            loadSymbol(p.symbol);
+          }
+        });
         list.appendChild(div);
       });
     }
@@ -247,11 +317,20 @@ async function loadPatterns() {
     }
     if (tmatch.length) {
       tbox.innerHTML = `<h3 style="margin:0 0 10px;font-size:15px;">🧬 DTW Shape Matches</h3>` +
-        tmatch.map(m => `<div class="stock-card" data-sym="${m.symbol}" style="margin-bottom:8px;"><strong>${m.symbol} · ${(m.template || "").replace(/_/g, " ")}</strong><span>shape similarity ${m.similarity}% · ${m.date}</span></div>`).join("");
+        tmatch.map(m => `<div class="stock-card" role="button" tabindex="0"
+          aria-label="Open research for ${m.symbol}" data-sym="${m.symbol}"
+          style="margin-bottom:8px;"><strong>${m.symbol} · ${(m.template || "").replace(/_/g, " ")}</strong><span>shape similarity ${m.similarity}% · ${m.date}</span></div>`).join("");
       tbox.querySelectorAll(".stock-card").forEach(card => {
-        card.addEventListener("click", () => {
+        const open = () => {
           setView("research");
           loadSymbol(card.dataset.sym);
+        };
+        card.addEventListener("click", open);
+        card.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            open();
+          }
         });
       });
     } else {
@@ -414,6 +493,19 @@ function resetChart() {
   ema20 = chart.addLineSeries({ color: "#fbbf24", lineWidth: 2 });
   ema50 = chart.addLineSeries({ color: "#a78bfa", lineWidth: 1 });
   ema200 = chart.addLineSeries({ color: "#94a3b8", lineWidth: 1 });
+  chart.subscribeClick((param) => {
+    if (!param || !param.time || !param.seriesData) return;
+    const candle = param.seriesData.get(candleSeries);
+    if (!candle) return;
+    _showDataDialog("Selected chart candle", {
+      symbol: ($("chartTitle")?.textContent || "").split(" ")[0],
+      date: param.time,
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+    });
+  });
 }
 
 async function _applyPatternMarkers(symbol) {
@@ -449,6 +541,12 @@ async function _applyPatternMarkers(symbol) {
 async function loadSymbol(symbol) {
   symbol = (symbol || "").trim().toUpperCase();
   if (!symbol) return;
+  if (!_restoringNavigation) {
+    const nextHash = `#research/${encodeURIComponent(symbol)}`;
+    if (location.hash !== nextHash) {
+      history.pushState({ view: "research", symbol }, "", nextHash);
+    }
+  }
   const titleEl = $("chartTitle");
   const subEl = $("chartSubtitle");
   if (titleEl) titleEl.textContent = `${symbol} — Inspector`;
@@ -536,7 +634,22 @@ async function loadSymbol(symbol) {
       summary.news.forEach(n => {
         const div = document.createElement("div");
         div.className = "news-item";
+        div.tabIndex = 0;
+        div.setAttribute("role", "button");
+        div.setAttribute("aria-label", `Open news details: ${n.title}`);
         div.textContent = `[${n.age_days}d] ${n.label || "neutral"} — ${n.title}`;
+        const open = () => _showDataDialog("Stored news item", {
+          ...n,
+          source_url: null,
+          note: "No source URL was stored with this news item.",
+        });
+        div.addEventListener("click", open);
+        div.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            open();
+          }
+        });
         newsBox.appendChild(div);
       });
     } else {
@@ -649,6 +762,29 @@ async function loadDelivery(symbol) {
 }
 
 document.addEventListener("click", (e) => {
+  const detail = e.target.closest("[data-detail-url]");
+  if (detail) {
+    e.preventDefault();
+    _openDataDetail(detail);
+    return;
+  }
+  const viewButton = e.target.closest("[data-view]");
+  if (viewButton) {
+    e.preventDefault();
+    setView(viewButton.dataset.view);
+    const loader = viewButton.dataset.load;
+    if (loader === "research-universe" && window.loadResearchUniverse) {
+      window.loadResearchUniverse(false);
+    }
+    const targetId = viewButton.dataset.scrollTarget;
+    if (targetId) {
+      requestAnimationFrame(() => {
+        const target = $(targetId);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+    return;
+  }
   const btn = e.target.closest(".toggle-btn");
   if (btn) {
     e.preventDefault();
@@ -671,6 +807,10 @@ async function refreshAll() {
   ]);
 }
 document.addEventListener("DOMContentLoaded", () => {
+  const closeDetails = $("dataDetailClose");
+  if (closeDetails) {
+    closeDetails.addEventListener("click", () => $("dataDetailDialog").close());
+  }
   const rb = $("refreshBtn");
   if (rb) rb.addEventListener("click", refreshAll);
   const lsb = $("loadSymbolBtn");
@@ -696,8 +836,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (cmpIn) cmpIn.addEventListener("keydown", (e) => {
     if (e.key === "Enter") runCompare();
   });
-  document.querySelectorAll(".nav-btn").forEach(btn => {
-    btn.addEventListener("click", () => setView(btn.dataset.view));
-  });
+  window.addEventListener("popstate", _restoreNavigation);
+  _restoreNavigation();
   refreshAll();
 });

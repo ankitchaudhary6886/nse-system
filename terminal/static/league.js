@@ -53,7 +53,7 @@
       <div id="lgPlayer"></div>
       ${replayHtml(status, S.mode === "backtest" && !ov.run)}
       ${helpHtml()}`;
-    bind(root, ov);
+    bind(root, ov, status);
     if (S.selected && ov.run) loadPlayer(S.selected);
     schedulePoll(status);
   }
@@ -91,7 +91,11 @@
           <th style="text-align:right">Win</th><th style="text-align:right">Avg R</th>
           <th style="text-align:right">PF</th><th style="text-align:right">Book exits · Avg R</th>
         </tr></thead><tbody>${rows.map((cell) => `
-          <tr><td>${esc(cell.name)}</td><td>${esc(cell.regime)}</td>
+          <tr class="click-row" tabindex="0" role="button"
+            data-genome-name="${esc(cell.name)}"
+            data-genome-regime="${esc(cell.regime)}"
+            data-genome-method="${esc(cell.method)}">
+            <td>${esc(cell.name)}</td><td>${esc(cell.regime)}</td>
             <td>${esc(cell.method)}</td>
             <td style="text-align:right">${cell.common.trades}</td>
             <td style="text-align:right">${pctAbs(cell.common.win_rate, 0)}</td>
@@ -143,7 +147,9 @@
     const rows = ov.rows.filter((r) => r.playing);
     const idle = ov.rows.filter((r) => !r.playing);
     const body = rows.map((r) => `
-      <tr class="strategy-row ${r.slug === "home" ? "lg-row-home" : ""}" data-slug="${esc(r.slug)}">
+      <tr class="strategy-row ${r.slug === "home" ? "lg-row-home" : ""}"
+        tabindex="0" role="button" aria-label="Open league player ${esc(r.name)}"
+        data-slug="${esc(r.slug)}">
         <td>${r.rank}</td>
         <td><b>${r.slug === "home" ? "🎯 " : ""}${esc(r.name)}</b><div class="uc-dim" style="font-size:11px">${esc(r.book)}</div></td>
         <td style="text-align:right">${inr(r.final_equity)}</td>
@@ -156,7 +162,9 @@
         <td>${badge(r.verdict_code)}</td>
       </tr>`).join("");
     const cards = rows.map((r) => `
-      <div class="lg-card ${r.slug === "home" ? "lg-card-home" : ""}" data-slug="${esc(r.slug)}">
+      <div class="lg-card ${r.slug === "home" ? "lg-card-home" : ""}"
+        tabindex="0" role="button" aria-label="Open league player ${esc(r.name)}"
+        data-slug="${esc(r.slug)}">
         <div class="lg-card-top"><span class="lg-rank">${r.rank}</span>
           <b>${r.slug === "home" ? "🎯 " : ""}${esc(r.name)}</b>${badge(r.verdict_code)}</div>
         <div class="lg-card-mid">${inr(r.final_equity)} <span class="${cls(r.return_pct)}">${pct(r.return_pct)}</span></div>
@@ -176,7 +184,9 @@
   function replayHtml(st, openByDefault) {
     const job = (st && st.replay_job) || {};
     const rows = ((st && st.players) || []).filter((p) => p.backtest).map((p) => `
-      <tr><td>${esc(p.name)}${p.code_changed ? ' <span class="chk-fail" title="Code or settings changed since the replay — on the VM run: python trader_league.py replay --changed --background">⚠</span>' : ""}</td>
+      <tr class="click-row" tabindex="0" role="button"
+        data-replay-slug="${esc(p.slug)}">
+      <td>${esc(p.name)}${p.code_changed ? ' <span class="chk-fail" title="Code or settings changed since the replay — on the VM run: python trader_league.py replay --changed --background">⚠</span>' : ""}</td>
       <td style="text-align:right">${(p.replay_signals || 0).toLocaleString("en-IN")}</td>
       <td style="text-align:right">${p.replay_stocks || 0}</td>
       <td class="lg-hide-sm">${p.replay_from ? esc(p.replay_from) + " → " + esc(p.replay_to) : "—"}</td>
@@ -230,7 +240,9 @@
     const groupTable = (rows, key, title) => (rows && rows.length) ? `
       <h4 class="lg-h4">${title}</h4><div class="lg-scroll"><table class="strategy-table"><thead><tr><th>${key === "regime" ? "Market mood" : key === "reason" ? "Exit" : "Method"}</th>
       <th style="text-align:right">Trades</th><th style="text-align:right">Win</th><th style="text-align:right">PF</th><th style="text-align:right" class="lg-hide-sm">Avg R</th><th style="text-align:right">P&amp;L</th></tr></thead><tbody>
-      ${rows.map((m) => `<tr><td class="lg-ell" title="${esc(m[key])}">${esc(m[key])}</td><td style="text-align:right">${m.trades}</td><td style="text-align:right">${pctAbs(m.win_rate, 0)}</td>
+      ${rows.map((m, index) => `<tr class="click-row" tabindex="0" role="button"
+      data-group-type="${key}" data-group-index="${index}">
+      <td class="lg-ell" title="${esc(m[key])}">${esc(m[key])}</td><td style="text-align:right">${m.trades}</td><td style="text-align:right">${pctAbs(m.win_rate, 0)}</td>
       <td style="text-align:right">${num(m.pf)}</td><td style="text-align:right" class="lg-hide-sm">${num(m.avg_r)}</td><td style="text-align:right" class="${cls(m.pnl)}">${inr(m.pnl)}</td></tr>`).join("")}
       </tbody></table></div>` : "";
     const checks = ((d.readiness || {}).checks || []).map((c) => `
@@ -271,11 +283,39 @@
       ${opens}${trades}
     </div>`;
     drawChart(d);
-    box.querySelectorAll("tr[data-sym]").forEach((tr) => tr.addEventListener("click", () => {
-      if (typeof setView === "function" && typeof loadSymbol === "function") {
-        setView("research"); loadSymbol(tr.dataset.sym);
-      }
-    }));
+    const groupLists = {
+      method: d.by_method || [],
+      regime: d.by_regime || [],
+      reason: d.by_reason || [],
+    };
+    box.querySelectorAll("[data-group-type]").forEach((row) => {
+      const item = groupLists[row.dataset.groupType]?.[
+        Number(row.dataset.groupIndex)];
+      if (!item) return;
+      const open = () => window.openDataDetail?.(
+        `${row.dataset.groupType} result · ${item[row.dataset.groupType]}`,
+        item);
+      row.addEventListener("click", open);
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    });
+    box.querySelectorAll("tr[data-sym]").forEach((tr) => {
+      tr.tabIndex = 0;
+      tr.setAttribute("role", "button");
+      tr.setAttribute("aria-label", `Open research for ${tr.dataset.sym}`);
+      const open = () => window.openSymbolResearch?.(tr.dataset.sym);
+      tr.addEventListener("click", open);
+      tr.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    });
     box.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -307,15 +347,58 @@
   }
 
   // ---------------------------------------------------------------- events
-  function bind(root, ov) {
+  function bind(root, ov, status) {
     root.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => {
       S.mode = b.dataset.mode; loadLeague();
     }));
     root.querySelectorAll("[data-exit]").forEach((b) => b.addEventListener("click", () => {
       S.exit = b.dataset.exit; loadLeague();
     }));
-    root.querySelectorAll(".lg-table tr[data-slug], .lg-card[data-slug]").forEach((el) =>
-      el.addEventListener("click", () => loadPlayer(el.dataset.slug)));
+    root.querySelectorAll(".lg-table tr[data-slug], .lg-card[data-slug]").forEach((el) => {
+      const open = () => loadPlayer(el.dataset.slug);
+      el.addEventListener("click", open);
+      el.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    });
+    const genomeRows = [...(ov.genome?.leaders || []), ...(ov.genome?.weak_spots || [])];
+    root.querySelectorAll("[data-genome-name]").forEach((row) => {
+      const item = genomeRows.find((candidate) =>
+        candidate.name === row.dataset.genomeName
+        && candidate.regime === row.dataset.genomeRegime
+        && candidate.method === row.dataset.genomeMethod);
+      if (!item) return;
+      const open = () => window.openDataDetail?.("Signal Genome context", item);
+      row.addEventListener("click", open);
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    });
+    root.querySelectorAll("[data-replay-slug]").forEach((row) => {
+      const player = (status.players || []).find(
+        (item) => item.slug === row.dataset.replaySlug);
+      if (!player) {
+        row.classList.remove("click-row");
+        row.removeAttribute("role");
+        row.tabIndex = -1;
+        return;
+      }
+      const open = () => window.openDataDetail?.(
+        `Replay status · ${player.name || row.dataset.replaySlug}`, player);
+      row.addEventListener("click", open);
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    });
     const rs = document.getElementById("lgResim");
     if (rs) rs.addEventListener("click", async () => {
       rs.disabled = true; rs.textContent = "Simulating…";

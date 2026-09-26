@@ -12,6 +12,9 @@ function renderUnifiedCard(item) {
   // item: {symbol, setup, badges, subtitle, primary, secondary, note, onClick}
   const div = document.createElement("div");
   div.className = "unified-card";
+  div.tabIndex = 0;
+  div.setAttribute("role", "button");
+  div.setAttribute("aria-label", `Open research for ${item.symbol}`);
   const setupBadge = item.setup
     ? '<span class="outcome WIN">🏄 LIVE</span>' : '';
   const extra = (item.badges || []).join(" ");
@@ -32,12 +35,16 @@ function renderUnifiedCard(item) {
     html += `<div class="uc-line uc-note">${item.note}</div>`;
   }
   div.innerHTML = html;
-  div.addEventListener("click", item.onClick || (() => {
-    if (window.setView && window.loadSymbol) {
-      window.setView("research");
-      window.loadSymbol(item.symbol);
+  const open = item.onClick || (() => {
+    if (window.openSymbolResearch) window.openSymbolResearch(item.symbol);
+  });
+  div.addEventListener("click", open);
+  div.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      open(event);
     }
-  }));
+  });
   return div;
 }
 
@@ -82,7 +89,10 @@ function renderCompareTable(payload) {
   const syms = rows.map(r => r.symbol);
   const header = `<tr class="cmp-header">
     <th class="cmp-label">Metric</th>
-    ${syms.map(s => `<th class="cmp-value"><b>${_ucEsc(s)}</b></th>`).join("")}
+    ${syms.map(s => `<th class="cmp-value" data-symbol="${_ucEsc(s)}">
+      <button type="button" class="cmp-symbol-link" data-symbol="${_ucEsc(s)}"
+        aria-label="Open research for ${_ucEsc(s)}">${_ucEsc(s)}</button>
+    </th>`).join("")}
   </tr>`;
 
   function colOf(fn) {
@@ -159,6 +169,26 @@ function renderCompareTable(payload) {
 
   html += `</tbody></table>`;
   box.innerHTML = html;
+  box.querySelectorAll("button.cmp-symbol-link").forEach((button) => {
+    button.addEventListener("click", () =>
+      window.openSymbolResearch?.(button.dataset.symbol));
+  });
+  box.querySelectorAll("tbody tr:not(.cmp-section)").forEach((tr) => {
+    Array.from(tr.cells).slice(1).forEach((cell, index) => {
+      cell.classList.add("click-row");
+      cell.tabIndex = 0;
+      cell.setAttribute("role", "button");
+      cell.title = `Open research for ${syms[index]}`;
+      const open = () => window.openSymbolResearch?.(syms[index]);
+      cell.addEventListener("click", open);
+      cell.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    });
+  });
 }
 
 window.renderUnifiedCard = renderUnifiedCard;

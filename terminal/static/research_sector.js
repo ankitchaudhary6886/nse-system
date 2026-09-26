@@ -57,7 +57,9 @@ function _secHeaderCell(col) {
   const active = _sectorSortKey === col.key;
   const arrow = active ? (_sectorSortDir === -1 ? " ▼" : " ▲") : "";
   const color = active ? "#60a5fa" : "#9fb0cc";
-  return `<th data-sort="${col.key}"
+  const sort = active ? (_sectorSortDir === -1 ? "descending" : "ascending") : "none";
+  return `<th data-sort="${col.key}" tabindex="0"
+    aria-label="${col.label}; press Enter to sort" aria-sort="${sort}"
     style="text-align:left; color:${color}; cursor:pointer;
     padding:6px 4px; user-select:none;">${col.label}${arrow}</th>`;
 }
@@ -70,7 +72,9 @@ function _renderSectorTable() {
     </tr></thead><tbody>`;
   rows.forEach(r => {
     const rel = _sectorRowReliability(r.n_setups);
-    html += `<tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+    html += `<tr class="click-row" tabindex="0" role="button"
+      aria-label="Open details for ${r.sector || "Unknown"}"
+      style="border-bottom:1px solid rgba(255,255,255,.05);">
       <td style="padding:6px 4px;"><b>${r.sector || "Unknown"}</b></td>
       <td style="padding:6px 4px;">${r.n_symbols}</td>
       <td style="padding:6px 4px;">
@@ -123,7 +127,7 @@ async function loadResearchSectors() {
 
 function _bindSectorEvents(box) {
   box.querySelectorAll("th[data-sort]").forEach(th => {
-    th.addEventListener("click", () => {
+    const sort = () => {
       const key = th.dataset.sort;
       if (_sectorSortKey === key) {
         _sectorSortDir = -_sectorSortDir;
@@ -133,6 +137,25 @@ function _bindSectorEvents(box) {
       }
       box.innerHTML = _renderSectorTable();
       _bindSectorEvents(box);
+    };
+    th.addEventListener("click", sort);
+    th.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        sort();
+      }
+    });
+  });
+  box.querySelectorAll("tbody tr.click-row").forEach((tr, index) => {
+    const sector = _sectorSorted()[index];
+    const open = () => window.openDataDetail?.(
+      `${sector.sector || "Unknown"} sector research`, sector);
+    tr.addEventListener("click", open);
+    tr.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
     });
   });
 }

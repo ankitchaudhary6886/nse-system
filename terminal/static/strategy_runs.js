@@ -33,11 +33,14 @@ async function loadStrategyRuns() {
         </tr>
       </thead>
       <tbody>`;
-    runs.forEach(r => {
+    runs.forEach((r, index) => {
       const vClass = (r.verdict || "").includes("STRONG") ? "WIN" :
                      (r.verdict || "").includes("SOLID") ? "OPEN" :
                      (r.verdict || "").includes("NO EDGE") ? "LOSS" : "PENDING";
-      html += `<tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+      html += `<tr class="click-row" tabindex="0" role="button"
+        aria-label="Open strategy run details"
+        data-run-index="${index}"
+        style="border-bottom:1px solid rgba(255,255,255,.05);">
         <td style="padding:6px 4px; color:#7f8da9;">${(r.run_at || "").slice(5, 16)}</td>
         <td style="padding:6px 4px;">${r.target_r ?? "—"}</td>
         <td style="padding:6px 4px;">${r.years ?? "—"}</td>
@@ -67,8 +70,11 @@ async function loadStrategyRuns() {
             </tr>
           </thead>
           <tbody>`;
-      summary.forEach(s => {
-        html += `<tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+      summary.forEach((s, index) => {
+        html += `<tr class="click-row" tabindex="0" role="button"
+          aria-label="Open strategy summary details"
+          data-summary-index="${index}"
+          style="border-bottom:1px solid rgba(255,255,255,.05);">
           <td style="padding:6px 4px;">${s.target_r}</td>
           <td style="padding:6px 4px;">${s.runs}</td>
           <td style="padding:6px 4px;">${s.total_trades}</td>
@@ -82,6 +88,30 @@ async function loadStrategyRuns() {
     }
 
     box.innerHTML = html;
+    box.querySelectorAll("[data-run-index]").forEach((row) => {
+      const run = runs[Number(row.dataset.runIndex)];
+      const open = () => window.openDataDetail?.(
+        `Strategy run · ${run.run_at || "timestamp unavailable"}`, run);
+      row.addEventListener("click", open);
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    });
+    box.querySelectorAll("[data-summary-index]").forEach((row) => {
+      const item = summary[Number(row.dataset.summaryIndex)];
+      const open = () => window.openDataDetail?.(
+        `Strategy summary · target ${item.target_r}R`, item);
+      row.addEventListener("click", open);
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    });
   } catch (e) {
     box.innerHTML = `<p>Strategy runs error: ${e.message}</p>`;
     if (badge) badge.textContent = "unavailable";
