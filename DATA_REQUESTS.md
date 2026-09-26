@@ -33,6 +33,25 @@ every unusual source value is wrong.
 Run `python scanx_snapshot_report.py --db data/app.db` to inspect per-field
 coverage and quality-flag counts for the latest imported export.
 
+## KITE market snapshot (2026-09-26)
+
+The KITE export was imported into `kite_market_snapshots`, a separate
+research-only table. Its file modification date is retained as the
+snapshot date; the file contains no financial period-end or public
+filing timestamp. The export had 600 rows representing 500 distinct
+instrument labels: 100 exact duplicate rows were collapsed; 366
+instruments mapped by normalized official name, curated alias, or exact
+symbol; 134 were retained without a symbol because mapping was not
+unambiguous. The source's Average Price, Buy/Sell Quantity, Trade Value,
+and Volume columns were zero for every row and are withheld from
+structured analysis while remaining in the raw JSON.
+
+This import does not modify live fundamentals, daily prices, universe
+membership, signals, or backtests. Review coverage with
+`python kite_snapshot_report.py --db data/app.db`; manually resolve
+unmapped names before using symbol-level metrics. It does not satisfy
+DR-01 or DR-21.
+
 ---
 
 ## Traders with zero data requests

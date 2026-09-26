@@ -1288,6 +1288,27 @@ All detectors computed inline in `traders/mcallen.py`:
 - Status: DEPLOYED · VERIFIED. Remaining provider migrations and
   official dated-filing ingestion are still open.
 
+### #092 · Import KITE export as a quarantined research snapshot — VERIFIED
+- Input `data/incoming/KITE.csv` (file modification date 2026-09-26) and
+  local NSE equity security master. Input files remain ignored and are
+  not committed.
+- Added `kite_import.py` and `kite_snapshot_report.py`; import is
+  idempotent, backs up the target DB, preserves raw rows, maps only by
+  normalized official name, curated alias, or exact symbol, and leaves
+  uncertain names unmapped. Conflicting duplicate rows are rejected.
+- Result: 600 source rows → 500 distinct instruments; 100 identical
+  duplicates collapsed; 366 mapped, 134 retained without symbols.
+  All-zero Average Price, Buy/Sell Quantity, Trade Value and Volume
+  fields are flagged and omitted from structured values.
+- `kite_market_snapshots` is separate from live fundamentals/prices and
+  retains unknown financial-period/publication dates as NULL; not valid
+  for historical replay or DR-01/DR-21 completion.
+- Validation: `python -m unittest test_kite_import test_scanx_import
+  test_data_sources -v` passed (10 tests); preview verified mapping,
+  duplicate and sentinel counts; live fundamentals were unchanged in
+  importer tests.
+- Import applied to the local database; deployment to the VM is pending.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS

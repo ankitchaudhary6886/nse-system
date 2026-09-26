@@ -168,6 +168,8 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 - P1: DR-04–DR-07, DR-16, DR-17, DR-20, DR-21, DR-22
 - **P1 (new): DR-23 RBI repo rate**
 - P2: DR-08–DR-15, DR-18, DR-19
+- KITE 2026-09-26 export imported as research-only snapshot; 134 of
+  500 distinct instruments remain unmapped. It does not satisfy DR-01/21.
 
 ### Deferred roadmap work
 - ID52 source-plugin migration: complete the remaining direct Yahoo

@@ -1,0 +1,130 @@
+import csv
+import json
+import sqlite3
+import tempfile
+import unittest
+from pathlib import Path
+
+from kite_import import _apply, _snapshot_rows
+
+
+class KiteImportTests(unittest.TestCase):
+    def _read_rows(self, path):
+        with Path(path).open(encoding="utf-8", newline="") as stream:
+            return list(csv.DictReader(stream))
+
+    def _files(self, folder):
+        folder = Path(folder)
+        export = folder / "KITE.csv"
+        master = folder / "master.csv"
+        headers = [
+            "Instrument", "Last Price", "Previous Close", "Day High",
+            "Day Low", "Open", "Change %", "Debt to Equity",
+            "Dividend Yield", "Free Cash Flow", "Market Cap (Cr)",
+            "Profit Growth YoY (%)", "P/E Ratio",
+            "Revenue Growth YoY (%)", "Return on Equity", "Sector",
+            "Average Price", "Buy Quantity", "Sell Quantity",
+            "Trade Value (Cr)", "Volume", "52 Week High", "52 Week Low",
+        ]
+        rows = [
+            ["Example Industries Limited", "120", "118", "122", "117",
+             "118", "1.69%", "0.5", "1.2", "500", "1200", "20", "18",
+             "15", "14", "Industrials", "0", "0", "0", "0", "0",
+             "140", "80"],
+            ["Example Industries Limited", "120", "118", "122", "117",
+             "118", "1.69%", "0.5", "1.2", "500", "1200", "20", "18",
+             "15", "14", "Industrials", "0", "0", "0", "0", "0",
+             "140", "80"],
+            ["Unlisted Alias", "25", "24", "26", "23", "24", "4.17%",
+             "0", "0", "10", "10", "-5", "8", "4", "3", "Unknown",
+             "0", "0", "0", "0", "0", "30", "10"],
+        ]
+        with export.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(headers)
+            writer.writerows(rows)
+        with master.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow([
+                "SYMBOL", "NAME OF COMPANY", "SERIES", "ISIN NUMBER"])
+            writer.writerow([
+                "EXAMPLE", "Example Industries Limited", "EQ",
+                "INE000A01000"])
+        return export, master
+
+    def test_import_preserves_raw_rows_and_only_maps_exact_names(self):
+        with tempfile.TemporaryDirectory() as directory:
+            export, master = self._files(directory)
+            source_rows = self._read_rows(export)
+            snapshots, sentinels, count = _snapshot_rows(
+                source_rows, master, "2026-09-26", export)
+
+            self.assertEqual(count, 3)
+            self.assertEqual(len(snapshots), 2)
+            self.assertEqual(sentinels, {
+                "Average Price", "Buy Quantity", "Sell Quantity",
+                "Trade Value (Cr)", "Volume"})
+            mapped = next(row for row in snapshots if row["symbol"])
+            unmatched = next(row for row in snapshots if not row["symbol"])
+            self.assertEqual(mapped["symbol"], "EXAMPLE")
+            self.assertEqual(mapped["isin"], "INE000A01000")
+            self.assertEqual(mapped["duplicate_row_count"], 2)
+            self.assertIsNone(mapped["volume"])
+            self.assertEqual(mapped["last_price"], 120)
+            self.assertEqual(mapped["revenue_growth_yoy"], 15)
+            self.assertIsNone(mapped["financial_period_end"])
+            self.assertIsNone(mapped["published_at"])
+            self.assertEqual(json.loads(mapped["raw_json"])["Volume"], "0")
+            self.assertIsNone(unmatched["symbol"])
+            self.assertEqual(unmatched["mapping_method"], "unmatched")
+            self.assertEqual(unmatched["instrument"], "Unlisted Alias")
+
+    def test_import_is_idempotent_and_never_changes_live_fundamentals(self):
+        with tempfile.TemporaryDirectory() as directory:
+            export, master = self._files(directory)
+            rows = self._read_rows(export)
+            snapshots, _, _ = _snapshot_rows(
+                rows, master, "2026-09-26", export)
+            database = Path(directory) / "app.db"
+            conn = sqlite3.connect(database)
+            conn.executescript("""
+                CREATE TABLE fundamentals (
+                    symbol TEXT PRIMARY KEY,
+                    pe REAL,
+                    uploaded_at TEXT
+                );
+                INSERT INTO fundamentals VALUES ('EXAMPLE', 12.5, 'legacy');
+            """)
+            conn.close()
+
+            self.assertEqual(_apply(database, snapshots), 2)
+            snapshots[0]["last_price"] = 121
+            self.assertEqual(_apply(database, snapshots), 2)
+            conn = sqlite3.connect(database)
+            self.assertEqual(
+                conn.execute(
+                    "SELECT pe, uploaded_at FROM fundamentals "
+                    "WHERE symbol='EXAMPLE'").fetchone(),
+                (12.5, "legacy"))
+            self.assertEqual(
+                conn.execute(
+                    "SELECT COUNT(*) FROM kite_market_snapshots").fetchone()[0],
+                2)
+            self.assertEqual(
+                conn.execute(
+                    "SELECT last_price FROM kite_market_snapshots "
+                    "WHERE instrument_key='exampleindustries'").fetchone()[0],
+                121)
+            conn.close()
+
+    def test_conflicting_duplicate_rows_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            export, master = self._files(directory)
+            rows = self._read_rows(export)
+            rows[1]["Last Price"] = "121"
+            with self.assertRaisesRegex(ValueError, "Conflicting duplicate"):
+                _snapshot_rows(rows, master, "2026-09-26", export)
+
+
+if __name__ == "__main__":
+    unittest.main()
