@@ -8,11 +8,13 @@ venv/
 
 # per-machine data (handoff §4.9) — never in git
 data/*.db
+data/app.db.pre-scanx-*.bak
 data/*.pkl
 data/gcp_key.json
 data/daily_log.txt
 data/uploaded_fundamentals.csv
 data/charts/
+data/incoming/
 
 # local artifacts
 project_dump.txt

@@ -9,8 +9,9 @@ WHY THIS EXISTS
     - How deep was the worst fall (max drawdown)?
     - Is the edge big enough to survive costs, slippage and bad luck?
     - Is OUR system ready for real money? (a plain checklist + verdict)
+    - Which playbook/method/regime combinations held up under both exit modes?
 
-TWO JOBS, ONE ENGINE
+THREE JOBS, ONE ENGINE
   1. BACKTEST ("pre-season"): replay history one day at a time. On each
      past day every trader sees ONLY prices up to that day (no peeking into
      the future) and its buy signals are stored in league_signals. Then a
@@ -20,6 +21,9 @@ TWO JOBS, ONE ENGINE
      signals from each trader + our Swing Desk are stored, and the paper
      portfolios are re-simulated from the league start. Weekly Telegram
      scorecard on Saturday.
+  3. SIGNAL GENOME: closed trades are grouped by player, method and market
+     regime. Shared exits provide a more entry-focused view; book exits show
+     each implemented recipe. Minimum-sample cells are descriptive, not predictive.
 
 HONEST LIMITS (read before trusting any number)
   - The 4 fundamentals books (O'Shaughnessy, Quantitative Value, Lowe,
@@ -2115,11 +2119,74 @@ def _run_rows(conn, mode, exit_mode):
     return meta, per
 
 
+def signal_genome(conn, mode="backtest", min_trades=10):
+    """Compare method/regime outcomes under common and book exits.
+
+    This is descriptive, not predictive: it only includes closed, executed
+    trades and never treats small samples as established evidence.
+    """
+    grouped = {}
+    for exit_mode in ("common", "book"):
+        run_id = _run_id(mode, exit_mode)
+        rows = conn.execute(
+            "SELECT player, method, COALESCE(regime, 'unclassified'), "
+            "COUNT(*), SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END), "
+            "SUM(pnl), SUM(CASE WHEN pnl > 0 THEN pnl ELSE 0 END), "
+            "SUM(CASE WHEN pnl < 0 THEN -pnl ELSE 0 END), AVG(r_mult) "
+            "FROM league_trades WHERE run_id=? "
+            "GROUP BY player, method, COALESCE(regime, 'unclassified')",
+            (run_id,)).fetchall()
+        for (player, method, regime, count, wins, pnl, gross_win, gross_loss,
+             avg_r) in rows:
+            cell = grouped.setdefault((player, method, regime), {})
+            cell[exit_mode] = {
+                "trades": int(count),
+                "win_rate": round(wins / count, 3) if count else None,
+                "pf": (round(gross_win / gross_loss, 2) if gross_loss else
+                       (99.0 if gross_win else None)),
+                "avg_r": round(avg_r, 3) if avg_r is not None else None,
+                "pnl": round(pnl, 0),
+            }
+
+    names = {p["slug"]: p["name"] for p in players()}
+    cells = []
+    for (player, method, regime), outcomes in grouped.items():
+        common = outcomes.get("common")
+        if not common or common["trades"] < min_trades:
+            continue
+        cells.append({
+            "player": player,
+            "name": names.get(player, player),
+            "method": method,
+            "regime": regime,
+            "common": common,
+            "book": outcomes.get("book"),
+        })
+    cells.sort(key=lambda cell: (
+        cell["common"]["avg_r"] is None,
+        -(cell["common"]["avg_r"] or 0),
+        -cell["common"]["trades"]))
+    ranked = [cell for cell in cells if cell["common"]["avg_r"] is not None]
+    return {
+        "minimum_trades": min_trades,
+        "cells": cells,
+        "leaders": ranked[:8],
+        "weak_spots": list(reversed(ranked[-6:])),
+        "note": (
+            "Historical descriptive results, not a forecast. Shared exits "
+            "make entry styles more comparable, but portfolio capacity and "
+            "fill timing still affect realized trades. The replay uses "
+            "today's listed universe and does not have point-in-time "
+            "fundamentals."),
+    }
+
+
 def overview(mode="backtest", exit_mode="book"):
     """League table + our system's readiness, for the API / UI."""
     conn = _conn()
     try:
         meta, per = _run_rows(conn, mode, exit_mode)
+        genome = signal_genome(conn, mode)
     finally:
         conn.close()
     rows = []
@@ -2151,6 +2218,7 @@ def overview(mode="backtest", exit_mode="book"):
     home = per.get(HOME)
     return {
         "mode": mode, "exit": exit_mode, "run": meta, "rows": rows,
+        "genome": genome,
         "home": None if home is None else {
             "readiness": home.get("readiness"),
             "stats": {k: home.get(k) for k in (
@@ -2689,6 +2757,33 @@ def selftest(verbose=True):
         return simulate("t", sigs, set(exits), book, dates, lambda m: prof,
                         C, capital=capital), dates
 
+    if verbose:
+        print("Signal Genome:")
+    import sqlite3
+    genome_conn = sqlite3.connect(":memory:")
+    genome_conn.execute(
+        "CREATE TABLE league_trades (run_id TEXT, player TEXT, method TEXT, "
+        "regime TEXT, pnl REAL, r_mult REAL)")
+    genome_conn.executemany(
+        "INSERT INTO league_trades VALUES (?,?,?,?,?,?)",
+        [("backtest-common", "way_of_the_turtle", "breakout", "BULL",
+          100, 1.0),
+         ("backtest-common", "way_of_the_turtle", "breakout", "BULL",
+          -50, -0.5),
+         ("backtest-book", "way_of_the_turtle", "breakout", "BULL",
+          200, 2.0)])
+    genome = signal_genome(genome_conn, "backtest", min_trades=2)
+    cell = genome["cells"][0] if genome["cells"] else {}
+    check("genome compares shared and book exits",
+          cell.get("common", {}).get("trades") == 2
+          and cell.get("book", {}).get("trades") == 1
+          and cell.get("common", {}).get("win_rate") == 0.5
+          and cell.get("common", {}).get("pf") == 2.0
+          and cell.get("common", {}).get("avg_r") == 0.25)
+    check("genome hides contexts below its sample floor",
+          not signal_genome(genome_conn, "backtest",
+                            min_trades=3)["cells"])
+    genome_conn.close()
     if verbose:
         print("Costs (Rs 1,00,000 order):")
     buy = trade_costs("buy", 100000, C)

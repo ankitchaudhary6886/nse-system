@@ -20,7 +20,13 @@ after every Indian cost. The league answers one question honestly:
 
 Two scoreboards:
 - **Book exits** = each book's own exit rules (Turtle trails the 10/20-day low, O'Neil cuts at 8%, …).
-- **Same exits for all** = setup stop (or 2×ATR), 2R target, 20-day time stop. Compares **entries only**.
+- **Same exits for all** = setup stop (or 2×ATR), 2R target, 20-day time stop. Makes entry approaches more comparable, while actual fills and portfolio capacity still affect results.
+
+The **Signal Genome** groups closed trades by playbook, method, and market
+regime. It surfaces the strongest and weakest historical contexts with at
+least 10 shared-exit trades, and places each book-exit result beside it. This
+is retrospective analysis, not a forecast or causal test; small samples and
+the survivorship/fundamentals limitations below still apply.
 
 ---
 
@@ -128,6 +134,7 @@ First trades appear the day after the first run.
 | **Costs paid** | STT + stamp + charges + slippage | Shows how much trading frequency costs |
 | **Bad-luck DD (95%)** | Monte Carlo: trades reshuffled 1,000 times — 95% of orders stay above this drawdown | ≤ 35% |
 | **Market mood** | Results split by regime at entry (STRONG_BULL … CAPITULATION) | Tells you WHEN the method works |
+| **Signal Genome** | Closed-trade results split by playbook, method, and market mood; shared-exit N is shown | Look for enough trades and consistency under both exit modes |
 
 ---
 
@@ -189,9 +196,10 @@ itself at the end. (`nothing to redo` means no signal setting or trader code cha
 | Tradeable | Price ≥ ₹20 and average daily value ≥ ₹1 crore **on the signal day** |
 | Our system | Same pipeline as the Swing Desk, day by day: regime (^NSEI) → breadth → sector top-3 → Stage-2 screener → Gabani SetupDetector → fresh pattern only. Exits = `strategy_config.BACKTEST` (same as backtest.py). |
 
-The simulator is checked by `python trader_league.py selftest` (26 hand-calculated
-cases: costs, gaps, sizing, caps, time stops, trailing stops, partial exits,
-O'Neil's 8-week rule, equity reconciliation, and a "no peeking" replay test).
+The simulator is checked by `python trader_league.py selftest` (28 checks:
+costs, gaps, sizing, caps, time stops, trailing stops, partial exits, O'Neil's
+8-week rule, equity reconciliation, shared-vs-book genome aggregation, and a
+"no peeking" replay test).
 
 ---
 
