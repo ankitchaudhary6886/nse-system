@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from importlib import import_module
 from pkgutil import iter_modules
 from threading import Lock
+from time import monotonic
 from typing import Any, Callable, Deque, Dict, Iterable, List, Optional, Protocol
 
 
@@ -60,20 +61,27 @@ class RateWindow:
             raise ValueError("Rate window values must be positive")
         self.max_calls = max_calls
         self.window = timedelta(seconds=window_seconds)
-        self._calls: Deque[datetime] = deque()
+        self._calls: Deque[float] = deque()
         self._lock = Lock()
 
     def allow(self) -> bool:
-        now = datetime.now()
+        now = monotonic()
         with self._lock:
-            cutoff = now - self.window
+            cutoff = now - self.window.total_seconds()
             while self._calls and self._calls[0] <= cutoff:
                 self._calls.popleft()
             return len(self._calls) < self.max_calls
 
-    def record(self) -> None:
+    def consume(self) -> bool:
+        now = monotonic()
         with self._lock:
-            self._calls.append(datetime.now())
+            cutoff = now - self.window.total_seconds()
+            while self._calls and self._calls[0] <= cutoff:
+                self._calls.popleft()
+            if len(self._calls) >= self.max_calls:
+                return False
+            self._calls.append(now)
+            return True
 
 
 class BaseSourceAdapter:
@@ -109,9 +117,8 @@ class BaseSourceAdapter:
             )
 
     def _execute(self, operation: Callable[[], Any]) -> Any:
-        if not self.rate_limit_ok():
+        if not self._rate_window.consume():
             raise RuntimeError("local provider rate limit exceeded")
-        self._rate_window.record()
         with self._lock:
             self._calls += 1
         try:
@@ -125,6 +132,11 @@ class BaseSourceAdapter:
             self._last_success = datetime.now().isoformat(timespec="seconds")
             self._last_error = None
         return result
+
+    def record_error(self, message: str) -> None:
+        with self._lock:
+            self._failures += 1
+            self._last_error = message
 
 
 class SourceRegistry:
@@ -180,6 +192,9 @@ class SourceRegistry:
                 result = adapter.fetch(*args, **kwargs)
                 if not accept_result(result):
                     errors[provider_name] = "provider result rejected"
+                    record_error = getattr(adapter, "record_error", None)
+                    if record_error is not None:
+                        record_error("provider result rejected")
                     continue
                 return FetchResult(
                     data=result,

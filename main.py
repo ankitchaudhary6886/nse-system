@@ -5,7 +5,6 @@ Entry point:
   python main.py scan URL          # scan a Chartink screener
 """
 import sys
-import re
 import pandas as pd
 from datetime import datetime, timedelta
 

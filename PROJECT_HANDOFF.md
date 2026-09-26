@@ -57,12 +57,14 @@ retrain. Mondays: 08:00 Monte-Carlo. 1st of month: 10:00 walk-forward.
 10. Rollback safety: git checkout -- <file> ; git revert <commit>.
 
 ## 5. FILE INVENTORY (root unless noted)
-- terminal_api.py — FastAPI backend: all /api/* endpoints + lifespan that starts the scheduler.
+- terminal_api.py — FastAPI backend: all /api/* endpoints (including authenticated `/api/sources` provider health)
+  and the lifespan that starts the scheduler.
 - terminal/static/index.html, app.js, style.css — modern terminal UI (views: Top Picks, Overview, Swing Desk, Screener, Patterns, Ledger, Radar).
 - scheduler_bg.py — APScheduler cron jobs (§9). Uses log_utils.get_logger("scheduler").
 - daily_update.py — crash-proof EOD pipeline (prices→technicals→scan→ml→pwin→toppicks→events→swing→telegram→sheets). Uses log_utils.get_logger("daily_update").
 - log_utils.py — rotating file + console logger (data/logs/*.log, 14-day retention).
 - ingest_prices.py, ingest_smallcaps.py, ingest_missing.py, broad_scan.py — data ingestion.
+- data_sources/ — auto-discovered fetch/health/rate-limit adapters and explicit provider fallback routing.
 - technicals.py, scan.py, ml_predict.py, ml_train.py, events.py, sentiment.py — 2.0 analytics.
 - regime.py — MarketRegime (index close vs EMA10; fallback chain ^CNXSMALLCAP → ^CNXSC → NIFTY_SMALLCAP_100.NS → ^NSEI; start/end dates, not period strings).
 - breadth.py — %above-50EMA + adv/dec, cached daily in breadth_daily.
@@ -229,7 +231,14 @@ CURRENT OPEN WORK (see `backlog.md` and `DATA_REQUESTS.md` for details):
   are available as of 2026-09-25. Do not deploy real capital; re-check readiness after a sufficient live sample.
 - Owner data still required: DR-01/02 and outstanding DR-03–DR-23; the ScanX snapshot is research-only and is
   not point-in-time history.
-- Data source plugins, new League features, and portal design choices require owner reprioritization.
+- Source adapter framework and first TradingView, Yahoo-price, NSE-constituent, and Chartink adapters are
+  implemented on the topic branch; remaining direct Yahoo consumers and official dated-filing ingestion remain
+  open (DR-01/DR-21). See EXECUTION_LOG #091.
+- Decisions recorded 2026-09-26: official NSE/BSE filings are authoritative for dated fundamentals; Funda and
+  Swing use separate broad-quality and liquid-mid/small-cap universes (exact thresholds open); Multibagger
+  remains quality-only until dated multi-year growth data is available. See DATA_REQUESTS.md and
+  PORTAL_REDESIGN.md.
+- New League features and Streamlit retirement remain deferred pending separate prioritization.
 DEFERRED BY OWNER: custom domain/HTTPS, credential rotation, Streamlit retirement, Google Sheets sync.
 Optional research: repeat C3 lift after dated fundamentals; delivery/bulk-block parsing only if a stable,
 permitted source becomes available.
@@ -310,3 +319,4 @@ NEW TABLES: top_picks(ext), pwin_daily, validation_log, model_runs, ledger uses 
 2026-09-26a: Owner rule R47 — git/VM steps always as WHOLE copy-paste blocks (§1). Trader League follow-up (#088): TRADER_LEAGUE.md §2/§4/§8 rewritten as copy-paste Blocks A–K; `replay --background` (same launcher as the League button: own session, low priority, survives SSH logout); a replay typed in SSH registers in data/league_replay.pid (tab shows it, never two at once); fixed a finished web-started replay showing RUNNING forever (unreaped child + recycled-pid check); `replay --changed` redoes only players whose code/settings changed; league.js v=17.
 2026-09-26b: Trader League real-data replay and readiness re-checked on VM: replay through 2026-09-25 is complete; 178 home trades, -6.2% return vs Nifty +5.5%, PF 0.93, worst-case-fill PF 0.72, 0 live paper trades; verdict NOT READY. Logged in EXECUTION_LOG #090.
 2026-09-26c: Terminal data-clickability pass deployed to main and VM (merge 04cd982): navigation/history, company research links, detail dialogs, and keyboard-accessible data rows; static page 200 and service active. Logged in EXECUTION_LOG #089.
+2026-09-26d: Owner decisions recorded and source adapter framework implemented on topic branch: auto-discovered provider contract, health/rate-limit reporting, explicit fallback, initial TradingView/Yahoo/NSE/Chartink migrations, and authenticated System-page source health. Official dated fundamentals ingestion and remaining Yahoo consumers still open; not deployed. Logged in EXECUTION_LOG #091.

@@ -54,7 +54,8 @@ def _fetch_batch(tickers, retries=3):
         try:
             result = get_registry().fetch(
                 "fundamentals.tv_batch", ("tradingview",),
-                tickers=tickers, columns=COLUMNS)
+                tickers=tickers, columns=COLUMNS,
+                accept=lambda rows: bool(rows))
             return result.data
         except Exception as e:
             last_err = e

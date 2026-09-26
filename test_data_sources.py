@@ -51,6 +51,8 @@ class SourceRegistryTests(unittest.TestCase):
 
         self.assertEqual(error.exception.errors["empty"],
                          "provider result rejected")
+        health = {item["provider"]: item for item in registry.health()}
+        self.assertEqual(health["empty"]["state"], "unavailable")
 
     def test_exhausted_fallback_raises_explicit_error(self):
         registry = SourceRegistry()
@@ -60,6 +62,20 @@ class SourceRegistryTests(unittest.TestCase):
             registry.fetch("test.value", ("broken",))
 
         self.assertIn("offline", str(error.exception))
+
+    def test_rate_limit_blocks_calls_after_the_configured_budget(self):
+        registry = SourceRegistry()
+        adapter = _FakeAdapter("limited", result="ok", max_calls=1)
+        registry.register(adapter)
+
+        self.assertEqual(registry.fetch("test.value", ("limited",)).data,
+                         "ok")
+        with self.assertRaises(ProviderFetchError) as error:
+            registry.fetch("test.value", ("limited",))
+
+        self.assertEqual(error.exception.errors["limited"],
+                         "provider rate limit exceeded")
+        self.assertEqual(adapter.health().calls, 1)
 
     def test_builtins_are_discoverable_without_network_calls(self):
         registry = SourceRegistry()

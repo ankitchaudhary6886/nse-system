@@ -84,10 +84,16 @@ Indian delivery costs, slippage, 1% risk sizing). Book exits vs same
 exits scoreboards, results by regime, real-money verdict. Nightly live
 league 19:00, Sat scorecard, 🏆 League tab. See #087.
 
-### ID52 — Data source plugins · DEFERRED
-Trader books #1–#14 are complete. The plugin system is now available
-for reprioritization, but remains deferred pending an owner decision
-on scope and primary data sources.
+### ID52 — Data source plugins · IN PROGRESS
+Owner decisions (2026-09-26): implement the full adapter framework;
+use official NSE/BSE filings as the authority for dated fundamentals;
+keep broad quality-eligible Funda and liquid mid/small-cap Swing
+universes separate; make Multibagger quality-led with multi-year growth
+confirmation once dated data exists. Current work adds discovery,
+health, local rate-limit status and explicit fallback routing, and
+migrates TradingView fundamentals, Yahoo price history, NSE constituents
+and Chartink screener inputs. Remaining direct Yahoo call sites and
+official dated-filing ingestion are not yet migrated.
 
 ---
 
@@ -129,7 +135,7 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 | ID77  | Trader League             | DONE · replay verified; NOT READY; live sample pending |
 | D20   | Backtest before real money | DONE · real-data replay verified; NOT READY |
 | Traders 15+ | Pending owner input | PENDING      |
-| ID52  | Data source plugins       | DEFERRED · owner reprioritization |
+| ID52  | Data source plugins       | IN PROGRESS · framework and first adapters implemented |
 
 ---
 
@@ -164,12 +170,17 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 - P2: DR-08–DR-15, DR-18, DR-19
 
 ### Deferred roadmap work
-- ID52 Data source plugin system: trader integration is complete; owner
-  reprioritization and source/licensing choices are still needed.
-- Portal open decisions (PORTAL_REDESIGN.md §6): exact RCP/Episodic
-  Pivot grammar; Multibagger growth/quality blend; separate or shared
-  Funda/Swing universes; primary data source; signature similarity
-  metric; whether to retire legacy Streamlit.
+- ID52 source-plugin migration: complete the remaining direct Yahoo
+  call sites and add validated, period- and filing-dated official
+  NSE/BSE fundamentals ingestion. Keep DR-01/DR-21 OPEN until data
+  coverage, provenance and point-in-time safety are verified.
+- Owner choices recorded 2026-09-26: separate broad quality-eligible
+  Funda and liquid mid/small-cap Swing universes (exact thresholds still
+  open); quality-led Multibagger with multi-year growth confirmation
+  (scanner remains quality-only until dated data exists); official
+  exchange filings for dated fundamentals; L1 signature distance is
+  already implemented; RCP/Episodic Pivot seeds already have explicit
+  conditions. Retiring legacy Streamlit remains a separate decision.
 - Proposed League additions (Council score, Wisdom Court, Quiet
   Accumulation, Discipline Coach) are unstarted and need prioritization.
 

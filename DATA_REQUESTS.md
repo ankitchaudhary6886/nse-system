@@ -3,7 +3,8 @@
 **Purpose:** live list of every data element the owner must provide
 to unlock remaining methods across all traders.
 
-**Last updated:** 2026-09-18 (trader #14 Singhal added — DR-23)
+**Last updated:** 2026-09-26 (official exchange filings selected for
+point-in-time fundamentals)
 **Status legend:** OPEN · PARTIAL · DELIVERED · DEPRECATED
 
 ---
@@ -49,7 +50,17 @@ Total: ~70 methods running on existing data today.
 - **Status:** OPEN
 - **Trader impact:** O'Sh, QV, Lowe, Parikh → ~20 methods
 - **Priority:** P0 · **Effort:** M + S
-- **Owner action:** Screener.in premium export.
+- **Source decision (2026-09-26):** use official NSE/BSE company
+  financial-result filings as the source of truth; do not require a
+  premium data subscription.
+- **Data required:** annual and quarterly statements mapped to exchange
+  symbol and, where available, ISIN; retain financial period-end,
+  first public filing timestamp, units, source URL/artifact, and any
+  restatement or supersession relationship.
+- **Acceptance rule:** an observation is eligible for historical replay
+  only when both the financial period and public-availability time are
+  known. DR-01 remains OPEN until a filing adapter/import path is
+  implemented and coverage and date quality are verified.
 
 ### DR-02 · balance_sheet_line_items (latest)
 - **Status:** OPEN — subsumed by DR-01
@@ -92,3 +103,9 @@ Total: ~70 methods running on existing data today.
 **Single biggest win:** DR-01 (~20 methods).
 
 **Second-biggest:** DR-20 (~6 methods for O'Neil).
+
+### Point-in-time fundamentals decision (2026-09-26)
+Official NSE/BSE filings are the authority for dated fundamentals. The
+plugin framework does not yet ingest those filings; DR-01 and DR-21
+remain open. The ScanX export is still research-only because it has no
+underlying period-end or public filing date.

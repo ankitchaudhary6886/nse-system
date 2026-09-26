@@ -1258,6 +1258,30 @@ All detectors computed inline in `traders/mcallen.py`:
 - Next gate: continue paper trading and re-check readiness only after
   at least 30 live trades; do not deploy real capital while NOT READY.
 
+### #091 · Source adapter framework and first migrations — PARTIAL
+- Owner decisions (2026-09-26): build the full adapter framework; use
+  official NSE/BSE filings as the authority for dated fundamentals;
+  keep separate broad Funda and liquid mid/small-cap Swing universes;
+  make Multibagger quality-led with dated multi-year growth confirmation.
+- Implemented:
+  - `data_sources/`: typed fetch/health/rate-limit contract, adapter
+    discovery, per-process request budgets, ordered provider fallback,
+    accepted-result checks and explicit aggregate errors.
+  - Adapters for TradingView fundamentals, Yahoo daily prices, the
+    existing local/NSE API/archive universe fallback, and Chartink
+    screener URLs; existing domain entry points retain their return and
+    persistence behavior.
+  - Authenticated `/api/sources` endpoint and System-page source status.
+  - ScanX remains a local research import, not a live-fetch adapter.
+- Not complete: direct Yahoo usage remains in other consumers; no
+  official filing adapter/import path exists yet. DR-01/DR-21 remain
+  OPEN, and undated ScanX data remains ineligible for historical replay.
+- Validation: `python -m unittest discover -v` (7 tests),
+  `python -m py_compile` for changed Python modules, and
+  `node --check terminal/static/app.js` passed.
+- Status: committed on rebased topic branch as `cf67655`; not yet
+  deployed to main or the VM.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS

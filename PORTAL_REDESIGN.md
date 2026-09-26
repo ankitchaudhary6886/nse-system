@@ -91,10 +91,15 @@ Every chart has markers at historical pattern signals, coloured by
 outcome (green=WIN, red=LOSS, yellow=TIMEOUT/EXPIRED). Click any marker
 to open that historical setup. Visual intuition over years.
 
-### Idea 5 — Data source plugin system
-Each source implements the same interface (`fetch`, `health`,
-`rate_limit_ok`). Registry auto-discovers. Fallback chain automatic.
-System page shows green/yellow/red per source.
+### Idea 5 — Data source plugin system · IN PROGRESS (2026-09-26)
+Each source implements `fetch`, `health`, and `rate_limit_ok`.
+The registry auto-discovers adapters and applies explicit provider order
+and result acceptance rules. `/api/sources` and the System page expose
+state, local rate-limit availability, call/failure counts, and the last
+error. Initial adapters route TradingView fundamentals, Yahoo daily
+prices, NSE constituent fallbacks, and Chartink URL inputs. Remaining
+direct Yahoo consumers and official dated-filing ingestion are not yet
+migrated. ScanX stays a local research import, not an online fallback.
 
 ### Idea 6 — Unified stock card
 Same card component everywhere (scanner, research, watchlist,
@@ -145,9 +150,14 @@ Each phase is independently useful. No phase blocks a later one.
 
 ### Phase 4 — Data source plugins
 - `data_sources/` with standard interface
-- Migrate TradingView + Yahoo + NSE
-- Add Chartink + ScanX
-- Health dashboard
+- Registry, health and rate-limit reporting, explicit fallback order,
+  first TradingView/Yahoo/NSE/Chartink adapters and System-page display
+  are implemented; continue migration across remaining consumers.
+- Official NSE/BSE filings are the selected authority for point-in-time
+  fundamentals. Add this ingestion path only with financial period,
+  public filing timestamp, source provenance and symbol/ISIN mapping.
+- Keep ScanX as a research-only local import; do not let undated exports
+  become live fundamentals or historical replay data.
 - **Deliverable:** resilience — one source failing doesn't break the
   pipeline.
 
@@ -170,11 +180,18 @@ Each phase is independently useful. No phase blocks a later one.
 
 ## 6. OPEN QUESTIONS (to resolve as we build)
 
-- Exact rule grammar for RCP and Episodic Pivot — design session needed.
-- Multibagger selection: growth-tilted, quality-tilted, or blend?
-- Should Funda and Swing run on different universes, or same?
-- Which data source becomes primary after plugin migration?
-- Should signature matching use cosine similarity or L1 distance?
+- RCP and Episodic Pivot already have concrete seed conditions in
+  `rule_engine.py`; further changes are not currently requested.
+- Multibagger is quality-led with multi-year growth confirmation
+  (owner decision, 2026-09-26); the current scanner remains quality-only
+  until dated growth data is available.
+- Funda and Swing use separate universes (owner decision, 2026-09-26):
+  broad quality-eligible Funda and liquid mid/small-cap Swing. Exact
+  eligibility thresholds and membership still need definition.
+- Official NSE/BSE filings are the authority for dated fundamentals;
+  the full adapter framework is approved and in progress (owner
+  decision, 2026-09-26).
+- Signature matching already uses standardized L1 distance.
 - Do we keep the legacy Streamlit app as backup, or retire it fully?
 
 ## 7. CHANGE LOG
@@ -183,3 +200,6 @@ Each phase is independently useful. No phase blocks a later one.
 - 2026-09-26 — Terminal interaction pass deployed: symbol/view history,
   stock-to-research navigation, data detail dialogs, and keyboard-accessible
   research, sector, strategy, trader, and League rows. See EXECUTION_LOG #089.
+- 2026-09-26 — Owner decisions recorded and initial source adapter
+  framework added; see EXECUTION_LOG #091. Official dated filings and
+  remaining provider migrations are still outstanding.
