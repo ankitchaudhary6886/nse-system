@@ -1319,6 +1319,25 @@ All detectors computed inline in `traders/mcallen.py`:
   importer writes only to the new snapshot table, so no service restart
   was needed.
 
+### #093 · Cross-attest KITE against ScanX and refresh confirmed fields — IN PROGRESS
+- Owner clarification: use both overlapping exports to confirm shared
+  records, then actively refresh the system instead of retaining only
+  isolated snapshots.
+- Same-date symbol overlap: 366/366 symbol-mapped KITE rows also exist in
+  ScanX. Exact price agreement: 366/366. Agreement within 1% relative
+  difference: market cap 352/366, P/E 161/365, debt/equity 39/364,
+  dividend yield 249/366, ROE 197/366. All other metric disagreements
+  remain withheld; neither dataset replaces rows wholesale.
+- Added `kite_reconcile.py` with preview/apply modes and the
+  `market_data_attestations` before/after ledger. It updates only fields
+  accepted under the rules above in `fundamentals`, and updates confirmed
+  close/market-cap values only for existing `universe_broad` rows; it
+  does not expand universe membership or write daily price bars.
+- Local application: 366 mapped symbols receive exact dual-confirmed
+  current prices and any per-field corroborated ratios/capitalization;
+  local broad universe is empty. Database backup retained.
+- VM application and final row counts are pending.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS

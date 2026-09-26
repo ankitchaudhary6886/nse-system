@@ -70,8 +70,21 @@ def report(database, as_of=None):
                 print(f"  {flag}: {count}")
         else:
             print("  none")
-        print("\nSnapshot data is research-only; it does not feed live "
-              "fundamentals, daily prices, signals, or backtests.")
+
+        if "market_data_attestations" in tables:
+            attestations = conn.execute(
+                "SELECT field, agreed, action, COUNT(*) "
+                "FROM market_data_attestations WHERE as_of_date=? "
+                "GROUP BY field, agreed, action ORDER BY field, agreed, action",
+                (selected_date,)).fetchall()
+            if attestations:
+                print("\nKITE/ScanX field attestations")
+                for field, agreed, action, count in attestations:
+                    verdict = "agreed" if agreed else "withheld"
+                    print(f"  {field}: {verdict} / {action}: {count}")
+        print("\nRaw snapshots remain preserved. Only values explicitly "
+              "corroborated against same-date ScanX data are promoted; "
+              "undated financial metrics are not historical replay data.")
     finally:
         conn.close()
 

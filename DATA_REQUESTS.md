@@ -46,11 +46,22 @@ unambiguous. The source's Average Price, Buy/Sell Quantity, Trade Value,
 and Volume columns were zero for every row and are withheld from
 structured analysis while remaining in the raw JSON.
 
-This import does not modify live fundamentals, daily prices, universe
-membership, signals, or backtests. Review coverage with
-`python kite_snapshot_report.py --db data/app.db`; manually resolve
-unmapped names before using symbol-level metrics. It does not satisfy
-DR-01 or DR-21.
+The raw import itself does not modify live fundamentals, daily prices,
+universe membership, signals, or backtests. After both same-date source
+exports are available, `kite_reconcile.py` compares their 366 mapped
+overlapping symbols and promotes only individually corroborated fields:
+exact last-price matches; and market cap, P/E, debt/equity, dividend
+yield, and ROE only when the relative source difference is at most 1%.
+Disagreements are logged and withheld. Confirmed price and market cap
+also refresh existing `universe_broad` rows; no universe members are
+added. The field-level before/after evidence is in
+`market_data_attestations`.
+
+Review snapshot quality with `python kite_snapshot_report.py --db
+data/app.db`; preview future reconciliations with
+`python kite_reconcile.py --db data/app.db`. The KITE/ScanX values still
+lack financial-period and filing dates, so this import does not satisfy
+DR-01 or DR-21 and is not eligible for historical replay.
 
 ---
 

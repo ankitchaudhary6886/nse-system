@@ -229,9 +229,9 @@ CURRENT OPEN WORK (see `backlog.md` and `DATA_REQUESTS.md` for details):
 - R41 reverse overlap markings in existing traders; ID71 proxy replacement after suitable real data arrives.
 - Trader League replay is complete, but the current real-money verdict is NOT READY; 0/30 live paper trades
   are available as of 2026-09-25. Do not deploy real capital; re-check readiness after a sufficient live sample.
-- Owner data still required: DR-01/02 and outstanding DR-03–DR-23; the ScanX snapshot is research-only and is
-  not point-in-time history. The KITE export is also quarantined as an undated research snapshot with
-  134 unresolved instrument labels; neither snapshot satisfies DR-01/DR-21.
+- Owner data still required: DR-01/02 and outstanding DR-03–DR-23; ScanX and KITE source snapshots have no
+  financial-period or publication dates and are not point-in-time history. Confirmed KITE/ScanX fields have
+  been promoted with per-field evidence; 134 KITE labels remain unresolved. Neither source satisfies DR-01/DR-21.
 - Source adapter framework and first TradingView, Yahoo-price, NSE-constituent, and Chartink adapters are
   deployed on main and the VM; remaining direct Yahoo consumers and official dated-filing ingestion remain
   open (DR-01/DR-21). See EXECUTION_LOG #091.
@@ -321,4 +321,4 @@ NEW TABLES: top_picks(ext), pwin_daily, validation_log, model_runs, ledger uses 
 2026-09-26b: Trader League real-data replay and readiness re-checked on VM: replay through 2026-09-25 is complete; 178 home trades, -6.2% return vs Nifty +5.5%, PF 0.93, worst-case-fill PF 0.72, 0 live paper trades; verdict NOT READY. Logged in EXECUTION_LOG #090.
 2026-09-26c: Terminal data-clickability pass deployed to main and VM (merge 04cd982): navigation/history, company research links, detail dialogs, and keyboard-accessible data rows; static page 200 and service active. Logged in EXECUTION_LOG #089.
 2026-09-26d: Owner decisions recorded and source adapter framework deployed to main and VM at 3d886e3: auto-discovered provider contract, health/rate-limit reporting, explicit fallback, initial TradingView/Yahoo/NSE/Chartink migrations, and authenticated System-page source health. `/api/health`, `/api/deployment-check`, and `/api/sources` verified; official dated fundamentals ingestion and remaining Yahoo consumers still open. Logged in EXECUTION_LOG #091.
-2026-09-27a: KITE.csv imported as a research-only snapshot for 2026-09-26 (500 distinct instruments, 366 symbol mappings, 134 retained unmapped); live fundamentals/prices untouched. VM import and endpoint/report checks recorded in EXECUTION_LOG #092.
+2026-09-27a: KITE.csv imported for 2026-09-26 (500 distinct instruments, 366 symbol mappings, 134 retained unmapped). Cross-checked with same-date ScanX; only fields meeting explicit agreement rules were promoted to fundamentals and existing broad-universe rows, with field-level before/after evidence. Neither source is point-in-time historical data. Details in EXECUTION_LOG #092–#093.
