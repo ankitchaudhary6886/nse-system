@@ -1222,9 +1222,42 @@ All detectors computed inline in `traders/mcallen.py`:
   - API (TestClient): POST /api/league/replay starts, second POST
     refused, status flips to not running after the finish, POST again
     starts
-- Status: ON BRANCH (PR #1) · AWAITING MERGE + VM RUN
+- Status: DEPLOYED · VERIFIED on main and VM (2026-09-26); see #089 and #090.
 
----
+### #089 · Terminal data-clickability and navigation — DEPLOYED · VERIFIED
+- Request: make terminal information and controls clickable, with clicks
+  opening the relevant company research or associated detail data.
+- Files: `terminal/static/{app.js,cards.js,index.html,league.js,research.js,
+  research_sector.js,research_universe.js,strategies.js,strategy_runs.js,
+  style.css,traders.js}`.
+- What: added view/symbol URL history, research navigation from stock
+  cards and tables, JSON detail dialog, clickable chart candles and stored
+  news, keyboard activation/focus for data rows, sortable keyboard-accessible
+  research tables, clickable regime/system status and documentation links.
+- Verification: all 12 terminal JS files pass `node --check`; diff check
+  clean; Trader League selftest 28/28. Browser smoke confirmed navigation,
+  URL symbol history and dialog behavior against a local static server;
+  API calls were unavailable on that server. VM serves updated `index.html`
+  and versioned assets (HTTP 200); service active, unauthenticated API returns
+  expected 401.
+- Git: topic commit `1b410a3`, merged/pushed as `04cd982`; VM pulled `main`
+  at `04cd982`.
+
+### #090 · Verify VM pre-season replay and real-money readiness — VERIFIED
+- Checked read-only on the VM on 2026-09-26; latest prices and replay
+  through 2026-09-25. Pre-season replay is complete (300-stock chart-book
+  runs; fundamentals-only books remain live-only pending historical data).
+- Home system: ₹10,00,000 → ₹9,37,842 (-6.2%), 178 trades; PF 0.93;
+  Nifty return +5.5%; worst-case-fill PF 0.72; live paper trades 0.
+- `python trader_league.py ready` verdict: **NOT READY**. Passes trade
+  count, drawdown and Monte Carlo checks; fails after-cost PF, benchmark,
+  most-years-profitable, worst-case-fill and live-paper checks.
+- Updated `backlog.md`, `PROJECT_HANDOFF.md` and `TRADER_LEAGUE.md` to
+  replace stale "awaiting VM run"/26-check instructions with observed
+  status and the current 28/28 selftest count.
+- Next gate: continue paper trading and re-check readiness only after
+  at least 30 live trades; do not deploy real capital while NOT READY.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS

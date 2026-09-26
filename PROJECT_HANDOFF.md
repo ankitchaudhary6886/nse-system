@@ -221,10 +221,18 @@ DONE: modern FastAPI terminal + Top Picks UI · scheduler autonomy · B1 sector 
 C1 meta-model · C2 SHAP · C4 drift+weekly retrain · C5 5-year training · D1 data-quality monitor ·
 E1 Telegram alerts · A1 fundamentals refresh · A2 institutional footprint · A3 FII/DII macro · A4 breadth ·
 N1 whole-band screener · N2 delivery % scanner + Top Picks reweight · N3 paper-trade ledger ·
-Monte-Carlo + walk-forward validation · chart snapshots in Telegram · model_runs ledger.
-REMAINING: A0 custom domain + HTTPS (outline §13).
-OPTIONAL FUTURE: C3 lift re-test after fresh fundamentals · intraday entry timing ·
-delivery%/bulk-block real NSE parsing if a stable source appears.
+Monte-Carlo + walk-forward validation · chart snapshots in Telegram · model_runs ledger · Trader League ·
+interactive terminal research and detail navigation.
+CURRENT OPEN WORK (see `backlog.md` and `DATA_REQUESTS.md` for details):
+- R41 reverse overlap markings in existing traders; ID71 proxy replacement after suitable real data arrives.
+- Trader League replay is complete, but the current real-money verdict is NOT READY; 0/30 live paper trades
+  are available as of 2026-09-25. Do not deploy real capital; re-check readiness after a sufficient live sample.
+- Owner data still required: DR-01/02 and outstanding DR-03–DR-23; the ScanX snapshot is research-only and is
+  not point-in-time history.
+- Data source plugins, new League features, and portal design choices require owner reprioritization.
+DEFERRED BY OWNER: custom domain/HTTPS, credential rotation, Streamlit retirement, Google Sheets sync.
+Optional research: repeat C3 lift after dated fundamentals; delivery/bulk-block parsing only if a stable,
+permitted source becomes available.
 
 ## 12. KNOWN QUIRKS & WORKAROUNDS
 - yfinance "Cookie/crumb fetch failed" warnings: harmless for price history; info/fundamentals may fail.
@@ -238,7 +246,7 @@ delivery%/bulk-block real NSE parsing if a stable source appears.
 - Universe contains garbage symbols ($-prefixed) → filtered with NOT LIKE '%$%'.
 - Streamlit "missing ScriptRunContext" warnings when importing outside `streamlit run` — harmless.
 
-## 13. A0 OUTLINE (the only remaining roadmap item)
+## 13. A0 OUTLINE (deferred by owner; not a current deployment task)
 Buy domain (or free DuckDNS subdomain) → A record → 140.238.226.249 → VM: sudo apt install nginx certbot
 python3-certbot-nginx → nginx reverse proxy / → 127.0.0.1:8000 (keep Basic auth) → open TCP 80/443 in Oracle
 security list + iptables → sudo certbot --nginx -d yourdomain → auto-renew. Keep :8000 as fallback.
@@ -300,3 +308,5 @@ NEW TABLES: top_picks(ext), pwin_daily, validation_log, model_runs, ledger uses 
 2026-09-12c: Structured logging — log_utils.py (rotating TimedRotatingFileHandler → data/logs/<name>.log, 14-day retention); daily_update.py + scheduler_bg.py migrated to log_utils.get_logger(); requirements.txt split into core (requirements.txt) + requirements-optional.txt (streamlit, plotly, transformers, torch, feedparser, matplotlib, gspread).
 2026-09-25a: Trader League (#087) — trader_league.py: 14 books + our system with Rs 10 lakh each; point-in-time replay (each past day sees only data up to that day), portfolio simulator (next-day fills, gap-through stops, STT/stamp/NSE/SEBI/GST/DP costs, 0.2% slippage, 1% risk sizing, 10 positions), book-exit vs same-exit scoreboards, results by regime, Monte Carlo + worst-case-fill checks, real-money verdict (READY / PAPER FIRST / NOT READY); nightly live league 19:00 + Sat 11:00 Telegram scorecard; /api/league/* (5 endpoints, terminal_api v24.1); 🏆 League tab (league.js, app.js v16); strategy_config.LEAGUE; guide TRADER_LEAGUE.md. Also: traders/base.py bars_to_dicts 10x faster (identical output); singhal.py VCP fix (two functions named _detect_vcp — the method shadowed the helper, so VCP never emitted).
 2026-09-26a: Owner rule R47 — git/VM steps always as WHOLE copy-paste blocks (§1). Trader League follow-up (#088): TRADER_LEAGUE.md §2/§4/§8 rewritten as copy-paste Blocks A–K; `replay --background` (same launcher as the League button: own session, low priority, survives SSH logout); a replay typed in SSH registers in data/league_replay.pid (tab shows it, never two at once); fixed a finished web-started replay showing RUNNING forever (unreaped child + recycled-pid check); `replay --changed` redoes only players whose code/settings changed; league.js v=17.
+2026-09-26b: Trader League real-data replay and readiness re-checked on VM: replay through 2026-09-25 is complete; 178 home trades, -6.2% return vs Nifty +5.5%, PF 0.93, worst-case-fill PF 0.72, 0 live paper trades; verdict NOT READY. Logged in EXECUTION_LOG #090.
+2026-09-26c: Terminal data-clickability pass deployed to main and VM (merge 04cd982): navigation/history, company research links, detail dialogs, and keyboard-accessible data rows; static page 200 and service active. Logged in EXECUTION_LOG #089.

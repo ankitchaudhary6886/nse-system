@@ -177,8 +177,9 @@ Each phase is independently useful. No phase blocks a later one.
 - Should signature matching use cosine similarity or L1 distance?
 - Do we keep the legacy Streamlit app as backup, or retire it fully?
 
----
-
 ## 7. CHANGE LOG
 
 - 2026-09-12 — vision captured. Roadmap defined. R25 added to backlog.
+- 2026-09-26 — Terminal interaction pass deployed: symbol/view history,
+  stock-to-research navigation, data detail dialogs, and keyboard-accessible
+  research, sector, strategy, trader, and League rows. See EXECUTION_LOG #089.

@@ -65,7 +65,7 @@ cd ~/nse-system
 source venv/bin/activate
 python trader_league.py selftest
 ```
-You should see as the last line: `26/26 checks passed`. If any line says FAIL, stop and send it.
+You should see as the last line: `28/28 checks passed`. If any line says FAIL, stop and send it.
 
 **Block D — VM: start the pre-season replay (runs in the background)**
 ```

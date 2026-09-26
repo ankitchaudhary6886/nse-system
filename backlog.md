@@ -53,7 +53,8 @@
 - **D1**–**D17** as previously logged (D18, D19 see #086).
 - **D20** "We have to make something to backtest our system before
   deploying real money." → `trader_league.py` backtest + real-money
-  checklist (TRADER_LEAGUE.md). DONE · awaiting real-data run.
+  checklist (TRADER_LEAGUE.md). DONE · real-data replay and readiness
+  check verified on the VM (2026-09-26); current verdict NOT READY.
 
 ---
 
@@ -83,7 +84,10 @@ Indian delivery costs, slippage, 1% risk sizing). Book exits vs same
 exits scoreboards, results by regime, real-money verdict. Nightly live
 league 19:00, Sat scorecard, 🏆 League tab. See #087.
 
-### ID52 — Data source plugins · DEFERRED (post-traders)
+### ID52 — Data source plugins · DEFERRED
+Trader books #1–#14 are complete. The plugin system is now available
+for reprioritization, but remains deferred pending an owner decision
+on scope and primary data sources.
 
 ---
 
@@ -118,29 +122,36 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 | ID68  | Steve Nison               | DONE · VERIFIED |
 | ID69  | Tushar Chande             | DONE · VERIFIED |
 | ID70  | William O'Neil            | DONE · VERIFIED |
-| ID71  | Strip existing proxies    | BACKLOG      |
+| ID71  | Strip existing proxies    | BLOCKED · real replacement data required |
 | ID72  | Fred McAllen              | DONE · VERIFIED |
 | ID73  | McAllen theses capture    | DONE         |
 | ID74  | Aseem Singhal             | DONE         |
-| ID77  | Trader League             | DONE · awaiting VM run |
-| D20   | Backtest before real money | DONE · awaiting VM run |
+| ID77  | Trader League             | DONE · replay verified; NOT READY; live sample pending |
+| D20   | Backtest before real money | DONE · real-data replay verified; NOT READY |
 | Traders 15+ | Pending owner input | PENDING      |
-| ID52  | Data source plugins       | DEFERRED     |
+| ID52  | Data source plugins       | DEFERRED · owner reprioritization |
 
 ---
 
 ## H. REMAINING / LEFT
 
 ### Traders integration
-- **Traders #1–#14 shipped and verified (#14 awaiting VM).**
+- **Traders #1–#14 shipped; replay coverage is present on the VM.**
+  Fundamentals books remain live-only until point-in-time data arrives
+  (DR-01). Re-run changed-player replay after trader/config edits.
 
 ### Backlog TODOs
-- Reverse-mark overlaps in existing traders.
-- Strip existing proxies once real data arrives (ID71).
+- Reverse-mark overlaps in existing traders (R41); newer traders already
+  mark several links, but the older counterparts still need an audit.
+- Strip existing proxies once suitable real replacement data arrives
+  (ID71 / DR-01 and related requests).
 
 ### Trader League (ID77)
-- Run the pre-season replay on the VM (TRADER_LEAGUE.md Block D).
-- Re-check `python trader_league.py ready` after 30+ live paper trades.
+- Pre-season replay: **complete on VM**, through 2026-09-25.
+- Latest readiness check (2026-09-26): **NOT READY**. PF 0.93 vs 1.3
+  bar; return -6.2% vs Nifty +5.5%; worst-case-fill PF 0.72; live paper
+  evidence 0/30 trades. Re-check `python trader_league.py ready` after
+  at least 30 live paper trades; do not deploy real capital meanwhile.
 - Not started (proposed in the same chat): Council score (vote
   weighted by each method's regime track record), Wisdom Court
   (test MARKET_WISDOM principles), Quiet Accumulation (pullback +
@@ -152,8 +163,15 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 - **P1 (new): DR-23 RBI repo rate**
 - P2: DR-08–DR-15, DR-18, DR-19
 
-### Phase 4 (deferred until traders done)
-- ID52 Data source plugin system
+### Deferred roadmap work
+- ID52 Data source plugin system: trader integration is complete; owner
+  reprioritization and source/licensing choices are still needed.
+- Portal open decisions (PORTAL_REDESIGN.md §6): exact RCP/Episodic
+  Pivot grammar; Multibagger growth/quality blend; separate or shared
+  Funda/Swing universes; primary data source; signature similarity
+  metric; whether to retire legacy Streamlit.
+- Proposed League additions (Council score, Wisdom Court, Quiet
+  Accumulation, Discipline Coach) are unstarted and need prioritization.
 
 ### Deferred (owner chose to skip)
 - Settings `.env` / admin creds rotation
