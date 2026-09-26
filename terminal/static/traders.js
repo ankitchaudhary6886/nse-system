@@ -62,7 +62,9 @@ async function selectTrader(slug) {
           <th>Method</th><th>Direction</th><th>Description</th>
         </tr></thead>
         <tbody>
-        ${t.methods.map(m => `<tr>
+        ${t.methods.map((m, index) => `<tr class="click-row" tabindex="0"
+          role="button" data-method-index="${index}"
+          aria-label="Open method details for ${m.name}">
           <td><b>${m.name}</b></td>
           <td>${m.direction}</td>
           <td style="color:#9fb0cc;">${m.description || ""}</td>
@@ -74,6 +76,18 @@ async function selectTrader(slug) {
       <p class="strategy-hint">Press <b>Run Scan</b> to compute signals across the universe.</p>
     </div>
   `;
+  panel.querySelectorAll("[data-method-index]").forEach((row) => {
+    const method = t.methods[Number(row.dataset.methodIndex)];
+    const open = () => window.openDataDetail?.(
+      `${t.name} · ${method.name}`, method);
+    row.addEventListener("click", open);
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
+    });
+  });
   const btn = document.getElementById("traderScanBtn");
   if (btn) btn.addEventListener("click", () => runTraderScan(slug));
 }
@@ -131,7 +145,8 @@ function _renderTraderSignals(r) {
                      : conf === "MED" ? "" : "chk-fail";
         const entry = s.entry != null ? Number(s.entry).toFixed(2) : "—";
         const stop = s.stop != null ? Number(s.stop).toFixed(2) : "—";
-        return `<tr class="strategy-row" data-sym="${s.symbol}">
+        return `<tr class="strategy-row click-row" tabindex="0" role="button"
+          aria-label="Open research for ${s.symbol}" data-sym="${s.symbol}">
           <td><b>${s.symbol}</b></td>
           <td><span class="${dirCls}">${s.direction}</span></td>
           <td>${s.signal_type || "—"}</td>
@@ -149,11 +164,17 @@ function _renderTraderSignals(r) {
 
 function _bindTraderSignalRows(box) {
   box.querySelectorAll(".strategy-row").forEach(row => {
-    row.addEventListener("click", () => {
+    const open = () => {
       const sym = row.dataset.sym;
       if (!sym) return;
-      setView("research");
-      loadSymbol(sym);
+      window.openSymbolResearch?.(sym);
+    };
+    row.addEventListener("click", open);
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
     });
   });
 }

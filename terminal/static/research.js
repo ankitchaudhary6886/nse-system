@@ -48,7 +48,8 @@ function _renderCandleBlock(data) {
       ? "border-bottom:1px solid rgba(255,255,255,.05); background:rgba(96,165,250,.10);"
       : "border-bottom:1px solid rgba(255,255,255,.05);";
     const relClass = n >= 10 ? "rel-strong" : n >= 5 ? "rel-mod" : "rel-thin";
-    html += `<tr style="${rowStyle}">
+    html += `<tr class="click-row" tabindex="0" role="button"
+      data-candle-key="${k}" style="${rowStyle}">
       <td style="padding:6px 4px;"><b>${k}</b>${isCurrent ? " ←" : ""}</td>
       <td style="padding:6px 4px;"><span class="rel-pill ${relClass}">${n}</span></td>
       <td style="padding:6px 4px;">${s.n_triggered || 0}</td>
@@ -102,11 +103,12 @@ function _renderSignatureBlock(data) {
           <th style="padding:6px 4px;">MFE</th>
           <th style="padding:6px 4px;">MAE</th>
         </tr></thead><tbody>`;
-    sm.sample_matches.forEach(m => {
+    sm.sample_matches.forEach((m, index) => {
       const oc = m.outcome === "WIN" ? "chk-ok"
                : m.outcome === "LOSS" ? "chk-fail" : "";
-      html += `<tr style="border-bottom:1px solid rgba(255,255,255,.05); cursor:pointer;"
-        onclick="window.jumpResearch && window.jumpResearch('${m.symbol}')">
+      html += `<tr class="click-row" tabindex="0" role="button"
+        aria-label="Open research for ${m.symbol}" data-match-index="${index}"
+        style="border-bottom:1px solid rgba(255,255,255,.05);">
         <td style="padding:6px 4px;"><b>${m.symbol}</b></td>
         <td style="padding:6px 4px;">${m.signal_date}</td>
         <td style="padding:6px 4px;"><span class="${oc}">${m.outcome || "?"}</span></td>
@@ -163,6 +165,7 @@ function renderResearch(data) {
   if (!h.n_setups) {
     html += `<p>No historical setups on this symbol.</p>`;
     box.innerHTML = html;
+    _bindResearchDetails(box, data);
     return;
   }
   html += _researchRow("Triggered",
@@ -196,7 +199,9 @@ function renderResearch(data) {
         <th style="padding:6px 4px;">Outcome</th>
       </tr></thead><tbody>`;
     data.recent_setups.forEach(s => {
-      html += `<tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+      html += `<tr class="click-row" tabindex="0" role="button"
+        data-history-index="${data.recent_setups.indexOf(s)}"
+        style="border-bottom:1px solid rgba(255,255,255,.05);">
         <td style="padding:6px 4px;">${s.signal_date}</td>
         <td style="padding:6px 4px;">${s.entry}</td>
         <td style="padding:6px 4px;">${s.mother_type || "—"}</td>
@@ -210,6 +215,46 @@ function renderResearch(data) {
   }
 
   box.innerHTML = html;
+  _bindResearchDetails(box, data);
+}
+
+function _bindResearchDetails(box, data) {
+  box.querySelectorAll("[data-match-index]").forEach((row) => {
+    const match = data.signature_match.sample_matches[
+      Number(row.dataset.matchIndex)];
+    const open = () => window.jumpResearch?.(match.symbol);
+    row.addEventListener("click", open);
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
+    });
+  });
+  box.querySelectorAll("[data-candle-key]").forEach((row) => {
+    const candle = (data.candle_stats || {})[row.dataset.candleKey];
+    const open = () => window.openDataDetail?.(
+      `${data.symbol} · ${row.dataset.candleKey} candle history`, candle);
+    row.addEventListener("click", open);
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
+    });
+  });
+  box.querySelectorAll("[data-history-index]").forEach((row) => {
+    const setup = data.recent_setups[Number(row.dataset.historyIndex)];
+    const open = () => window.openDataDetail?.(
+      `${data.symbol} · setup ${setup.signal_date}`, setup);
+    row.addEventListener("click", open);
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
+    });
+  });
 }
 
 async function loadResearch(symbol) {

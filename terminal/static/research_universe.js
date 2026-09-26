@@ -66,7 +66,9 @@ function _headerCell(col) {
   const active = _sortKey === col.key;
   const arrow = active ? (_sortDir === -1 ? " ▼" : " ▲") : "";
   const color = active ? "#60a5fa" : "#9fb0cc";
-  return `<th data-sort="${col.key}"
+  const sort = active ? (_sortDir === -1 ? "descending" : "ascending") : "none";
+  return `<th data-sort="${col.key}" tabindex="0"
+    aria-label="${col.label}; press Enter to sort" aria-sort="${sort}"
     style="text-align:${col.align}; color:${color};
     cursor:pointer; padding:6px 4px; user-select:none;">${col.label}${arrow}</th>`;
 }
@@ -86,8 +88,9 @@ function _renderUniverseTable() {
       : `<span class="rel-pill ${rel}">${r.n_setups}</span>`;
     const hi = r.pct_from_52w_high;
     const hiStr = hi == null ? "—" : hi.toFixed(1);
-    html += `<tr style="border-bottom:1px solid rgba(255,255,255,.05);
-      cursor:pointer;" data-sym="${r.symbol}">
+    html += `<tr class="click-row" tabindex="0" role="button"
+      aria-label="Open research for ${r.symbol}"
+      style="border-bottom:1px solid rgba(255,255,255,.05);" data-sym="${r.symbol}">
       <td style="padding:6px 4px;"><b>${r.symbol}</b></td>
       <td style="padding:6px 4px; color:#7f8da9;">${r.source || ""}</td>
       <td style="padding:6px 4px; color:#7f8da9;">${r.sector || "—"}</td>
@@ -137,11 +140,12 @@ async function loadResearchUniverse(computeMissing) {
     if (badge) badge.textContent = "unavailable";
   }
 }
+window.loadResearchUniverse = loadResearchUniverse;
 
 function _bindUniverseEvents(box) {
   // header clicks → sort
   box.querySelectorAll("th[data-sort]").forEach(th => {
-    th.addEventListener("click", () => {
+    const sort = () => {
       const key = th.dataset.sort;
       if (_sortKey === key) {
         _sortDir = -_sortDir;
@@ -151,11 +155,25 @@ function _bindUniverseEvents(box) {
       }
       box.innerHTML = _renderUniverseTable();
       _bindUniverseEvents(box);
+    };
+    th.addEventListener("click", sort);
+    th.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        sort();
+      }
     });
   });
   // row clicks → jump
   box.querySelectorAll("tr[data-sym]").forEach(tr => {
-    tr.addEventListener("click", () => window.jumpResearch(tr.dataset.sym));
+    const open = () => window.jumpResearch(tr.dataset.sym);
+    tr.addEventListener("click", open);
+    tr.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
+    });
   });
 }
 

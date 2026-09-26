@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NSE Intelligence Terminal</title>
-<link rel="stylesheet" href="/static/style.css?v=15">
+<link rel="stylesheet" href="/static/style.css?v=17">
 <style>
   .rel-pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; }
   .rel-strong { background: rgba(52,211,153,.18); color: #34d399; }
@@ -62,6 +62,7 @@
   .strategy-table td { padding:6px 4px;
     border-bottom:1px solid rgba(255,255,255,.04); }
   .strategy-row { cursor:pointer; }
+  .strategy-row:focus-visible { outline:2px solid #60a5fa; outline-offset:-2px; }
   .strategy-row:hover { background: rgba(96,165,250,.06); }
   .chk-ok { color:#34d399; font-weight:700; margin-right:2px; }
   .chk-fail { color:#fb7185; font-weight:700; margin-right:2px; }
@@ -173,13 +174,13 @@
 <body>
 <div class="app-shell">
   <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-mark">N</div>
-      <div>
-        <div class="brand-title">NSE Intelligence</div>
-        <div class="brand-subtitle">Momentum Terminal</div>
-      </div>
-    </div>
+    <button class="brand" type="button" data-view="research" aria-label="Go to research home">
+      <span class="brand-mark">N</span>
+      <span>
+        <span class="brand-title">NSE Intelligence</span>
+        <span class="brand-subtitle">Momentum Terminal</span>
+      </span>
+    </button>
     <nav class="nav">
       <div class="nav-group">Product lines</div>
       <button class="nav-btn" data-view="funda">💎 Funda</button>
@@ -192,10 +193,11 @@
       <button class="nav-btn" data-view="league">🏆 League</button>
       <button class="nav-btn" data-view="system">⚙️ System</button>
     </nav>
-    <div class="sidebar-footer">
-      <div class="mini-label">System</div>
-      <div class="mini-value" id="healthStatus">Checking...</div>
-    </div>
+    <button class="sidebar-footer" type="button" data-detail-url="/api/health"
+      data-detail-title="System health" aria-label="Open system health details">
+      <span class="mini-label">System</span>
+      <span class="mini-value" id="healthStatus">Checking...</span>
+    </button>
   </aside>
 
   <main class="main">
@@ -211,13 +213,26 @@
       </div>
     </div>
 
-    <div class="regime-card loading" id="regimeBanner">Loading market regime...</div>
+    <button class="regime-card loading" id="regimeBanner" type="button"
+      data-detail-url="/api/regime" data-detail-title="Market regime"
+      data-detail-related="/api/macro"
+      aria-label="Open market regime details">Loading market regime...</button>
 
     <div class="metric-grid">
-      <div class="metric-card"><span>Total Signals</span><strong id="mSignals">—</strong></div>
-      <div class="metric-card"><span>Win Rate</span><strong id="mWinRate">—</strong></div>
-      <div class="metric-card"><span>Open / Pending</span><strong id="mOpen">—</strong></div>
-      <div class="metric-card"><span>Market Universe</span><strong id="mUniverse">—</strong></div>
+      <button class="metric-card" type="button" data-view="swing" aria-label="Open swing signals">
+        <span>Total Signals</span><strong id="mSignals">—</strong>
+      </button>
+      <button class="metric-card" type="button" data-view="ledger" aria-label="Open performance ledger">
+        <span>Win Rate</span><strong id="mWinRate">—</strong>
+      </button>
+      <button class="metric-card" type="button" data-view="ledger" aria-label="Open open and pending trade details">
+        <span>Open / Pending</span><strong id="mOpen">—</strong>
+      </button>
+      <button class="metric-card" type="button" data-view="research"
+        data-scroll-target="researchUniverseBox" data-load="research-universe"
+        aria-label="Open research universe details">
+        <span>Market Universe</span><strong id="mUniverse">—</strong>
+      </button>
     </div>
 
     <!-- ================= FUNDA ================= -->
@@ -457,26 +472,33 @@
       <div class="panel" style="margin-top:18px">
         <div class="panel-header"><div><h2>📚 Documentation</h2><p>For developers / migration</p></div></div>
         <div class="setup-box">
-          <div class="level"><span>Portal redesign vision</span><strong>PORTAL_REDESIGN.md</strong></div>
-          <div class="level"><span>Instructions &amp; rules</span><strong>backlog.md</strong></div>
-          <div class="level"><span>Batch history</span><strong>EXECUTION_LOG.md</strong></div>
-          <div class="level"><span>Strategies</span><strong>data/strategies.json</strong></div>
-          <div class="level"><span>Traders</span><strong>traders/*.py</strong></div>
+          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/PORTAL_REDESIGN.md" target="_blank" rel="noopener noreferrer"><span>Portal redesign vision</span><strong>PORTAL_REDESIGN.md ↗</strong></a>
+          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/backlog.md" target="_blank" rel="noopener noreferrer"><span>Instructions &amp; rules</span><strong>backlog.md ↗</strong></a>
+          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/EXECUTION_LOG.md" target="_blank" rel="noopener noreferrer"><span>Batch history</span><strong>EXECUTION_LOG.md ↗</strong></a>
+          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/data/strategies.json" target="_blank" rel="noopener noreferrer"><span>Strategies</span><strong>strategies.json ↗</strong></a>
+          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/tree/main/traders" target="_blank" rel="noopener noreferrer"><span>Traders</span><strong>traders/ ↗</strong></a>
         </div>
       </div>
     </section>
   </main>
 </div>
-<script src="/static/cards.js?v=15"></script>
-<script src="/static/app.js?v=16"></script>
-<script src="/static/scanners.js?v=15"></script>
-<script src="/static/strategy_runs.js?v=15"></script>
-<script src="/static/research.js?v=15"></script>
-<script src="/static/research_universe.js?v=15"></script>
-<script src="/static/research_sector.js?v=15"></script>
-<script src="/static/strategies.js?v=15"></script>
-<script src="/static/strategy_editor.js?v=15"></script>
-<script src="/static/traders.js?v=15"></script>
-<script src="/static/league.js?v=18"></script>
+<dialog id="dataDetailDialog" aria-labelledby="dataDetailTitle">
+  <div class="detail-dialog-head">
+    <h2 id="dataDetailTitle">Data details</h2>
+    <button type="button" id="dataDetailClose" aria-label="Close details">Close</button>
+  </div>
+  <div class="detail-dialog-body"><pre id="dataDetailBody" class="detail-json"></pre></div>
+</dialog>
+<script src="/static/cards.js?v=17"></script>
+<script src="/static/app.js?v=17"></script>
+<script src="/static/scanners.js?v=16"></script>
+<script src="/static/strategy_runs.js?v=17"></script>
+<script src="/static/research.js?v=17"></script>
+<script src="/static/research_universe.js?v=17"></script>
+<script src="/static/research_sector.js?v=17"></script>
+<script src="/static/strategies.js?v=17"></script>
+<script src="/static/strategy_editor.js?v=16"></script>
+<script src="/static/traders.js?v=17"></script>
+<script src="/static/league.js?v=20"></script>
 </body>
 </html>

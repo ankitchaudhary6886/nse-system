@@ -104,7 +104,8 @@ function _renderStrategyPicks(r) {
     const checks = (p.checks || []).map(c =>
       `<span class="${c.ok ? 'chk-ok' : 'chk-fail'}" title="${c.field} ${c.op} ${c.want} (got ${c.got})">${c.ok ? "✓" : "✗"}</span>`
     ).join(" ");
-    html += `<tr class="strategy-row" data-sym="${p.symbol}">
+    html += `<tr class="strategy-row" tabindex="0" role="button"
+      aria-label="Open research for ${p.symbol}" data-sym="${p.symbol}">
       <td><b>${p.symbol}</b></td>
       <td>${p.sector || "—"}</td>
       <td>${p.score != null ? p.score.toFixed(3) : "—"}</td>
@@ -119,12 +120,17 @@ function _renderStrategyPicks(r) {
 
 function _bindPickCards(box) {
   box.querySelectorAll(".strategy-row").forEach(row => {
-    row.addEventListener("click", () => {
+    const open = () => {
       const sym = row.dataset.sym;
       if (!sym) return;
-      setView("research");
-      loadSymbol(sym);
-      if (window.loadResearch) setTimeout(() => window.loadResearch(sym), 500);
+      window.jumpResearch?.(sym);
+    };
+    row.addEventListener("click", open);
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
     });
   });
 }
