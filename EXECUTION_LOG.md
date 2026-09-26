@@ -1319,7 +1319,7 @@ All detectors computed inline in `traders/mcallen.py`:
   importer writes only to the new snapshot table, so no service restart
   was needed.
 
-### #093 · Cross-attest KITE against ScanX and refresh confirmed fields — IN PROGRESS
+### #093 · Cross-attest KITE against ScanX and refresh confirmed fields — VERIFIED
 - Owner clarification: use both overlapping exports to confirm shared
   records, then actively refresh the system instead of retaining only
   isolated snapshots.
@@ -1336,7 +1336,20 @@ All detectors computed inline in `traders/mcallen.py`:
 - Local application: 366 mapped symbols receive exact dual-confirmed
   current prices and any per-field corroborated ratios/capitalization;
   local broad universe is empty. Database backup retained.
-- VM application and final row counts are pending.
+- VM application: 366 fundamentals symbols refreshed/inserted
+  (fundamentals table 961 → 1,247); existing `universe_broad` close
+  refreshed for 365 symbols and market cap for 352. The 1,535-row
+  universe membership and 811,835 daily price bars were not changed.
+  Attestation ledger contains 2,193 comparable field observations:
+  1,364 accepted and 829 disagreements withheld. Three field pairs
+  lacked a comparable value. VM backup:
+  `/home/ubuntu/nse-system/data/app.db.pre-kite-reconcile-20260926-185438.bak`.
+- VM validation: all 12 focused tests passed; KITE report confirms 500
+  snapshots, 366 mapped, 134 unmapped and no source-period dates;
+  authenticated `/api/health` and `/api/deployment-check` returned 200,
+  deployment check `ALL CHECKS PASSED`; service remains active. No
+  restart was needed because only database rows and reporting code changed.
+- Status: DEPLOYED · VERIFIED on main and VM at `e780969`.
 
 ---
 

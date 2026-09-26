@@ -87,8 +87,9 @@ def report(database, as_of=None):
                 print(f"  {flag}: {count}")
         else:
             print("  none")
-        print("\nRaw source rows remain preserved. These metrics do not feed "
-              "live scoring, vetoes, signals, or backtests.")
+        print("\nRaw source rows remain preserved. Snapshot values are "
+              "research-only unless a separate, explicit cross-source "
+              "attestation promotes an individual field.")
     finally:
         conn.close()
 
