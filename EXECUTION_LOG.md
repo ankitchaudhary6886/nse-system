@@ -1351,6 +1351,51 @@ All detectors computed inline in `traders/mcallen.py`:
   restart was needed because only database rows and reporting code changed.
 - Status: DEPLOYED · VERIFIED on main and VM at `e780969`.
 
+### #094 · Apply source-aware NSE research audit — VERIFIED
+- Re-audited the incoming KITE, ScanX, and NSE equity-master files using
+  `.github/skills/nse-data-research/SKILL.md`. Added SHA-256, host-local
+  file-modified time, import time, and security-master SHA-256 to each
+  imported snapshot row; the reports expose these values and distinguish
+  file metadata from financial/publication dates.
+- Manually curated 25 abbreviated KITE labels only where each resolved to
+  a unique NSE EQ security-master symbol. KITE now maps 391/500 instruments;
+  109 remain unresolved rather than guessed. The mapped same-date overlap
+  with ScanX is 390 symbols.
+- Source hashes verified identical on local and VM:
+  KITE `4528449a8fabf19d34622897b5325269df5f1d96dc2d4ee26ed64c6230039b70`;
+  ScanX `9cd3f10ce37bec111af224fd6bc39ede7059d8be9e36e1c147341e787066185c`;
+  NSE security master
+  `4b1fa28e9893d8864c3d7ad43beb24a3339b2920966d3f2c5fb82956b479b697`.
+- Reconciliation accepted 390 exact current-price comparisons, 374/390
+  market-cap comparisons, 171/389 P/E, 40/388 debt/equity, 265/390
+  dividend-yield, and 208/390 ROE comparisons under the existing field
+  rules. Of 2,337 field observations, 1,448 agreed and 889 disagreements
+  were withheld.
+- Added a freshness guard after discovering five overlapping symbols had
+  daily bars dated 2026-09-28, newer than these 2026-09-26 exports. Those
+  five accepted price comparisons were logged with their latest daily-bar
+  dates but not promoted. The other 385 confirmed current prices were
+  applied only where they did not overwrite a newer daily bar.
+- VM result: fundamentals 1,247 → 1,268 (390 symbols refreshed); existing
+  broad-universe close updated for 383 rows and market cap for 373.
+  Universe membership remained 1,535 and daily bars remained 812,660.
+  Attestations are auditable in `market_data_attestations`; 5 actions are
+  `attested_stale_snapshot_not_applied`.
+- VM backups retained:
+  `/home/ubuntu/nse-system/data/app.db.pre-scanx-20260928-150239.bak`,
+  `/home/ubuntu/nse-system/data/app.db.pre-kite-20260928-150246.bak`,
+  and pre-reconciliation
+  `/home/ubuntu/nse-system/data/app.db.pre-kite-reconcile-20260928-151032.bak`.
+- The untracked NIFTY 50 CSV was structurally checked (247 unique OHLC
+  dates, no duplicate dates or OHLC-bound violations) but has no verified
+  origin. The official NSE history request timed out, so it was not added
+  to any price or benchmark table; it is not the NIFTY 500 dataset required
+  by DR-20. File SHA-256:
+  `b05cf95678cf58d4db648e795ef0db17efa788d6964f36029e74717e299e6d17`.
+- Validation: 15 unit tests passed locally and on the VM. VM terminal
+  service remains active; no restart was needed because the runtime API
+  was not changed. Code is on `main`/VM at `1202156`.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS
