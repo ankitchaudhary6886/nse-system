@@ -74,6 +74,45 @@ class KiteReconcileTests(unittest.TestCase):
         self.assertFalse(values_agree(0, 0.001, 0.01))
         self.assertTrue(values_agree(0, 0, 0.01))
 
+    def test_attested_snapshot_does_not_overwrite_newer_daily_price(self):
+        with tempfile.TemporaryDirectory() as folder:
+            database = self._database(folder)
+            conn = sqlite3.connect(database)
+            conn.execute(
+                "CREATE TABLE prices_daily (symbol TEXT, date TEXT, close REAL)")
+            conn.execute(
+                "INSERT INTO prices_daily VALUES "
+                "('EXAMPLE','2026-09-28',105)")
+            conn.commit()
+            conn.close()
+
+            result = reconcile(database, apply=True, make_backup=False)
+
+            self.assertEqual(result["newer_daily_price_symbols"], 1)
+            self.assertEqual(result["newer_daily_close_updates_skipped"], 1)
+            self.assertEqual(
+                result["fields"]["current_price"]["stale_not_applied"], 1)
+            conn = sqlite3.connect(database)
+            self.assertEqual(
+                conn.execute(
+                    "SELECT current_price,market_cap_cr FROM fundamentals "
+                    "WHERE symbol='EXAMPLE'").fetchone(),
+                (90, 1000))
+            self.assertEqual(
+                conn.execute(
+                    "SELECT close,mcap_cr FROM universe_broad "
+                    "WHERE symbol='EXAMPLE'").fetchone(),
+                (90, 1000))
+            stale_audit = conn.execute(
+                "SELECT agreed,live_before,live_after,universe_before,"
+                "universe_after,latest_daily_price_date,action "
+                "FROM market_data_attestations WHERE field='current_price'"
+            ).fetchone()
+            self.assertEqual(stale_audit, (
+                1, 90, 90, 90, 90, "2026-09-28",
+                "attested_stale_snapshot_not_applied"))
+            conn.close()
+
     def test_only_attested_fields_update_live_and_universe_data(self):
         with tempfile.TemporaryDirectory() as folder:
             database = self._database(folder)

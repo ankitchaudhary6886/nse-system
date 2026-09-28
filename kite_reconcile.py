@@ -53,11 +53,20 @@ def _ensure_audit_table(conn):
             live_after REAL,
             universe_before REAL,
             universe_after REAL,
+            latest_daily_price_date TEXT,
             action TEXT NOT NULL,
             attested_at TEXT NOT NULL,
             PRIMARY KEY (as_of_date, symbol, field)
         )
     """)
+    columns = {
+        row[1] for row in conn.execute(
+            "PRAGMA table_info(market_data_attestations)")
+    }
+    if "latest_daily_price_date" not in columns:
+        conn.execute(
+            "ALTER TABLE market_data_attestations "
+            "ADD COLUMN latest_daily_price_date TEXT")
 
 
 def reconcile(database, as_of=SNAPSHOT_DATE, apply=False,
@@ -108,12 +117,29 @@ def reconcile(database, as_of=SNAPSHOT_DATE, apply=False,
             row["symbol"]: row for row in conn.execute(
                 "SELECT * FROM universe_broad")
         }
+        latest_price_dates = {}
+        if "prices_daily" in tables:
+            placeholders = ",".join("?" for _ in overlap)
+            latest_price_dates = {
+                row["symbol"]: row["latest_date"]
+                for row in conn.execute(
+                    "SELECT symbol,MAX(date) AS latest_date "
+                    f"FROM prices_daily WHERE symbol IN ({placeholders}) "
+                    "GROUP BY symbol",
+                    overlap,
+                )
+            }
         audit_rows = []
         updates = []
-        counts = {field: {"compared": 0, "agreed": 0, "withheld": 0}
+        counts = {field: {
+            "compared": 0, "agreed": 0, "withheld": 0,
+            "stale_not_applied": 0,
+        }
                   for field in FIELD_RULES}
+        promotion_actions = {}
         now = dt.datetime.now().astimezone().isoformat(timespec="seconds")
         for symbol in overlap:
+            latest_price_date = latest_price_dates.get(symbol)
             for field, (kite_col, scanx_col, tolerance) in FIELD_RULES.items():
                 left = kite[symbol][kite_col]
                 right = scanx[symbol][scanx_col]
@@ -131,9 +157,19 @@ def reconcile(database, as_of=SNAPSHOT_DATE, apply=False,
                 action = "withheld_source_disagreement"
                 after = before
                 if accepted:
-                    after = left
-                    action = "attested_pending"
-                    updates.append((symbol, field, left))
+                    stale_price = (
+                        field == "current_price"
+                        and latest_price_date is not None
+                        and latest_price_date > as_of
+                    )
+                    if stale_price:
+                        action = "attested_stale_snapshot_not_applied"
+                        counts[field]["stale_not_applied"] += 1
+                    else:
+                        after = left
+                        action = "attested_pending"
+                        updates.append((symbol, field, left))
+                    promotion_actions[(symbol, field)] = action
                 broad = broad_rows.get(symbol)
                 broad_field = {
                     "current_price": "close",
@@ -141,16 +177,22 @@ def reconcile(database, as_of=SNAPSHOT_DATE, apply=False,
                 }.get(field)
                 broad_before = (broad[broad_field]
                                 if broad and broad_field else None)
-                broad_after = left if accepted and broad_field else broad_before
+                broad_after = (
+                    left if accepted and broad_field
+                    and action != "attested_stale_snapshot_not_applied"
+                    else broad_before
+                )
                 audit_rows.append((
                     as_of, symbol, field, left, right, int(accepted),
                     ("exact" if tolerance == 0 else
                      f"relative_difference<={tolerance:.0%}"),
-                    before, after, broad_before, broad_after, action, now,
+                    before, after, broad_before, broad_after,
+                    latest_price_date, action, now,
                 ))
 
         broad_update_counts = {"close": 0, "mcap_cr": 0}
         broad_updates = []
+        newer_close_updates_skipped = 0
         for symbol in overlap:
             existing = broad_rows.get(symbol)
             if existing is None:
@@ -158,9 +200,12 @@ def reconcile(database, as_of=SNAPSHOT_DATE, apply=False,
             k = kite[symbol]
             s = scanx[symbol]
             if values_agree(k["last_price"], s["current_price"], 0):
-                broad_updates.append((
-                    symbol, "close", k["last_price"], existing["close"]))
-                broad_update_counts["close"] += 1
+                if latest_price_dates.get(symbol, "") > as_of:
+                    newer_close_updates_skipped += 1
+                else:
+                    broad_updates.append((
+                        symbol, "close", k["last_price"], existing["close"]))
+                    broad_update_counts["close"] += 1
             if values_agree(k["market_cap_cr"], s["market_cap_cr"], 0.01):
                 broad_updates.append((
                     symbol, "mcap_cr", k["market_cap_cr"],
@@ -174,6 +219,9 @@ def reconcile(database, as_of=SNAPSHOT_DATE, apply=False,
             "overlap_symbols": len(overlap),
             "fields": counts,
             "broad_universe_updates": broad_update_counts,
+            "newer_daily_price_symbols": sum(
+                date > as_of for date in latest_price_dates.values()),
+            "newer_daily_close_updates_skipped": newer_close_updates_skipped,
             "fundamentals_rows_before": len(live_rows),
             "fundamentals_symbols_to_refresh": len({
                 symbol for symbol, _, _ in updates}),
@@ -203,8 +251,8 @@ def reconcile(database, as_of=SNAPSHOT_DATE, apply=False,
                 "INSERT INTO market_data_attestations "
                 "(as_of_date,symbol,field,kite_value,scanx_value,agreed,"
                 "acceptance_rule,live_before,live_after,universe_before,"
-                "universe_after,action,attested_at) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                "universe_after,latest_daily_price_date,action,attested_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
                 "ON CONFLICT(as_of_date,symbol,field) DO UPDATE SET "
                 "kite_value=excluded.kite_value,"
                 "scanx_value=excluded.scanx_value,agreed=excluded.agreed,"
@@ -213,6 +261,7 @@ def reconcile(database, as_of=SNAPSHOT_DATE, apply=False,
                 "live_after=excluded.live_after,"
                 "universe_before=excluded.universe_before,"
                 "universe_after=excluded.universe_after,"
+                "latest_daily_price_date=excluded.latest_daily_price_date,"
                 "action=excluded.action,"
                 "attested_at=excluded.attested_at",
                 row)
@@ -264,23 +313,22 @@ def reconcile(database, as_of=SNAPSHOT_DATE, apply=False,
                     "UPDATE universe_broad SET mcap_cr=? WHERE symbol=?",
                     (value, symbol))
 
-        actions = {}
-        for row in audit_rows:
-            symbol, field = row[1], row[2]
-            broad_field = field in ("current_price", "market_cap_cr")
-            actions[(symbol, field)] = (
-                "updated_fundamentals_and_universe"
-                if broad_field and symbol in broad_rows
-                else "updated_fundamentals")
         for row in audit_rows:
             if row[5]:
-                action = actions.get(
-                    (row[1], row[2]), "attested_no_value_change")
+                symbol, field = row[1], row[2]
+                action = promotion_actions.get(
+                    (symbol, field), "attested_no_value_change")
+                if action == "attested_pending":
+                    action = (
+                        "updated_fundamentals_and_universe"
+                        if field in ("current_price", "market_cap_cr")
+                        and symbol in broad_rows
+                        else "updated_fundamentals")
                 conn.execute(
                     "UPDATE market_data_attestations SET action=?,"
                     "live_after=?,universe_after=? "
                     "WHERE as_of_date=? AND symbol=? AND field=?",
-                    (action, row[3], row[10], as_of, row[1], row[2]))
+                    (action, row[8], row[10], as_of, symbol, field))
 
         conn.commit()
         summary["applied"] = True

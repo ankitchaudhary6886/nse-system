@@ -17,6 +17,7 @@ Use this skill when evaluating a new data export, public web source, financial m
 - Normalize units, currencies, date/time zones, and field definitions explicitly before comparison. Check missing values, sentinels, impossible ranges, duplicates, and source-wide suspicious patterns. Retain suspect raw values but exclude them from structured use with a visible reason.
 - Keep imported snapshots research-only by default. Do not silently overwrite live fundamentals, prices, universe membership, signals, or backtests.
 - Promote data only through an explicit, documented rule appropriate to each field. Record both source values, the rule and result, the prior/current value, and the action. Accept corroborated fields individually; withhold disagreements instead of choosing a whole source or row. Do not reuse the KITE/ScanX 1% comparison rule for other fields or sources without validating that tolerance.
+- Before promotion, compare the observation date with newer live data for that same security and field. A source-agreed historical snapshot must not overwrite a later daily price; record it as attested but not applied, including the latest daily-bar date.
 - Before applying an import or reconciliation, preview its coverage and proposed changes, check idempotence, and make a database backup. After applying, verify counts, attestations, unchanged out-of-scope tables, service health, and focused tests.
 - Make errors, incomplete coverage, and blocked sources visible. Never turn missing or unavailable data into a success-shaped default.
 

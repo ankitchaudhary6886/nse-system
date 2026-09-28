@@ -56,8 +56,11 @@ exact last-price matches; and market cap, P/E, debt/equity, dividend
 yield, and ROE only when the relative source difference is at most 1%.
 Disagreements are logged and withheld. Confirmed price and market cap
 also refresh existing `universe_broad` rows; no universe members are
-added. The field-level before/after evidence is in
-`market_data_attestations`.
+added. A confirmed current-price observation is not applied when a newer
+`prices_daily` bar exists for that symbol; the accepted comparison and
+newer bar date are retained in `market_data_attestations` without rolling
+live prices backward. The field-level before/after evidence is in that
+ledger.
 
 Both importers record the source filename, content SHA-256, file
 modification timestamp, import timestamp, and SHA-256 of the NSE security
