@@ -3,7 +3,7 @@
 **Purpose:** live list of every data element the owner must provide
 to unlock remaining methods across all traders.
 
-**Last updated:** 2026-09-26 (official exchange filings selected for
+**Last updated:** 2026-09-28 (official exchange filings selected for
 point-in-time fundamentals)
 **Status legend:** OPEN · PARTIAL · DELIVERED · DEPRECATED
 
@@ -39,16 +39,18 @@ The KITE export was imported into `kite_market_snapshots`, a separate
 research-only table. Its file modification date is retained as the
 snapshot date; the file contains no financial period-end or public
 filing timestamp. The export had 600 rows representing 500 distinct
-instrument labels: 100 exact duplicate rows were collapsed; 366
+instrument labels: 100 exact duplicate rows were collapsed; 391
 instruments mapped by normalized official name, curated alias, or exact
-symbol; 134 were retained without a symbol because mapping was not
-unambiguous. The source's Average Price, Buy/Sell Quantity, Trade Value,
-and Volume columns were zero for every row and are withheld from
-structured analysis while remaining in the raw JSON.
+symbol; 109 were retained without a symbol because mapping was not
+unambiguous. Twenty-five additional abbreviations were manually curated
+against unique EQ-series entries in the NSE security master; 24 of those
+symbols overlap with ScanX. The source's Average Price, Buy/Sell Quantity,
+Trade Value, and Volume columns were zero for every row and are withheld
+from structured analysis while remaining in the raw JSON.
 
 The raw import itself does not modify live fundamentals, daily prices,
 universe membership, signals, or backtests. After both same-date source
-exports are available, `kite_reconcile.py` compares their 366 mapped
+exports are available, `kite_reconcile.py` compares their 390 mapped
 overlapping symbols and promotes only individually corroborated fields:
 exact last-price matches; and market cap, P/E, debt/equity, dividend
 yield, and ROE only when the relative source difference is at most 1%.
@@ -57,11 +59,29 @@ also refresh existing `universe_broad` rows; no universe members are
 added. The field-level before/after evidence is in
 `market_data_attestations`.
 
+Both importers record the source filename, content SHA-256, file
+modification timestamp, import timestamp, and SHA-256 of the NSE security
+master used for mapping. File modification timestamps are host metadata,
+not evidence of the underlying market-observation or publication time.
+
 Review snapshot quality with `python kite_snapshot_report.py --db
 data/app.db`; preview future reconciliations with
 `python kite_reconcile.py --db data/app.db`. The KITE/ScanX values still
 lack financial-period and filing dates, so this import does not satisfy
 DR-01 or DR-21 and is not eligible for historical replay.
+
+## NIFTY 50 history export (2026-09-28 audit)
+
+The untracked local file
+`NIFTY 50_Historical_PR_26092025to26092026.csv` contains 247 unique daily
+OHLC rows from 2025-09-26 through 2026-09-25. Date ordering and OHLC
+structure pass basic checks, but the artifact contains no source URL,
+export provenance, or publication metadata. A direct request to the
+official NSE historical-index endpoint timed out; the file therefore
+remains unverified and was not loaded into `prices_daily` or the trader
+league benchmark cache. It is NIFTY 50 data, not the NIFTY 500 history
+required by DR-20, which remains OPEN. Obtain the original source/export
+page or an official NSE download before considering benchmark use.
 
 ---
 

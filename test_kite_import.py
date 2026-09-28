@@ -50,6 +50,9 @@ class KiteImportTests(unittest.TestCase):
             writer.writerow([
                 "EXAMPLE", "Example Industries Limited", "EQ",
                 "INE000A01000"])
+            writer.writerow([
+                "ADANIENSOL", "Adani Energy Solutions Limited", "EQ",
+                "INE000B01000"])
         return export, master
 
     def test_import_preserves_raw_rows_and_only_maps_exact_names(self):
@@ -68,6 +71,9 @@ class KiteImportTests(unittest.TestCase):
             unmatched = next(row for row in snapshots if not row["symbol"])
             self.assertEqual(mapped["symbol"], "EXAMPLE")
             self.assertEqual(mapped["isin"], "INE000A01000")
+            self.assertRegex(mapped["source_sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(
+                mapped["security_master_sha256"], r"^[0-9a-f]{64}$")
             self.assertEqual(mapped["duplicate_row_count"], 2)
             self.assertIsNone(mapped["volume"])
             self.assertEqual(mapped["last_price"], 120)
@@ -78,6 +84,37 @@ class KiteImportTests(unittest.TestCase):
             self.assertIsNone(unmatched["symbol"])
             self.assertEqual(unmatched["mapping_method"], "unmatched")
             self.assertEqual(unmatched["instrument"], "Unlisted Alias")
+
+    def test_curated_abbreviation_matches_only_official_master_symbol(self):
+        with tempfile.TemporaryDirectory() as directory:
+            export, master = self._files(directory)
+            source_row = self._read_rows(export)[0]
+            source_row["Instrument"] = "ADANI ENERGY SOLUTION"
+
+            snapshots, _, _ = _snapshot_rows(
+                [source_row], master, "2026-09-26", export)
+
+            self.assertEqual(snapshots[0]["symbol"], "ADANIENSOL")
+            self.assertEqual(snapshots[0]["mapping_method"], "curated_alias")
+            self.assertEqual(
+                snapshots[0]["company_name"], "Adani Energy Solutions Limited")
+
+    def test_curated_alias_with_missing_master_symbol_fails_explicitly(self):
+        with tempfile.TemporaryDirectory() as directory:
+            export, master = self._files(directory)
+            source_row = self._read_rows(export)[0]
+            source_row["Instrument"] = "ADANI ENERGY SOLUTION"
+            with master.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.writer(stream)
+                writer.writerow([
+                    "SYMBOL", "NAME OF COMPANY", "SERIES", "ISIN NUMBER"])
+                writer.writerow([
+                    "EXAMPLE", "Example Industries Limited", "EQ",
+                    "INE000A01000"])
+            with self.assertRaisesRegex(
+                    ValueError, "missing NSE security-master symbol"):
+                _snapshot_rows(
+                    [source_row], master, "2026-09-26", export)
 
     def test_import_is_idempotent_and_never_changes_live_fundamentals(self):
         with tempfile.TemporaryDirectory() as directory:

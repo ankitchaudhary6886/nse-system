@@ -59,6 +59,27 @@ def report(database, as_of=None):
             "PRAGMA table_info(scanx_fundamentals_snapshots)")}
         print(f"ScanX export snapshot: {selected_date} ({row_count} rows)")
         print("Underlying financial-period end / publication date: not supplied")
+        provenance_columns = (
+            "source_file", "source_sha256", "source_modified_at",
+            "security_master_file", "security_master_sha256", "imported_at",
+        )
+        if all(name in cols for name in provenance_columns):
+            provenance = conn.execute(
+                "SELECT DISTINCT " + ",".join(provenance_columns) +
+                " FROM scanx_fundamentals_snapshots WHERE as_of_date=?",
+                (selected_date,),
+            ).fetchall()
+            for artifact in provenance:
+                print(
+                    "Source artifact: "
+                    f"{artifact[0]} (SHA-256 {artifact[1]}, "
+                    f"modified {artifact[2]}, imported {artifact[5]})")
+                print(
+                    "Security master: "
+                    f"{artifact[3]} (SHA-256 {artifact[4]})")
+            print(
+                "File modification time is host metadata, not proof of "
+                "market-observation or publication time.")
         for group, fields in GROUPS.items():
             present = [field for field in fields if field in cols]
             if not present:

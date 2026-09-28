@@ -2,6 +2,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+import csv
 from pathlib import Path
 
 from scanx_import import (
@@ -56,6 +57,19 @@ class ScanXImportTests(unittest.TestCase):
     def test_import_migrates_snapshots_without_mutating_fundamentals(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database = Path(temp_dir) / "test.db"
+            source_file = Path(temp_dir) / "scanx.csv"
+            master_file = Path(temp_dir) / "master.csv"
+            with source_file.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.writer(stream)
+                writer.writerow(["Name", "Free Cash Flow"])
+                writer.writerow(["Example Co", "500"])
+            with master_file.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.writer(stream)
+                writer.writerow([
+                    "SYMBOL", "NAME OF COMPANY", "SERIES", "ISIN NUMBER"])
+                writer.writerow([
+                    "EXAMPLE", "Example Company Limited", "EQ",
+                    "INE000A01000"])
             conn = sqlite3.connect(database)
             conn.executescript("""
                 CREATE TABLE fundamentals (
@@ -103,9 +117,9 @@ class ScanXImportTests(unittest.TestCase):
             }
             snapshot = _snapshot_values(
                 self._item(source_row), "2026-09-26")
-            _apply(database, [snapshot], "scanx.csv")
+            _apply(database, [snapshot], source_file, master_file)
             snapshot["free_cash_flow"] = 600
-            _apply(database, [snapshot], "scanx.csv")
+            _apply(database, [snapshot], source_file, master_file)
 
             conn = sqlite3.connect(database)
             self.assertEqual(
@@ -128,6 +142,14 @@ class ScanXImportTests(unittest.TestCase):
                 "PRAGMA table_info(scanx_fundamentals_snapshots)")}
             self.assertIn("financial_period_end", columns)
             self.assertIn("data_quality_flags", columns)
+            self.assertIn("source_sha256", columns)
+            provenance = conn.execute(
+                "SELECT source_sha256,security_master_sha256,"
+                "source_modified_at FROM scanx_fundamentals_snapshots "
+                "WHERE as_of_date='2026-09-26'").fetchone()
+            self.assertRegex(provenance[0], r"^[0-9a-f]{64}$")
+            self.assertRegex(provenance[1], r"^[0-9a-f]{64}$")
+            self.assertIsNotNone(provenance[2])
             conn.close()
 
 

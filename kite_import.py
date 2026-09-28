@@ -15,11 +15,47 @@ from collections import Counter
 from pathlib import Path
 
 from config import DB_PATH
+from data_sources.provenance import file_metadata
 from scanx_import import ALIASES, _master_index, _norm
 
 
-NORMALIZED_ALIASES = {_norm(label): symbol
-                      for label, symbol in ALIASES.items()}
+# Abbreviated KITE display names manually matched to unique EQ-series entries
+# in the contemporaneous NSE security master. Fuzzy matches are never applied.
+KITE_ALIASES = {
+    "AADHAR HOUSING FINANCE L": "AADHARHFC",
+    "ADANI ENERGY SOLUTION": "ADANIENSOL",
+    "ADITYA BIRLA FASHION & RT": "ABFRL",
+    "ADITYA BIRLA REAL EST": "ABREL",
+    "AMBER ENTERPRISES (I)": "AMBER",
+    "BOMBAY BURMAH TRADING COR": "BBTC",
+    "CCL PRODUCTS (I)": "CCL",
+    "EMCURE PHARMACEUTICALS L": "EMCURE",
+    "EMMVEE PHOTOVOLTAIC PWR L": "EMMVEE",
+    "HEG ADVANCED MATERIAL": "HEGAM",
+    "HIMADRI SPECIALITY CHEM L": "HSCL",
+    "HONEYWELL AUTOMATION IND": "HONAUT",
+    "INFO EDGE (I)": "NAUKRI",
+    "JAIN RESOURCE RECYCLING L": "JAINREC",
+    "KALYAN JEWELLERS IND": "KALYANKJIL",
+    "KAYNES TECHNOLOGY IND": "KAYNES",
+    "LLOYDS METALS N ENERGY L": "LLOYDSME",
+    "MAZAGON DOCK SHIPBUIL": "MAZDOCK",
+    "MULTI COMMODITY EXCHANGE": "MCX",
+    "NUVAMA WEALTH MANAGE": "NUVAMA",
+    "SHYAM METALICS AND ENGY L": "SHYAMMETL",
+    "TATA CONSUMER PRODUCT": "TATACONSUM",
+    "TORRENT PHARMACEUTICALS L": "TORNTPHARM",
+    "VEDANTA ALUMINIUM METAL L": "VAML",
+    "VIJAYA DIAGNOSTIC CEN": "VIJAYA",
+}
+
+NORMALIZED_ALIASES = {}
+for label, symbol in {**ALIASES, **KITE_ALIASES}.items():
+    key = _norm(label)
+    previous = NORMALIZED_ALIASES.get(key)
+    if previous is not None and previous != symbol:
+        raise ValueError(f"Conflicting curated KITE alias: {label!r}")
+    NORMALIZED_ALIASES[key] = symbol
 
 VALUE_COLUMNS = {
     "average_price": ("Average Price",),
@@ -103,8 +139,11 @@ def _instrument_map(instrument, by_name, by_symbol):
     alias_symbol = NORMALIZED_ALIASES.get(key)
     if alias_symbol:
         security = by_symbol.get(alias_symbol)
-        if security:
-            return security, "curated_alias"
+        if security is None:
+            raise ValueError(
+                f"Curated alias {instrument!r} points to missing NSE "
+                f"security-master symbol {alias_symbol!r}")
+        return security, "curated_alias"
 
     symbol_matches = [record for symbol, record in by_symbol.items()
                       if _norm(symbol) == key]
@@ -135,9 +174,8 @@ def _snapshot_rows(rows, master_path, as_of, source_path):
 
     by_name, by_symbol = _master_index(master_path)
     sentinels = _zero_sentinels(rows)
-    source_modified_at = dt.datetime.fromtimestamp(
-        Path(source_path).stat().st_mtime).astimezone().isoformat(
-            timespec="seconds")
+    source_metadata = file_metadata(source_path)
+    master_metadata = file_metadata(master_path)
     snapshots = []
     mapped_symbols = set()
     for instrument_key, item in sorted(grouped.items()):
@@ -209,7 +247,10 @@ def _snapshot_rows(rows, master_path, as_of, source_path):
             "raw_json": json.dumps(
                 row, ensure_ascii=False, sort_keys=True),
             "source_file": Path(source_path).name,
-            "source_modified_at": source_modified_at,
+            "source_sha256": source_metadata["sha256"],
+            "source_modified_at": source_metadata["modified_at"],
+            "security_master_file": master_metadata["file_name"],
+            "security_master_sha256": master_metadata["sha256"],
         })
     return snapshots, sentinels, len(rows)
 
@@ -244,7 +285,10 @@ def _apply(database, snapshots):
         "data_quality_flags": "TEXT NOT NULL DEFAULT '[]'",
         "raw_json": "TEXT NOT NULL",
         "source_file": "TEXT NOT NULL",
-        "source_modified_at": "TEXT NOT NULL",
+        "source_sha256": "TEXT",
+        "source_modified_at": "TEXT",
+        "security_master_file": "TEXT",
+        "security_master_sha256": "TEXT",
         "imported_at": "TEXT NOT NULL",
     }
     conn = sqlite3.connect(str(database), timeout=30)
@@ -304,6 +348,11 @@ def _print_summary(snapshots, duplicate_source_rows, sentinels,
         f"{name}={count}" for name, count in sorted(counts.items())))
     print("All-zero unavailable fields: " +
           (", ".join(sorted(sentinels)) if sentinels else "none"))
+    if snapshots:
+        print(f"Source SHA-256: {snapshots[0]['source_sha256']}")
+        print(
+            "NSE security-master SHA-256: "
+            f"{snapshots[0]['security_master_sha256']}")
     if apply_result is not None:
         print(f"Inserted/updated {apply_result} research snapshots.")
     unmatched = [row["instrument"] for row in snapshots if not row["symbol"]]

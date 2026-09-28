@@ -48,6 +48,27 @@ def report(database, as_of=None):
               f"{total - mapped}")
         print("Financial-period end and public filing timestamp: not supplied")
         present_metrics = [name for name in METRIC_COLUMNS if name in columns]
+        provenance_columns = (
+            "source_file", "source_sha256", "source_modified_at",
+            "security_master_file", "security_master_sha256", "imported_at",
+        )
+        if all(name in columns for name in provenance_columns):
+            provenance = conn.execute(
+                "SELECT DISTINCT " + ",".join(provenance_columns) +
+                " FROM kite_market_snapshots WHERE as_of_date=?",
+                (selected_date,),
+            ).fetchall()
+            for artifact in provenance:
+                print(
+                    "Source artifact: "
+                    f"{artifact[0]} (SHA-256 {artifact[1]}, "
+                    f"modified {artifact[2]}, imported {artifact[5]})")
+                print(
+                    "Security master: "
+                    f"{artifact[3]} (SHA-256 {artifact[4]})")
+            print(
+                "File modification time is host metadata, not proof of "
+                "market-observation or publication time.")
         selected = ",".join(f"count({name})" for name in present_metrics)
         counts = conn.execute(
             f"SELECT {selected} FROM kite_market_snapshots "

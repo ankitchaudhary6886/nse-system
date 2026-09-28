@@ -15,6 +15,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import db
+from data_sources.provenance import file_metadata
 
 
 ALIASES = {
@@ -163,6 +164,10 @@ SNAPSHOT_BASE_COLUMNS = {
     "raw_json": "TEXT NOT NULL",
     "match_method": "TEXT NOT NULL",
     "source_file": "TEXT NOT NULL",
+    "source_sha256": "TEXT",
+    "source_modified_at": "TEXT",
+    "security_master_file": "TEXT",
+    "security_master_sha256": "TEXT",
     "imported_at": "TEXT NOT NULL",
 }
 
@@ -334,10 +339,13 @@ def _backup(path):
     return target
 
 
-def _apply(path, snapshots, source_file):
+def _apply(path, snapshots, source_file, security_master_file):
     conn = sqlite3.connect(str(path))
     try:
-        imported_at = dt.datetime.now().isoformat(timespec="seconds")
+        imported_at = dt.datetime.now().astimezone().isoformat(
+            timespec="seconds")
+        source_metadata = file_metadata(source_file)
+        master_metadata = file_metadata(security_master_file)
         definitions = ", ".join(
             f"{column} {kind}" for column, kind in SNAPSHOT_BASE_COLUMNS.items())
         conn.execute(
@@ -359,6 +367,10 @@ def _apply(path, snapshots, source_file):
         for snapshot in snapshots:
             values = dict(snapshot)
             values.update(source_file=Path(source_file).name,
+                          source_sha256=source_metadata["sha256"],
+                          source_modified_at=source_metadata["modified_at"],
+                          security_master_file=master_metadata["file_name"],
+                          security_master_sha256=master_metadata["sha256"],
                           imported_at=imported_at)
             conn.execute(
                 "INSERT INTO scanx_fundamentals_snapshots "
@@ -406,7 +418,8 @@ def main(argv=None):
         if not target.is_file():
             raise FileNotFoundError(f"Target database does not exist: {target}")
         backup = _backup(target)
-        imported_at, written = _apply(target, snapshots, source)
+        imported_at, written = _apply(
+            target, snapshots, source, master)
         print(f"Imported {len(snapshots)} dated ScanX snapshots "
               f"({as_of}; {imported_at}) into {target}")
         print(f"Inserted/updated {written} rows only in "
