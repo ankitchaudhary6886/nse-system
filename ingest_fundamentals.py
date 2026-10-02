@@ -2,6 +2,7 @@ import sys
 import datetime as dt
 import pandas as pd
 import db
+from fundamentals_store import merge
 
 NUMERIC = ["current_price", "market_cap_cr", "pe", "pb", "roe", "roce",
            "debt_to_equity", "interest_coverage", "operating_margin",
@@ -22,23 +23,25 @@ def load(path):
     n = 0
     for _, r in df.iterrows():
         sym = str(r["symbol"]).strip().upper()
+        for suffix in (".NS", ".NSE", ".BO", ".BSE"):
+            if sym.endswith(suffix):
+                sym = sym[:-len(suffix)]
+                break
         if not sym:
             continue
-        conn.execute("DELETE FROM fundamentals WHERE symbol=?", (sym,))
-        conn.execute(
-            "INSERT INTO fundamentals VALUES "
-            "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (sym, r.get("name"), r.get("sector"), r.get("current_price"),
-             r.get("market_cap_cr"), r.get("pe"), r.get("pb"), r.get("roe"),
-             r.get("roce"), r.get("debt_to_equity"),
-             r.get("interest_coverage"), r.get("operating_margin"),
-             r.get("net_profit_margin"), r.get("sales_growth_3y"),
-             r.get("profit_growth_3y"), r.get("promoter_holding"),
-             r.get("pledge_pct"), r.get("fii_holding"),
-             r.get("dividend_yield"), r.get("cfo_positive"), now))
+        values = {"symbol": sym, "data_quality_flags": ["csv_import"]}
+        for col in NUMERIC:
+            if col in df.columns and pd.notna(r.get(col)):
+                values[col] = r.get(col)
+        for col in ("name", "sector"):
+            if col in df.columns and pd.notna(r.get(col)):
+                values[col] = str(r.get(col)).strip()
+        if "cfo_positive" in df.columns and pd.notna(r.get("cfo_positive")):
+            values["cfo_positive"] = int(float(r.get("cfo_positive")) != 0)
+        merge(conn, values, source=f"csv:{path}", observed_at=now)
         n += 1
     conn.commit()
-    print(f"Fundamentals CSV loaded: {n} stocks (overrides computed)")
+    print(f"Fundamentals CSV loaded: {n} stocks (non-null fields merged)")
     conn.close()
 
 if len(sys.argv) > 1:

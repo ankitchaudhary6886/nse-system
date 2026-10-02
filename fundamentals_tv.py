@@ -21,13 +21,17 @@ NOT available (returns null):
 
 Derived:
   pb            = close / book_value_per_share_fy
-  cfo_positive  = 1 if free_cash_flow_fy > 0 else 0
   fcf_fy        = free_cash_flow_fy (raw)
+
+TradingView's return_on_invested_capital field is stored as ROIC, not ROCE.
+TradingView does not expose operating cash flow in this probe, so FCF is not
+used as a CFO proxy.
 """
 import sys
 import time
 import datetime as dt
 import db
+from fundamentals_store import merge
 from data_sources import ProviderFetchError, get_registry
 from log_utils import get_logger
 
@@ -124,9 +128,6 @@ def run(limit=None):
             pb = (close / bvps) if (close and bvps and bvps > 0) else None
 
             fcf = m.get("free_cash_flow_fy")
-            cfo_flag = None
-            if fcf is not None:
-                cfo_flag = 1 if fcf > 0 else 0
 
             mcap = m.get("market_cap_basic")
             div_yield = m.get("dividends_yield")
@@ -141,7 +142,8 @@ def run(limit=None):
                 "pe": m.get("price_earnings_ttm"),
                 "pb": pb,
                 "roe": m.get("return_on_equity_fy"),
-                "roce": m.get("return_on_invested_capital_fy"),
+                "roce": None,
+                "roic": m.get("return_on_invested_capital_fy"),
                 "debt_to_equity": m.get("debt_to_equity_fy"),
                 "interest_coverage": None,      # not available
                 "operating_margin": m.get("operating_margin_fy"),
@@ -152,23 +154,18 @@ def run(limit=None):
                 "pledge_pct": None,             # not available
                 "fii_holding": None,            # not available
                 "dividend_yield": div_yield,
-                "cfo_positive": cfo_flag,
-                "uploaded_at": now,
                 "beta_1y": m.get("beta_1_year"),
                 "eps_fy": m.get("earnings_per_share_fy"),
                 "book_value": bvps,
                 "ev_ebitda": m.get("enterprise_value_ebitda_ttm"),
                 "fcf_fy": fcf,
                 "net_debt_fy": None,            # not directly available
-                "data_source": "tradingview",
+                "data_quality_flags": [
+                    "tradingview_roic_not_roce",
+                    "tradingview_cfo_unavailable",
+                ],
             }
-
-            cols = list(values.keys())
-            placeholders = ",".join("?" for _ in cols)
-            conn.execute(
-                f"INSERT OR REPLACE INTO fundamentals ({','.join(cols)}) "
-                f"VALUES ({placeholders})",
-                [values[k] for k in cols])
+            merge(conn, values, source="tradingview", observed_at=now)
             saved += 1
             # Count non-null core fields
             for k in ("roce", "roe", "pe", "debt_to_equity"):

@@ -170,7 +170,7 @@ async function loadTopPicks() {
     (data.picks || []).forEach(x => {
       const subtitle = x.sector || "Unknown sector";
       const primary = `Composite ${(x.composite * 100).toFixed(0)} · `
-        + `🧠 ${(x.p_win * 100).toFixed(0)}% · `
+        + `🧠 model +10%/20 sessions ${(x.p_win * 100).toFixed(0)}% (uncal.) · `
         + `🏦 accum ${x.accum.toFixed(2)}`;
       const secondary = `sector RS ${(x.sector_rs * 100).toFixed(0)}`
         + (x.delivery != null ? ` · 📦 ${(x.delivery * 100).toFixed(0)}` : "");
@@ -200,7 +200,7 @@ async function loadSwing() {
   for (const s of signals) {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${s.date}</td>
-      <td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="outcome PENDING">🧠${(s.p_win * 100).toFixed(0)}%</span>` : ""} ${s.mode === "ALL_WEATHER" ? '<span class="outcome TIMEOUT">AW</span>' : ""}</td>
+      <td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="outcome PENDING" title="Model estimate of +10% return within 20 sessions; uncalibrated, not a trade win certainty.">🧠 +10%/20s ${(s.p_win * 100).toFixed(0)}% (uncal.)</span>` : ""} ${s.mode === "ALL_WEATHER" ? '<span class="outcome TIMEOUT">AW</span>' : ""}</td>
       <td>${fmt(s.trigger)}</td><td>${fmt(s.stop)}</td><td>${fmt(s.target)}</td>
       <td>${fmt(s.risk_pct, "%")}</td>
       <td>${s.pullback ? (s.pullback * 100).toFixed(1) + "%" : "—"}</td>
@@ -374,7 +374,7 @@ async function loadRadar() {
         const subtitle = `1M ${fmt(x.perf1m, "%")} · 3M ${fmt(x.perf3m, "%")} · Vol ${fmt(x.relvol, "x")}`;
         const primary = `₹${fmt(x.mcap_cr)} cr mcap`;
         const secondary = x.p_win != null
-          ? `🧠 P(WIN) ${(x.p_win * 100).toFixed(0)}%` : "";
+          ? `🧠 Model +10%/20 sessions ${(x.p_win * 100).toFixed(0)}% (uncalibrated; not trade-win certainty)` : "";
         box.appendChild(window.renderUnifiedCard({
           symbol: x.symbol, subtitle, primary, secondary,
         }));
@@ -717,23 +717,25 @@ function renderSizing(sz) {
     compact = `<div class="level"><span>Sizing</span><strong>unavailable yet</strong></div>`;
     details = capitalEditor(sz.capital);
   } else if (sz.shares !== undefined) {
-    compact = `<div class="level"><span>Suggested position</span><strong>₹${sz.suggested_value.toLocaleString()} (${sz.alloc_pct}%)</strong></div>
-      <div class="level"><span>Qty @ trigger</span><strong>${sz.shares} shares</strong></div>`;
+    compact = `<div class="level"><span>Suggested position</span><strong>₹${sz.suggested_value.toLocaleString()} (${sz.actual_alloc_pct ?? sz.alloc_pct}%)</strong></div>
+      <div class="level"><span>Qty @ trigger</span><strong>${sz.shares} shares${sz.actionable === false ? " (not actionable)" : ""}</strong></div>`;
     details = `
       <div class="level"><span>Capital</span><strong>₹${sz.capital.toLocaleString()}</strong></div>
-      <div class="level"><span>Win prob (${sz.basis})</span><strong>${(sz.p_win * 100).toFixed(0)}%</strong></div>
+      <div class="level"><span>Trade win probability</span><strong>Unknown — not used for sizing</strong></div>
       <div class="level"><span>Regime (${sz.regime_level})</span><strong>×${sz.regime_mult}</strong></div>
       <div class="level"><span>Quality (shape ${sz.shape_score ?? "—"})</span><strong>×${sz.quality_mult}</strong></div>
-      <div class="level"><span>Kelly / Half-Kelly</span><strong>${sz.kelly_pct}% / ${sz.half_kelly_pct}%</strong></div>
+      <div class="level"><span>Kelly / Half-Kelly</span><strong>Not used</strong></div>
       <div class="level"><span>Binding cap</span><strong>${sz.binding_cap}</strong></div>
-      <div class="level"><span>Max loss at stop</span><strong>₹${sz.risk_amount.toLocaleString()} (${sz.risk_pct}%)</strong></div>`;
+      <div class="level"><span>Planned stop risk</span><strong>₹${sz.risk_amount.toLocaleString()} (${sz.actual_planned_risk_pct ?? sz.risk_pct}%)</strong></div>
+      <div class="level"><span>Risk note</span><strong>${sz.risk_note || "Gaps and costs excluded"}</strong></div>`;
   } else {
     compact = `<div class="level"><span>Suggested allocation</span><strong>${sz.alloc_pct}% of capital</strong></div>`;
     details = `
       <div class="level"><span>Capital</span><strong>₹${sz.capital.toLocaleString()}</strong></div>
-      <div class="level"><span>Win prob (${sz.basis})</span><strong>${(sz.p_win * 100).toFixed(0)}%</strong></div>
+      <div class="level"><span>Trade win probability</span><strong>Unknown — not used for sizing</strong></div>
       <div class="level"><span>Regime (${sz.regime_level})</span><strong>×${sz.regime_mult}</strong></div>
-      <div class="level"><span>Quality (shape ${sz.shape_score ?? "—"})</span><strong>×${sz.quality_mult}</strong></div>`;
+      <div class="level"><span>Quality (shape ${sz.shape_score ?? "—"})</span><strong>×${sz.quality_mult}</strong></div>
+      <div class="level"><span>Status</span><strong>${sz.reason || "No trigger/stop: quantity not actionable"}</strong></div>`;
   }
   box.innerHTML = `
     <h3 style="margin:0;font-size:15px;">💰 Position Sizing</h3>

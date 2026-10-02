@@ -81,9 +81,13 @@ class BacktestResult:
     def max_drawdown(self):
         if not self.trades:
             return 0.0
-        eq = np.array([self.initial_capital] +
-                      [self.initial_capital * (1 + t.pnl_pct)
-                       for t in self.trades])
+        # This is a research-only sequential trade ledger, not an executable
+        # portfolio curve.  Build it cumulatively; the old implementation
+        # compared each individual trade return with initial capital.
+        equity = [self.initial_capital]
+        for t in self.trades:
+            equity.append(equity[-1] * (1 + t.pnl_pct))
+        eq = np.array(equity)
         peak = np.maximum.accumulate(eq)
         return float(np.max((peak - eq) / peak))
 
@@ -98,6 +102,15 @@ class BacktestResult:
         for t in self.trades:
             r *= (1 + t.pnl_pct)
         return r - 1.0 if self.trades else 0.0
+
+    def summary(self):
+        """Human-readable legacy API, with honest metric scope labels."""
+        return (f"Research-only synthetic closed-trade sequence (not a portfolio)\n"
+                f"Trades: {self.total_trades} | Win rate: {self.win_rate:.1%} | "
+                f"Profit factor: {self.profit_factor:.2f}\n"
+                f"Sequence return: {self.total_return:.2%} | "
+                f"Sequence max drawdown: {self.max_drawdown:.2%}\n"
+                f"Average holding days: {self.avg_holding_days:.1f}")
 
 
 def _naive_index(df):
