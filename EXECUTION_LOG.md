@@ -1455,7 +1455,26 @@ All detectors computed inline in `traders/mcallen.py`:
   because another field on the row came from TradingView.
 - Validation: focused tests verify preview-only behavior, preservation of
   current values and existing flags, source-specific targeting, and idempotence.
-  Full local suite is now 31 tests; production tagging awaits preview and backup.
+  Full local suite is now 31 tests; production tagging and its checks are in #099.
+
+### #099 - Apply legacy deprecation flags on VM - VERIFIED
+- Preview identified 887 rows with ambiguous legacy values: 860
+  `cfo_positive` fields and 878 `roce` fields (some rows have both). The
+  selection requires missing field-level provenance or explicit TradingView
+  provenance; known non-TradingView field sources were not tagged.
+- Created `/home/ubuntu/nse-system/data/app.db.pre-legacy-deprecated-20261002-191739.bak`;
+  backup `PRAGMA integrity_check` returned `ok`.
+- Applied only the row quality flag `legacy_deprecated` to 887 rows.
+  Existing numeric values were compared against the backup and unchanged;
+  existing flags were preserved. A second preview found all 887 rows already
+  flagged and proposed zero further changes.
+- Fundamentals (1,268), prices (815,135), and broad-universe rows (1,535)
+  remain unchanged. The 31-test suite passes on both laptop and VM;
+  authenticated `/api/health` returns HTTP 200 and the service is active.
+- Removal gate: clear only the flagged legacy values immediately after DR-01
+  v2 dated-fundamentals backfill is verified against period-end and
+  public-availability requirements. Keep schema columns until compatibility
+  is reviewed separately.
 
 ---
 

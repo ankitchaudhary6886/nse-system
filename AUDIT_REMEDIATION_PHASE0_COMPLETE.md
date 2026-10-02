@@ -22,6 +22,9 @@ The full suite passed locally and on the VM.
 
 Schema additions are idempotent migrations. The local historical NIFTY CSV
 has unknown provenance and was intentionally not staged, promoted, or deployed.
+On the VM, 887 rows were tagged `legacy_deprecated` (860 candidate
+`cfo_positive` fields and 878 candidate `roce` fields). The numeric values
+were verified unchanged against a pre-tag backup.
 
 ## Legacy-value retirement gate
 

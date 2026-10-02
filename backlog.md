@@ -128,7 +128,7 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 | ID68  | Steve Nison               | DONE · VERIFIED |
 | ID69  | Tushar Chande             | DONE · VERIFIED |
 | ID70  | William O'Neil            | DONE · VERIFIED |
-| ID71  | Retire legacy fundamentals proxies | BLOCKED · preserve and flag until DR-01 v2 backfill verified |
+| ID71  | Retire legacy fundamentals proxies | BLOCKED · 887 rows flagged; clear only after DR-01 v2 backfill verified |
 | ID72  | Fred McAllen              | DONE · VERIFIED |
 | ID73  | McAllen theses capture    | DONE         |
 | ID74  | Aseem Singhal             | DONE         |
