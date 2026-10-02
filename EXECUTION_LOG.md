@@ -1426,6 +1426,23 @@ All detectors computed inline in `traders/mcallen.py`:
   validation. The unverified NIFTY 50 CSV remains uncommitted and unpromoted.
 - Legacy ambiguous values remain unchanged pending the owner's policy choice.
 
+### #097 - Publish and deploy audit remediation - VERIFIED
+- Main merged and published to GitHub at `33ee8fc`; VM fast-forwarded to the
+  same commit. No source/data import or ML training was run.
+- Created online SQLite backup
+  `data/app.db.pre-audit-20261002-183658.bak`; `PRAGMA integrity_check`
+  returned `ok` for both backup and live DB.
+- Confirmed migration columns `fundamentals.source_metadata` and
+  `pwin_daily.model_version` are present. Fundamentals (1,268), daily prices
+  (815,135), and broad-universe rows (1,535) match the pre-deployment backup.
+- `nse-terminal.service` is active; authenticated `/api/health` returned HTTP
+  200 with `ok=true`. The 30-test suite passed locally and on the VM.
+- `/api/deployment-check` returned HTTP 200 with one failed freshness check:
+  `universe_broad` last updated 34 days ago (1,535 rows). This is a visible
+  data freshness issue, not a code-deployment failure; no refresh was triggered.
+- The provenance-unknown NIFTY CSV remains uncommitted, unapplied, and absent
+  from the VM.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS
