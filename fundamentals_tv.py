@@ -21,6 +21,7 @@ NOT available (returns null):
 
 Derived:
   pb            = close / book_value_per_share_fy
+  roic          = return_on_invested_capital_fy
   fcf_fy        = free_cash_flow_fy (raw)
 
 TradingView's return_on_invested_capital field is stored as ROIC, not ROCE.
@@ -95,6 +96,45 @@ def _universe(conn, limit=None):
     return out[:limit] if limit else out
 
 
+def _fundamentals_values(sym, metrics, sectors, retrieved_at):
+    close = metrics.get("close")
+    bvps = metrics.get("book_value_per_share_fy")
+    pb = (close / bvps) if (
+        close is not None and bvps is not None and bvps > 0) else None
+    mcap = metrics.get("market_cap_basic")
+    return {
+        "symbol": sym,
+        "name": metrics.get("name"),
+        "sector": sectors.get(sym),
+        "current_price": close,
+        "market_cap_cr": mcap / 1e7 if mcap is not None else None,
+        "pe": metrics.get("price_earnings_ttm"),
+        "pb": pb,
+        "roe": metrics.get("return_on_equity_fy"),
+        "roic": metrics.get("return_on_invested_capital_fy"),
+        "debt_to_equity": metrics.get("debt_to_equity_fy"),
+        "operating_margin": metrics.get("operating_margin_fy"),
+        "net_profit_margin": metrics.get("net_margin_fy"),
+        "dividend_yield": metrics.get("dividends_yield"),
+        "beta_1y": metrics.get("beta_1_year"),
+        "eps_fy": metrics.get("earnings_per_share_fy"),
+        "book_value": bvps,
+        "ev_ebitda": metrics.get("enterprise_value_ebitda_ttm"),
+        "fcf_fy": metrics.get("free_cash_flow_fy"),
+        "data_quality_flags": [
+            "financial_period_end_unknown",
+            "publication_time_unknown",
+            "operating_cash_flow_unavailable",
+        ],
+        "source_metadata": {
+            "source": "TradingView scanner",
+            "retrieved_at": retrieved_at,
+            "source_observation_date": None,
+            "financial_period_end": None,
+        },
+    }
+
+
 def run(limit=None):
     conn = db.get_conn()
     symbols = _universe(conn, limit)
@@ -122,53 +162,12 @@ def run(limit=None):
             sym = item["s"].replace("NSE:", "")
             d = item["d"]
             m = dict(zip(COLUMNS, d))
+            values = _fundamentals_values(sym, m, sectors, now[3:])
 
-            close = m.get("close")
-            bvps = m.get("book_value_per_share_fy")
-            pb = (close / bvps) if (close and bvps and bvps > 0) else None
-
-            fcf = m.get("free_cash_flow_fy")
-
-            mcap = m.get("market_cap_basic")
-            div_yield = m.get("dividends_yield")
-            # TV returns 0.4769 for 0.48% — store as-is (percent)
-
-            values = {
-                "symbol": sym,
-                "name": m.get("name"),
-                "sector": sectors.get(sym),
-                "current_price": close,
-                "market_cap_cr": (mcap / 1e7) if mcap is not None else None,
-                "pe": m.get("price_earnings_ttm"),
-                "pb": pb,
-                "roe": m.get("return_on_equity_fy"),
-                "roce": None,
-                "roic": m.get("return_on_invested_capital_fy"),
-                "debt_to_equity": m.get("debt_to_equity_fy"),
-                "interest_coverage": None,      # not available
-                "operating_margin": m.get("operating_margin_fy"),
-                "net_profit_margin": m.get("net_margin_fy"),
-                "sales_growth_3y": None,        # not available
-                "profit_growth_3y": None,       # not available
-                "promoter_holding": None,       # not available
-                "pledge_pct": None,             # not available
-                "fii_holding": None,            # not available
-                "dividend_yield": div_yield,
-                "beta_1y": m.get("beta_1_year"),
-                "eps_fy": m.get("earnings_per_share_fy"),
-                "book_value": bvps,
-                "ev_ebitda": m.get("enterprise_value_ebitda_ttm"),
-                "fcf_fy": fcf,
-                "net_debt_fy": None,            # not directly available
-                "data_quality_flags": [
-                    "tradingview_roic_not_roce",
-                    "tradingview_cfo_unavailable",
-                ],
-            }
-            merge(conn, values, source="tradingview", observed_at=now)
+            merge(conn, values, source="tradingview", observed_at=now[3:])
             saved += 1
             # Count non-null core fields
-            for k in ("roce", "roe", "pe", "debt_to_equity"):
+            for k in ("roic", "roe", "pe", "debt_to_equity"):
                 if values.get(k) is not None:
                     saved_fields += 1
 

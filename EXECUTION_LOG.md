@@ -1396,6 +1396,36 @@ All detectors computed inline in `traders/mcallen.py`:
   service remains active; no restart was needed because the runtime API
   was not changed. Code is on `main`/VM at `1202156`.
 
+### #095 - Audit remediation: fundamentals integrity - VERIFIED
+- Replaced destructive fundamentals row replacement with a non-destructive
+  field merge. Existing values survive imports that omit a field; changed
+  fields track source and update time.
+- Corrected ROE/ROCE/ROIC mapping, added separate `roic` and `source_metadata`
+  schema columns, and recorded import hashes/timestamps where local files are
+  ingested. Unknown observation/publication and financial-period dates are
+  explicitly flagged.
+- Added `integrity_report()` for review of legacy rows; it does not mutate
+  historical values. TradingView FCF is not treated as operating cash flow.
+- Validation: expanded fundamentals tests cover source attribution, null-safe
+  merging, ROE/ROCE/ROIC separation, import metadata, and legacy reporting.
+  No production DB writes were performed during tests.
+
+### #096 - Audit remediation: sizing, ML, and backtest safeguards - VERIFIED
+- Sizing uses fixed-risk calculations, rejects invalid inputs, caps position
+  allocation and planned risk, and does not infer sizing from `p_win`.
+- ML uses canonical price-derived features, model-version checks, and global-date
+  splits purged by label availability. Imputation values are learned from the
+  training fold and reused for inference.
+- Backtests fingerprint strategy/data for cache separation, reject unsupported
+  current-context fields, handle entry gaps and stop/target ties conservatively,
+  and mark incomplete windows as right-censored rather than closed trades.
+- Validation: `python -m unittest discover -p 'test_*.py' -v` passed 30 tests;
+  Python compilation checks passed. The complete suite ran after installing
+  already-declared dependencies missing from the local environment.
+- No live database import, training run, or VM deployment occurred during
+  validation. The unverified NIFTY 50 CSV remains uncommitted and unpromoted.
+- Legacy ambiguous values remain unchanged pending the owner's policy choice.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS

@@ -8,6 +8,8 @@ Modes:
 import os
 import sys
 import time
+import datetime as dt
+import hashlib
 import pandas as pd
 import db
 from fundamentals_store import merge
@@ -20,8 +22,8 @@ ALIASES = {
     "roe": "roe", "return_on_equity": "roe",
     "roic": "roic", "return_on_invested_capital": "roic",
     "pe": "pe", "p/e": "pe", "pe_ratio": "pe", "trailing_pe": "pe",
-    "debt_to_equity": "debt_to_equity", "d/e": "debt_to_equity",
-    "de_ratio": "debt_to_equity",
+    "debt_to_equity": "debt_to_equity", "debt_eq": "debt_to_equity",
+    "d/e": "debt_to_equity", "de_ratio": "debt_to_equity",
     "promoter_holding": "promoter_holding", "promoter": "promoter_holding",
     "promoter_pct": "promoter_holding",
     "mcap_cr": "market_cap_cr", "market_cap_cr": "market_cap_cr",
@@ -41,7 +43,17 @@ def _table_cols(conn):
     return [r[1] for r in conn.execute(
         "PRAGMA table_info(fundamentals)")]
 
-def _upsert(conn, vals, source):
+def _sha256_file(path):
+    with open(path, "rb") as source:
+        return hashlib.sha256(source.read()).hexdigest()
+
+
+def _upsert(conn, vals, source, source_metadata=None):
+    vals = dict(vals)
+    vals["data_quality_flags"] = [
+        "financial_period_end_unknown", "publication_time_unknown"]
+    if source_metadata is not None:
+        vals["source_metadata"] = source_metadata
     return merge(conn, vals, source=source)
 
 def ingest_csv(path=CSV_PATH):
@@ -49,6 +61,15 @@ def ingest_csv(path=CSV_PATH):
         print(f"[FUND] no csv at {path}")
         return 0
     conn = db.get_conn()
+    import_metadata = {
+        "filename": os.path.basename(path),
+        "sha256": _sha256_file(path),
+        "source_modified_at": dt.datetime.fromtimestamp(
+            os.path.getmtime(path)).astimezone().isoformat(),
+        "imported_at": dt.datetime.now().astimezone().isoformat(),
+        "source_observation_date": None,
+        "financial_period_end": None,
+    }
     table_cols = set(_table_cols(conn))
     df = pd.read_csv(path)
     colmap = {}
@@ -78,7 +99,7 @@ def ingest_csv(path=CSV_PATH):
                 except Exception:
                     continue
         if vals.get("symbol"):
-            _upsert(conn, vals, source=f"csv:{os.path.basename(path)}")
+            _upsert(conn, vals, "fundamentals_csv", import_metadata)
             n += 1
     conn.commit()
     conn.close()
@@ -112,7 +133,11 @@ def refresh_yahoo(limit=100):
         put("market_cap_cr", "marketCap", 1e-7)
 
         if len(vals) > 1:
-            _upsert(conn, vals, source="yahoo")
+            _upsert(conn, vals, "yahoo_finance", {
+                "retrieved_at": dt.datetime.now().astimezone().isoformat(),
+                "source_observation_date": None,
+                "financial_period_end": None,
+            })
             n += 1
         time.sleep(0.3)
     conn.commit()

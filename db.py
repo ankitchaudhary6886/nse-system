@@ -231,6 +231,7 @@ MIGRATIONS = [
     ("fundamentals", "field_sources", "TEXT"),
     ("fundamentals", "field_updated_at", "TEXT"),
     ("fundamentals", "data_quality_flags", "TEXT"),
+    ("fundamentals", "source_metadata", "TEXT"),
     ("pwin_daily", "model_version", "TEXT"),
 ]
 

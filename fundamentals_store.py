@@ -7,19 +7,20 @@ must not erase a value supplied by another source.
 import datetime as _dt
 import json
 import math
+import numbers
 
 
 META_COLUMNS = {
     "symbol", "data_source", "uploaded_at", "field_sources",
-    "field_updated_at", "data_quality_flags",
+    "field_updated_at", "data_quality_flags", "source_metadata",
 }
 
 
 def _present(value):
     if value is None:
         return False
-    if isinstance(value, float) and math.isnan(value):
-        return False
+    if isinstance(value, numbers.Real):
+        return math.isfinite(float(value))
     if isinstance(value, str) and not value.strip():
         return False
     return True
@@ -33,6 +34,22 @@ def _json_object(value):
         return parsed if isinstance(parsed, dict) else {}
     except (TypeError, ValueError):
         return {}
+
+
+def _quality_flags(value):
+    if isinstance(value, (list, tuple, set)):
+        return {str(flag) for flag in value if flag}
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except ValueError:
+            parsed = None
+        if isinstance(parsed, dict):
+            parsed = parsed.get("flags", [])
+        if isinstance(parsed, (list, tuple, set)):
+            return {str(flag) for flag in parsed if flag}
+        return set(value.split(",")) - {""}
+    return set()
 
 
 def _columns(conn):
@@ -70,14 +87,8 @@ def merge(conn, values, source=None, observed_at=None):
         field_sources[key] = source
         field_updated[key] = now
         changed.append(key)
-    old_flags = set(_json_object(old.get("data_quality_flags")).get("flags", []))
-    if not old_flags:
-        old_flags = set(str(old.get("data_quality_flags") or "").split(",")) - {""}
-    if flags:
-        if isinstance(flags, (list, tuple, set)):
-            old_flags.update(str(flag) for flag in flags if flag)
-        else:
-            old_flags.update(str(flags).split(","))
+    old_flags = _quality_flags(old.get("data_quality_flags"))
+    old_flags.update(_quality_flags(flags))
 
     metadata = {}
     if "data_source" in cols:
@@ -88,6 +99,9 @@ def merge(conn, values, source=None, observed_at=None):
         metadata["field_sources"] = json.dumps(field_sources, sort_keys=True)
     if "field_updated_at" in cols:
         metadata["field_updated_at"] = json.dumps(field_updated, sort_keys=True)
+    if "source_metadata" in cols and values.get("source_metadata") is not None:
+        metadata["source_metadata"] = json.dumps(
+            values["source_metadata"], sort_keys=True, default=str)
     if "data_quality_flags" in cols and old_flags:
         metadata["data_quality_flags"] = json.dumps(
             {"flags": sorted(old_flags)}, sort_keys=True)
@@ -124,14 +138,18 @@ def integrity_report(conn):
                 "reason": "field provenance migration is not available"}
     rows = []
     for row in conn.execute(
-            "SELECT symbol,data_source,cfo_positive,fcf_fy,field_sources "
+            "SELECT symbol,data_source,cfo_positive,roce,field_sources "
             "FROM fundamentals"):
         sources = _json_object(row[4])
         reasons = []
         if not sources:
             reasons.append("legacy row has no field provenance")
-        if row[1] == "tradingview" and row[2] is not None:
+        if ("tradingview" in sources.values() or row[1] == "tradingview") \
+                and row[2] is not None:
             reasons.append("cfo_positive may be an historical FCF sign proxy")
+        if ("tradingview" in sources.values() or row[1] == "tradingview") \
+                and row[3] is not None:
+            reasons.append("roce may contain return_on_invested_capital_fy")
         if reasons:
             rows.append({"symbol": row[0], "reasons": reasons})
     return {"remediation_needed": bool(rows), "rows": rows}

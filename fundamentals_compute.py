@@ -79,6 +79,14 @@ def fetch_one(conn, sym, name, sector):
                            else info.get("dividendYield") * 100.0),
         "cfo_positive": (1 if (ocf is not None and latest(ocf) > 0)
                          else (0 if ocf is not None else None)),
+        "data_quality_flags": [
+            "financial_period_end_unknown", "publication_time_unknown"],
+        "source_metadata": {
+            "source": "Yahoo Finance derived fundamentals",
+            "retrieved_at": dt.datetime.now().astimezone().isoformat(),
+            "source_observation_date": None,
+            "financial_period_end": None,
+        },
     }
     merge(conn, values, source="yahoo_financials",
           observed_at="calc:" + dt.datetime.now().isoformat())
