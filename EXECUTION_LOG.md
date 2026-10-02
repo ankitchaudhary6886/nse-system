@@ -1476,6 +1476,26 @@ All detectors computed inline in `traders/mcallen.py`:
   public-availability requirements. Keep schema columns until compatibility
   is reviewed separately.
 
+### #100 - Publish and deploy terminal UX and operating skills - VERIFIED
+- Published commit `782c401` to `origin/main` and fast-forwarded the VM to the
+  same commit. The terminal service remained active; no restart was needed for
+  static assets and project skills.
+- Deployed UI updates clarify navigation, market snapshot metrics, event-score
+  meaning, and fixed-risk sizing. Added project skills for recurring/one-time
+  operations and terminal UX principles.
+- Deployed `/static/index.html`, `/static/app.js`, and `/static/style.css`
+  returned HTTP 200. SHA-256 hashes for all four changed web assets matched
+  between the canonical main worktree and VM.
+- Targeted sizing, ML, backtest, and fundamentals tests passed (16 total);
+  `node --check` passed for `app.js` and `cards.js`. Browser checks confirmed
+  mobile-width overflow is absent, accessible navigation works, and sizing
+  does not present win probability or Kelly as sizing inputs.
+- An unauthenticated `/api/health` request returned HTTP 401; this probe does
+  not verify the authenticated API health response. The application service
+  was active. API behavior was not changed by this static UI release.
+- Existing untracked user configuration, data, and VM backup files were
+  preserved and not included in the release.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS
