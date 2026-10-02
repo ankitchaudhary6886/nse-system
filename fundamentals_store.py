@@ -56,6 +56,18 @@ def _columns(conn):
     return {row[1] for row in conn.execute("PRAGMA table_info(fundamentals)")}
 
 
+def _deprecated_fields(source_map, cfo_positive, roce):
+    fields = []
+    for field, value in (
+            ("cfo_positive", cfo_positive), ("roce", roce)):
+        source = source_map.get(field)
+        source_name = str(source or "").strip().lower()
+        if value is not None and (
+                not source_name or source_name.startswith("tradingview")):
+            fields.append(field)
+    return fields
+
+
 def merge(conn, values, source=None, observed_at=None):
     """Merge non-null fields in *values* into one fundamentals row.
 
@@ -138,18 +150,73 @@ def integrity_report(conn):
                 "reason": "field provenance migration is not available"}
     rows = []
     for row in conn.execute(
-            "SELECT symbol,data_source,cfo_positive,roce,field_sources "
+            "SELECT symbol,cfo_positive,roce,field_sources,"
+            "data_quality_flags "
             "FROM fundamentals"):
-        sources = _json_object(row[4])
+        sources = _json_object(row[3])
         reasons = []
         if not sources:
             reasons.append("legacy row has no field provenance")
-        if ("tradingview" in sources.values() or row[1] == "tradingview") \
-                and row[2] is not None:
+        deprecated = _deprecated_fields(sources, row[1], row[2])
+        if "cfo_positive" in deprecated:
             reasons.append("cfo_positive may be an historical FCF sign proxy")
-        if ("tradingview" in sources.values() or row[1] == "tradingview") \
-                and row[3] is not None:
+        if "roce" in deprecated:
             reasons.append("roce may contain return_on_invested_capital_fy")
         if reasons:
-            rows.append({"symbol": row[0], "reasons": reasons})
+            rows.append({
+                "symbol": row[0],
+                "reasons": reasons,
+                "flags": sorted(_quality_flags(row[4])),
+                "deprecated_fields": deprecated,
+            })
     return {"remediation_needed": bool(rows), "rows": rows}
+
+
+def flag_legacy_deprecated(conn, apply=False):
+    """Preview or mark ambiguous legacy CFO/ROCE values without changing them."""
+    cols = _columns(conn)
+    required = {
+        "symbol", "data_source", "cfo_positive", "roce", "field_sources",
+        "data_quality_flags",
+    }
+    missing = required - cols
+    if missing:
+        raise RuntimeError(
+            "legacy deprecation tagging requires columns: "
+            + ", ".join(sorted(missing)))
+
+    result = {
+        "candidate_count": 0,
+        "newly_flagged": 0,
+        "already_flagged": 0,
+        "rows": [],
+    }
+    candidates = []
+    for row in conn.execute(
+            "SELECT symbol,cfo_positive,roce,field_sources,"
+            "data_quality_flags FROM fundamentals"):
+        sources = _json_object(row[3])
+        fields = _deprecated_fields(sources, row[1], row[2])
+        if not fields:
+            continue
+        flags = _quality_flags(row[4])
+        already_flagged = "legacy_deprecated" in flags
+        candidates.append((row[0], fields, flags, already_flagged))
+
+    result["candidate_count"] = len(candidates)
+    result["already_flagged"] = sum(
+        1 for _, _, _, already_flagged in candidates if already_flagged)
+    for symbol, fields, flags, already_flagged in candidates:
+        if apply and not already_flagged:
+            flags.add("legacy_deprecated")
+            conn.execute(
+                "UPDATE fundamentals SET data_quality_flags=? "
+                "WHERE symbol=?",
+                (json.dumps({"flags": sorted(flags)}, sort_keys=True), symbol))
+            result["newly_flagged"] += 1
+        result["rows"].append({
+            "symbol": symbol,
+            "deprecated_fields": fields,
+            "already_flagged": already_flagged,
+        })
+    return result

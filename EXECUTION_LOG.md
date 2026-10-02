@@ -1443,6 +1443,20 @@ All detectors computed inline in `traders/mcallen.py`:
 - The provenance-unknown NIFTY CSV remains uncommitted, unapplied, and absent
   from the VM.
 
+### #098 - Preserve and deprecate ambiguous fundamentals values - IMPLEMENTED
+- Owner decision: keep potentially legacy `cfo_positive` and `roce` values
+  temporarily for production compatibility and tag affected rows
+  `legacy_deprecated`. After DR-01 v2 dated-fundamentals backfill satisfies
+  its period/public-availability acceptance criteria, clear only the flagged
+  legacy values; keep physical columns until separately reviewed.
+- Added `flag_legacy_deprecated(conn, apply=False)` with preview by default,
+  exact per-field provenance checks, idempotent apply behavior, and no numeric
+  value mutation. Known non-TradingView per-field values are not tagged merely
+  because another field on the row came from TradingView.
+- Validation: focused tests verify preview-only behavior, preservation of
+  current values and existing flags, source-specific targeting, and idempotence.
+  Full local suite is now 31 tests; production tagging awaits preview and backup.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS

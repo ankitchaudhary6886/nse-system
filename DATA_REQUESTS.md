@@ -114,6 +114,11 @@ Total: ~70 methods running on existing data today.
   only when both the financial period and public-availability time are
   known. DR-01 remains OPEN until a filing adapter/import path is
   implemented and coverage and date quality are verified.
+- **Legacy-value gate (2026-10-02):** keep ambiguous legacy
+  `cfo_positive`/`roce` values for compatibility, mark them
+  `legacy_deprecated`, and clear only those flagged values after the
+  dated v2 backfill satisfies this request's acceptance rule. Preserve
+  the columns until a separate downstream compatibility review.
 
 ### DR-02 · balance_sheet_line_items (latest)
 - **Status:** OPEN — subsumed by DR-01

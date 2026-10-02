@@ -4,7 +4,11 @@ import unittest
 
 import db
 from fundamentals_refresh import ALIASES, _upsert
-from fundamentals_store import integrity_report, merge
+from fundamentals_store import (
+    flag_legacy_deprecated,
+    integrity_report,
+    merge,
+)
 from fundamentals_tv import _fundamentals_values
 
 
@@ -90,6 +94,51 @@ class FundamentalsIntegrityTests(unittest.TestCase):
         old = {row["symbol"]: row["reasons"] for row in report["rows"]}
         self.assertIn("OLD", old)
         self.assertIn("legacy row has no field provenance", old["OLD"])
+
+    def test_legacy_deprecation_preview_and_apply_are_safe_and_idempotent(self):
+        self.conn.execute(
+            "INSERT INTO fundamentals(symbol, cfo_positive, roce, "
+            "data_quality_flags) VALUES ('OLD', 1, 13.0, "
+            "'{\"flags\":[\"reviewed\"]}')")
+        merge(self.conn, {
+            "symbol": "TV", "cfo_positive": 1, "roce": 15.0,
+        }, source="tradingview", observed_at="2026-09-01")
+        merge(self.conn, {
+            "symbol": "VERIFIED", "cfo_positive": 1, "roce": 12.0,
+        }, source="yahoo_financials", observed_at="2026-09-01")
+        merge(self.conn, {
+            "symbol": "MIXED", "cfo_positive": 1,
+        }, source="yahoo_financials", observed_at="2026-09-01")
+        merge(self.conn, {
+            "symbol": "MIXED", "pe": 10,
+        }, source="tradingview", observed_at="2026-09-02")
+
+        preview = flag_legacy_deprecated(self.conn)
+        self.assertEqual(preview["candidate_count"], 2)
+        self.assertEqual(preview["newly_flagged"], 0)
+        self.assertEqual(preview["already_flagged"], 0)
+        before = self.conn.execute(
+            "SELECT cfo_positive,roce,data_quality_flags "
+            "FROM fundamentals WHERE symbol='OLD'").fetchone()
+        self.assertEqual(before[:2], (1, 13.0))
+        self.assertIn("reviewed", json.loads(before[2])["flags"])
+
+        applied = flag_legacy_deprecated(self.conn, apply=True)
+        self.assertEqual(applied["newly_flagged"], 2)
+        self.conn.commit()
+        old = self.conn.execute(
+            "SELECT cfo_positive,roce,data_quality_flags "
+            "FROM fundamentals WHERE symbol='OLD'").fetchone()
+        self.assertEqual(old[:2], (1, 13.0))
+        self.assertEqual(
+            set(json.loads(old[2])["flags"]),
+            {"legacy_deprecated", "reviewed"})
+        repeat = flag_legacy_deprecated(self.conn, apply=True)
+        self.assertEqual(repeat["newly_flagged"], 0)
+        self.assertEqual(repeat["already_flagged"], 2)
+        self.assertNotIn(
+            "VERIFIED", {item["symbol"] for item in repeat["rows"]})
+        self.assertNotIn("MIXED", {item["symbol"] for item in repeat["rows"]})
 
 
 if __name__ == "__main__":

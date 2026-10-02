@@ -128,7 +128,7 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 | ID68  | Steve Nison               | DONE · VERIFIED |
 | ID69  | Tushar Chande             | DONE · VERIFIED |
 | ID70  | William O'Neil            | DONE · VERIFIED |
-| ID71  | Strip existing proxies    | BLOCKED · real replacement data required |
+| ID71  | Retire legacy fundamentals proxies | BLOCKED · preserve and flag until DR-01 v2 backfill verified |
 | ID72  | Fred McAllen              | DONE · VERIFIED |
 | ID73  | McAllen theses capture    | DONE         |
 | ID74  | Aseem Singhal             | DONE         |
@@ -149,8 +149,13 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
 ### Backlog TODOs
 - Reverse-mark overlaps in existing traders (R41); newer traders already
   mark several links, but the older counterparts still need an audit.
-- Strip existing proxies once suitable real replacement data arrives
-  (ID71 / DR-01 and related requests).
+- Keep ambiguous fundamentals values temporarily, mark affected records
+  `legacy_deprecated`, and preserve values for production compatibility.
+- Immediately after the DR-01 v2 dated-fundamentals backfill is verified,
+  clear the flagged legacy proxy values from live fundamentals using a
+  preview, backup, explicit row/field audit, and post-apply verification.
+  Do not drop physical columns until downstream compatibility is separately
+  checked. This is a gated one-time action, not a recurring automation.
 
 ### Trader League (ID77)
 - Pre-season replay: **complete on VM**, through 2026-09-25.
@@ -178,6 +183,11 @@ FMT + FWIS + FSIN (Singhal) + FTL (Trader League).
   call sites and add validated, period- and filing-dated official
   NSE/BSE fundamentals ingestion. Keep DR-01/DR-21 OPEN until data
   coverage, provenance and point-in-time safety are verified.
+- Owner decision (2026-10-02): preserve legacy `cfo_positive` and
+  potentially misclassified `roce` values for now; flag affected rows
+  `legacy_deprecated`. ID71 remains blocked until the DR-01 v2 backfill
+  meets its period/public-availability acceptance criteria; then remove
+  only the flagged legacy values after preview and backup.
 - Owner choices recorded 2026-09-26: separate broad quality-eligible
   Funda and liquid mid/small-cap Swing universes (exact thresholds still
   open); quality-led Multibagger with multi-year growth confirmation

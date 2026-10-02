@@ -4,8 +4,8 @@ The audit remediation changes are integrated on `main`. They cover:
 
 - Non-destructive, per-field fundamentals merges with source timestamps,
   import metadata, and explicit unknown-date quality flags.
-- Separate ROE, ROCE, and ROIC mappings; legacy proxy rows are reported for
-  review and are not rewritten automatically.
+- Separate ROE, ROCE, and ROIC mappings; ambiguous legacy `cfo_positive` and
+  `roce` values are preserved and tagged `legacy_deprecated`.
 - Fixed-risk sizing with validated entry/stop inputs and hard allocation/risk
   limits; uncalibrated win probability is not used for sizing.
 - Price-derived ML feature parity, version checks, and purged time splits.
@@ -14,25 +14,26 @@ The audit remediation changes are integrated on `main`. They cover:
 
 ## Verification
 
-`python -m unittest discover -p 'test_*.py' -v` passed **30 tests** after
+`python -m unittest discover -p 'test_*.py' -v` passed **31 tests** after
 integrating the fundamentals provenance enhancements. Tests cover data
-integrity, sizing safety, ML split/features, backtest behavior, and existing
-KITE/ScanX reconciliation. Python compilation checks also passed.
+integrity, the legacy deprecation preview/apply path, sizing safety, ML
+split/features, backtest behavior, and existing KITE/ScanX reconciliation.
+The full suite passed locally and on the VM.
 
-No live database import or legacy-row remediation was run as part of this
-implementation. Schema additions are idempotent migrations. The local
-historical NIFTY CSV has unknown provenance and was intentionally not staged,
-promoted, or deployed.
+Schema additions are idempotent migrations. The local historical NIFTY CSV
+has unknown provenance and was intentionally not staged, promoted, or deployed.
 
-## Deferred policy decision
+## Legacy-value retirement gate
 
-`fundamentals_store.integrity_report()` identifies legacy values that may
-contain FCF-derived CFO flags or TradingView ROIC stored as ROCE. These remain
-untouched until the owner chooses whether to retain-and-attest, clear affected
-values, or review them manually.
+The owner chose to retain legacy values temporarily to avoid production
+breakage, mark affected rows `legacy_deprecated`, and clear only the flagged
+values after the DR-01 v2 dated-fundamentals backfill passes the financial
+period/public-availability acceptance criteria. Keep the physical columns
+until downstream compatibility is separately reviewed.
 
 ## Deployment state
 
-This document records implementation and local tests only. Remote publication,
-VM deployment, and service-health checks must be recorded separately after
-they are verified.
+The verified code was published to `main` and deployed to the VM. The API is
+active and `/api/health` returned HTTP 200. The deployment check has one
+separate data freshness failure: `universe_broad` is 34 days old. See
+`EXECUTION_LOG.md` for the exact backup and deployment verification record.
