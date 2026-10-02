@@ -3,6 +3,7 @@ import time
 import datetime as dt
 import yfinance as yf
 import db
+from fundamentals_store import merge
 
 def series(df, label):
     if df is None or label not in df.index:
@@ -64,24 +65,37 @@ def fetch_one(conn, sym, name, sector):
         roe = latest(ni) / latest(eq) * 100.0
 
     mcap = info.get("marketCap")
-    row = (
-        sym, name, sector,
-        info.get("currentPrice") or info.get("regularMarketPrice"),
-        None if mcap is None else mcap / 1e7,
-        info.get("trailingPE"), info.get("priceToBook"),
-        roe, roce, de, ic, om, nm,
-        cagr(rev) if rev is not None else None,
-        cagr(ni) if ni is not None else None,
-        None, None, None,
-        None if info.get("dividendYield") is None
+    now = dt.datetime.now().astimezone().isoformat()
+    values = {
+        "symbol": sym,
+        "name": name,
+        "sector": sector,
+        "current_price": info.get("currentPrice") or info.get("regularMarketPrice"),
+        "market_cap_cr": None if mcap is None else mcap / 1e7,
+        "pe": info.get("trailingPE"),
+        "pb": info.get("priceToBook"),
+        "roe": roe,
+        "roce": roce,
+        "debt_to_equity": de,
+        "interest_coverage": ic,
+        "operating_margin": om,
+        "net_profit_margin": nm,
+        "sales_growth_3y": cagr(rev) if rev is not None else None,
+        "profit_growth_3y": cagr(ni) if ni is not None else None,
+        "dividend_yield": None if info.get("dividendYield") is None
         else info.get("dividendYield") * 100.0,
-        1 if (ocf is not None and latest(ocf) > 0)
-        else (0 if ocf is not None else None),
-        "calc:" + dt.datetime.now().isoformat(),
-    )
-    conn.execute("DELETE FROM fundamentals WHERE symbol=?", (sym,))
-    conn.execute(
-        "INSERT INTO fundamentals VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", row)
+        "cfo_positive": (1 if latest(ocf) > 0 else 0)
+        if ocf is not None else None,
+        "data_quality_flags": [
+            "financial_period_end_unknown", "publication_time_unknown"],
+        "source_metadata": {
+            "source": "Yahoo Finance derived fundamentals",
+            "retrieved_at": now,
+            "source_observation_date": None,
+            "financial_period_end": None,
+        },
+    }
+    merge(conn, values, source="yahoo_finance_calculated", observed_at=now)
     conn.commit()
     return True
 

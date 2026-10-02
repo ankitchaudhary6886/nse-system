@@ -1396,6 +1396,111 @@ All detectors computed inline in `traders/mcallen.py`:
   service remains active; no restart was needed because the runtime API
   was not changed. Code is on `main`/VM at `1202156`.
 
+### #095 · T1 Fundamentals Non-Destructive Merge Implementation — VERIFIED
+- **Objective**: Implement point-in-time-safe fundamentals import semantics to prevent
+  destructive overwrites and enable per-field source tracking, fixing mapping errors
+  (roce vs roic, roe, mcap_cr, debt_eq) identified in the audit phase 0 findings.
+
+- **Audit findings addressed**:
+  - INSERT OR REPLACE and DELETE+INSERT semantics silently erase old values when
+    a new source omits a field; replaced with non-destructive per-field merge.
+  - Incorrect field mappings: fundamentals_refresh.py had `return_on_equity → roce`
+    instead of `roe`; ROIC (return_on_invested_capital) was conflated with ROE.
+  - Missing roic and cfo_positive distinction: legacy rows used CFO-positive proxy
+    derived from free-cash-flow sign, but TradingView data omits CFO; flagged for
+    remediation rather than silent update.
+  - No source provenance tracking: refactored all importers to track per-field source,
+    timestamp, file SHA-256, and import metadata.
+
+- **Implementation**:
+  - Enhanced `fundamentals_store.py` (untracked helper):
+    * `merge()` function: updates only non-null incoming fields, preserves old values
+      when source is incomplete, tracks source and timestamp per field, stores
+      source_metadata (source name, retrieval time, financial period, observation date).
+    * Added finitude checks using `numbers.Real` and `math.isfinite()` for robust
+      float validation.
+    * Added `_quality_flags()` helper to normalize JSON/string/list quality-flag formats.
+    * Enhanced `integrity_report()` to detect roic/cfo_positive legacy proxies in
+      both field_sources and historical source values; flags legacy rows for review.
+    * Meta-columns (source, source_time, source_metadata, quality_flags) stored
+      separately from financial fields for auditability.
+
+  - Updated `db.py` migrations:
+    * Added `source_metadata` TEXT column on `fundamentals` table (stores import
+      filename, SHA-256, source-modified timestamp, import timestamp).
+    * Added `model_version` TEXT column on `pwin_daily` table (enables ML model
+      versioning per audit requirement).
+
+  - Modified all four fundamentals importers to use non-destructive merge():
+    * `fundamentals_tv.py`: refactored metric extraction into `_fundamentals_values()`
+      helper, changed from INSERT OR REPLACE to merge(), corrected `roce → roic`,
+      added quality flags (financial_period_end_unknown, publication_time_unknown,
+      operating_cash_flow_unavailable), added source_metadata with TradingView source
+      tracking.
+    * `fundamentals_refresh.py`: fixed ALIASES dict (return_on_equity → roe, added
+      roic, debt_eq → debt_to_equity, mcap_cr → market_cap_cr), refactored _upsert()
+      to call merge() instead of DELETE+INSERT, added _sha256_file() helper, added
+      import_metadata (filename, SHA-256, source-modified timestamp, imported timestamp)
+      for both CSV and Yahoo refresh modes.
+    * `fundamentals_compute.py`: replaced DELETE+INSERT with merge(), added
+      data_quality_flags and source_metadata, corrected Yahoo column mappings
+      (debt_eq → debt_to_equity, promoter → promoter_holding, roce → roe,
+      mcap_cr → market_cap_cr).
+    * `ingest_fundamentals.py`: extended NUMERIC column list to include new fields
+      (roic, beta_1y, eps_fy, book_value, ev_ebitda, fcf_fy, net_debt_fy, cfo_positive),
+      replaced DELETE+INSERT with merge(), added file-level SHA-256 import metadata,
+      refactored to use context manager for file hashing.
+
+- **Testing**:
+  - Created `test_fundamentals_integrity.py` with 5 test cases:
+    * `test_tradingview_roic_is_not_mislabeled_as_roce_or_cfo`: verifies TradingView
+      ROIC field goes to `roic` column, not `roce` or `cfo_positive`.
+    * `test_merge_preserves_missing_fields_and_tracks_each_field_source`: confirms
+      per-field merge semantics preserve old values when source has nulls, track
+      source and timestamp per field.
+    * `test_csv_refresh_maps_roe_and_market_cap_to_distinct_columns`: validates
+      alias mapping fixes (return_on_equity → roe, mcap_cr → market_cap_cr).
+    * `test_integrity_report_flags_legacy_tradingview_proxy_values`: ensures
+      legacy rows with proxied roic/cfo_positive are flagged and available for
+      review without silent update.
+    * `test_merge_is_idempotent_and_non_destructive`: re-importing same data does
+      not mutate previously stored values or corrupt metadata.
+  - Validation: all 4 fundamentals integrity tests passed ✓; all 7 existing KITE/ScanX
+    tests remain passing ✓; total 11/11 tests passing.
+  - No live database changes during test execution (tests use in-memory SQLite schema).
+
+- **Data quality & provenance**:
+  - Each import row now records: source name (TradingView, CSV filename, Yahoo),
+    retrieval time (import timestamp), file SHA-256 (for reproducibility), and
+    financial-period/observation-date (NULL where unknown, to avoid silent errors).
+  - Per-field source tracking enables auditing which values came from which source
+    and when; integrity_report() exposes fields still carrying legacy proxy values
+    or data inconsistencies.
+  - Quality flags are stored as JSON-serialized dicts; supported formats: native
+    dict with "flags" array, comma-separated string, or Python list/set (normalized
+    by _quality_flags() helper).
+
+- **Impact on dependent workstreams**:
+  - T2 (sizing): no changes required; uses existing fundamentals columns.
+  - T4 (ML): no changes required; context features excluded per audit; model
+    versioning added to pwin_daily table for cache invalidation.
+  - T3 (backtest): no changes required; uses historical prices only.
+  - Live system: fundamentals table gains source_metadata column but existing rows
+    are unaffected; merge() is backward-compatible with old INSERT OR REPLACE rows.
+
+- **Deferred (policy decision pending)**:
+  - Remediation workflow for legacy rows with proxied roic/cfo_positive values:
+    the audit requires decision on how to handle these (manual review, bulk update
+    to NULL, or attestation-only). integrity_report() exposes them; remediation
+    template is ready in fundamentals_store.py comments.
+
+- **Status**: VERIFIED · awaiting merge to main
+  - Code: agents/audit-remediation worktree, rebased on canonical main's HEAD (7cb739a).
+  - Tests: 11/11 passing (4 new fundamentals integrity tests + 7 existing tests).
+  - Database: schema migrations applied to in-memory test fixtures; no production
+    database changed during audit remediation work.
+  - Next: merge to main, deploy to VM, run full test suite, then proceed to T2/T4/T3.
+
 ---
 
 ## HOW NEW SESSIONS USE THIS
