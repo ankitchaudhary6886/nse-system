@@ -126,7 +126,10 @@ function renderCompareTable(payload) {
 
   // Section: signal
   html += _cmpRow("SIGNAL", syms.map(() => ""), true);
-  html += _cmpRow("P(WIN) meta", colOf(r => _cmpPct(r.p_win)), false);
+  const scoreHelp = window.MODEL_EVENT_SCORE_HELP
+    || "Uncalibrated score for a +10% high within 20 sessions, not a trade win probability.";
+  html += _cmpRow(`<span title="${_ucEsc(scoreHelp)}">Model event score</span>`,
+    colOf(r => _cmpPct(r.p_win)), false);
   html += _cmpRow("Swing W-L",
     colOf(r => (r.swing_total > 0)
       ? `${r.swing_wins}W / ${r.swing_losses}L` : "—"), false);

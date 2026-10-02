@@ -564,3 +564,404 @@ td {
 }
 .view {display: none;}
 .view.active-view {display: block;}
+
+/* Quiet, high-contrast terminal surfaces; keep color for state and focus. */
+:root {
+  --bg: #0b1018;
+  --bg2: #111a26;
+  --panel: #111a26;
+  --panel2: #0e1621;
+  --border: rgba(196, 210, 229, .12);
+  --text: #edf2f8;
+  --muted: #a1afc1;
+  --blue: #82b7ff;
+  --green: #53d6a0;
+  --red: #ff8791;
+  --yellow: #f1c76d;
+  --purple: #b5a4ff;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.app-shell {
+  grid-template-columns: 238px minmax(0, 1fr);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 24px 16px;
+  background: #0e151f;
+  border-right-color: var(--border);
+  backdrop-filter: none;
+}
+
+.brand {
+  margin: 0 0 28px;
+  padding: 0 8px;
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #d8e9ff;
+  color: #132338;
+}
+
+.brand-title {
+  font-size: 14px;
+  letter-spacing: .01em;
+}
+
+.brand-subtitle {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.nav {
+  gap: 4px;
+  align-content: start;
+  flex: 1 0 auto;
+}
+
+.nav-group {
+  margin: 18px 0 5px;
+  padding: 0 10px;
+  color: #8292a8;
+  font-size: 10px;
+  letter-spacing: .13em;
+}
+
+.nav-btn {
+  display: grid;
+  gap: 1px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  color: #c8d2df;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.nav-btn:hover,
+.nav-btn.active {
+  background: rgba(130, 183, 255, .09);
+  border-color: rgba(130, 183, 255, .2);
+  color: #f5f8fc;
+}
+
+.nav-btn.active {
+  box-shadow: inset 2px 0 0 var(--blue);
+}
+
+.nav-hint {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.sidebar-footer {
+  position: static;
+  flex: 0 0 auto;
+  width: 100%;
+  margin: auto 0 0;
+  padding: 12px;
+  border-radius: 11px;
+  background: #111a26;
+}
+
+.mini-note {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.main {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 30px clamp(18px, 3vw, 42px);
+}
+
+.topbar {
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.topbar h1 {
+  font-size: clamp(24px, 2.5vw, 31px);
+  letter-spacing: -.7px;
+}
+
+.topbar p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.top-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+input {
+  min-width: 220px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border-color: var(--border);
+  background: #101925;
+}
+
+button {
+  border-radius: 9px;
+  font-weight: 650;
+}
+
+.nav-btn:focus-visible,
+button:focus-visible,
+input:focus-visible,
+.unified-card:focus-visible,
+.stock-card:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.regime-card {
+  margin-bottom: 12px;
+  padding: 15px 17px;
+  border-radius: 13px;
+  background: #111a26;
+}
+
+.metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.metric-card {
+  min-height: 116px;
+  padding: 14px 16px;
+  border-radius: 13px;
+  border-color: var(--border);
+  background: #111a26;
+}
+
+.metric-card span {
+  font-size: 10px;
+  letter-spacing: .09em;
+}
+
+.metric-card strong {
+  margin-top: 4px;
+  font-size: 25px;
+  letter-spacing: -.4px;
+}
+
+.metric-card small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.market-overview.is-collapsed {
+  display: none;
+}
+
+.panel {
+  padding: 17px;
+  border-radius: 14px;
+  border-color: var(--border);
+  background: #101823;
+  backdrop-filter: none;
+}
+
+.panel-header {
+  margin-bottom: 12px;
+}
+
+.panel-header h2 {
+  font-size: 16px;
+  letter-spacing: -.2px;
+}
+
+.panel-header p {
+  max-width: 78ch;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.level {
+  gap: 16px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #141e2b;
+  border-color: var(--border);
+}
+
+.level strong,
+.cmp-value,
+td {
+  font-variant-numeric: tabular-nums;
+}
+
+.toggle-btn {
+  border-radius: 8px;
+}
+
+.model-explainer {
+  margin-top: 10px;
+}
+
+.method-note,
+.method-warning {
+  margin: 8px 2px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.method-warning {
+  color: var(--yellow);
+}
+
+.model-score {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid rgba(130, 183, 255, .24);
+  border-radius: 6px;
+  color: #b9d7ff;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.unified-card,
+.stock-card {
+  border-color: var(--border);
+  border-radius: 11px;
+  background: #121c29;
+}
+
+.cmp-table {
+  min-width: 680px;
+}
+
+.cmp-header th {
+  font-size: 12px;
+}
+
+.cmp-label,
+.cmp-value {
+  padding: 9px 8px;
+}
+
+.cmp-section td {
+  color: var(--blue);
+}
+
+.table-wrap {
+  border-radius: 9px;
+}
+
+th {
+  color: #aab7c8;
+}
+
+td {
+  color: #d9e2ed;
+}
+
+#dataDetailDialog,
+.detail-dialog-head {
+  background: #111a26;
+}
+
+@media (max-width: 950px) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    padding: 14px 16px;
+  }
+
+  .brand {
+    margin-bottom: 10px;
+  }
+
+  .nav {
+    width: 100%;
+    min-width: 0;
+    flex: initial;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .nav-btn {
+    min-width: 0;
+  }
+
+  .nav-group {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    margin-bottom: 2px;
+  }
+
+  .nav-btn {
+    padding: 8px 9px;
+    font-size: 12px;
+  }
+
+  .nav-hint {
+    display: none;
+  }
+
+  .sidebar-footer {
+    margin-top: 12px;
+  }
+
+  .main {
+    min-width: 0;
+    padding: 20px 16px;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .top-actions {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    width: 100%;
+  }
+
+  .top-actions input {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .metric-card {
+    min-height: 104px;
+    padding: 12px;
+  }
+
+  .metric-card strong {
+    font-size: 22px;
+  }
+}

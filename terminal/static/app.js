@@ -1,6 +1,7 @@
 let chart = null, candleSeries = null, ema10 = null, ema20 = null, ema50 = null, ema200 = null;
 const $ = (id) => document.getElementById(id);
 let _restoringNavigation = false;
+window.MODEL_EVENT_SCORE_HELP = "Uncalibrated model score trained on whether the future high reaches +10% within the next 20 trading sessions. It is not a trade win probability or a forecast guarantee.";
 
 async function api(path, options = {}) {
   const res = await fetch(path, { credentials: "same-origin", headers: { "Content-Type": "application/json" }, ...options });
@@ -8,6 +9,16 @@ async function api(path, options = {}) {
   return await res.json();
 }
 function fmt(v, suffix = "") { return (v === null || v === undefined || Number.isNaN(v)) ? "—" : `${v}${suffix}`; }
+function scorePct(v) {
+  const n = Number(v);
+  return v === null || v === undefined || !Number.isFinite(n)
+    ? "—" : `${(n * 100).toFixed(0)}%`;
+}
+function moneyFmt(v) {
+  const n = Number(v);
+  return v === null || v === undefined || !Number.isFinite(n)
+    ? "—" : `₹${n.toLocaleString()}`;
+}
 function outcomeBadge(v) { return `<span class="outcome ${v || "PENDING"}">${v || "PENDING"}</span>`; }
 
 function _normalizeView(name) {
@@ -21,32 +32,37 @@ function setView(name, options = {}) {
   const el = $("view-" + name);
   if (el) el.classList.add("active-view");
   document.querySelectorAll(".nav-btn").forEach(b => {
-    b.classList.toggle("active", _normalizeView(b.dataset.view) === name);
+    const active = _normalizeView(b.dataset.view) === name;
+    b.classList.toggle("active", active);
+    if (active) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
   });
   const titles = {
-    funda: "Funda — positional & long-term",
-    swing: "Swing — midcap / smallcap momentum",
-    research: "Research — analysis & pattern lab",
-    traders: "Traders — famous methods & signals",
-    ledger: "Ledger — track record",
-    league: "League — ₹10 lakh trader league",
-    system: "System — health & config",
+    funda: "Fundamentals",
+    swing: "Swing setups",
+    research: "Company research",
+    traders: "Trading methods",
+    ledger: "Performance",
+    league: "Paper league",
+    system: "System status",
   };
   const t = $("viewTitle");
   if (t) t.textContent = titles[name] || "NSE Intelligence";
   const subtitle = $("viewSubtitle");
   if (subtitle) {
     const subs = {
-      funda: "Quality names in market downturns. Hold months to years.",
-      swing: "Momentum setups in uptrending markets. Trade days to weeks.",
-      research: "Deep-dive any symbol. Historical behaviour of similar setups.",
-      traders: "One page per famous trader. Their methods, scanned across the universe.",
-      ledger: "Your strategy's real track record, walk-forward validation.",
-      league: "14 books vs our system. Backtest before real money, then live paper trading.",
-      system: "Infrastructure health, data freshness, deployment checks.",
+      funda: "Long-horizon company quality and valuation research.",
+      swing: "Momentum setups and their forward-validation history.",
+      research: "Inspect a symbol's chart, setup, model context, and related evidence.",
+      traders: "Browse documented methods and their research scans.",
+      ledger: "Review graded signals and strategy-run history.",
+      league: "Compare methods in historical research and paper trading only.",
+      system: "Check service health, data freshness, and source status.",
     };
     subtitle.textContent = subs[name] || "Gabani Stage-2 / VCP Pullback System";
   }
+  const overview = $("marketOverview");
+  if (overview) overview.classList.toggle("is-collapsed", name !== "research");
   if (name === "research" && chart) setTimeout(() => chart.timeScale().fitContent(), 50);
   if (name === "ledger") loadLedger();
   if (name === "research") loadPatterns();
@@ -169,11 +185,10 @@ async function loadTopPicks() {
     box.innerHTML = "";
     (data.picks || []).forEach(x => {
       const subtitle = x.sector || "Unknown sector";
-      const primary = `Composite ${(x.composite * 100).toFixed(0)} · `
-        + `🧠 model +10%/20 sessions ${(x.p_win * 100).toFixed(0)}% (uncal.) · `
-        + `🏦 accum ${x.accum.toFixed(2)}`;
-      const secondary = `sector RS ${(x.sector_rs * 100).toFixed(0)}`
-        + (x.delivery != null ? ` · 📦 ${(x.delivery * 100).toFixed(0)}` : "");
+      const primary = `Composite ${scorePct(x.composite)} · event score ${scorePct(x.p_win)}`
+        + ` · accumulation ${fmt(x.accum)}`;
+      const secondary = `Sector relative strength ${scorePct(x.sector_rs)}`
+        + (x.delivery != null ? ` · delivery ${scorePct(x.delivery)}` : "");
       const card = window.renderUnifiedCard({
         symbol: x.symbol,
         setup: !!x.setup,
@@ -181,7 +196,10 @@ async function loadTopPicks() {
       });
       box.appendChild(card);
     });
-  } catch (e) {}
+  } catch (e) {
+    const box = $("picksList");
+    if (box) box.textContent = `Research shortlist unavailable: ${e.message}`;
+  }
 }
 
 // ============================================================
@@ -200,7 +218,7 @@ async function loadSwing() {
   for (const s of signals) {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${s.date}</td>
-      <td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="outcome PENDING" title="Model estimate of +10% return within 20 sessions; uncalibrated, not a trade win certainty.">🧠 +10%/20s ${(s.p_win * 100).toFixed(0)}% (uncal.)</span>` : ""} ${s.mode === "ALL_WEATHER" ? '<span class="outcome TIMEOUT">AW</span>' : ""}</td>
+      <td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="model-score" title="${window.MODEL_EVENT_SCORE_HELP}">Event ${scorePct(s.p_win)}</span>` : ""} ${s.mode === "ALL_WEATHER" ? '<span class="outcome TIMEOUT">All-weather</span>' : ""}</td>
       <td>${fmt(s.trigger)}</td><td>${fmt(s.stop)}</td><td>${fmt(s.target)}</td>
       <td>${fmt(s.risk_pct, "%")}</td>
       <td>${s.pullback ? (s.pullback * 100).toFixed(1) + "%" : "—"}</td>
@@ -374,7 +392,7 @@ async function loadRadar() {
         const subtitle = `1M ${fmt(x.perf1m, "%")} · 3M ${fmt(x.perf3m, "%")} · Vol ${fmt(x.relvol, "x")}`;
         const primary = `₹${fmt(x.mcap_cr)} cr mcap`;
         const secondary = x.p_win != null
-          ? `🧠 Model +10%/20 sessions ${(x.p_win * 100).toFixed(0)}% (uncalibrated; not trade-win certainty)` : "";
+          ? `Model event score ${scorePct(x.p_win)} · uncalibrated` : "";
         box.appendChild(window.renderUnifiedCard({
           symbol: x.symbol, subtitle, primary, secondary,
         }));
@@ -653,13 +671,18 @@ async function loadSymbol(symbol) {
     if (meta && meta.p_win != null && setupSummary) {
       const why = (meta.why || []).map(w => `<div class="level"><span>why · ${w.feature}</span><strong>${w.impact > 0 ? "+" : ""}${w.impact}</strong></div>`).join("");
       const whyBlock = why
-        ? `<button class="toggle-btn" data-target="shapDetails">Show feature contributions</button>
+        ? `<button class="toggle-btn" data-target="shapDetails">Show model feature contributions</button>
            <div id="shapDetails" class="details-panel hidden">
-             <div class="level"><span>P(WIN)</span><strong>${(meta.p_win * 100).toFixed(0)}%</strong></div>
+             <div class="level"><span>Uncalibrated event score</span><strong>${scorePct(meta.p_win)}</strong></div>
+             <p class="method-note">Feature contributions describe this model output; they are not causal explanations.</p>
              ${why}
            </div>`
-        : `<div class="level"><span>P(WIN)</span><strong>${(meta.p_win * 100).toFixed(0)}%</strong></div>`;
-      setupSummary.innerHTML += whyBlock;
+        : "";
+      setupSummary.insertAdjacentHTML("beforeend", `
+        <div class="model-explainer" title="${window.MODEL_EVENT_SCORE_HELP}">
+          <div class="level"><span>Model event score</span><strong>${scorePct(meta.p_win)}</strong></div>
+          <p class="method-note">${window.MODEL_EVENT_SCORE_HELP}</p>
+        </div>${whyBlock}`);
     }
   } catch (e) {}
 
@@ -717,30 +740,33 @@ function renderSizing(sz) {
     compact = `<div class="level"><span>Sizing</span><strong>unavailable yet</strong></div>`;
     details = capitalEditor(sz.capital);
   } else if (sz.shares !== undefined) {
-    compact = `<div class="level"><span>Suggested position</span><strong>₹${sz.suggested_value.toLocaleString()} (${sz.actual_alloc_pct ?? sz.alloc_pct}%)</strong></div>
-      <div class="level"><span>Qty @ trigger</span><strong>${sz.shares} shares${sz.actionable === false ? " (not actionable)" : ""}</strong></div>`;
+    const allocatedPct = sz.actual_alloc_pct ?? sz.alloc_pct;
+    const plannedRiskPct = sz.actual_planned_risk_pct ?? sz.risk_pct;
+    compact = `<div class="level"><span>Research position size</span><strong>${moneyFmt(sz.suggested_value)} (${fmt(allocatedPct, "%")})</strong></div>
+      <div class="level"><span>Quantity at trigger</span><strong>${sz.shares} shares${sz.actionable === false ? " (not actionable)" : ""}</strong></div>`;
     details = `
-      <div class="level"><span>Capital</span><strong>₹${sz.capital.toLocaleString()}</strong></div>
-      <div class="level"><span>Trade win probability</span><strong>Unknown — not used for sizing</strong></div>
-      <div class="level"><span>Regime (${sz.regime_level})</span><strong>×${sz.regime_mult}</strong></div>
-      <div class="level"><span>Quality (shape ${sz.shape_score ?? "—"})</span><strong>×${sz.quality_mult}</strong></div>
-      <div class="level"><span>Kelly / Half-Kelly</span><strong>Not used</strong></div>
-      <div class="level"><span>Binding cap</span><strong>${sz.binding_cap}</strong></div>
-      <div class="level"><span>Planned stop risk</span><strong>₹${sz.risk_amount.toLocaleString()} (${sz.actual_planned_risk_pct ?? sz.risk_pct}%)</strong></div>
-      <div class="level"><span>Risk note</span><strong>${sz.risk_note || "Gaps and costs excluded"}</strong></div>`;
+      <div class="level"><span>Capital</span><strong>${moneyFmt(sz.capital)}</strong></div>
+      <div class="level"><span>Planned stop-risk budget</span><strong>${fmt(sz.planned_risk_budget_pct ?? sz.risk_per_trade_pct, "%")}</strong></div>
+      <div class="level"><span>Regime adjustment</span><strong>${sz.regime_level || "—"} · ×${fmt(sz.regime_mult)}</strong></div>
+      <div class="level"><span>Shape adjustment</span><strong>${fmt(sz.shape_score)} / 100 · ×${fmt(sz.quality_mult)}</strong></div>
+      <div class="level"><span>Planned loss at stop</span><strong>${moneyFmt(sz.risk_amount)} (${fmt(plannedRiskPct, "%")})</strong></div>
+      <div class="level"><span>Limiting rule</span><strong>${sz.binding_cap || "—"}</strong></div>
+      <p class="method-note">${sz.risk_note || "Fixed-risk research sizing. No calibrated trade win probability or Kelly input is used. Quantity is limited by planned stop risk and maximum allocation; gaps, slippage, fees, and taxes can increase losses."}</p>
+      ${sz.reason ? `<p class="method-warning">${sz.reason}</p>` : ""}`;
   } else {
-    compact = `<div class="level"><span>Suggested allocation</span><strong>${sz.alloc_pct}% of capital</strong></div>`;
+    compact = `<div class="level"><span>Suggested allocation</span><strong>${fmt(sz.alloc_pct, "%")} of capital</strong></div>`;
     details = `
-      <div class="level"><span>Capital</span><strong>₹${sz.capital.toLocaleString()}</strong></div>
-      <div class="level"><span>Trade win probability</span><strong>Unknown — not used for sizing</strong></div>
-      <div class="level"><span>Regime (${sz.regime_level})</span><strong>×${sz.regime_mult}</strong></div>
-      <div class="level"><span>Quality (shape ${sz.shape_score ?? "—"})</span><strong>×${sz.quality_mult}</strong></div>
-      <div class="level"><span>Status</span><strong>${sz.reason || "No trigger/stop: quantity not actionable"}</strong></div>`;
+      <div class="level"><span>Capital</span><strong>${moneyFmt(sz.capital)}</strong></div>
+      <div class="level"><span>Planned stop-risk budget</span><strong>${fmt(sz.planned_risk_budget_pct ?? sz.risk_per_trade_pct, "%")}</strong></div>
+      <div class="level"><span>Regime adjustment</span><strong>${sz.regime_level || "—"} · ×${fmt(sz.regime_mult)}</strong></div>
+      <div class="level"><span>Shape adjustment</span><strong>${fmt(sz.shape_score)} / 100 · ×${fmt(sz.quality_mult)}</strong></div>
+      <p class="method-note">${sz.risk_note || "Fixed-risk research sizing; no calibrated trade win probability or Kelly input is used. Planned stop risk can be exceeded by gaps, slippage, fees, and taxes."}</p>
+      ${sz.reason ? `<p class="method-warning">${sz.reason}</p>` : ""}`;
   }
   box.innerHTML = `
-    <h3 style="margin:0;font-size:15px;">💰 Position Sizing</h3>
+    <h3 style="margin:0;font-size:15px;">Position sizing (research estimate)</h3>
     ${compact}
-    <button class="toggle-btn" data-target="sizingDetails">Show derivation</button>
+    <button class="toggle-btn" data-target="sizingDetails">Show sizing inputs and limits</button>
     <div id="sizingDetails" class="details-panel hidden">
       ${details}
       ${capitalEditor(sz.capital)}
