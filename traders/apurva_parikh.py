@@ -386,12 +386,13 @@ def _evaluate_symbol(sym, f, df, sector_pe_median, nifty_pe_ok):
 # ----------------------------------------------------------------
 # Universe scan
 # ----------------------------------------------------------------
-def scan(conn=None, limit=800):
+def scan(conn=None, limit=800, symbols=None):
     own = conn is None
     if own:
         conn = db.get_conn()
 
-    syms = band_universe(conn, limit=limit)
+    from traders.base import select_scan_symbols
+    syms = select_scan_symbols(conn, limit, symbols)
     log.info(f"Parikh scan: {len(syms)} symbols in universe")
 
     fund_map = _fundamentals_map(conn)

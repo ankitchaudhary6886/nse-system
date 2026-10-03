@@ -604,12 +604,13 @@ def _scan_symbol(symbol, df):
 # ============================================================
 # Universe scan
 # ============================================================
-def scan(conn=None, limit=800):
+def scan(conn=None, limit=800, symbols=None):
     """Scan the band universe. Returns list of signals."""
     own = conn is None
     if own:
         conn = db.get_conn()
-    syms = band_universe(conn, limit=limit)
+    from traders.base import select_scan_symbols
+    syms = select_scan_symbols(conn, limit, symbols)
 
     signals = []
     for i, sym in enumerate(syms, 1):

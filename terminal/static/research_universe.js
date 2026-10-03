@@ -84,7 +84,7 @@ function _renderUniverseTable() {
   rows.forEach(r => {
     const rel = _nReliabilityClass(r.n_setups);
     const cacheStr = r.n_setups == null
-      ? `<span style="color:#fbbf24;">—</span>`
+      ? `<span style="color:#fbbf24;">${r.analysis_error ? "unavailable" : "—"}</span>`
       : `<span class="rel-pill ${rel}">${r.n_setups}</span>`;
     const hi = r.pct_from_52w_high;
     const hiStr = hi == null ? "—" : hi.toFixed(1);
@@ -119,25 +119,47 @@ function _renderUniverseTable() {
 async function loadResearchUniverse(computeMissing) {
   const box = document.getElementById("researchUniverseBox");
   const badge = document.getElementById("researchUniverseBadge");
+  const refresh = document.getElementById("refreshResearchUniverse");
+  const compute = document.getElementById("computeMissingBtn");
   if (!box) return;
+  const button = computeMissing ? compute : refresh;
+  if (button) {
+    button.disabled = true;
+    button.dataset.previousText = button.textContent;
+    button.textContent = computeMissing ? "Computing…" : "Refreshing…";
+  }
   box.innerHTML = "<p>Loading...</p>";
   try {
     const url = "/api/research-universe" +
       (computeMissing ? "?compute_missing=true" : "");
     const data = await api(url);
+    if (data.error) throw new Error(data.error);
     _universeRows = data.rows || [];
     if (!_universeRows.length) {
-      box.innerHTML = "<p>No setups today.</p>";
-      if (badge) badge.textContent = "empty";
+      box.innerHTML = data.date
+        ? `<p>No setups were stored for the latest scan date (${data.date}). Price data: ${data.source_dates?.prices || "unavailable"}.</p>`
+        : "<p>No trader scans are stored yet. Run the swing or trend scan, then refresh this view.</p>";
+      if (badge) badge.textContent = data.date ? `0 setups · ${data.date}` : "no scan data";
       return;
     }
+    const stale = data.stale ? " · scan older than stored prices" : "";
+    const missing = data.n_errors ? ` · ${data.n_errors} history unavailable` : "";
     if (badge) badge.textContent =
-      `${_universeRows.length} setups · ${data.date}`;
-    box.innerHTML = _renderUniverseTable();
+      `${_universeRows.length} symbols · ${data.date || "date unavailable"}${stale}${missing}`;
+    box.innerHTML = (data.stale
+      ? `<p class="method-warning">The latest scan is older than the newest stored price bar (${data.source_dates?.prices || "unknown"}). Refresh price data and rerun the scan before relying on this result.</p>`
+      : "") + _renderUniverseTable();
     _bindUniverseEvents(box);
   } catch (e) {
-    box.innerHTML = `<p>Research universe error: ${e.message}</p>`;
+    box.textContent = `Research universe error: ${e.message}`;
     if (badge) badge.textContent = "unavailable";
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = button.dataset.previousText ||
+        (computeMissing ? "Compute Missing" : "Refresh");
+      delete button.dataset.previousText;
+    }
   }
 }
 window.loadResearchUniverse = loadResearchUniverse;
@@ -178,16 +200,12 @@ function _bindUniverseEvents(box) {
 }
 
 async function computeMissing() {
-  const btn = document.getElementById("computeMissingBtn");
-  if (btn) btn.textContent = "Computing (slow)...";
   await loadResearchUniverse(true);
-  if (btn) btn.textContent = "Compute Missing";
 }
 
 window.jumpResearch = function(sym) {
   setView("overview");
   loadSymbol(sym);
-  if (window.loadResearch) setTimeout(() => window.loadResearch(sym), 500);
 };
 
 document.addEventListener("DOMContentLoaded", () => {

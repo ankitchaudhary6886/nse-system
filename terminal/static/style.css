@@ -885,6 +885,60 @@ td {
   background: #111a26;
 }
 
+.refresh-status {
+  color: var(--muted);
+  font-size: 11px;
+  max-width: 250px;
+}
+
+.method-guide {
+  padding: 18px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.method-guide-source {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.method-guide ol {
+  display: grid;
+  gap: 10px;
+  padding-left: 22px;
+}
+
+.method-guide h3 {
+  margin: 18px 0 8px;
+  font-size: 14px;
+}
+
+.method-match {
+  display: grid;
+  width: 100%;
+  gap: 5px;
+  margin: 8px 0;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #141e2b;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.method-match:hover,
+.method-match:focus-visible {
+  border-color: var(--blue);
+  outline: none;
+}
+
+.method-match span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 @media (max-width: 950px) {
   .app-shell {
     grid-template-columns: minmax(0, 1fr);

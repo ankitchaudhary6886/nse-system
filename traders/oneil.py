@@ -883,7 +883,7 @@ def _fundamentals_map(conn):
     return out
 
 
-def scan(conn=None, limit=DEFAULT_LIMIT):
+def scan(conn=None, limit=DEFAULT_LIMIT, symbols=None):
     own = conn is None
     if own:
         conn = db.get_conn()
@@ -893,7 +893,8 @@ def scan(conn=None, limit=DEFAULT_LIMIT):
     log.info(f"O'Neil market regime: {market_regime} "
              f"(info: {regime_info})")
 
-    syms = band_universe(conn, limit=limit)
+    from traders.base import select_scan_symbols
+    syms = select_scan_symbols(conn, limit, symbols)
     fund_map = _fundamentals_map(conn)
     log.info(f"O'Neil scan: {len(syms)} symbols, "
              f"{len(fund_map)} with fundamentals")

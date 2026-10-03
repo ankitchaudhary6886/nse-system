@@ -392,7 +392,7 @@ def _scan_symbol(symbol, df, bench_returns):
 # ============================================================
 # Universe scan
 # ============================================================
-def scan(conn=None, limit=800):
+def scan(conn=None, limit=800, symbols=None):
     own = conn is None
     if own:
         conn = db.get_conn()
@@ -403,7 +403,8 @@ def scan(conn=None, limit=800):
     if bench is None or len(bench) < 60:
         log.warning("benchmark returns not available; beta filter will be skipped")
 
-    syms = band_universe(conn, limit=limit)
+    from traders.base import select_scan_symbols
+    syms = select_scan_symbols(conn, limit, symbols)
     signals = []
     for i, sym in enumerate(syms, 1):
         rows = conn.execute(

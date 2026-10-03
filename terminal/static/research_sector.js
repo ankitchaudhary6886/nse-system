@@ -107,20 +107,25 @@ async function loadResearchSectors() {
   box.innerHTML = "<p>Loading...</p>";
   try {
     const data = await api("/api/research-sector");
+    if (data.error) throw new Error(data.error);
     _sectorRows = data.sectors || [];
     if (!_sectorRows.length) {
-      box.innerHTML = "<p>No sector data yet. Warm the cache first.</p>";
-      if (badge) badge.textContent = "empty";
+      box.innerHTML = data.date
+        ? `<p>No cached sector history for the latest scan date (${data.date}). Compute missing symbol histories first.</p>`
+        : "<p>No trader scan data is stored yet.</p>";
+      if (badge) badge.textContent = data.date ? `no cached sectors · ${data.date}` : "no scan data";
       return;
     }
     if (badge) {
       badge.textContent =
-        `${data.n_sectors} sectors · ${data.n_symbols_cached} symbols`;
+        `${data.n_sectors} sectors · ${data.n_symbols_cached} symbols · ${data.date || "date unavailable"}`;
     }
-    box.innerHTML = _renderSectorTable();
+    box.innerHTML = (data.n_symbols_missing
+      ? `<p class="method-warning">${data.n_symbols_missing} symbol histories could not be included in the sector aggregates.</p>`
+      : "") + _renderSectorTable();
     _bindSectorEvents(box);
   } catch (e) {
-    box.innerHTML = `<p>Sector view error: ${e.message}</p>`;
+    box.textContent = `Sector view error: ${e.message}`;
     if (badge) badge.textContent = "unavailable";
   }
 }

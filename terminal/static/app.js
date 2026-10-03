@@ -1,11 +1,19 @@
 let chart = null, candleSeries = null, ema10 = null, ema20 = null, ema50 = null, ema200 = null;
 const $ = (id) => document.getElementById(id);
 let _restoringNavigation = false;
+let _symbolRequestId = 0;
 window.MODEL_EVENT_SCORE_HELP = "Uncalibrated model score trained on whether the future high reaches +10% within the next 20 trading sessions. It is not a trade win probability or a forecast guarantee.";
 
 async function api(path, options = {}) {
   const res = await fetch(path, { credentials: "same-origin", headers: { "Content-Type": "application/json" }, ...options });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    let message = `${res.status} ${res.statusText}`;
+    try {
+      const body = await res.json();
+      message = body.detail || body.error || message;
+    } catch (e) {}
+    throw new Error(message);
+  }
   return await res.json();
 }
 function fmt(v, suffix = "") { return (v === null || v === undefined || Number.isNaN(v)) ? "—" : `${v}${suffix}`; }
@@ -64,19 +72,19 @@ function setView(name, options = {}) {
   const overview = $("marketOverview");
   if (overview) overview.classList.toggle("is-collapsed", name !== "research");
   if (name === "research" && chart) setTimeout(() => chart.timeScale().fitContent(), 50);
-  if (name === "ledger") loadLedger();
-  if (name === "research") loadPatterns();
-  if (name === "system") {
-    loadDeployment();
-    loadSourceHealth();
-  }
-  // Traders hook
-  if (name === "traders" && typeof window.loadTradersIndex === "function") {
-    window.loadTradersIndex();
-  }
-  // League hook (#087)
-  if (name === "league" && typeof window.loadLeague === "function") {
-    window.loadLeague();
+  if (!options.skipLoad) {
+    if (name === "ledger") loadLedger();
+    if (name === "research") loadPatterns();
+    if (name === "system") {
+      loadDeployment();
+      loadSourceHealth();
+    }
+    if (name === "traders" && typeof window.loadTradersIndex === "function") {
+      window.loadTradersIndex();
+    }
+    if (name === "league" && typeof window.loadLeague === "function") {
+      window.loadLeague();
+    }
   }
   if (options.record !== false && location.hash !== `#${name}`) {
     history.pushState({ view: name }, "", `#${name}`);
@@ -84,13 +92,13 @@ function setView(name, options = {}) {
 }
 window.setView = setView;
 
-function _restoreNavigation() {
+function _restoreNavigation(skipLoad = false) {
   const [rawView, rawSymbol] = location.hash.slice(1).split("/");
   const view = _normalizeView(rawView || "research");
   _restoringNavigation = true;
   try {
-    setView(view, { record: false });
-    if (rawSymbol) loadSymbol(decodeURIComponent(rawSymbol));
+    setView(view, { record: false, skipLoad });
+    if (rawSymbol && !skipLoad) loadSymbol(decodeURIComponent(rawSymbol));
   } catch (error) {
     console.warn("Unable to restore terminal navigation:", error);
     setView("research", { record: false });
@@ -103,8 +111,14 @@ function _showDataDialog(title, payload) {
   const dialog = $("dataDetailDialog");
   const heading = $("dataDetailTitle");
   const body = $("dataDetailBody");
+  const guide = $("methodGuideBody");
   if (!dialog || !heading || !body) return;
   heading.textContent = title || "Data details";
+  if (guide) guide.classList.add("hidden");
+  body.classList.remove("hidden");
+  body.style.display = "";
+  body.style.whiteSpace = "";
+  body.style.fontFamily = "";
   body.textContent = JSON.stringify(payload, null, 2);
   if (!dialog.open) dialog.showModal();
 }
@@ -145,7 +159,7 @@ async function loadHealth() {
     const h = await api("/api/health");
     const el = $("healthStatus");
     if (el) el.textContent = `${h.prices_rows.toLocaleString()} price rows`;
-  } catch (e) { const el = $("healthStatus"); if (el) el.textContent = "Offline"; }
+  } catch (e) { const el = $("healthStatus"); if (el) el.textContent = `Unavailable: ${e.message}`; }
 }
 
 async function loadRegime() {
@@ -182,6 +196,7 @@ async function loadTopPicks() {
     const data = await api("/api/toppicks");
     const box = $("picksList");
     if (!box) return;
+    if (data.error) throw new Error(data.error);
     box.innerHTML = "";
     (data.picks || []).forEach(x => {
       const subtitle = x.sector || "Unknown sector";
@@ -206,27 +221,31 @@ async function loadTopPicks() {
 // Swing desk
 // ============================================================
 async function loadSwing() {
-  const data = await api("/api/swing/signals");
   const tbody = $("swingTable");
   if (!tbody) return;
-  tbody.innerHTML = "";
-  const signals = data.signals || [];
-  const score = data.scorecard || {};
-  const ms = $("mSignals"); if (ms) ms.textContent = signals.length;
-  const mw = $("mWinRate"); if (mw) mw.textContent = data.win_rate === null ? "—" : `${data.win_rate}%`;
-  const mo = $("mOpen"); if (mo) mo.textContent = `${score.OPEN || 0} / ${score.PENDING || 0}`;
-  for (const s of signals) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${s.date}</td>
-      <td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="model-score" title="${window.MODEL_EVENT_SCORE_HELP}">Event ${scorePct(s.p_win)}</span>` : ""} ${s.mode === "ALL_WEATHER" ? '<span class="outcome TIMEOUT">All-weather</span>' : ""}</td>
-      <td>${fmt(s.trigger)}</td><td>${fmt(s.stop)}</td><td>${fmt(s.target)}</td>
-      <td>${fmt(s.risk_pct, "%")}</td>
-      <td>${s.pullback ? (s.pullback * 100).toFixed(1) + "%" : "—"}</td>
-      <td>${s.impulse ? (s.impulse * 100).toFixed(1) + "%" : "—"}</td>
-      <td>${s.ema_zone || "—"}</td>
-      <td>${outcomeBadge(s.outcome)}</td>`;
-    tr.addEventListener("click", () => { setView("research"); loadSymbol(s.symbol); });
-    tbody.appendChild(tr);
+  try {
+    const data = await api("/api/swing/signals");
+    tbody.replaceChildren();
+    const signals = data.signals || [];
+    const score = data.scorecard || {};
+    const ms = $("mSignals"); if (ms) ms.textContent = signals.length;
+    const mw = $("mWinRate"); if (mw) mw.textContent = data.win_rate == null ? "—" : `${data.win_rate}%`;
+    const mo = $("mOpen"); if (mo) mo.textContent = `${score.OPEN || 0} / ${score.PENDING || 0}`;
+    for (const s of signals) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${s.date}</td>
+        <td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="model-score" title="${window.MODEL_EVENT_SCORE_HELP}">Event ${scorePct(s.p_win)}</span>` : ""} ${s.mode === "ALL_WEATHER" ? '<span class="outcome TIMEOUT">All-weather</span>' : ""}</td>
+        <td>${fmt(s.trigger)}</td><td>${fmt(s.stop)}</td><td>${fmt(s.target)}</td>
+        <td>${fmt(s.risk_pct, "%")}</td>
+        <td>${s.pullback ? (s.pullback * 100).toFixed(1) + "%" : "—"}</td>
+        <td>${s.impulse ? (s.impulse * 100).toFixed(1) + "%" : "—"}</td>
+        <td>${s.ema_zone || "—"}</td>
+        <td>${outcomeBadge(s.outcome)}</td>`;
+      tr.addEventListener("click", () => { setView("research"); loadSymbol(s.symbol); });
+      tbody.appendChild(tr);
+    }
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="10">Swing signals unavailable: ${error.message}</td></tr>`;
   }
 }
 
@@ -283,6 +302,7 @@ async function loadPatterns() {
   if (!list) return;
   try {
     const data = await api("/api/patterns/latest?limit=60");
+    if (data.error) throw new Error(data.error);
     const rows = data.patterns || [];
     let gate = {};
     try { const gs = await api("/api/patterns/stats"); gate = gs.stats || {}; } catch (e) {}
@@ -377,6 +397,111 @@ async function runPatternScan() {
   if (btn) btn.textContent = "Run Full Scan";
 }
 
+async function startSwingScan() {
+  const btn = $("runSwingBtn");
+  const status = $("swingScanStatus");
+  if (btn) { btn.disabled = true; btn.textContent = "Starting…"; }
+  if (status) status.textContent = "Requesting the scan…";
+  try {
+    const started = await api("/api/swing/scan", { method: "POST" });
+    if (started.already_running) {
+      if (status) status.textContent = "A swing scan is already running; checking its status.";
+    } else if (!started.started) {
+      throw new Error("The swing scan did not start.");
+    }
+    if (btn) btn.textContent = "Scanning…";
+    for (let attempt = 0; attempt < 180; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      const result = await api("/api/swing/scan/status");
+      if (status) status.textContent = result.message || "Swing scan is running…";
+      if (!result.running) {
+        if (result.status === "error") throw new Error(result.message);
+        await refreshAll();
+        return;
+      }
+    }
+    if (status) status.textContent = "Still running; use Refresh after the scan finishes.";
+  } catch (error) {
+    if (status) status.textContent = `Swing scan failed: ${error.message}`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Run Swing Scan"; }
+  }
+}
+
+async function runScreener() {
+  const button = $("runScreenerBtn");
+  const metrics = $("screenerMetrics");
+  const checks = $("screenerChecks");
+  const chartSymbol = (($("chartTitle") || {}).textContent || "")
+    .split(" ")[0];
+  const enteredSymbol = (($("symbolSearch") || {}).value || "").trim();
+  const symbol = (enteredSymbol || (chartSymbol !== "Chart" ? chartSymbol : ""))
+    .trim().toUpperCase();
+  if (!metrics || !checks) return;
+  if (!symbol) {
+    metrics.textContent = "Enter a symbol in the search field first.";
+    return;
+  }
+  if (button) { button.disabled = true; button.textContent = "Checking…"; }
+  metrics.textContent = `Checking ${symbol}…`;
+  checks.textContent = "Loading rule results…";
+  try {
+    const data = await api(`/api/screener/${encodeURIComponent(symbol)}`);
+    if (data.error) throw new Error(data.error);
+    metrics.replaceChildren();
+    const heading = document.createElement("h3");
+    heading.textContent = `${symbol} · ${data.overall_signal ? "all baseline and setup checks passed" : "not all checks passed"}`;
+    metrics.appendChild(heading);
+    const source = document.createElement("p");
+    source.className = "method-note";
+    source.textContent = `${data.source || "Source unavailable"} · latest bar ${data.as_of || "date unavailable"}`;
+    metrics.appendChild(source);
+    [
+      ["Latest price", data.current_price],
+      ["EMA 200", data.ema_200],
+      ["1-month momentum", data.momentum_1m],
+      ["3-month momentum", data.momentum_3m],
+      ["52-week high proximity", data.proximity_52w],
+      ["Impulse", data.impulse_gain],
+      ["Pullback", data.pullback_depth],
+      ["Sessions since high", data.days_since_high],
+      ["Recent range", data.tightness_pct],
+    ].forEach(([label, value]) => {
+      const row = document.createElement("div");
+      row.className = "level";
+      const left = document.createElement("span");
+      left.textContent = label;
+      const right = document.createElement("strong");
+      right.textContent = value == null ? "—" : String(value);
+      row.append(left, right);
+      metrics.appendChild(row);
+    });
+    checks.replaceChildren();
+    const resultTitle = document.createElement("h3");
+    resultTitle.textContent = "Rule checks";
+    checks.appendChild(resultTitle);
+    Object.entries(data.checks || {}).forEach(([name, passed]) => {
+      const row = document.createElement("div");
+      row.className = "level";
+      const left = document.createElement("span");
+      left.textContent = name;
+      const right = document.createElement("strong");
+      right.textContent = passed ? "Passed" : "Not passed";
+      row.append(left, right);
+      checks.appendChild(row);
+    });
+    const note = document.createElement("p");
+    note.className = "method-note";
+    note.textContent = "Screening result only; not a forecast or trade instruction.";
+    checks.appendChild(note);
+  } catch (error) {
+    metrics.textContent = `Screener unavailable: ${error.message}`;
+    checks.textContent = "No rule results were returned.";
+  } finally {
+    if (button) { button.disabled = false; button.textContent = "Run Screener"; }
+  }
+}
+
 // ============================================================
 // Radar
 // ============================================================
@@ -401,7 +526,12 @@ async function loadRadar() {
     render(g["Momentum"], $("radarMomentum"));
     render(g["Volume Spike"], $("radarVolume"));
     render(g["Turnaround"], $("radarTurn"));
-  } catch (e) {}
+  } catch (e) {
+    ["radarMomentum", "radarVolume", "radarTurn"].forEach(id => {
+      const box = $(id);
+      if (box) box.textContent = `Radar data unavailable: ${e.message}`;
+    });
+  }
 }
 
 // ============================================================
@@ -597,6 +727,9 @@ async function _applyPatternMarkers(symbol) {
 async function loadSymbol(symbol) {
   symbol = (symbol || "").trim().toUpperCase();
   if (!symbol) return;
+  const requestId = ++_symbolRequestId;
+  const search = $("symbolSearch");
+  if (search) search.value = symbol;
   if (!_restoringNavigation) {
     const nextHash = `#research/${encodeURIComponent(symbol)}`;
     if (location.hash !== nextHash) {
@@ -612,12 +745,22 @@ async function loadSymbol(symbol) {
     chartData = await api(`/api/cockpit/${symbol}/chart`);
     summary = await api(`/api/cockpit/${symbol}/summary`);
   } catch (e) {
-    if (subEl) subEl.textContent = `Load failed: ${e.message}`;
+    if (requestId === _symbolRequestId && subEl) {
+      subEl.textContent = `Load failed: ${e.message}`;
+    }
     return;
   }
+  if (requestId !== _symbolRequestId) return;
   resetChart();
   if (!chartData.candles || chartData.candles.length === 0) {
     if (subEl) subEl.textContent = "No price history found.";
+    renderStockPulse(symbol, []);
+    if (window.loadResearch) window.loadResearch(symbol);
+    if (window.loadTraderMatches) window.loadTraderMatches(symbol);
+    const setupBadge = $("setupBadge");
+    const setupSummary = $("setupSummary");
+    if (setupBadge) { setupBadge.className = "badge"; setupBadge.textContent = "No history"; }
+    if (setupSummary) setupSummary.textContent = "No stored price history.";
     return;
   }
   candleSeries.setData(chartData.candles);
@@ -626,6 +769,9 @@ async function loadSymbol(symbol) {
   ema50.setData(chartData.ema50 || []);
   ema200.setData(chartData.ema200 || []);
   if (subEl) subEl.textContent = `${summary.sector || "Unknown sector"} · ₹${fmt(summary.mcap_cr)} cr · Fund ${fmt(summary.fund_score)}`;
+  renderStockPulse(symbol, chartData.candles);
+  if (window.loadResearch) window.loadResearch(symbol);
+  if (window.loadTraderMatches) window.loadTraderMatches(symbol);
 
   const setup = chartData.swing;
   const setupBadge = $("setupBadge");
@@ -718,9 +864,60 @@ async function loadSymbol(symbol) {
     }
   }
   await _applyPatternMarkers(symbol);
+  if (requestId !== _symbolRequestId) return;
   if (chart) chart.timeScale().fitContent();
 }
 window.loadSymbol = loadSymbol;
+
+function renderStockPulse(symbol, candles) {
+  const box = $("stockPulse");
+  if (!box) return;
+  const bars = candles || [];
+  const last = bars[bars.length - 1];
+  const previous = bars[bars.length - 2];
+  if (!last) {
+    box.textContent = `${symbol}: no stored daily bars are available.`;
+    return;
+  }
+  const close = Number(last.close);
+  const change = (lookback) => {
+    const base = bars.length > lookback ? Number(bars[bars.length - lookback - 1].close) : null;
+    return base > 0 ? (close / base - 1) * 100 : null;
+  };
+  const daily = previous && Number(previous.close) > 0
+    ? (close / Number(previous.close) - 1) * 100 : null;
+  const fmtPct = value => value == null || !Number.isFinite(value)
+    ? "insufficient bars" : `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+  const latestLine = (label, value) => `
+    <div class="level"><span>${label}</span><strong>${value}</strong></div>`;
+  const calcEma = period => {
+    if (bars.length < period) return null;
+    const alpha = 2 / (period + 1);
+    let value = Number(bars[0].close);
+    for (let i = 1; i < bars.length; i++) {
+      value = Number(bars[i].close) * alpha + value * (1 - alpha);
+    }
+    return value;
+  };
+  const emaSeries = {
+    "EMA 20": calcEma(20),
+    "EMA 50": calcEma(50),
+    "EMA 200": calcEma(200),
+  };
+  const available = Object.entries(emaSeries)
+    .filter(([, value]) => value != null && Number.isFinite(Number(value)));
+  const trend = available.length
+    ? available.map(([name, value]) =>
+      `${close >= Number(value) ? "above" : "below"} ${name}`).join(" · ")
+    : "EMA context unavailable";
+  box.innerHTML = `
+    <div class="level"><span>Latest stored close · ${last.time}</span><strong>₹${close.toFixed(2)}</strong></div>
+    ${latestLine("1-session change", fmtPct(daily))}
+    ${latestLine("20-session change", fmtPct(change(20)))}
+    ${latestLine("60-session change", fmtPct(change(60)))}
+    ${latestLine("Trend context", trend)}
+    <p class="method-note">Daily end-of-day data only. This describes recent price behaviour; it does not predict the next move. Source bar date: ${last.time}.</p>`;
+}
 
 // ============================================================
 // Sizing / Delivery
@@ -866,11 +1063,51 @@ document.addEventListener("click", (e) => {
 // ============================================================
 // Init
 // ============================================================
-async function refreshAll() {
-  await Promise.all([
-    loadHealth(), loadRegime(), loadTopPicks(), loadSwing(),
-    loadPatterns(), loadRadar(),
-  ]);
+async function refreshAll(initialLoad = false) {
+  const button = $("refreshBtn");
+  const status = $("refreshStatus");
+  if (button) { button.disabled = true; button.textContent = "Refreshing…"; }
+  if (status) status.textContent = "Reloading latest saved data…";
+  const tasks = [
+    loadHealth, loadRegime, loadTopPicks, loadSwing,
+    loadPatterns, loadRadar, loadDeployment, loadSourceHealth,
+  ];
+  [
+    window.refreshScannerPanels,
+    window.refreshStrategyLists,
+    window.loadStrategyRuns,
+    window.loadResearchUniverse,
+    window.loadResearchSectors,
+  ].forEach(fn => { if (typeof fn === "function") tasks.push(fn); });
+  const [rawView, rawSymbol] = location.hash.slice(1).split("/");
+  const view = _normalizeView(rawView);
+  if (initialLoad) {
+    if (view === "ledger") tasks.push(loadLedger);
+    if (view === "traders" && window.loadTradersIndex) {
+      tasks.push(window.loadTradersIndex);
+    }
+    if (view === "league" && window.loadLeague) {
+      tasks.push(window.loadLeague);
+    }
+  }
+  const symbol = rawSymbol ? decodeURIComponent(rawSymbol) :
+    (($("chartTitle")?.textContent || "").split(" ")[0] || "");
+  if (_normalizeView(rawView) === "research" && symbol &&
+      symbol !== "Chart") {
+    tasks.push(() => loadSymbol(symbol));
+  }
+  try {
+    const results = await Promise.allSettled(
+      tasks.map(task => Promise.resolve().then(task)));
+    const failures = results.filter(result => result.status === "rejected");
+    if (status) {
+      status.textContent = failures.length
+        ? `Reload completed with ${failures.length} request errors. See affected panels.`
+        : "Latest saved data reloaded. Use scan buttons to compute new results.";
+    }
+  } finally {
+    if (button) { button.disabled = false; button.textContent = "Refresh"; }
+  }
 }
 document.addEventListener("DOMContentLoaded", () => {
   const closeDetails = $("dataDetailClose");
@@ -894,6 +1131,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   const rps = $("runPatternScan");
   if (rps) rps.addEventListener("click", runPatternScan);
+  const swingScanBtn = $("runSwingBtn");
+  if (swingScanBtn) swingScanBtn.addEventListener("click", startSwingScan);
+  const screenerBtn = $("runScreenerBtn");
+  if (screenerBtn) screenerBtn.addEventListener("click", runScreener);
+  window.runScreener = runScreener;
   const rrb = $("runResearchBtn");
   if (rrb) rrb.addEventListener("click", () => {
     const titleEl = $("chartTitle");
@@ -907,6 +1149,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") runCompare();
   });
   window.addEventListener("popstate", _restoreNavigation);
-  _restoreNavigation();
-  refreshAll();
+  _restoreNavigation(true);
+  refreshAll(true);
 });

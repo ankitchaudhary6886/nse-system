@@ -106,7 +106,11 @@ def check_global_regime():
 # ==========================================
 def evaluate_stock(ticker, allow_yahoo=True):
     """Evaluate one stock; returns metrics, pass/fail checks, UI strings."""
-    df = fetch_stock_data(ticker, allow_yahoo=allow_yahoo)
+    df = _from_db(ticker)
+    source = "prices_daily"
+    if df is None and allow_yahoo:
+        df = _from_yahoo(ticker)
+        source = "Yahoo Finance"
     if df is None:
         return {"error": "Insufficient data or invalid ticker."}
 
@@ -173,6 +177,8 @@ def evaluate_stock(ticker, allow_yahoo=True):
 
     return {
         "ticker": ticker,
+        "as_of": str(df.index[-1].date()),
+        "source": source,
         "overall_signal": overall_signal,
         "current_price": fmt(current_price),
         "ema_200": fmt(latest["EMA_200"]),

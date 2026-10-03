@@ -1504,11 +1504,12 @@ def _sector_rs_map(conn):
 # ----------------------------------------------------------------
 # Universe scan
 # ----------------------------------------------------------------
-def scan(conn=None, limit=DEFAULT_LIMIT):
+def scan(conn=None, limit=DEFAULT_LIMIT, symbols=None):
     own = conn is None
     if own:
         conn = db.get_conn()
-    syms = band_universe(conn, limit=limit)
+    from traders.base import select_scan_symbols
+    syms = select_scan_symbols(conn, limit, symbols)
     log.info(f"Singhal scan: {len(syms)} symbols in universe")
 
     sector_rs = _sector_rs_map(conn)

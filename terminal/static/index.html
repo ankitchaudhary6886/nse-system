@@ -168,7 +168,7 @@
     .lg-chart { height:220px; }
   }
 </style>
-<link rel="stylesheet" href="/static/style.css?v=18">
+<link rel="stylesheet" href="/static/style.css?v=19">
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
@@ -224,7 +224,8 @@
       <div class="top-actions">
         <input id="symbolSearch" aria-label="NSE symbol to research" placeholder="NSE symbol, e.g. DIXON" autocomplete="off" />
         <button id="loadSymbolBtn" title="Open symbol research">Open symbol</button>
-        <button id="refreshBtn" title="Refresh visible market and scan data">Refresh</button>
+        <button id="refreshBtn" title="Reload the latest saved data from the terminal">Refresh</button>
+        <span id="refreshStatus" class="refresh-status" role="status" aria-live="polite"></span>
       </div>
     </div>
 
@@ -309,6 +310,7 @@
           <div><h2>Swing desk</h2><p>Forward-validation log, including All-weather setups. Model event score means a +10% high within 20 sessions; it is uncalibrated and not trade win odds.</p></div>
           <button id="runSwingBtn">Run Swing Scan</button>
         </div>
+        <p id="swingScanStatus" class="method-note" role="status" aria-live="polite"></p>
         <div class="table-wrap">
           <table>
             <thead>
@@ -366,6 +368,22 @@
         </div>
       </div>
 
+      <div class="terminal-grid" style="margin-top:18px;">
+        <div class="panel">
+          <div class="panel-header">
+            <div><h2>Stock pulse</h2><p>Latest available daily bar; this is not an intraday feed or forecast.</p></div>
+          </div>
+          <div class="setup-box" id="stockPulse"><p>Choose a symbol to load its latest stored market state.</p></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div><h2>Trader method matches</h2><p>Current scan rules checked against this symbol. A match is research evidence, not a buy instruction.</p></div>
+            <button id="refreshTraderMatches" type="button" disabled>Check methods</button>
+          </div>
+          <div class="setup-box" id="traderMatchBox"><p>Choose a symbol to check the registered methods.</p></div>
+        </div>
+      </div>
+
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div><h2>Compare companies</h2><p>Compare 2–4 symbols side by side. Event score tracks a +10% high within 20 sessions; it is uncalibrated, not a trade win probability.</p></div>
@@ -381,7 +399,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>🔬 Research Cockpit — single symbol</h2><p>5y of historical setups on this symbol. Global signature match too.</p></div>
+          <div><h2>🔬 Research Cockpit — single symbol</h2><p>Historical setup behaviour and similar past cases; available history and limits are shown.</p></div>
           <button id="runResearchBtn">Compute for loaded symbol</button>
         </div>
         <div class="setup-box" id="researchBox"><p>Load a symbol and press "Compute".</p></div>
@@ -389,7 +407,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>🌐 Research Universe</h2><p>Today's setups + historical stats. Sortable.</p></div>
+          <div><h2>🌐 Research Universe</h2><p>Latest stored swing/trend scan plus historical stats. Sortable.</p></div>
           <div style="display:flex; gap:6px;">
             <button id="refreshResearchUniverse">Refresh</button>
             <button id="computeMissingBtn">Compute Missing</button>
@@ -419,7 +437,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>🧪 Screener</h2><p>Baseline + VCP checks</p></div>
+          <div><h2>🧪 Screener</h2><p>Baseline + VCP checks for the symbol in the search field above.</p></div>
           <button id="runScreenerBtn">Run Screener</button>
         </div>
         <div class="terminal-grid" style="margin-top:10px;">
@@ -515,18 +533,21 @@
     <h2 id="dataDetailTitle">Data details</h2>
     <button type="button" id="dataDetailClose" aria-label="Close details">Close</button>
   </div>
-  <div class="detail-dialog-body"><pre id="dataDetailBody" class="detail-json"></pre></div>
+  <div class="detail-dialog-body">
+    <pre id="dataDetailBody" class="detail-json"></pre>
+    <div id="methodGuideBody" class="method-guide hidden"></div>
+  </div>
 </dialog>
 <script src="/static/cards.js?v=18"></script>
-<script src="/static/app.js?v=18"></script>
-<script src="/static/scanners.js?v=16"></script>
-<script src="/static/strategy_runs.js?v=17"></script>
-<script src="/static/research.js?v=17"></script>
-<script src="/static/research_universe.js?v=17"></script>
-<script src="/static/research_sector.js?v=17"></script>
-<script src="/static/strategies.js?v=17"></script>
+<script src="/static/app.js?v=19"></script>
+<script src="/static/scanners.js?v=17"></script>
+<script src="/static/strategy_runs.js?v=18"></script>
+<script src="/static/research.js?v=18"></script>
+<script src="/static/research_universe.js?v=18"></script>
+<script src="/static/research_sector.js?v=18"></script>
+<script src="/static/strategies.js?v=18"></script>
 <script src="/static/strategy_editor.js?v=16"></script>
-<script src="/static/traders.js?v=17"></script>
+<script src="/static/traders.js?v=18"></script>
 <script src="/static/league.js?v=20"></script>
 </body>
 </html>

@@ -252,15 +252,9 @@ async function seedStrategies() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  seedStrategies().then(() => {
-    loadStrategyListFor("fundamental");
-    loadStrategyListFor("swing");
-  });
-  const rb = document.getElementById("refreshBtn");
-  if (rb) {
-    rb.addEventListener("click", () => {
-      loadStrategyListFor("fundamental");
-      loadStrategyListFor("swing");
-    });
-  }
+  seedStrategies();
 });
+window.refreshStrategyLists = () => Promise.all([
+  loadStrategyListFor("fundamental"),
+  loadStrategyListFor("swing"),
+]);

@@ -118,10 +118,4 @@ async function loadStrategyRuns() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadStrategyRuns();
-  const btn = document.getElementById("refreshBtn");
-  if (btn) {
-    btn.addEventListener("click", loadStrategyRuns);
-  }
-});
+window.loadStrategyRuns = loadStrategyRuns;

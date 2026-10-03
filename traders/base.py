@@ -1,8 +1,18 @@
-"""
-Shared utilities for trader modules.
-Pure functions, no DB, no side effects.
-"""
+"""Shared scan selection and calculation utilities for trader modules."""
 import datetime as dt
+
+
+def select_scan_symbols(conn, limit, symbols=None):
+    from universe_helper import band_universe
+
+    universe = band_universe(conn, limit=limit)
+    if symbols is None:
+        return universe
+    if isinstance(symbols, str):
+        symbols = [symbols]
+    requested = {str(symbol).strip().upper() for symbol in symbols
+                 if str(symbol).strip()}
+    return [symbol for symbol in universe if symbol in requested]
 
 
 # ============================================================

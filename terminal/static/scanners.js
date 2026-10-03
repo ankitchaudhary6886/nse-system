@@ -90,16 +90,8 @@ async function loadValueRadarPanel() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadTrendPanel();
-  loadPositionalPanel();
-  loadValueRadarPanel();
-  const btn = document.getElementById("refreshBtn");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      loadTrendPanel();
-      loadPositionalPanel();
-      loadValueRadarPanel();
-    });
-  }
-});
+window.refreshScannerPanels = () => Promise.all([
+  loadTrendPanel(),
+  loadPositionalPanel(),
+  loadValueRadarPanel(),
+]);

@@ -607,11 +607,12 @@ def _scan_symbol(sym, df):
 # ----------------------------------------------------------------
 # Universe scan
 # ----------------------------------------------------------------
-def scan(conn=None, limit=800):
+def scan(conn=None, limit=800, symbols=None):
     own = conn is None
     if own:
         conn = db.get_conn()
-    syms = band_universe(conn, limit=limit)
+    from traders.base import select_scan_symbols
+    syms = select_scan_symbols(conn, limit, symbols)
     log.info(f"Ishaan scan: {len(syms)} symbols in universe")
 
     signals = []

@@ -1,5 +1,7 @@
 import os
 import json
+import time
+import threading
 import datetime as dt
 import pandas as pd
 from dotenv import load_dotenv
@@ -30,6 +32,14 @@ app = FastAPI(title="NSE Intelligence Terminal", version="24.1",
               lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="terminal/static"),
           name="static")
+
+_TRADER_FULL_SCAN_CACHE = {}
+_TRADER_FULL_SCAN_TTL = 1800
+_SWING_SCAN_LOCK = threading.Lock()
+_SWING_SCAN_STATE = {
+    "running": False, "status": "idle", "message": "No swing scan run yet.",
+    "started_at": None, "finished_at": None,
+}
 
 
 def verify_user(credentials: HTTPBasicCredentials = Depends(security)):
@@ -227,6 +237,90 @@ def scan_trader_api(slug: str, limit: int = 800,
                 "signals": sigs}
     except Exception as e:
         return {"slug": slug, "error": str(e), "signals": []}
+
+
+@app.get("/api/traders/matches/{symbol}")
+def trader_matches_api(symbol: str, user: str = Depends(verify_user)):
+    import re
+    import traders
+    import db
+    from universe_helper import band_universe
+
+    sym = symbol.strip().upper()
+    if not re.fullmatch(r"[A-Z0-9&.-]{1,20}", sym):
+        raise HTTPException(status_code=422, detail="invalid NSE symbol")
+
+    conn = db.get_conn()
+    try:
+        prices_as_of = conn.execute(
+            "SELECT MAX(date) FROM prices_daily").fetchone()[0]
+        universe = set(band_universe(conn, limit=800))
+        if sym not in universe:
+            return {
+                "symbol": sym, "as_of": prices_as_of,
+                "in_scan_universe": False, "n_traders_checked": 0,
+                "n_methods_matched": 0, "matches": [], "errors": [],
+                "message": "Symbol is outside the current 800-symbol trader scan universe.",
+            }
+
+        cross_sectional = {
+            "oshaughnessy", "quantitative_value",
+            "value_investing_made_easy",
+        }
+        matches = []
+        errors = []
+        checked = 0
+        for trader in traders.REGISTRY:
+            try:
+                if trader.SLUG in cross_sectional:
+                    cache = _TRADER_FULL_SCAN_CACHE.get(trader.SLUG)
+                    if (cache and cache[0] == prices_as_of
+                            and time.monotonic() - cache[1]
+                            < _TRADER_FULL_SCAN_TTL):
+                        signals = cache[2]
+                    else:
+                        signals = trader.scan(conn=conn, limit=800)
+                        _TRADER_FULL_SCAN_CACHE[trader.SLUG] = (
+                            prices_as_of, time.monotonic(), signals)
+                    signals = [signal for signal in signals
+                               if signal.get("symbol") == sym]
+                else:
+                    signals = trader.scan(
+                        conn=conn, limit=800, symbols=[sym])
+                checked += 1
+                methods = {
+                    method.get("id"): method
+                    for method in trader.METHODS
+                    if method.get("id")
+                }
+                for signal in signals:
+                    method_id = signal.get("method")
+                    matches.append({
+                        "trader": trader.NAME,
+                        "slug": trader.SLUG,
+                        "source": trader.SOURCE,
+                        "method": methods.get(method_id, {
+                            "id": method_id,
+                            "name": method_id or "Unnamed method",
+                            "description": "",
+                        }),
+                        "signal": signal,
+                    })
+            except Exception as e:
+                errors.append({"trader": trader.NAME,
+                               "error": str(e)})
+        return {
+            "symbol": sym, "as_of": prices_as_of,
+            "in_scan_universe": True,
+            "n_traders_checked": checked,
+            "n_methods_matched": len({
+                (item["slug"], item["method"].get("id"))
+                for item in matches
+            }),
+            "matches": matches, "errors": errors,
+        }
+    finally:
+        conn.close()
 
 
 # ============================================================
@@ -542,10 +636,46 @@ def swing_signals(limit: int = 80, user: str = Depends(verify_user)):
 
 @app.post("/api/swing/scan")
 def run_swing_scan(bg: BackgroundTasks, user: str = Depends(verify_user)):
-    import swing_live
-    bg.add_task(swing_live.update_outcomes)
-    bg.add_task(swing_live.scan)
+    with _SWING_SCAN_LOCK:
+        if _SWING_SCAN_STATE["running"]:
+            return {"started": False, "already_running": True}
+        _SWING_SCAN_STATE.update({
+            "running": True, "status": "running",
+            "message": "Updating outcomes and scanning the current universe.",
+            "started_at": dt.datetime.now().isoformat(timespec="seconds"),
+            "finished_at": None,
+        })
+    bg.add_task(_run_swing_scan_job)
     return {"started": True}
+
+
+def _run_swing_scan_job():
+    import logging
+    import swing_live
+    try:
+        swing_live.update_outcomes()
+        swing_live.scan()
+    except Exception as error:
+        logging.getLogger(__name__).exception("Swing scan failed")
+        with _SWING_SCAN_LOCK:
+            _SWING_SCAN_STATE.update({
+                "running": False, "status": "error",
+                "message": str(error),
+                "finished_at": dt.datetime.now().isoformat(timespec="seconds"),
+            })
+        return
+    with _SWING_SCAN_LOCK:
+        _SWING_SCAN_STATE.update({
+            "running": False, "status": "complete",
+            "message": "Swing scan completed successfully.",
+            "finished_at": dt.datetime.now().isoformat(timespec="seconds"),
+        })
+
+
+@app.get("/api/swing/scan/status")
+def swing_scan_status(user: str = Depends(verify_user)):
+    with _SWING_SCAN_LOCK:
+        return dict(_SWING_SCAN_STATE)
 
 
 @app.get("/api/radar")

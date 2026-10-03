@@ -255,6 +255,33 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ---
 
+### #095 · Repair refresh, research, and trader-method flows — AWAITING
+- Research uses the newest stored swing/trend scan dates instead of requiring
+  a scan dated today; it exposes source dates and warns when scans lag prices.
+  Per-symbol research preserves the latest market state with short history,
+  while withholding historical setup statistics until the 280-bar minimum.
+  Research cache entries now invalidate when that symbol's latest price date
+  advances.
+- The company view launches current-state research and trader-method matching
+  for the selected stock. Implemented scanners can target a single symbol
+  within the established universe; cross-sectional rankers remain full-universe
+  to preserve their ranking logic. Trader-method rows and matches open a
+  plain-language guide instead of raw method JSON.
+- Wired scan/screener controls to their APIs, added scan status/error feedback,
+  made refresh behavior explicit (reload saved data versus run a scan), and
+  removed duplicate refresh listeners. Added coverage for latest scan dates,
+  price staleness, short histories, cache freshness, and the target-universe
+  gate.
+- Performance review was diagnostic only: production ledger shows 2 wins /
+  44 graded signals (4.5%). The three-year common-book replay's best listed
+  trader had 39.6% wins, PF 0.82, and negative expectancy; no tested method
+  supports a >60% claim. No signal thresholds or outcome labels were altered
+  to improve the displayed rate.
+- Validation: unit tests, Python compilation, JavaScript syntax checks, and
+  diff hygiene passed locally. Production remains unchanged pending sync,
+  publish, and deployment verification.
+- Status: AWAITING publication and VM verification.
+
 ## HOW NEW SESSIONS USE THIS
 1. Read `backlog.md` — rules, instructions, current status.
 2. Read `EXECUTION_LOG.md` — exactly what shipped.

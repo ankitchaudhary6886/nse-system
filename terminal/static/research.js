@@ -1,5 +1,7 @@
 // Research Cockpit — per-symbol deep dive.
 
+let _researchRequestId = 0;
+
 function _researchRow(label, value, colour) {
   const col = colour || "#edf3ff";
   return `<div class="level" style="padding:8px 12px;">
@@ -125,16 +127,31 @@ function renderResearch(data) {
   const box = document.getElementById("researchBox");
   if (!box) return;
   if (data.error) {
-    box.innerHTML = `<p>Research unavailable: ${data.error}</p>`;
+    box.textContent = `Research unavailable: ${data.error}`;
     return;
   }
   const h = data.historical || {};
+  const state = data.market_state || {};
   let html = "";
 
   html += `<div style="font-size:12px; color:#7f8da9; margin-bottom:6px;">
     ${data.sector || "Unknown sector"} · as of ${data.as_of} ·
     close ${data.latest_close} · ${data.pct_from_52w_high}% below 52w high ·
     ${data.pct_from_52w_low}% above 52w low
+  </div>`;
+  const emaStatus = ["ema20", "ema50", "ema200"]
+    .filter(key => state[key] != null)
+    .map(key => `${Number(state.close) >= Number(state[key]) ? "above" : "below"} ${key.slice(3).toUpperCase()}`)
+    .join(" · ") || "EMA context unavailable";
+  const marketPct = value => value == null || !Number.isFinite(Number(value))
+    ? "—" : `${Number(value) > 0 ? "+" : ""}${Number(value).toFixed(1)}%`;
+  html += `<div class="setup-box">
+    <h4 style="margin:0 0 8px;font-size:13px;">Latest market state · ${state.as_of || data.as_of || "date unavailable"}</h4>
+    <div class="level"><span>Close / daily change</span><strong>${_num(state.close)} · ${marketPct(state.change_1d_pct)}</strong></div>
+    <div class="level"><span>20 / 60 session move</span><strong>${marketPct(state.change_20d_pct)} · ${marketPct(state.change_60d_pct)}</strong></div>
+    <div class="level"><span>Trend context</span><strong>${emaStatus}</strong></div>
+    <div class="level"><span>Volume vs 20-session average</span><strong>${state.volume_ratio_20 == null ? "unavailable" : `${_num(state.volume_ratio_20)}×`}</strong></div>
+    <p class="method-note">This is observed end-of-day price behaviour, not a forecast. ${state.bars_available || data.history_bars_tested || 0} daily bars available in the analysis window.</p>
   </div>`;
 
   if (data.current_setup) {
@@ -162,8 +179,14 @@ function renderResearch(data) {
 
   // Symbol-only history
   html += `<h4 style="margin:14px 0 8px; font-size:13px;">Symbol history — ${h.n_setups || 0} setups over ${data.history_years}y (step ${data.step})</h4>`;
+  if (!data.history_sufficient) {
+    html += `<p>Historical setup statistics need at least 280 daily bars. Only ${data.history_bars_tested || 0} are available; the latest market state above is still shown.</p>`;
+    box.innerHTML = html;
+    _bindResearchDetails(box, data);
+    return;
+  }
   if (!h.n_setups) {
-    html += `<p>No historical setups on this symbol.</p>`;
+    html += `<p>No historical setups matched the configured rules in the available sample.</p>`;
     box.innerHTML = html;
     _bindResearchDetails(box, data);
     return;
@@ -260,12 +283,16 @@ function _bindResearchDetails(box, data) {
 async function loadResearch(symbol) {
   const box = document.getElementById("researchBox");
   if (!box) return;
+  const requestId = ++_researchRequestId;
   box.innerHTML = `<p>Computing (5-15s)...</p>`;
   try {
     const data = await api(`/api/research/${symbol}`);
+    if (requestId !== _researchRequestId) return;
     renderResearch(data);
   } catch (e) {
-    box.innerHTML = `<p>Research error: ${e.message}</p>`;
+    if (requestId === _researchRequestId) {
+      box.textContent = `Research error: ${e.message}`;
+    }
   }
 }
 
