@@ -277,10 +277,14 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
   trader had 39.6% wins, PF 0.82, and negative expectancy; no tested method
   supports a >60% claim. No signal thresholds or outcome labels were altered
   to improve the displayed rate.
-- Validation: unit tests, Python compilation, JavaScript syntax checks, and
-  diff hygiene passed locally. Production remains unchanged pending sync,
-  publish, and deployment verification.
-- Status: AWAITING publication and VM verification.
+- Validation: 36 unit tests passed locally and on the VM; changed Python
+  modules compiled, browser scripts passed `node --check`, and diff hygiene
+  passed.
+- Published to main and deployed to the VM at `5b07c86`. The terminal service
+  is active, `/static/app.js?v=19` returns HTTP 200, and the unauthenticated
+  root/API probes correctly return HTTP 401. Static JS checksums match local
+  files. No production database rows or trading settings were changed.
+- Status: DEPLOYED · VERIFIED on main and VM at `5b07c86`.
 
 ## HOW NEW SESSIONS USE THIS
 1. Read `backlog.md` — rules, instructions, current status.
