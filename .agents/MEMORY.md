@@ -48,10 +48,16 @@ run, the change exists only on the laptop. Keep it on the pending list and say s
 at the end of every turn. A refactor that is never pushed is a refactor that
 gets lost.
 
-**Pending right now (2026-10-05):** the B2 band-universe consolidation
-(16 backend files) and the `EXECUTION_LOG.md` compaction are **committed locally,
-not yet pushed, and not yet pulled on the VM**. The VM needs
-`git pull` + `sudo systemctl restart nse-terminal` + the `journalctl` check.
+**PENDING: nothing.** As of 2026-10-05 the B2/B3/B4/B5 batches and the
+`EXECUTION_LOG.md` compaction are **pushed to GitHub and pulled on the VM**, and
+`nse-terminal.service` was restarted and verified `active (running)` with
+`trader_league.py selftest` at 28/28. The next substantial change starts a new
+pending item here.
+
+**Note on the VM pull:** the VM is reachable with the key alone (no passphrase)
+via `ssh -i C:\Users\Ankit\.ssh\nse.pem ubuntu@140.238.226.249`, so an agent can
+push and pull directly. Always restart the service and read the status line
+before calling it deployed.
 
 ## 3. R47 — ALWAYS whole copy-paste blocks
 
