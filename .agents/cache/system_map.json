@@ -1,6 +1,6 @@
 {
  "root": "C:\\Users\\Ankit\\Desktop\\nse_system",
- "module_count": 133,
+ "module_count": 130,
  "modules": {
   ".agents/build_cache.py": {
    "lines": 450,
@@ -44,99 +44,6 @@
     "suggest_message",
     "print_deploy_blocks",
     "main"
-   ],
-   "classes": [],
-   "has_cli": true,
-   "imports_local": [],
-   "imports_third_party": [],
-   "imported_by": []
-  },
-  ".github/prompts/claude-finance-kit/finance-kit/scripts/fetch-single-metric.py": {
-   "lines": 130,
-   "bytes": 4819,
-   "doc": "Fetch Single Metric \u2014 quick lookup for one data point. Usage: python scripts/fetch-single-metric.py TICKER METRIC [--source VCI] Metrics: pe, pb, roe, roa, eps, price, market_cap, dividend_yield, debt_equity, current_ratio, gross_margin, net_margin, vnindex_pe, cpi, interest_rate, exchange_rate Outp",
-   "functions": [
-    "main",
-    "fetch_ratio_metric",
-    "fetch_price",
-    "fetch_market_cap",
-    "fetch_market_metric"
-   ],
-   "classes": [],
-   "has_cli": true,
-   "imports_local": [],
-   "imports_third_party": [],
-   "imported_by": []
-  },
-  ".github/prompts/claude-finance-kit/finance-kit/scripts/market-briefing.py": {
-   "lines": 85,
-   "bytes": 3183,
-   "doc": "Market Briefing \u2014 fetch VNINDEX valuation, top movers, macro indicators, commodities. Usage: python scripts/market-briefing.py [--index VNINDEX] Output: JSON to stdout with sections: market, movers, macro, commodities, funds",
-   "functions": [
-    "main"
-   ],
-   "classes": [],
-   "has_cli": true,
-   "imports_local": [],
-   "imports_third_party": [],
-   "imported_by": []
-  },
-  ".github/prompts/claude-finance-kit/finance-kit/scripts/news-sentiment.py": {
-   "lines": 59,
-   "bytes": 1973,
-   "doc": "News Sentiment \u2014 crawl Vietnamese financial news and output for sentiment classification. Usage: python scripts/news-sentiment.py [TICKER] [--sites cafef,vnexpress] [--limit 20] Output: JSON to stdout with articles (title, url, description, publish_time, source) Note: Sentiment classification is don",
-   "functions": [
-    "main"
-   ],
-   "classes": [],
-   "has_cli": true,
-   "imports_local": [],
-   "imports_third_party": [],
-   "imported_by": []
-  },
-  ".github/prompts/claude-finance-kit/finance-kit/scripts/stock-deep-dive.py": {
-   "lines": 128,
-   "bytes": 4706,
-   "doc": "Stock Deep Dive \u2014 fetch fundamental + technical + news data for a single ticker. Usage: python scripts/stock-deep-dive.py TICKER [--source KBS] [--days 200] Output: JSON to stdout with sections: overview, financials, ratios, technicals, news",
-   "functions": [
-    "main",
-    "safe_last",
-    "safe_last_df"
-   ],
-   "classes": [],
-   "has_cli": true,
-   "imports_local": [],
-   "imports_third_party": [],
-   "imported_by": []
-  },
-  ".github/prompts/claude-finance-kit/finance-kit/scripts/stock-screener.py": {
-   "lines": 188,
-   "bytes": 6832,
-   "doc": "Stock Screener \u2014 multi-criteria screening for Vietnamese stocks. Usage: python scripts/stock-screener.py [--group VN30] [--strategy magic|canslim|multifactor] [--top 10] Output: JSON with ranked stocks and scores Strategies: magic \u2014 Greenblatt Magic Formula (ROC + Earnings Yield) canslim \u2014 CAN SLIM ",
-   "functions": [
-    "main",
-    "get_ratios",
-    "screen_magic_formula",
-    "screen_canslim",
-    "screen_multifactor",
-    "safe_stock"
-   ],
-   "classes": [],
-   "has_cli": true,
-   "imports_local": [],
-   "imports_third_party": [],
-   "imported_by": []
-  },
-  ".github/prompts/claude-finance-kit/finance-kit/scripts/technical-composite-score.py": {
-   "lines": 273,
-   "bytes": 8161,
-   "doc": "Technical Composite Score \u2014 compute trend + momentum + volume + volatility scores. Usage: python scripts/technical-composite-score.py TICKER [--days 200] [--source VCI] Output: JSON with composite score (0-100), category scores, key indicators, levels Formula: score = trend(35%) + momentum(30%) + vo",
-   "functions": [
-    "main",
-    "compute_trend",
-    "compute_momentum",
-    "compute_volume",
-    "compute_volatility"
    ],
    "classes": [],
    "has_cli": true,
@@ -320,8 +227,8 @@
    ]
   },
   "build_setup_pool.py": {
-   "lines": 307,
-   "bytes": 9773,
+   "lines": 291,
+   "bytes": 9646,
    "doc": "Build setup_pool \u2014 global historical setup features + forward outcomes. Walks history for a limited universe (top-N by mcap), extracts the feature snapshot at every SetupDetector trigger, and stores it. Then signature matching can find the N nearest pool rows to any live setup. Usage: python build_s",
    "functions": [
     "_ensure",
@@ -339,7 +246,9 @@
     "db",
     "log_utils",
     "sector_gate",
+    "sector_pit",
     "setup",
+    "setup_sim",
     "universe_helper"
    ],
    "imports_third_party": [
@@ -347,7 +256,8 @@
     "pandas"
    ],
    "imported_by": [
-    "scheduler_bg.py"
+    "scheduler_bg.py",
+    "verify_batch_b.py"
    ]
   },
   "bullflag_rescue.py": {
@@ -761,6 +671,7 @@
     "universe_helper.py",
     "validate.py",
     "value_radar.py",
+    "verify_batch_b.py",
     "verify_deployment.py"
    ]
   },
@@ -1415,8 +1326,8 @@
    ]
   },
   "ml_train.py": {
-   "lines": 127,
-   "bytes": 5398,
+   "lines": 161,
+   "bytes": 6729,
    "doc": "",
    "functions": [
     "build_dataset",
@@ -1682,8 +1593,8 @@
    ]
   },
   "research_cockpit.py": {
-   "lines": 972,
-   "bytes": 35062,
+   "lines": 925,
+   "bytes": 33542,
    "doc": "Research Cockpit \u2014 historical behaviour of setups similar to today's. Entry points: analyze_symbol(sym) \u2014 full per-symbol analysis (cached 7d) analyze_universe(limit) \u2014 today's setups + their cached stats warm_cache() \u2014 compute + cache stats for today's symbols sector_aggregate() \u2014 pool setups acros",
    "functions": [
     "_ensure_cache",
@@ -1715,7 +1626,8 @@
    "has_cli": true,
    "imports_local": [
     "db",
-    "setup"
+    "setup",
+    "setup_sim"
    ],
    "imports_third_party": [
     "numpy",
@@ -1724,7 +1636,8 @@
    "imported_by": [
     "scheduler_bg.py",
     "terminal_api.py",
-    "test_research_cockpit.py"
+    "test_research_cockpit.py",
+    "verify_batch_b.py"
    ]
   },
   "rule_engine.py": {
@@ -1951,8 +1864,8 @@
    ]
   },
   "screener_engine.py": {
-   "lines": 235,
-   "bytes": 9045,
+   "lines": 291,
+   "bytes": 12209,
    "doc": "On-Demand Screener \u2014 baseline (Stage-2 + momentum + volume) + VCP/pullback checks. DB-first (prices_daily), Yahoo fallback for unknown symbols (single-symbol mode only). Usage: python screener_engine.py RELIANCE -> full check breakdown for one stock python screener_engine.py scan -> run over top sma",
    "functions": [
     "_from_db",
@@ -1967,6 +1880,7 @@
    "has_cli": true,
    "imports_local": [
     "db",
+    "strategy_config",
     "universe_helper"
    ],
    "imports_third_party": [
@@ -1975,7 +1889,8 @@
     "yfinance"
    ],
    "imported_by": [
-    "terminal_api.py"
+    "terminal_api.py",
+    "verify_batch_b.py"
    ]
   },
   "sector_gate.py": {
@@ -2004,6 +1919,24 @@
     "top_picks.py",
     "trader_league.py",
     "traders/singhal.py"
+   ]
+  },
+  "sector_pit.py": {
+   "lines": 113,
+   "bytes": 4233,
+   "doc": "Point-in-time sector relative strength (batch B4, 2026-10-05). WHY THIS EXISTS `build_setup_pool` stamps every historical `setup_pool` row with `sector_rs`, but it used `sector_gate.sector_perf(conn)`, which has **no as-of date** -- it reads `universe_broad.perf1m / perf3m`, i.e. TODAY's values. Eve",
+   "functions": [
+    "sector_rs_by_date"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": [
+    "build_setup_pool.py",
+    "verify_batch_b.py"
    ]
   },
   "sectors_refresh.py": {
@@ -2077,6 +2010,23 @@
     "terminal_api.py",
     "top_picks.py",
     "trader_league.py"
+   ]
+  },
+  "setup_sim.py": {
+   "lines": 92,
+   "bytes": 3018,
+   "doc": "Shared forward simulation for a triggered setup. Extracted 2026-10-05 (batch B5) from two equivalent copies that had drifted in return shape only: * `build_setup_pool._simulate` -- counted hit_1r/2r/3r as 0/1 * `research_cockpit._simulate_forward` -- booleans + hit_4r + bars_to_* The trading rules w",
+   "functions": [
+    "simulate_forward"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "build_setup_pool.py",
+    "research_cockpit.py",
+    "verify_batch_b.py"
    ]
   },
   "sheets_sync.py": {
@@ -2176,6 +2126,7 @@
     "all_weather.py",
     "backtest.py",
     "scanner.py",
+    "screener_engine.py",
     "setup.py",
     "sizing.py",
     "trader_league.py",
@@ -3520,7 +3471,8 @@
     "traders/way_of_the_turtle.py",
     "trend_scanner.py",
     "validate.py",
-    "value_radar.py"
+    "value_radar.py",
+    "verify_batch_b.py"
    ]
   },
   "validate.py": {
@@ -3575,6 +3527,27 @@
     "scheduler_bg.py",
     "terminal_api.py"
    ]
+  },
+  "verify_batch_b.py": {
+   "lines": 77,
+   "bytes": 3446,
+   "doc": "VM post-deploy verification for batch B3/B4/B5 (run on the VM).",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "build_setup_pool",
+    "db",
+    "research_cockpit",
+    "screener_engine",
+    "sector_pit",
+    "setup_sim",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
   },
   "verify_deployment.py": {
    "lines": 271,

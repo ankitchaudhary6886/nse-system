@@ -29,7 +29,19 @@ own). Do not "fix" it by copying a DB. Verify freshness against the VM.
 
 ---
 
-## F-02 · Meta-model bundle is bare → the whole P(WIN) chain is dead — `OPEN`
+## F-02 · Meta-model bundle is bare → the whole P(WIN) chain is dead — `RETRACTED: LOCAL-ONLY` (2026-10-05)
+
+> **This finding was WRONG about production.** It was observed on the **laptop's**
+> `data/meta_model.pkl`, which is a stale bare estimator. On the **VM** the bundle
+> was already a correct `v8-pit-safe` dict with exactly 27 features, and
+> `get_model()` never returned `None`. Verified on the VM 2026-10-05:
+> `pwin_daily` = 19,065 rows through today (708/day), `top_picks` = 1,450 rows
+> (50/day) through today, `meta_model.py train` exits 0 (AUC 0.646, top-10% win
+> 66.2%). The P(WIN) chain was **healthy all along**.
+>
+> **Lesson recorded:** `data/*.pkl` are gitignored and per-machine. Local model
+> state is NOT production state — never diagnose a model defect from the laptop.
+> F-02 and F-03 were both raised before this was accounted for.
 
 **Evidence**
 ```powershell
@@ -53,7 +65,26 @@ version, metadata}` bundle. Do **not** hand-patch the pickle.
 
 ---
 
-## F-03 · `ml_models.pkl` version mismatch → `scan` rejects every symbol — `OPEN`
+## F-03 · `ml_models.pkl` was frozen at v0.1 → ML scores went stale — `FIXED` (2026-10-05)
+
+> **Two corrections.** (1) `scan` did **not** reject every symbol: it reads
+> `MAX(prediction_date)` (2026-10-02, 721 symbols) and 34 cleared `MIN_ML=70`.
+> The real impact was **3-day-stale ML gating**, not a lockout — again
+> misdiagnosed from the stale laptop DB. (2) The root cause was not the version
+> guard but `ml_train.py:_time_split`: the validation fold (15% of dates = 114)
+> was **always** narrower than the 252-date purge horizon, so the purge emptied
+> it every run and `train()` always raised "purged global-date split has an empty
+> fold". `data/ml_models.pkl` could therefore never be regenerated, which is why
+> it sat at `v0.1`.
+
+**FIXED** by replacing the purge with an **explicit inter-fold embargo**
+(`ml_train.py:_time_split`): a gap of `min(252, len(dates)//4)` dates is reserved
+*between* folds instead of deleting rows from them. Leakage is still impossible —
+no training label is observable before the validation window opens. Verified
+locally on a 760-date frame (folds 1064/228/228, strictly ordered), then on the
+VM: `ml_train.py` exit 0 (Test AUC 6M 0.550 / 12M 0.554) → `ml_models.pkl` =
+**v0.2-pit-safe** → `ml_predict.py` stored **721** stocks → `ml_predictions` =
+**15,733 rows, max 2026-10-05** (was 15,012 @ 2026-10-02).
 
 **Evidence**
 ```powershell
