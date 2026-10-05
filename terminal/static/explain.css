@@ -78,6 +78,10 @@
   border-bottom: 1px solid var(--hairline, rgba(255, 255, 255, .07));
   vertical-align: middle;
 }
+/* Keep dates, result pills and R figures on one line; the company name is the
+   only column allowed to wrap. */
+.ledger-company-table td:not(:first-child),
+.ledger-company-table th:not(:first-child) { white-space: nowrap; }
 .ledger-company-table tr:last-child td { border-bottom: 0; }
 
 .ledger-words { color: var(--muted, #8b97ad); }
@@ -97,6 +101,7 @@
   margin-top: 2px;
   font-size: 11px;
   color: var(--muted, #8b97ad);
+  white-space: nowrap;
 }
 
 .ledger-more {

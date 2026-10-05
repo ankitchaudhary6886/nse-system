@@ -658,8 +658,10 @@ async function loadTraderMatches(symbol) {
   }
   if (!data.in_scan_universe) {
     box.appendChild(tmNoticeNode(
-      data.message || "This company is outside the list of companies we check.",
-      "Technical detail: HTTP 200 · the company was skipped, not an error."
+      data.message || ("This company is not in the list of " +
+        "companies we check each day, so no book could be tested against it."),
+      "Technical detail: HTTP " + (reply.status || 200) +
+      " · the company was skipped, which is not an error."
     ));
     return;
   }
