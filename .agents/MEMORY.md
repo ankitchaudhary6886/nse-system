@@ -9,6 +9,34 @@ Last updated: **2026-10-05**
 
 ---
 
+## 0. FIRST LINE OF EVERY RESPONSE — name the tools you will use
+
+Before executing anything, state in the reply **which skills, subagents, or new
+artifacts you will use or create**, and why. Use this shape:
+
+```
+Skills / subagents identified
+  Resource                 Use       Why
+  nse-terminal-<x>         read      <what it governs>
+  subagent T<n> <name>     delegate  <independent scope>
+  new skill <name>         create    <capability no existing skill covers>
+```
+
+Then run the identify → plan → execute loop (§10). Rules:
+- **Prefer an existing skill over ad-hoc reasoning.** Six exist under
+  `.agents/skills/`; load the one that matches the task.
+- **Prefer a subagent when the work is self-contained and would flood context**
+  (long logs, many files, a long-running VM job). The roster is in
+  `.agents/SUBAGENTS.md` — 12 teammates, one per component.
+- **Create a skill only when no existing skill covers the capability**, and say
+  so explicitly.
+- **Do not use a subagent for** a single-file edit, a read-only question, or
+  anything finishable in one step — that is slower and loses context.
+- Subagents must be given a **disjoint write scope**; never two writers in one
+  file.
+
+---
+
 ## 1. THE DELIVERY PIPELINE — every change follows this, every time
 
 ```

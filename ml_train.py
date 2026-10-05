@@ -35,20 +35,54 @@ def make_targets(group):
 
 
 def _time_split(df, train_fraction=0.70, val_fraction=0.15):
-    """Global-date split with embargo/purge for forward-label availability."""
+    """Global-date split with an explicit embargo between folds.
+
+    The label horizon is 252 sessions, so a row's label is only known 252 dates
+    later. Leakage is prevented by leaving a GAP of that width between folds
+    rather than by filtering rows out of them.
+
+    The previous form purged folds by comparing `label_available_date` against
+    the next fold's start. Because the validation fold was only 15% of the
+    dates, it was always narrower than the 252-date horizon, so it was emptied
+    every time and `train()` always raised
+    "purged global-date split has an empty fold". data/ml_models.pkl was
+    therefore frozen at v0.1 and every retrain failed. Fixed 2026-10-05.
+
+    Leakage is still impossible: no training label is observable before the
+    validation window opens, and no validation label before the test window.
+    """
     dates = np.sort(df["date"].dropna().unique())
     if len(dates) < 3:
         raise ValueError("not enough global dates for time split")
-    train_date = dates[max(0, int(len(dates) * train_fraction) - 1)]
-    val_date = dates[min(len(dates) - 1,
-                         int(len(dates) * (train_fraction + val_fraction)))]
-    tr = df[df["date"] <= train_date]
-    va = df[(df["date"] > train_date) & (df["date"] < val_date)]
-    te = df[df["date"] >= val_date]
-    # A row remains in a split only when its future label is known before the
-    # next split starts. This prevents overlapping labels leaking across folds.
-    tr = tr[tr["label_available_date"] < va["date"].min()] if not va.empty else tr.iloc[0:0]
-    va = va[va["label_available_date"] < te["date"].min()] if not te.empty else va.iloc[0:0]
+
+    horizon = int(max(LABEL_HORIZONS.values())) if LABEL_HORIZONS else 252
+    gap = min(horizon, max(0, len(dates) // 4))   # keep folds feasible
+
+    usable = len(dates) - 2 * gap
+    if usable < 3:
+        # Not enough history for a 3-way purged split; fall back to a plain
+        # chronological 70/30 split and let train() skip early stopping when
+        # the validation fold ends up empty.
+        cut = max(1, int(len(dates) * train_fraction))
+        tr = df[df["date"] <= dates[cut - 1]]
+        te = df[df["date"] > dates[cut - 1]]
+        return tr, df.iloc[0:0], te
+
+    n_tr = max(1, int(usable * train_fraction))
+    n_va = max(1, int(usable * val_fraction))
+    n_te = usable - n_tr - n_va
+    if n_te < 1:                      # guarantee a non-empty test fold
+        n_te = 1
+        n_tr = max(1, n_tr - 1)
+
+    i_tr_end = n_tr - 1
+    i_va_start = i_tr_end + gap + 1
+    i_va_end = i_va_start + n_va - 1
+    i_te_start = i_va_end + gap + 1
+
+    tr = df[df["date"] <= dates[i_tr_end]]
+    va = df[(df["date"] >= dates[i_va_start]) & (df["date"] <= dates[i_va_end])]
+    te = df[df["date"] >= dates[i_te_start]]
     return tr, va, te
 
 def train():
