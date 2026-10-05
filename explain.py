@@ -291,6 +291,129 @@ EXPLAIN = {
         "sight": "Ask yourself: if this fails, is the loss small enough to shrug "
                  "off? If not, buy fewer shares.",
     },
+    # ------------------------------------------------------- how results read
+    "r_multiple": {
+        "title": "R - one bite of risk",
+        "what": "One R is the money you decided to risk on that trade: the gap "
+                "between the price you paid and the safety line under it.",
+        "why": "It turns every result into the same size of yardstick. A trade "
+               "where you risked ₹500 and one where you risked ₹5,000 can then be "
+               "compared honestly.",
+        "look": "Plus 2R means you made twice what you risked. Minus 1R means you "
+                "lost exactly the amount you had already accepted losing. Zero R "
+                "means it ended flat.",
+        "where": "Shown next to every closed idea on the performance page, and "
+                 "inside the MFE and MAE numbers on the research page.",
+        "when": "Read it after the trade is finished. It tells you the size of the "
+                "result, not whether the idea was good.",
+        "how": "The gap from your buy price down to your safety line counts as 1R. "
+               "The final profit or loss is then divided by that gap.",
+        "sight": "Measure the distance from your buy price down to the safety line "
+                 "with your finger. If the price later ended up twice that distance "
+                 "above your buy price, that was +2R.",
+    },
+    "mfe": {
+        "title": "The best it ever looked",
+        "what": "The furthest the price went in your favour while the trade was "
+                "open, counted in R.",
+        "why": "It measures how much was on the table at the best moment. If the "
+               "best moment was far ahead but the trade ended flat, the plan gave "
+               "back a real opportunity.",
+        "look": "A high number means the trade did most of the work at some point. "
+                "Around 1R or less means it never really went your way.",
+        "where": "Shown as 'MFE in R' on the research page, and in the small "
+                 "table of past patterns below it.",
+        "when": "Use it to judge the plan rather than the outcome. Comparing the "
+                "best moment with the final result shows whether profit was given "
+                "back.",
+        "how": "While the trade is open we keep track of the highest point reached, "
+               "then express that gain as a multiple of the risk.",
+        "sight": "Find the highest point on the chart between buying and selling. "
+                 "That peak is the MFE.",
+    },
+    "mae": {
+        "title": "The worst it ever looked",
+        "what": "The deepest the price dipped against you while the trade was "
+                "open, counted in R.",
+        "why": "It shows how much discomfort the trade caused on the way. Ideas "
+               "that go far against you before working are the ones that make "
+               "people panic and sell at the bottom.",
+        "look": "A small dip - well under 1R - is a comfortable ride. Reaching or "
+                "passing 1R means your safety line was tested or hit.",
+        "where": "Shown as 'MAE in R' on the research page, next to the MFE.",
+        "when": "Read it when deciding whether you could really sit through this "
+                "kind of trade without giving up.",
+        "how": "We track the lowest point the price touched while the trade was "
+               "open, then express that dip as a multiple of the risk.",
+        "sight": "Find the lowest point on the chart between buying and selling. "
+                 "That dip is the MAE.",
+    },
+    "hit_rate": {
+        "title": "How often it got there",
+        "what": "The share of past similar ideas that reached a particular level "
+                "before failing - for example +1R, +2R, or +3R.",
+        "why": "A single goal hides the odds. Knowing that most ideas reach +1R but "
+               "only some reach +3R tells you how realistic each goal is.",
+        "look": "Read each level separately. The +1R figure should be the largest "
+                "and +3R the smallest, because climbing higher is harder. A big "
+                "drop from +1R to +2R means most ideas stall early.",
+        "where": "Shown on the research page as 'Hit rate' and in the small "
+                 "table of past patterns below it.",
+        "when": "Use it to choose a realistic profit goal, and to judge whether "
+                "waiting for the full target is worth it.",
+        "how": "We take past cases that looked like today's and count how many "
+               "reached each level. The count is shown as a percentage.",
+        "sight": "You cannot see this on one chart. It is a tally across many past "
+                 "charts, which is why it is worked out for you.",
+    },
+    "expectancy": {
+        "title": "Average result per idea",
+        "what": "The typical result of one idea, in R, averaged over every idea "
+                "the system recorded.",
+        "why": "It answers the only question that matters over time: on average, "
+               "does one more idea add to the pot or take from it.",
+        "look": "Above zero is a system that pays over many ideas. Below zero means "
+                "the average idea loses money, no matter how good the best ones "
+                "looked.",
+        "where": "Shown on the performance page as 'Average result per idea'.",
+        "when": "Judge it only over many ideas. A handful of results can make this "
+                "number look good or bad by pure luck.",
+        "how": "Add up the R results of every recorded idea and divide by how many "
+               "there were.",
+        "sight": "Not visible on a chart. It is a running average of the system's "
+                 "own scorecard.",
+    },
+    "profit_factor": {
+        "title": "Profit per unit lost",
+        "what": "How many rupees of winning ideas there are for every one rupee "
+                "of losing ideas.",
+        "why": "It shows whether the winners are big enough to pay for the losers, "
+               "which is what keeps the account alive.",
+        "look": "Above 1 means winners outweigh losers. Around 1.5 or more is "
+                "solid. Below 1 means the losses are bigger than the gains.",
+        "where": "Shown on the performance page as 'Profit per unit lost'.",
+        "when": "Check it alongside the win rate. Many small wins can still lose "
+                "money if the rare losses are huge.",
+        "how": "All the winning R results are added up, then divided by the total "
+               "size of the losing R results.",
+        "sight": "Not visible on a chart. Compare the total of the green results "
+                 "with the total of the red results by eye instead.",
+    },
+    "max_drawdown": {
+        "title": "Worst fall from a peak",
+        "what": "The deepest the running total fell from its highest point, in R.",
+        "why": "This is the number that decides whether you can stay calm and stay "
+               "in. A plan you abandon in a bad patch is no plan.",
+        "look": "Smaller is easier to live with. Compare it with the average result "
+                "per idea - a big fall against a small average means a rough ride.",
+        "where": "Shown on the performance page as 'Worst fall from a peak'.",
+        "when": "Read it before trusting a good-looking average, and size your "
+                "positions so this fall stays survivable.",
+        "how": "We follow the running total of results, note each high point, and "
+               "find the largest drop that followed a high.",
+        "sight": "Not visible on a chart. Look at the losing results in order and "
+                 "ask how many in a row would make you quit.",
+    },
     "veto": {
         "title": "Automatic disqualification",
         "what": "A rule that blocks a stock because its company finances look "

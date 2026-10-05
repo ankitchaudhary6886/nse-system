@@ -2,7 +2,7 @@ let chart = null, candleSeries = null, ema10 = null, ema20 = null, ema50 = null,
 const $ = (id) => document.getElementById(id);
 let _restoringNavigation = false;
 let _symbolRequestId = 0;
-window.MODEL_EVENT_SCORE_HELP = "Uncalibrated model score trained on whether the future high reaches +10% within the next 20 trading sessions. It is not a trade win probability or a forecast guarantee.";
+window.MODEL_EVENT_SCORE_HELP = "A machine estimate of how likely this company is to rise at least 10% at some point in the next month of trading. It is a rough lean, not a forecast, and not the same as the odds of a trade working out.";
 
 async function api(path, options = {}) {
   const res = await fetch(path, { credentials: "same-origin", headers: { "Content-Type": "application/json" }, ...options });
@@ -575,25 +575,175 @@ async function loadLedger() {
       box.innerHTML = "<p>No graded trades yet. Run swing scans daily to build history.</p>";
     } else {
       box.innerHTML = `
-        <div class="level"><span>Total Trades</span><strong>${stats.total_trades}</strong></div>
+        <div class="level"><span>Ideas Recorded</span><strong>${stats.total_trades}</strong></div>
         <div class="level"><span>Wins / Losses</span><strong>${stats.wins} / ${stats.losses}</strong></div>
-        <div class="level"><span>Win Rate</span><strong>${stats.win_rate}%</strong></div>
-        <div class="level"><span>Profit Factor</span><strong>${stats.profit_factor}</strong></div>
-        <div class="level"><span>Expectancy</span><strong>${stats.expectancy_r} R</strong></div>
-        <div class="level"><span>Total Return</span><strong>${stats.total_r} R</strong></div>
-        <div class="level"><span>Max Drawdown</span><strong>${stats.max_drawdown_r} R</strong></div>`;
+        <div class="level">${_ledgerLabel("Win Rate", "signal")}<strong>${fmt(stats.win_rate, "%")}</strong></div>
+        <div class="level">${_ledgerLabel("Profit per unit lost", "profit_factor")}<strong>${stats.profit_factor}</strong></div>
+        <div class="level">${_ledgerLabel("Average result per idea", "expectancy")}<strong>${fmt(stats.expectancy_r)}R</strong></div>
+        <div class="level">${_ledgerLabel("Total return", "r_multiple")}<strong>${fmt(stats.total_r)}R</strong></div>
+        <div class="level">${_ledgerLabel("Worst fall from a peak", "max_drawdown")}<strong>${fmt(stats.max_drawdown_r)}R</strong></div>`;
     }
+    const rows = (trades && trades.trades) || [];
     const tbody = $("ledgerTable");
     if (tbody) {
       tbody.innerHTML = "";
-      (trades.trades || []).forEach(t => {
+      rows.forEach(t => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${t.date}</td><td><strong>${t.symbol}</strong></td><td>${fmt(t.trigger)}</td><td>${fmt(t.stop)}</td><td>${fmt(t.target)}</td><td>${outcomeBadge(t.outcome)}</td>`;
+        tr.className = "click-row";
+        tr.tabIndex = 0;
+        tr.setAttribute("role", "button");
+        tr.setAttribute("aria-label", `Open research for ${t.symbol}`);
+        tr.innerHTML = `<td>${t.date}</td>
+          <td><strong>${t.symbol}</strong></td>
+          <td>${fmt(t.trigger)}</td>
+          <td>${fmt(t.stop)}</td>
+          <td>${fmt(t.target)}</td>
+          <td>${outcomeBadge(t.outcome)}<span class="ledger-outcome-words">${_outcomeWords(t.outcome)}</span></td>
+          <td>${_ledgerRText(t)}</td>`;
         tr.addEventListener("click", () => { setView("research"); loadSymbol(t.symbol); });
         tbody.appendChild(tr);
       });
     }
+    _renderLedgerCompanies(rows);
   } catch (e) { const box = $("ledgerStats"); if (box) box.innerHTML = `<p>Error loading ledger: ${e.message}</p>`; }
+}
+
+// ============================================================
+// Ledger - companies that worked / companies that did not
+//
+// WHY: "wins 6 / losses 4" says nothing about WHICH companies. The owner
+// asked for the names, in words, newest first, each one clickable through to
+// that company's research page. R is spelled out rather than left as a bare
+// letter (see explain.py -> r_multiple).
+// ============================================================
+const LEDGER_LIST_CAP = 6;
+let _ledgerCompaniesTrades = [];
+let _ledgerListOpen = { worked: false, failed: false };
+
+function _ledgerSight(key, label) {
+  return `<span class="ledger-sight" data-explain="${key}" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does ${label} mean?">?</span>`;
+}
+function _ledgerLabel(label, key) {
+  return `<span>${label}${_ledgerSight(key, label)}</span>`;
+}
+function _outcomeWords(outcome) {
+  switch (outcome) {
+    case "WIN": return "reached the goal";
+    case "LOSS": return "hit the safety line";
+    case "TIMEOUT": return "ran out of time, flat";
+    case "EXPIRED": return "nothing happened in time";
+    case "OPEN": return "still running";
+    case "PENDING": return "waiting to start";
+    default: return "not graded yet";
+  }
+}
+function _ledgerRText(t) {
+  const r = t.r_multiple;
+  if (r === null || r === undefined || !Number.isFinite(Number(r))) {
+    // No R yet: show what 1R was going to be, in plain words.
+    const riskPct = Number(t.risk_pct);
+    return Number.isFinite(riskPct)
+      ? `<span class="ledger-r-risk">1R was ${riskPct}%</span>${_ledgerSight("r_multiple", "1R")}`
+      : `<span class="ledger-r-risk">not graded</span>`;
+  }
+  const n = Number(r);
+  const txt = `${n > 0 ? "+" : ""}${n}R`;
+  const cls = n > 0 ? "ledger-r good" : (n < 0 ? "ledger-r bad" : "ledger-r flat");
+  return `<span class="${cls}">${txt}</span>${_ledgerSight("r_multiple", "R")}`;
+}
+function _ledgerCompanyRow(t) {
+  const tr = document.createElement("tr");
+  tr.className = "click-row";
+  tr.tabIndex = 0;
+  tr.setAttribute("role", "button");
+  tr.setAttribute("aria-label", `Open research for ${t.symbol}`);
+  tr.innerHTML = `<td><strong>${t.symbol}</strong></td>
+    <td>${t.date}</td>
+    <td><span class="ledger-words">${_outcomeWords(t.outcome)}</span></td>
+    <td>${outcomeBadge(t.outcome)}</td>
+    <td>${_ledgerRText(t)}</td>`;
+  tr.addEventListener("click", () => { setView("research"); loadSymbol(t.symbol); });
+  tr.addEventListener("keydown", ev => {
+    if (ev.key === "Enter" || ev.key === " ") {
+      ev.preventDefault();
+      setView("research"); loadSymbol(t.symbol);
+    }
+  });
+  return tr;
+}
+function _ledgerCompanyColumn(id, wantOutcomes, emptyText) {
+  const all = _ledgerCompaniesTrades.filter(t => wantOutcomes.indexOf(t.outcome) !== -1);
+  const open = !!_ledgerListOpen[id];
+  const shown = open ? all : all.slice(0, LEDGER_LIST_CAP);
+  const body = document.createElement("div");
+  body.className = "ledger-company-body";
+  if (!all.length) {
+    const p = document.createElement("p");
+    p.className = "ledger-list-empty";
+    p.textContent = emptyText;
+    body.appendChild(p);
+    return body;
+  }
+  const table = document.createElement("table");
+  table.className = "ledger-company-table";
+  table.innerHTML = `<thead><tr><th>Company</th><th>Date</th><th>What happened</th><th>Result</th><th>Profit / loss</th></tr></thead>`;
+  const tb = document.createElement("tbody");
+  shown.forEach(t => tb.appendChild(_ledgerCompanyRow(t)));
+  table.appendChild(tb);
+  body.appendChild(table);
+  if (all.length > LEDGER_LIST_CAP) {
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "ledger-more";
+    more.textContent = open
+      ? "Show fewer"
+      : `Show all ${all.length}`;
+    more.addEventListener("click", () => {
+      _ledgerListOpen[id] = !_ledgerListOpen[id];
+      _renderLedgerCompanies(_ledgerCompaniesTrades);
+    });
+    body.appendChild(more);
+  }
+  return body;
+}
+function _renderLedgerCompanies(trades) {
+  const host = $("ledgerCompanies");
+  if (!host) return;
+  _ledgerCompaniesTrades = (trades || []).slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  host.replaceChildren();
+
+  const head = document.createElement("div");
+  head.className = "panel-header";
+  head.innerHTML = `<div>
+      <h2 class="panel-title">Which companies worked, and which did not</h2>
+      <p>Every company we recorded a buy idea for, newest first. Click any name to open that company's research page.</p>
+    </div>
+    <span class="badge muted">${_ledgerCompaniesTrades.length} recorded</span>`;
+  host.appendChild(head);
+
+  const grid = document.createElement("div");
+  grid.className = "ledger-company-grid";
+
+  const worked = document.createElement("div");
+  worked.className = "ledger-company-col ledger-company-col-good";
+  worked.innerHTML = `<h3>Companies That Worked</h3>
+    <p class="ledger-col-sub">The idea reached its goal before the safety line was hit.</p>`;
+  worked.appendChild(_ledgerCompanyColumn("worked", ["WIN"], "No winners recorded yet. The list fills up as ideas are graded."));
+
+  const failed = document.createElement("div");
+  failed.className = "ledger-company-col ledger-company-col-bad";
+  failed.innerHTML = `<h3>Companies That Did Not</h3>
+    <p class="ledger-col-sub">The idea hit the safety line (a loss) or ran out of time and went nowhere.</p>`;
+  failed.appendChild(_ledgerCompanyColumn("failed", ["LOSS", "TIMEOUT"], "No losers recorded yet. The list fills up as ideas are graded."));
+
+  grid.append(worked, failed);
+  host.appendChild(grid);
+
+  const note = document.createElement("p");
+  note.className = "ledger-note";
+  note.innerHTML = `Ideas still running, or that expired without ever triggering, are left out of these two lists.
+    "R" is one bite of risk - the gap between the buy price and the safety line.${_ledgerSight("r_multiple", "R")}`;
+  host.appendChild(note);
 }
 
 // ============================================================
@@ -818,19 +968,55 @@ async function loadSymbol(symbol) {
   try {
     const meta = await api(`/api/meta/${symbol}`);
     if (meta && meta.p_win != null && setupSummary) {
-      const why = (meta.why || []).map(w => `<div class="level"><span>why · ${w.feature}</span><strong>${w.impact > 0 ? "+" : ""}${w.impact}</strong></div>`).join("");
+      /* Feature names are internal codes (atr, vc, slope200...). Nobody outside
+         the model should have to read them, so each gets a plain gloss. */
+      const FEATURE_PLAIN = {
+        atr: "How jumpy the price normally is",
+        vc: "How tight the recent trading range is",
+        slope200: "Whether the long-term trend is sloping up",
+        slope50: "Whether the medium-term trend is sloping up",
+        d10: "Distance from the short-term average price",
+        d20: "Distance from the medium-term average price",
+        d52: "Distance from the 52-week high",
+        mom1: "Move over the last month",
+        mom3: "Move over the last three months",
+        mom6: "Move over the last six months",
+        above200: "Trading above its long-term average",
+        pb: "Price compared with the company's books",
+        rv: "Recent price swings versus normal",
+        vcr: "How much trading volume has dried up",
+        ret_std20: "How steady the last month of moves has been",
+        below52: "How far below the 52-week high it sits",
+        pat_htf: "A tight flag pattern was found",
+        pat_tri: "A triangle pattern was found",
+        pat_db: "A double-bottom pattern was found",
+        pat_ihs: "An inverse head-and-shoulders was found",
+        pat_bear: "A topping warning was found",
+        pat_any: "Any recognised pattern was found",
+        dtw_sim: "How closely it resembles past winners",
+        delivery_sim: "How much stock buyers kept overnight",
+        days_above_200_30: "How many recent days it held above its long-term average",
+        days_above_50_30: "How many recent days it held above its medium-term average",
+        ema200_dist_z: "How far it has stretched from its long-term average",
+      };
+      const why = (meta.why || []).map(w => {
+        const plain = FEATURE_PLAIN[w.feature] || w.feature.replace(/_/g, " ");
+        return `<div class="level"><span title="Internal feature name: ${w.feature}">${plain}</span>`
+          + `<strong>${w.impact > 0 ? "+" : ""}${w.impact}</strong></div>`;
+      }).join("");
       const whyBlock = why
-        ? `<button class="toggle-btn" data-target="shapDetails">Show model feature contributions</button>
+        ? `<button class="toggle-btn" data-target="shapDetails">Show what pushed this score up or down</button>
            <div id="shapDetails" class="details-panel hidden">
-             <div class="level"><span>Uncalibrated event score</span><strong>${scorePct(meta.p_win)}</strong></div>
-             <p class="method-note">Feature contributions describe this model output; they are not causal explanations.</p>
+             <div class="level"><span data-explain="p_win" title="Click to learn what this is">Chance of a good move</span><strong>${scorePct(meta.p_win)}</strong></div>
+             <p class="method-note">Each line below is one thing the model looked at, and how much it pushed today's score up (+) or down (&minus;). A plus does not mean the company is good &mdash; only that this model weighed it that way.</p>
              ${why}
            </div>`
         : "";
       setupSummary.insertAdjacentHTML("beforeend", `
-        <div class="model-explainer" title="${window.MODEL_EVENT_SCORE_HELP}">
-          <div class="level"><span>Model event score</span><strong>${scorePct(meta.p_win)}</strong></div>
+        <div class="model-explainer">
+          <div class="level"><span data-explain="p_win" title="Click to learn what this score means">Model event score</span><strong>${scorePct(meta.p_win)}</strong></div>
           <p class="method-note">${window.MODEL_EVENT_SCORE_HELP}</p>
+          <p class="method-note">This is one opinion, not a verdict. The system's own measured record sits far below what a score like this suggests, so treat it as a lean to check against the plain checklist above.</p>
         </div>${whyBlock}`);
     }
   } catch (e) {}

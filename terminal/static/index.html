@@ -97,6 +97,52 @@
   .trader-source { color: #9fb0cc; font-size: 12px; margin: 4px 0; }
   .trader-pillar { color: #7f8da9; font-size: 12px; }
 
+  /* ---- Trading methods: one section per book ---- */
+  .tm-intro { font-size: var(--fs-small); color: var(--muted); margin: 0 0 var(--space-3); }
+  .tm-group { border: 1px solid var(--hairline); border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4) var(--space-4); margin-bottom: var(--space-4);
+    background: var(--surface-1); }
+  .tm-group-head { display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-3); cursor: pointer; list-style: none; }
+  .tm-group-head::-webkit-details-marker { display: none; }
+  .tm-group-head strong { font-size: var(--fs-h2); color: var(--text); }
+  .tm-group-blurb { margin: var(--space-2) 0 0; font-size: var(--fs-small);
+    line-height: 1.5; color: var(--muted); }
+  .tm-book-list { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
+  .tm-book { border: 1px solid var(--hairline); border-radius: var(--radius-md);
+    padding: var(--space-4); background: var(--surface-1); }
+  .tm-book-head { border-bottom: 1px solid var(--hairline);
+    padding-bottom: var(--space-3); margin-bottom: var(--space-3); }
+  .tm-book-title { display: flex; align-items: center; gap: var(--space-2); }
+  .tm-book-title h3 { margin: 0; font-size: var(--fs-lead); color: var(--text); }
+  .tm-book-source { margin: var(--space-1) 0 0; font-size: var(--fs-small); color: var(--muted); }
+  .tm-book-about { margin: var(--space-2) 0 0; font-size: var(--fs-small);
+    color: var(--text); line-height: 1.55; }
+  .tm-book-count { display: flex; align-items: center; gap: var(--space-2);
+    margin: var(--space-2) 0 0; }
+  .tm-count-note { font-size: var(--fs-micro); color: var(--muted); }
+  .tm-help { width: 20px; height: 20px; padding: 0 !important; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: var(--fs-micro); font-weight: 700; line-height: 1;
+    color: var(--blue); background: transparent;
+    border: 1px solid rgba(130,183,255,.42); border-radius: 50%; cursor: help; }
+  .tm-help:hover { background: rgba(130,183,255,.16); }
+  .tm-methods { display: grid; gap: var(--space-2); }
+  .tm-method { padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+    background: var(--surface-1); border: 1px solid var(--hairline); }
+  .tm-method-name { display: flex; align-items: center; gap: var(--space-2);
+    font-size: var(--fs-small); font-weight: 640; color: var(--text); }
+  .tm-method-desc { margin-top: 2px; font-size: var(--fs-small); line-height: 1.5; color: var(--text); }
+  .tm-method-meta { margin-top: 2px; font-size: var(--fs-micro); color: var(--muted); }
+  .tm-jargon { border-bottom: 1px dotted var(--hairline-strong); cursor: help; }
+  .tm-notice { display: grid; gap: 3px; }
+  .tm-notice p { margin: 0; color: var(--text); font-size: var(--fs-small); }
+  .tm-notice-detail { color: var(--muted) !important; font-size: var(--fs-micro) !important; }
+  @media (max-width: 620px) {
+    .tm-group { padding: var(--space-2) var(--space-3) var(--space-3); }
+    .tm-book { padding: var(--space-3); }
+  }
+
   /* ---- Trader League (#087) ---- */
   .lg-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
   .lg-seg { display:inline-flex; border:1px solid rgba(255,255,255,.12); border-radius:10px; overflow:hidden; }
@@ -170,6 +216,7 @@
 </style>
 <link rel="stylesheet" href="/static/style.css?v=20">
 <link rel="stylesheet" href="/static/polish.css?v=1">
+<link rel="stylesheet" href="/static/explain.css?v=1">
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
@@ -469,11 +516,12 @@
       <div class="panel">
         <div class="panel-header">
           <div>
-            <h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Ideas From Published Books</h2>
-            <p>Each trader's page lists their methods and scans the universe for live signals.</p>
+            <h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Trading Methods</h2>
+            <p>Every book keeps its own methods. They are listed separately, never merged into one list. Press the ? beside any book or method for a plain-words explanation.</p>
           </div>
         </div>
-        <div id="tradersIndex" style="margin-top:14px;"><p>Loading traders...</p></div>
+        <div id="tradersIntroTotal" class="tm-intro"></div>
+        <div id="tradersIndex" style="margin-top:14px;"><p>Loading the books...</p></div>
       </div>
     </section>
 
@@ -501,11 +549,14 @@
           <div class="panel-header"><div><h2 data-explain="signal" class="panel-title" title="Click to learn what this means">Every Idea We Recorded</h2><p>Forward validation history</p></div></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Outcome</th></tr></thead>
+              <thead><tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Outcome</th><th>Profit / loss <span class="ledger-sight" data-explain="r_multiple" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does the R column mean?">?</span></th></tr></thead>
               <tbody id="ledgerTable"></tbody>
             </table>
           </div>
         </div>
+      </div>
+      <div class="panel" id="ledgerCompanies" style="margin-bottom:18px">
+        <p>Loading companies...</p>
       </div>
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
@@ -556,8 +607,9 @@
   </div>
 </dialog>
 <script src="/static/cards.js?v=18"></script>
-<script src="/static/explainer.js?v=1"></script>
-<script src="/static/app.js?v=19"></script>
+<script src="/static/explainer.js?v=2"></script>
+<script src="/static/ideals.js?v=1"></script>
+<script src="/static/app.js?v=20"></script>
 <script src="/static/scanners.js?v=17"></script>
 <script src="/static/strategy_runs.js?v=18"></script>
 <script src="/static/research.js?v=18"></script>
@@ -565,7 +617,7 @@
 <script src="/static/research_sector.js?v=18"></script>
 <script src="/static/strategies.js?v=18"></script>
 <script src="/static/strategy_editor.js?v=16"></script>
-<script src="/static/traders.js?v=18"></script>
+<script src="/static/traders.js?v=19"></script>
 <script src="/static/league.js?v=20"></script>
 </body>
 </html>

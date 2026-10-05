@@ -1,0 +1,114 @@
+/* explain.css - small additions for the plain-language "?" affordance and the
+ * winner / loser company lists on the Performance page.
+ *
+ * WHY SEPARATE: style.css and polish.css are the shared design system and are
+ * owned elsewhere; this file only adds the handful of classes the performance
+ * view needs. Colours come from the existing custom properties, so it follows
+ * the theme instead of introducing a second one.
+ *
+ * Everything here is scoped to .ledger-* or [data-explain], so nothing else can
+ * be affected by it.
+ */
+
+/* ---------------------------------------------------- the "?" help marker -- */
+.ledger-sight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  margin-left: 5px;
+  border: 1px solid var(--hairline-strong, rgba(255, 255, 255, .25));
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--muted, #8b97ad);
+  cursor: help;
+  vertical-align: middle;
+  flex: 0 0 auto;
+}
+.ledger-sight:hover,
+.ledger-sight:focus-visible {
+  color: var(--blue, #60a5fa);
+  border-color: var(--blue, #60a5fa);
+}
+
+/* ------------------------------------------------ Performance page panels -- */
+.ledger-company-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.ledger-company-col {
+  border: 1px solid var(--hairline, rgba(255, 255, 255, .12));
+  border-left-width: 3px;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+.ledger-company-col-good { border-left-color: #34d399; }
+.ledger-company-col-bad { border-left-color: #fb7185; }
+
+.ledger-company-col h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.ledger-col-sub {
+  margin: 4px 0 10px;
+  font-size: var(--fs-small, 12px);
+  color: var(--muted, #8b97ad);
+  line-height: 1.5;
+}
+
+.ledger-company-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.ledger-company-table th {
+  text-align: left;
+  padding: 6px 6px;
+  color: var(--muted, #8b97ad);
+  border-bottom: 1px solid var(--hairline, rgba(255, 255, 255, .12));
+  font-weight: 600;
+}
+.ledger-company-table td {
+  padding: 6px 6px;
+  border-bottom: 1px solid var(--hairline, rgba(255, 255, 255, .07));
+  vertical-align: middle;
+}
+.ledger-company-table tr:last-child td { border-bottom: 0; }
+
+.ledger-words { color: var(--muted, #8b97ad); }
+
+/* The R column and its plain-language result. */
+.ledger-r {
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+}
+.ledger-r.good { color: #34d399; }
+.ledger-r.bad { color: #fb7185; }
+.ledger-r.flat { color: var(--muted, #8b97ad); }
+.ledger-r-risk { color: var(--muted, #8b97ad); }
+
+.ledger-outcome-words {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted, #8b97ad);
+}
+
+.ledger-more {
+  margin-top: 10px;
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.ledger-list-empty,
+.ledger-note {
+  font-size: var(--fs-small, 12px);
+  color: var(--muted, #8b97ad);
+  line-height: 1.6;
+}
+.ledger-note { margin: 12px 0 0; }

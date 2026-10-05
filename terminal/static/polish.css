@@ -292,3 +292,55 @@ pre { overflow-x: auto; }
   body { background: #fff; color: #000; }
   .panel { border-color: #ccc; break-inside: avoid; }
 }
+
+/* ============================================================
+   "Actual vs ideal" chips (ideals.js)
+   Shows the target next to every ratio so a bare number is never
+   left unexplained. Colour reinforces the words; it never carries
+   the meaning alone.
+   ============================================================ */
+.ideal-chip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+.ideal-good {
+  color: var(--green);
+  border-color: rgba(83, 214, 160, 0.38);
+  background: rgba(83, 214, 160, 0.09);
+}
+.ideal-ok {
+  color: var(--yellow);
+  border-color: rgba(241, 199, 109, 0.38);
+  background: rgba(241, 199, 109, 0.09);
+}
+.ideal-poor {
+  color: var(--red);
+  border-color: rgba(255, 135, 145, 0.38);
+  background: rgba(255, 135, 145, 0.09);
+}
+.ideal-unknown {
+  color: var(--muted);
+  border-color: var(--hairline-strong);
+}
+/* A tiny leading dot so the state is visible without relying on colour alone
+   for anyone who cannot distinguish red from green. */
+.ideal-chip::before {
+  content: "";
+  display: inline-block;
+  width: 5px; height: 5px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 1px;
+}
+@media (max-width: 620px) {
+  .ideal-chip { display: block; margin: 4px 0 0; width: fit-content; }
+}

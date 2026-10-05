@@ -80,15 +80,15 @@ function _renderSignatureBlock(data) {
     .map(([k, v]) => `${k}:${v}`).join(" · ");
   let html = `<h4 style="margin:14px 0 8px; font-size:13px;">🎯 Signature match — ${sm.k} nearest of ${sm.n_pool} pool setups</h4>`;
   html += `<div class="level" style="padding:8px 12px;">
-    <span>Hit rate (given trigger)</span>
+    <span>Hit rate (given trigger)<span class="ledger-sight" data-explain="hit_rate" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does hit rate mean?">?</span></span>
     <strong>+1R ${_pctStr(sm.p_1r)} · +2R ${_pctStr(sm.p_2r)} · +3R ${_pctStr(sm.p_3r)}</strong>
   </div>`;
   html += `<div class="level" style="padding:8px 12px;">
-    <span>MFE in R</span>
+    <span>MFE in R<span class="ledger-sight" data-explain="mfe" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does MFE mean?">?</span></span>
     <strong>median ${_num(sm.median_mfe_r)} · p95 ${_num(sm.p95_mfe_r)}</strong>
   </div>`;
   html += `<div class="level" style="padding:8px 12px;">
-    <span>MAE in R</span>
+    <span>MAE in R<span class="ledger-sight" data-explain="mae" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does MAE mean?">?</span></span>
     <strong>median ${_num(sm.median_mae_r)} · p5 ${_num(sm.p5_mae_r)}</strong>
   </div>`;
   html += _researchRow("Outcome mix", outcomes);
@@ -194,15 +194,15 @@ function renderResearch(data) {
   html += _researchRow("Triggered",
     `${h.n_triggered} of ${h.n_setups} (P=${_pctStr(h.p_trigger)})`);
   html += `<div class="level" style="padding:8px 12px;">
-    <span>Hit rate</span>
+    <span>Hit rate<span class="ledger-sight" data-explain="hit_rate" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does hit rate mean?">?</span></span>
     <strong>+1R ${_pctStr(h.p_1r_given_trigger)} · +2R ${_pctStr(h.p_2r_given_trigger)} · +3R ${_pctStr(h.p_3r_given_trigger)}</strong>
   </div>`;
   html += `<div class="level" style="padding:8px 12px;">
-    <span>MFE in R</span>
+    <span>MFE in R<span class="ledger-sight" data-explain="mfe" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does MFE mean?">?</span></span>
     <strong>median ${_num(h.median_mfe_r)} · p95 ${_num(h.p95_mfe_r)}</strong>
   </div>`;
   html += `<div class="level" style="padding:8px 12px;">
-    <span>MAE in R</span>
+    <span>MAE in R<span class="ledger-sight" data-explain="mae" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does MAE mean?">?</span></span>
     <strong>median ${_num(h.median_mae_r)} · p5 ${_num(h.p5_mae_r)}</strong>
   </div>`;
 

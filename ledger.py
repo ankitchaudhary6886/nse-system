@@ -80,6 +80,32 @@ def compute_stats(conn=None):
     if own: conn.close()
     return stats
 
+def trade_r_multiple(outcome, trigger, stop, target):
+    """Result of one idea measured in R (see explain.py -> 'r_multiple').
+
+    1R is the money risked: the gap between the entry price and the safety line.
+    A win that reaches the goal is worth (goal - entry) / that gap. A loss is
+    exactly -1R by definition, and a timeout is flat at 0R. EXPIRED ideas were
+    never really a trade, so they have no R.
+    """
+    if outcome in (None, 'EXPIRED', 'OPEN', 'PENDING'):
+        return None
+    if outcome == 'LOSS':
+        return -1.0
+    if outcome == 'TIMEOUT':
+        return 0.0
+    if outcome == 'WIN':
+        try:
+            risk = float(trigger) - float(stop)
+            reward = float(target) - float(trigger)
+        except (TypeError, ValueError):
+            return None
+        if risk <= 0:
+            return None
+        return round(reward / risk, 2)
+    return None
+
+
 def get_trades(limit=50):
     conn = db.get_conn()
     rows = conn.execute("""
@@ -93,6 +119,7 @@ def get_trades(limit=50):
     return [
         {'date': r[0], 'symbol': r[1], 'trigger': r[2], 'stop': r[3],
          'target': r[4], 'risk_pct': r[5], 'outcome': r[6], 
-         'pullback': r[7], 'impulse': r[8]}
+         'pullback': r[7], 'impulse': r[8],
+         'r_multiple': trade_r_multiple(r[6], r[2], r[3], r[4])}
         for r in rows
     ]

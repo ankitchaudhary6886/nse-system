@@ -90,6 +90,35 @@ def source_health(user: str = Depends(verify_user)):
             "time": dt.datetime.now().isoformat()}
 
 
+@app.get("/api/ideals")
+def ideals_index(user: str = Depends(verify_user)):
+    """Every ideal value band, so the UI can show "actual vs ideal" anywhere.
+
+    Bands come from the system's own rules first (strategy_config gates,
+    scoring/fund_veto thresholds, trader-library thresholds), then from
+    long-standing convention where the system is silent. Each carries its
+    `source` so the owner can see why a number counts as good.
+    """
+    import ideal
+    return {"ok": True,
+            "groups": [{"label": label, "keys": keys}
+                       for label, keys in ideal.GROUPS],
+            "bands": ideal.catalog()}
+
+
+@app.get("/api/ideals/{key}")
+def ideal_one(key: str, actual: float = None,
+              user: str = Depends(verify_user)):
+    """One measure compared with its ideal. `?actual=` is optional."""
+    import ideal
+    item = ideal.assess(key, actual)
+    if item is None:
+        return {"ok": False, "key": key,
+                "message": "No ideal band is stored for that measure.",
+                "known": sorted(ideal.BANDS)}
+    return {"ok": True, "assessment": item}
+
+
 @app.get("/glossary", response_class=HTMLResponse)
 def glossary_page(user: str = Depends(verify_user)):
     """Every term explained in ordinary words, generated from explain.py."""
@@ -339,7 +368,7 @@ def trader_matches_api(symbol: str, user: str = Depends(verify_user)):
                             "name": method_id or "Unnamed method",
                             "description": "",
                         }),
-                        "signal": signal,
+                        "signal": _jsonable(signal),
                     })
             except Exception as e:
                 errors.append({"trader": trader.NAME,
@@ -352,7 +381,7 @@ def trader_matches_api(symbol: str, user: str = Depends(verify_user)):
                 (item["slug"], item["method"].get("id"))
                 for item in matches
             }),
-            "matches": matches, "errors": errors,
+            "matches": _jsonable(matches), "errors": _jsonable(errors),
         }
     finally:
         conn.close()
@@ -363,6 +392,37 @@ def trader_matches_api(symbol: str, user: str = Depends(verify_user)):
 # backtest of our system. Engine: trader_league.py. The heavy replay
 # runs as a low-priority background process; the rest are DB reads.
 # ============================================================
+def _jsonable(value):
+    """Recursively convert numpy/pandas scalars into plain Python JSON types.
+
+    Trader methods compute with pandas/numpy, so a signal can carry numpy.bool_
+    or numpy.float64. Returning those straight from a handler makes FastAPI's
+    encoder raise ("'numpy.bool' object is not iterable") and the endpoint
+    answers 500 -- which is what broke /api/traders/matches/{symbol}.
+    """
+    try:
+        import numpy as _np
+    except Exception:
+        _np = None
+
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+
+    if _np is not None:
+        if isinstance(value, _np.generic):
+            return value.item()
+        if isinstance(value, _np.ndarray):
+            return [_jsonable(v) for v in value.tolist()]
+
+    if isinstance(value, dict):
+        return {str(k): _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_jsonable(v) for v in value]
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
 def _league_mode(mode, ex):
     return (mode if mode in ("backtest", "live") else "backtest",
             ex if ex in ("book", "common") else "book")
