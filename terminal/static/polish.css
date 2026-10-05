@@ -1,0 +1,294 @@
+
+/* ============================================================================
+   PROFESSIONAL FINISH PASS
+   ----------------------------------------------------------------------------
+   A single cohesive design layer for the whole portal.
+
+   Approach: this is APPENDED, so it refines the existing sheet by cascade
+   rather than replacing it. Nothing above is deleted, so no panel can break;
+   every rule here is a deliberate upgrade of the current look.
+
+   Design intent: a quiet, premium research terminal.
+     - one confident type scale instead of many ad-hoc sizes
+     - generous, rhythmic spacing (8px base) so panels breathe
+     - one accent colour used sparingly; colour carries meaning, never decoration
+     - flat, hairline surfaces instead of heavy borders and shadows
+     - numbers aligned and tabular so columns can be scanned, not read
+     - motion limited to 120-200ms and disabled for reduced-motion users
+   ============================================================================ */
+
+:root {
+  --space-1: 4px;  --space-2: 8px;   --space-3: 12px;
+  --space-4: 16px; --space-5: 24px;  --space-6: 32px;  --space-7: 48px;
+
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+
+  --fs-micro: 11px; --fs-small: 12.5px; --fs-body: 14px;
+  --fs-lead: 16px;  --fs-h2: 15px;      --fs-h1: 22px;
+
+  --line-tight: 1.25; --line-body: 1.6;
+
+  --surface-1: rgba(255, 255, 255, 0.032);
+  --surface-2: rgba(255, 255, 255, 0.055);
+  --surface-3: rgba(255, 255, 255, 0.085);
+  --hairline: rgba(255, 255, 255, 0.075);
+  --hairline-strong: rgba(255, 255, 255, 0.13);
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur: 160ms;
+}
+
+/* ---------------------------------------------------------------- base ---- */
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-size: var(--fs-body);
+  line-height: var(--line-body);
+  letter-spacing: -0.006em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Tabular figures everywhere numbers are compared - this is the single
+   biggest readability upgrade for a data table. */
+table, .metric-card strong, .badge, td, th,
+[class*="score"], [class*="value"], [class*="metric"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Visible, consistent focus for keyboard users (accessibility, not decoration) */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* --------------------------------------------------------------- type ----- */
+h1 { font-size: var(--fs-h1); font-weight: 650; letter-spacing: -0.02em; line-height: var(--line-tight); }
+h2, .panel-title {
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  letter-spacing: -0.011em;
+  line-height: var(--line-tight);
+  margin: 0;
+}
+h3 { font-size: var(--fs-body); font-weight: 600; letter-spacing: -0.008em; }
+
+/* A clickable heading should look clickable, quietly. */
+h2[data-explain] { cursor: help; }
+h2[data-explain]::after {
+  content: "?";
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; margin-left: 7px;
+  font-size: 10px; font-weight: 700; line-height: 1;
+  color: var(--blue);
+  border: 1px solid rgba(130, 183, 255, 0.42);
+  border-radius: 50%;
+  vertical-align: 1px;
+  opacity: 0.75;
+  transition: opacity var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+h2[data-explain]:hover::after {
+  opacity: 1;
+  background: rgba(130, 183, 255, 0.16);
+}
+
+p, small, .nav-hint { color: var(--muted); }
+
+/* -------------------------------------------------------------- panels ---- */
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transition: border-color var(--dur) var(--ease);
+}
+.panel:hover { border-color: var(--hairline-strong); }
+
+.panel-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+}
+.panel-header p {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  max-width: 62ch;            /* comfortable reading measure */
+}
+
+/* -------------------------------------------------------------- cards ----- */
+.metric-card {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: left;
+  transition: background var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+.metric-card:hover {
+  background: var(--surface-2);
+  border-color: var(--hairline-strong);
+  transform: translateY(-1px);
+}
+.metric-card span {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.metric-card strong {
+  display: block;
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: 26px;
+  font-weight: 640;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.metric-card small {
+  display: block;
+  font-size: var(--fs-small);
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------- tables ----- */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-small);
+}
+thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--bg);
+  padding: var(--space-3) var(--space-3);
+  font-size: var(--fs-micro);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--hairline-strong);
+}
+tbody td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: middle;
+}
+tbody tr { transition: background var(--dur) var(--ease); }
+tbody tr:hover { background: var(--surface-2); }
+tbody tr:last-child td { border-bottom: 0; }
+
+/* Right-align numeric columns for scannable comparison. */
+td.num, th.num, td[data-num], th[data-num] { text-align: right; }
+
+/* ------------------------------------------------------------ controls ---- */
+button {
+  font: inherit;
+  letter-spacing: -0.004em;
+  transition: background var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              opacity var(--dur) var(--ease);
+}
+.panel-header button, button:not(.nav-btn):not(.metric-card):not(.brand) {
+  padding: 7px 13px;
+  font-size: var(--fs-small);
+  font-weight: 550;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.panel-header button:hover,
+button:not(.nav-btn):not(.metric-card):not(.brand):hover {
+  background: var(--surface-3);
+}
+button[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+input, select, textarea {
+  font: inherit;
+  padding: 7px 10px;
+  color: var(--text);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+}
+input::placeholder { color: var(--muted); opacity: 0.75; }
+
+/* -------------------------------------------------------------- badges ---- */
+.badge, [class*="badge"] {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  font-size: var(--fs-micro);
+  font-weight: 640;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.badge.muted { color: var(--muted); border-color: var(--hairline-strong); }
+
+/* ------------------------------------------------------------ navigation -- */
+.nav-btn {
+  border-radius: var(--radius-sm);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nav-btn.active {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+.nav-group {
+  font-size: var(--fs-micro);
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+/* --------------------------------------------------------- responsive ----- */
+@media (max-width: 900px) {
+  .panel { padding: var(--space-4); border-radius: var(--radius-md); }
+  .panel-header { flex-direction: column; align-items: stretch; }
+  h1 { font-size: 19px; }
+}
+
+/* Phone is the owner's primary screen: nothing may overflow horizontally. */
+@media (max-width: 620px) {
+  :root { --fs-body: 13.5px; --fs-h1: 18px; }
+  body { line-height: 1.58; }
+  .panel { padding: var(--space-3); }
+  .metric-card strong { font-size: 22px; }
+  table { font-size: 12px; }
+  tbody td, thead th { padding: var(--space-2); }
+  .panel-header p { max-width: none; }
+}
+
+/* Long words / symbols must wrap rather than push the layout wide. */
+.panel, td, .ex-text, .metric-card { overflow-wrap: anywhere; word-break: normal; }
+img, table, pre { max-width: 100%; }
+pre { overflow-x: auto; }
+
+/* ------------------------------------------------------------ motion ------ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------- print ------ */
+@media print {
+  .nav, .sidebar, #regimeBanner, .panel-header button { display: none !important; }
+  body { background: #fff; color: #000; }
+  .panel { border-color: #ccc; break-inside: avoid; }
+}

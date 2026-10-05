@@ -168,7 +168,8 @@
     .lg-chart { height:220px; }
   }
 </style>
-<link rel="stylesheet" href="/static/style.css?v=19">
+<link rel="stylesheet" href="/static/style.css?v=20">
+<link rel="stylesheet" href="/static/polish.css?v=1">
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
@@ -274,7 +275,7 @@
       <div class="panel">
         <div class="panel-header">
           <div>
-            <h2>🧠 Custom Strategies</h2>
+            <h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Rules You Have Written</h2>
             <p>Owner-authored rules. Edit or Run directly here.</p>
           </div>
           <span class="badge muted" id="fundamentalStrategyBadge">—</span>
@@ -284,7 +285,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>💎 Value Radar</h2><p>Quality names in downturns — long-term accumulation candidates</p></div>
+          <div><h2 data-explain="composite" class="panel-title" title="Click to learn what this means">Cheap But Solid Companies</h2><p>Quality names in downturns — long-term accumulation candidates</p></div>
           <span class="badge muted" id="valueRadarBadge">—</span>
         </div>
         <div class="card-list" id="valueRadarList"><p>Loading...</p></div>
@@ -292,14 +293,14 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>📊 Positional Picks</h2><p>Quality + trend + value composite. Tiers S/A/B/C.</p></div>
+          <div><h2 data-explain="target" class="panel-title" title="Click to learn what this means">Longer-Hold Ideas</h2><p>Quality + trend + value composite. Tiers S/A/B/C.</p></div>
           <span class="badge muted" id="positionalBadge">—</span>
         </div>
         <div class="card-list" id="positionalList"><p>Loading...</p></div>
       </div>
 
       <div class="panel" style="margin-top:18px">
-        <div class="panel-header">        <div><h2>Today's research shortlist</h2><p>Composite ranks model event score, accumulation, sector relative strength, and delivery. The score is an uncalibrated model output for a +10% high within 20 sessions, not a trade win probability.</p></div></div>
+        <div class="panel-header">        <div><h2 data-explain="composite" class="panel-title" title="Click to learn what this means">Today's Shortlist</h2><p>Composite ranks model event score, accumulation, sector relative strength, and delivery. The score is an uncalibrated model output for a +10% high within 20 sessions, not a trade win probability.</p></div></div>
         <div class="card-list" id="picksList"><p>Loading...</p></div>
       </div>
     </section>
@@ -309,7 +310,7 @@
       <div class="panel">
         <div class="panel-header">
           <div>
-            <h2>🧠 Custom Strategies</h2>
+            <h2>Custom Strategies</h2>
             <p>Owner-authored rules. Edit or Run directly here.</p>
           </div>
           <span class="badge muted" id="swingStrategyBadge">—</span>
@@ -319,7 +320,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>Swing desk</h2><p>Forward-validation log, including All-weather setups. Model event score means a +10% high within 20 sessions; it is uncalibrated and not trade win odds.</p></div>
+          <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Short-Term Ideas</h2><p>Forward-validation log, including All-weather setups. Model event score means a +10% high within 20 sessions; it is uncalibrated and not trade win odds.</p></div>
           <button id="runSwingBtn">Run Swing Scan</button>
         </div>
         <p id="swingScanStatus" class="method-note" role="status" aria-live="polite"></p>
@@ -335,14 +336,14 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>📈 Trend Scanner</h2><p>Stocks with current price above BOTH EMA50 and EMA200</p></div>
+          <div><h2 data-explain="shape_score" class="panel-title" title="Click to learn what this means">Steady Uptrends</h2><p>Stocks with current price above BOTH EMA50 and EMA200</p></div>
           <span class="badge muted" id="trendBadge">—</span>
         </div>
         <div class="card-list" id="trendList"><p>Loading...</p></div>
       </div>
 
       <div class="panel" style="margin-top:18px">
-        <div class="panel-header"><div><h2>Radar</h2><p>Momentum, volume, and turnaround clusters. Model scores describe an uncalibrated +10% high / 20-session event, not trade win odds.</p></div></div>
+        <div class="panel-header"><div><h2 data-explain="volume" class="panel-title" title="Click to learn what this means">What Is Moving Today</h2><p>Momentum, volume, and turnaround clusters. Model scores describe an uncalibrated +10% high / 20-session event, not trade win odds.</p></div></div>
         <div class="radar-layout">
           <div>
             <h3 style="font-size:13px; color:#9fb0cc; margin:0 0 8px;">Momentum</h3>
@@ -374,7 +375,7 @@
           <div id="chart"></div>
         </div>
         <div class="panel">
-          <div class="panel-header"><div><h2>Setup & Sizing</h2><p>Trigger, stop, target, position size</p></div></div>
+          <div class="panel-header"><div><h2 data-explain="sizing" class="panel-title" title="Click to learn what this means">The Pattern and How Much to Risk</h2><p>Trigger, stop, target, position size</p></div></div>
           <div class="setup-box" id="setupSummary"><p>Select a stock to inspect setup levels.</p></div>
           <div class="news-box"><h3>Latest News</h3><div class="news-list" id="newsList">No symbol selected.</div></div>
         </div>
@@ -383,13 +384,13 @@
       <div class="terminal-grid" style="margin-top:18px;">
         <div class="panel">
           <div class="panel-header">
-            <div><h2>Stock pulse</h2><p>Latest available daily bar; this is not an intraday feed or forecast.</p></div>
+            <div><h2 data-explain="signal" class="panel-title" title="Click to learn what this means">This Company at a Glance</h2><p>Latest available daily bar; this is not an intraday feed or forecast.</p></div>
           </div>
           <div class="setup-box" id="stockPulse"><p>Choose a symbol to load its latest stored market state.</p></div>
         </div>
         <div class="panel">
           <div class="panel-header">
-            <div><h2>Trader method matches</h2><p>Current scan rules checked against this symbol. A match is research evidence, not a buy instruction.</p></div>
+            <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Which Book Ideas Fit This Stock</h2><p>Current scan rules checked against this symbol. A match is research evidence, not a buy instruction.</p></div>
             <button id="refreshTraderMatches" type="button" disabled>Check methods</button>
           </div>
           <div class="setup-box" id="traderMatchBox"><p>Choose a symbol to check the registered methods.</p></div>
@@ -398,7 +399,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>Compare companies</h2><p>Compare 2–4 symbols side by side. Event score tracks a +10% high within 20 sessions; it is uncalibrated, not a trade win probability.</p></div>
+          <div><h2 data-explain="composite" class="panel-title" title="Click to learn what this means">Compare Companies</h2><p>Compare 2–4 symbols side by side. Event score tracks a +10% high within 20 sessions; it is uncalibrated, not a trade win probability.</p></div>
           <div style="display:flex; gap:6px; align-items:center;">
             <input id="compareInput" placeholder="TANLA, KPITTECH, DIXON" style="min-width:280px; padding:8px 10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:8px; color:#edf3ff;" />
             <button id="compareRunBtn">Compare</button>
@@ -411,7 +412,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>🔬 Research Cockpit — single symbol</h2><p>Historical setup behaviour and similar past cases; available history and limits are shown.</p></div>
+          <div><h2 data-explain="signal" class="panel-title" title="Click to learn what this means">One Company, In Detail</h2><p>Historical setup behaviour and similar past cases; available history and limits are shown.</p></div>
           <button id="runResearchBtn">Compute for loaded symbol</button>
         </div>
         <div class="setup-box" id="researchBox"><p>Load a symbol and press "Compute".</p></div>
@@ -419,7 +420,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>🌐 Research Universe</h2><p>Latest stored swing/trend scan plus historical stats. Sortable.</p></div>
+          <div><h2 data-explain="data_quality" class="panel-title" title="Click to learn what this means">Companies You Can Research</h2><p>Latest stored swing/trend scan plus historical stats. Sortable.</p></div>
           <div style="display:flex; gap:6px;">
             <button id="refreshResearchUniverse">Refresh</button>
             <button id="computeMissingBtn">Compute Missing</button>
@@ -431,7 +432,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>🏭 Research Sectors</h2><p>Pooled by sector. Real pooling.</p></div>
+          <div><h2 data-explain="sector_rs" class="panel-title" title="Click to learn what this means">Industry Groups</h2><p>Pooled by sector. Real pooling.</p></div>
           <button id="refreshResearchSector">Refresh</button>
         </div>
         <div class="level" id="researchSectorBadge" style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
@@ -440,7 +441,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>🎯 Pattern Scanner</h2><p>HTF · Asc Triangle · Double Bottom · Inv H&S · H&S Top warning</p></div>
+          <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Chart Patterns Found Today</h2><p>HTF · Asc Triangle · Double Bottom · Inv H&S · H&S Top warning</p></div>
           <button id="runPatternScan">Run Full Scan</button>
         </div>
         <div class="level" id="patternStatus"><span>Status</span><strong>loading…</strong></div>
@@ -449,7 +450,7 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>🧪 Screener</h2><p>Baseline + VCP checks for the symbol in the search field above.</p></div>
+          <div><h2 data-explain="veto" class="panel-title" title="Click to learn what this means">Find Companies By Numbers</h2><p>Baseline + VCP checks for the symbol in the search field above.</p></div>
           <button id="runScreenerBtn">Run Screener</button>
         </div>
         <div class="terminal-grid" style="margin-top:10px;">
@@ -464,7 +465,7 @@
       <div class="panel">
         <div class="panel-header">
           <div>
-            <h2>📚 Famous Traders — methods & signals</h2>
+            <h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Ideas From Published Books</h2>
             <p>Each trader's page lists their methods and scans the universe for live signals.</p>
           </div>
         </div>
@@ -477,7 +478,7 @@
       <div class="panel">
         <div class="panel-header">
           <div>
-            <h2>🏆 Trader League — ₹10 lakh each</h2>
+            <h2 data-explain="target" class="panel-title" title="Click to learn what this means">Practice League (Pretend Money)</h2>
             <p>14 famous-trader books vs our system on real NSE data, after every Indian cost. Compare entries, full-book exits, and the market regimes where each approach historically worked.</p>
           </div>
         </div>
@@ -489,11 +490,11 @@
     <section id="view-ledger" class="view">
       <div class="terminal-grid">
         <div class="panel">
-          <div class="panel-header"><div><h2>System Performance</h2><p>Graded swing signals</p></div></div>
+          <div class="panel-header"><div><h2 data-explain="p_win" class="panel-title" title="Click to learn what this means">How The System Has Done</h2><p>Graded swing signals</p></div></div>
           <div class="setup-box" id="ledgerStats"><p>Loading stats...</p></div>
         </div>
         <div class="panel">
-          <div class="panel-header"><div><h2>Trade Log</h2><p>Forward validation history</p></div></div>
+          <div class="panel-header"><div><h2 data-explain="signal" class="panel-title" title="Click to learn what this means">Every Idea We Recorded</h2><p>Forward validation history</p></div></div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Date</th><th>Symbol</th><th>Trigger</th><th>Stop</th><th>Target</th><th>Outcome</th></tr></thead>
@@ -504,7 +505,7 @@
       </div>
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>🧪 Strategy Runs</h2><p>Every backtest sweep, logged.</p></div>
+          <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Rule Testing History</h2><p>Every backtest sweep, logged.</p></div>
           <span class="badge muted" id="strategyRunsBadge">—</span>
         </div>
         <div id="strategyRunsBox" style="overflow-x:auto;"><p>Loading runs...</p></div>
@@ -528,7 +529,7 @@
         <div id="sourceHealthBox" class="setup-box" data-explain="sources"><p>Loading...</p></div>
       </div>
       <div class="panel" style="margin-top:18px">
-        <div class="panel-header"><div><h2>📚 Documentation</h2><p>For developers / migration</p></div></div>
+        <div class="panel-header"><div><h2 class="panel-title">For Developers</h2><p>For developers / migration</p></div></div>
         <div class="setup-box">
           <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/PORTAL_REDESIGN.md" target="_blank" rel="noopener noreferrer"><span>Portal redesign vision</span><strong>PORTAL_REDESIGN.md ↗</strong></a>
           <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/backlog.md" target="_blank" rel="noopener noreferrer"><span>Instructions &amp; rules</span><strong>backlog.md ↗</strong></a>
