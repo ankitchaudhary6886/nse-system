@@ -1019,3 +1019,56 @@ td {
     font-size: 22px;
   }
 }
+/* ============================================================
+   "Click anything, understand it" - explainer styles.
+   Extends the existing detail dialog. Reuses the palette tokens
+   (--panel, --border, --text, --muted, --blue) so it matches the rest
+   of the terminal instead of introducing a second theme.
+   ============================================================ */
+
+/* Anything explainable gets a quiet affordance: dotted underline + help cursor.
+   Understated on purpose so the screen stays calm. */
+[data-explain] { cursor: help; }
+[data-explain] > span:first-child {
+  text-decoration: underline dotted rgba(130, 183, 255, 0.45);
+  text-underline-offset: 3px;
+}
+[data-explain]:hover > span:first-child { text-decoration-color: var(--blue); }
+
+/* The dialog: readable measure, generous line height, no jargon. */
+#dataDetailDialog { max-width: 680px; width: min(680px, 92vw); }
+#dataDetailDialog .ex-lead {
+  margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: var(--text);
+}
+#dataDetailDialog .ex-row {
+  display: grid; grid-template-columns: 148px 1fr; gap: 12px;
+  padding: 11px 0; border-top: 1px solid var(--border); align-items: start;
+}
+#dataDetailDialog .ex-label {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+  text-transform: uppercase; color: var(--blue); padding-top: 2px;
+}
+#dataDetailDialog .ex-text { font-size: 14px; line-height: 1.65; color: var(--text); }
+
+/* "How to spot it yourself" is the part that works with no tool at all - make
+   it visually distinct. */
+#dataDetailDialog .ex-sight {
+  background: rgba(130, 183, 255, 0.07); border-radius: 10px;
+  padding: 13px 14px; margin-top: 10px; border-top: 1px solid var(--border);
+}
+#dataDetailDialog .ex-sight .ex-label { color: var(--green); }
+
+#dataDetailDialog .ex-note,
+#dataDetailDialog .ex-foot {
+  font-size: 12.5px; line-height: 1.6; color: var(--muted); margin: 14px 0 0;
+}
+#dataDetailDialog code {
+  font-size: 12px; padding: 1px 5px; border-radius: 4px;
+  background: rgba(255,255,255,0.07); color: var(--text);
+}
+
+/* Phone width (the owner's main screen): stack label above text. */
+@media (max-width: 620px) {
+  #dataDetailDialog .ex-row { grid-template-columns: 1fr; gap: 4px; }
+  #dataDetailDialog .ex-label { padding-top: 0; }
+}

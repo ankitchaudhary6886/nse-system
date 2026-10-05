@@ -183,28 +183,35 @@
     </button>
     <nav class="nav" aria-label="Main navigation">
       <div class="nav-group">Explore</div>
-      <button class="nav-btn" data-view="funda" title="Quality and long-term company views">
-        <span class="nav-label">Fundamentals</span><span class="nav-hint">Long-term research</span>
+      <button class="nav-btn" data-view="funda" data-explain="sector_rs"
+        title="Long-term quality views. Click the label to learn what is checked">
+        <span class="nav-label">Fundamentals</span><span class="nav-hint">Long-term quality</span>
       </button>
-      <button class="nav-btn" data-view="swing" title="Momentum setups and signal history">
+      <button class="nav-btn" data-view="swing" data-explain="setup"
+        title="Short-term setups. Click the label to learn the pattern we look for">
         <span class="nav-label">Swing setups</span><span class="nav-hint">Days to weeks</span>
       </button>
       <div class="nav-group">Research</div>
-      <button class="nav-btn active" data-view="research" title="Chart, compare, and inspect a symbol">
+      <button class="nav-btn active" data-view="research" data-explain="signal"
+        title="One company in detail. Click the label to learn what a signal is">
         <span class="nav-label">Company research</span><span class="nav-hint">Charts and evidence</span>
       </button>
-      <button class="nav-btn" data-view="traders" title="Browse documented trading methods">
-        <span class="nav-label">Trading methods</span><span class="nav-hint">Research library</span>
+      <button class="nav-btn" data-view="traders" data-explain="setup"
+        title="Ideas from published books. Click the label to learn the shared pattern">
+        <span class="nav-label">Trading methods</span><span class="nav-hint">Ideas from books</span>
       </button>
       <div class="nav-group">Review</div>
-      <button class="nav-btn" data-view="ledger" title="Review graded system signals">
-        <span class="nav-label">Performance</span><span class="nav-hint">Observed track record</span>
+      <button class="nav-btn" data-view="ledger" data-explain="p_win"
+        title="How the system has actually done. Click the label to learn the scoring">
+        <span class="nav-label">Performance</span><span class="nav-hint">Honest track record</span>
       </button>
-      <button class="nav-btn" data-view="league" title="Compare methods in paper research">
-        <span class="nav-label">Paper league</span><span class="nav-hint">No real orders</span>
+      <button class="nav-btn" data-view="league" data-explain="target"
+        title="Pretend money, real prices. Click the label to learn how targets work">
+        <span class="nav-label">Paper league</span><span class="nav-hint">No real money</span>
       </button>
-      <button class="nav-btn" data-view="system" title="Check service and data-source status">
-        <span class="nav-label">System status</span><span class="nav-hint">Health and freshness</span>
+      <button class="nav-btn" data-view="system" data-explain="data_quality"
+        title="Is everything working. Click the label to learn what is checked">
+        <span class="nav-label">System status</span><span class="nav-hint">Is it healthy</span>
       </button>
     </nav>
     <button class="sidebar-footer" type="button" data-detail-url="/api/health"
@@ -233,26 +240,31 @@
       <button class="regime-card loading" id="regimeBanner" type="button"
         data-detail-url="/api/regime" data-detail-title="Market regime"
         data-detail-related="/api/macro"
-        aria-label="Open market regime details">Loading market regime...</button>
+        data-explain="regime"
+        aria-label="Market weather. Click to learn what it means">Loading market weather...</button>
 
     <div class="metric-grid" aria-label="System snapshot">
-      <button class="metric-card" type="button" data-view="swing" aria-label="Open swing signals">
+      <button class="metric-card" type="button" data-view="swing" data-explain="signal"
+        aria-label="Open swing signals. Click to learn what a signal is">
         <span>Signals listed</span><strong id="mSignals">—</strong>
-        <small>Returned by the current swing scan</small>
+        <small>Ideas the scan is currently showing</small>
       </button>
-      <button class="metric-card" type="button" data-view="ledger" aria-label="Open performance ledger">
+      <button class="metric-card" type="button" data-view="ledger" data-explain="signal"
+        aria-label="Open performance ledger. Click to learn how results are graded">
         <span>Graded win rate</span><strong id="mWinRate">—</strong>
-        <small>Resolved outcomes only</small>
+        <small>Only ideas whose outcome is already known</small>
       </button>
-      <button class="metric-card" type="button" data-view="ledger" aria-label="Open open and pending trade details">
+      <button class="metric-card" type="button" data-view="ledger" data-explain="risk_pct"
+        aria-label="Open trade details. Click to learn about risk and waiting ideas">
         <span>Open / pending</span><strong id="mOpen">—</strong>
-        <small>Signals without a final outcome</small>
+        <small>Ideas still playing out</small>
       </button>
       <button class="metric-card" type="button" data-view="research"
         data-scroll-target="researchUniverseBox" data-load="research-universe"
-        aria-label="Open research universe details">
-        <span>Research universe</span><strong id="mUniverse">—</strong>
-        <small>Symbols available for research</small>
+        data-explain="data_quality"
+        aria-label="Open research universe. Click to learn about data freshness">
+        <span>Companies you can research</span><strong id="mUniverse">—</strong>
+        <small>Names with enough history to analyse</small>
       </button>
     </div>
     </section>
@@ -503,17 +515,17 @@
     <section id="view-system" class="view">
       <div class="panel">
         <div class="panel-header">
-          <div><h2>🚀 Deployment Status</h2><p>System health check</p></div>
+          <div><h2>Is everything working</h2><p>Data freshness, model files, and whether the service is responding. Click the heading area to learn what the checks mean.</p></div>
           <span class="badge muted" id="deploymentBadge">—</span>
         </div>
-        <div id="deploymentBox" class="setup-box"><p>Loading...</p></div>
+        <div id="deploymentBox" class="setup-box" data-explain="data_quality"><p>Loading...</p></div>
       </div>
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2>Data Source Health</h2><p>Provider activity, errors, and local rate-limit status</p></div>
+          <div><h2>Where the numbers come from</h2><p>Each outside service the system reads from, and whether it is working right now</p></div>
           <button id="refreshSourceHealthBtn" type="button">Refresh</button>
         </div>
-        <div id="sourceHealthBox" class="setup-box"><p>Loading...</p></div>
+        <div id="sourceHealthBox" class="setup-box" data-explain="sources"><p>Loading...</p></div>
       </div>
       <div class="panel" style="margin-top:18px">
         <div class="panel-header"><div><h2>📚 Documentation</h2><p>For developers / migration</p></div></div>
@@ -539,6 +551,7 @@
   </div>
 </dialog>
 <script src="/static/cards.js?v=18"></script>
+<script src="/static/explainer.js?v=1"></script>
 <script src="/static/app.js?v=19"></script>
 <script src="/static/scanners.js?v=17"></script>
 <script src="/static/strategy_runs.js?v=18"></script>

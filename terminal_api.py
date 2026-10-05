@@ -90,6 +90,34 @@ def source_health(user: str = Depends(verify_user)):
             "time": dt.datetime.now().isoformat()}
 
 
+@app.get("/api/explain")
+def explain_index(user: str = Depends(verify_user)):
+    """List every term that can be explained, for the UI's help index."""
+    import explain
+    return {"ok": True,
+            "sections": [{"key": k, "label": label}
+                         for k, label in explain.SECTIONS],
+            "terms": explain.catalog()}
+
+
+@app.get("/api/explain/{key}")
+def explain_term(key: str, user: str = Depends(verify_user)):
+    """Plain-language 5W1H for one term.
+
+    Everything the owner sees is meant to be clickable and answerable in
+    ordinary words, so this is the single source for those answers.
+    """
+    import explain
+    entry = explain.get(key)
+    if entry is None:
+        return {"ok": False, "key": key,
+                "message": "No explanation is stored for that item yet.",
+                "known": explain.all_keys()}
+    return {"ok": True, "key": key.strip().lower(), "entry": entry,
+            "sections": [{"key": k, "label": label}
+                         for k, label in explain.SECTIONS]}
+
+
 @app.get("/api/deployment-check")
 def deployment_check(user: str = Depends(verify_user)):
     conn = get_conn()
