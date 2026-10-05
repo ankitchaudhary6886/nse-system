@@ -5,6 +5,7 @@ tracked-universe coverage, suspicious jumps. Logs + Telegram alert.
 """
 import datetime as dt
 import db
+import universe_helper as U
 
 CRITICAL_STALE_DAYS = 5
 WARN_STALE_DAYS = 3
@@ -54,12 +55,7 @@ def _get_universe_symbols(conn):
     symbols = set()
     if _table_exists(conn, "universe_broad"):
         try:
-            rows = conn.execute(
-                "SELECT symbol FROM universe_broad "
-                "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-                "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %'"
-            ).fetchall()
-            symbols.update(r[0] for r in rows)
+            symbols.update(U.band_universe(conn, None))
         except Exception:
             pass
     if _table_exists(conn, "stocks"):

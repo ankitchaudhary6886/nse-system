@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "token-cache": {
+      "command": "node",
+      "args": [
+        "c:\\Users\\Ankit\\.vscode\\extensions\\sarfudheen.tokensculpt-1.0.19\\dist\\cache-server.js",
+        "c:\\Users\\Ankit\\Desktop\\nse_system"
+      ]
+    },
+    "codegraph": {
+      "command": "codegraph",
+      "args": [
+        "serve",
+        "--mcp"
+      ]
+    }
+  }
+}

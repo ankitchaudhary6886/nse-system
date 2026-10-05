@@ -12,6 +12,8 @@ Usage:
 """
 import sys
 import time
+import setup_sim
+import sector_pit
 import datetime as dt
 import numpy as np
 import pandas as pd
@@ -144,45 +146,19 @@ def _features_at(df, i):
 
 
 def _simulate(df, signal_i, trigger, stop):
-    n = len(df)
-    h = df["High"].values
-    l = df["Low"].values
-    risk = trigger - stop
-    if risk <= 0:
+    """Adapter over setup_sim.simulate_forward (B5, 2026-10-05).
+
+    Keeps this module's historic 0/1 hit flags; the shared core returns booleans
+    and extra fields (hit_4r, bars_to_*). No numeric behaviour changed.
+    """
+    r = setup_sim.simulate_forward(df, signal_i, trigger, stop,
+                                  hold_bars=HOLD_BARS)
+    if r is None:
         return None
-    trig_bar = None
-    for j in range(signal_i + 1, min(signal_i + 4, n)):
-        if h[j] >= trigger:
-            trig_bar = j
-            break
-    if trig_bar is None:
-        return {"triggered": False, "outcome": "EXPIRED", "mfe_r": 0.0,
-                "mae_r": 0.0, "hit_1r": 0, "hit_2r": 0, "hit_3r": 0}
-    end_bar = min(trig_bar + HOLD_BARS, n)
-    mfe = 0.0
-    mae = 0.0
-    h1 = h2 = h3 = False
-    outcome = "TIMEOUT"
-    for k in range(trig_bar, end_bar):
-        up = (h[k] - trigger) / risk
-        dn = (l[k] - trigger) / risk
-        if up > mfe:
-            mfe = up
-        if dn < mae:
-            mae = dn
-        if up >= 1.0:
-            h1 = True
-        if up >= 2.0:
-            h2 = True
-        if up >= 3.0:
-            h3 = True
-        if l[k] <= stop:
-            outcome = "LOSS"
-            break
-    return {"triggered": True, "outcome": outcome,
-            "mfe_r": round(float(mfe), 2), "mae_r": round(float(mae), 2),
-            "hit_1r": 1 if h1 else 0, "hit_2r": 1 if h2 else 0,
-            "hit_3r": 1 if h3 else 0}
+    r["hit_1r"] = 1 if r["hit_1r"] else 0
+    r["hit_2r"] = 1 if r["hit_2r"] else 0
+    r["hit_3r"] = 1 if r["hit_3r"] else 0
+    return r
 
 
 def _sector_maps(conn):
@@ -217,7 +193,13 @@ def build(limit=200, step=5, clear=False):
     syms = band_universe(conn, limit=limit)
     log.info(f"building pool: {len(syms)} symbols, step={step}")
 
-    sector_of, srs = _sector_maps(conn)
+    sector_of, _stale_srs = _sector_maps(conn)
+    # B4 (2026-10-05): sector RS must be point-in-time. `_sector_maps` above is
+    # retained for `sector_of` only; its `srs` used TODAY's universe_broad
+    # perf1m/perf3m for every historical row (a lookahead). Compute the real
+    # per-date rank once for the whole universe instead.
+    srs_by_date = sector_pit.sector_rs_by_date(conn, syms, sector_of)
+    log.info(f"sector RS computed for {len(srs_by_date)} dates")
     t0 = time.time()
     added = 0
     failed = 0
@@ -248,16 +230,18 @@ def build(limit=200, step=5, clear=False):
             if sim is None:
                 continue
             sector = sector_of.get(sym)
+            signal_date = str(slice_df.index[-1].date())
+            rs = srs_by_date.get(signal_date, {}).get(sym, 0.5)
             conn.execute("""
                 INSERT OR REPLACE INTO setup_pool VALUES
                 (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
-                sym, str(slice_df.index[-1].date()), feats["close"],
+                sym, signal_date, feats["close"],
                 feats["impulse_pct_60d"], feats["days_since_impulse_peak"],
                 feats["consolidation_range_pct"], feats["vol_ratio_20"],
                 feats["atr_pct"], feats["mom_20d"], feats["mom_60d"],
                 feats["distance_from_52w_high"], feats["rsi"],
-                sector, srs.get(sym),
+                sector, rs,
                 sim["mfe_r"], sim["mae_r"],
                 sim["hit_1r"], sim["hit_2r"], sim["hit_3r"],
                 sim["outcome"],

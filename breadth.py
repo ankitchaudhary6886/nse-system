@@ -6,6 +6,7 @@ Cached per day. Used to confirm the regime gate.
 import datetime as dt
 import pandas as pd
 import db
+import universe_helper as U
 
 SAMPLE = 400
 HIST = 220
@@ -15,11 +16,7 @@ def _ensure(conn):
         date TEXT PRIMARY KEY, above50 REAL, adv REAL, dec REAL)""")
 
 def _tracked(conn):
-    rows = conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "ORDER BY mcap_cr DESC LIMIT ?", (SAMPLE,)).fetchall()
-    return [r[0] for r in rows]
+    return U.band_universe(conn, SAMPLE)
 
 def compute(conn=None, force=False):
     own = False

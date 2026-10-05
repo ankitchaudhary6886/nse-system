@@ -18,6 +18,7 @@ import math
 import datetime as dt
 import numpy as np
 import db
+import universe_helper as U
 
 LOOKBACK = 90          # daily closes used per symbol
 N_POINTS = 60          # resampled sequence length
@@ -85,12 +86,7 @@ def _ensure(conn):
 
 
 def _symbols(conn, limit=600):
-    rows = conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()
-    return [r[0] for r in rows]
+    return U.band_universe(conn, limit)
 
 
 def scan_symbol(symbol, conn=None, lookback=LOOKBACK):

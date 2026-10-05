@@ -671,9 +671,7 @@ def build_context(conn, start, end, slugs, book_syms, home_syms):
             sample_n = getattr(breadth, "SAMPLE", 400)
         except Exception:
             sample_n = 400
-        sample = [r[0] for r in conn.execute(
-            "SELECT symbol FROM universe_broad WHERE mcap_cr BETWEEN 1000 "
-            "AND 8000 ORDER BY mcap_cr DESC LIMIT ?", (sample_n,))]
+        sample = U.band_universe(conn, sample_n)
         sec_syms = [r[0] for r in conn.execute(
             "SELECT s.symbol FROM stocks s JOIN universe_broad u "
             "ON u.symbol=s.symbol WHERE s.sector IS NOT NULL "

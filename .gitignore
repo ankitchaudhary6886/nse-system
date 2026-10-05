@@ -31,3 +31,17 @@ data/backtest_cache.json
 
 # trader league background replay (lock file)
 data/league_replay.pid
+.context-ops/memory/answers.jsonl
+.context-ops/config.local.yml
+.context-ops/logs/
+.context-ops/state/
+.agentflow/
+
+# code intelligence index (machine-local, large, regenerable)
+.codegraph/
+
+# local tooling caches
+.agents/__pycache__/
+
+# unrelated third-party clone (own git repo, GPL v3) - see .agents/cache/FINDINGS.md F-23
+trading-agents-swarm/

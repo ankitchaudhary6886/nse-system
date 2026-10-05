@@ -8,6 +8,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 import db
+import universe_helper as U
 from strategy_config import ALL_WEATHER as CFG
 
 BELOW_52W_MIN = CFG["BELOW_52W_MIN"]
@@ -66,11 +67,7 @@ def _candle_pattern(o, h, l, c, po, pc):
 
 def candidates(conn, limit=600):
     fund, roce = _quality_maps(conn)
-    syms = [r[0] for r in conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()]
+    syms = U.band_universe(conn, limit)
     out = []
     for sym in syms:
         rows = conn.execute(

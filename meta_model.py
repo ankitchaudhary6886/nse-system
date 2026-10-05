@@ -15,6 +15,7 @@ import pandas as pd
 import lightgbm as lgb
 import joblib
 import db
+import universe_helper as U
 
 MODEL_PATH = "data/meta_model.pkl"
 _MODEL = None
@@ -183,13 +184,10 @@ def _delivery_series(pmap, dates):
 
 
 def _symbols(conn, limit=400):
-    rows = conn.execute(
-        "SELECT symbol FROM universe_broad WHERE mcap_cr BETWEEN 1000 "
-        "AND 8000 AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()
+    rows = U.band_universe(conn, limit)
     core = [r[0] for r in conn.execute(
         "SELECT symbol FROM stocks WHERE active=1")]
-    return sorted(set([r[0] for r in rows]) | set(core))
+    return sorted(set(rows) | set(core))
 
 
 def _fund_map(conn):

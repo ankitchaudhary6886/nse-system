@@ -13,6 +13,7 @@ Usage:
 """
 import sys
 import db
+import universe_helper as U
 
 DEBT_EQ_MAX = 3.0
 ROCE_MIN = 8.0
@@ -79,11 +80,7 @@ def vetoed(sym, conn=None):
 
 def count_universe(limit=800):
     conn = db.get_conn()
-    syms = [r[0] for r in conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()]
+    syms = U.band_universe(conn, limit)
     v = 0
     reasons = {}
     for s in syms:

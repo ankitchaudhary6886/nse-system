@@ -1,0 +1,52 @@
+{
+  "github.copilot.chat.codeGeneration.instructions": [
+    {
+      "file": ".github/instructions/tokensculpt.instructions.md"
+    }
+  ],
+  "mcp": {
+    "servers": {
+      "codegraph": {
+        "command": "codegraph",
+        "args": [
+          "serve",
+          "--mcp"
+        ],
+        "type": "stdio"
+      },
+      "token-cache": {
+        "command": "node",
+        "args": [
+          "c:\\Users\\Ankit\\.vscode\\extensions\\sarfudheen.tokensculpt-1.0.19\\dist\\cache-server.js",
+          "c:\\Users\\Ankit\\Desktop\\nse_system"
+        ],
+        "type": "stdio"
+      }
+    }
+  },
+  "github.copilot.chat.codesearch.exclude": {
+    "*.lock": true,
+    "*.min.js": true,
+    "*.min.css": true,
+    "*.map": true,
+    "*.d.ts": true,
+    "*.generated.*": true,
+    "dist/**": true,
+    "build/**": true,
+    "coverage/**": true,
+    ".git/**": true,
+    "node_modules/**": true,
+    ".next/**": true,
+    ".nuxt/**": true,
+    "__pycache__/**": true,
+    "*.pyc": true,
+    "*.pyo": true,
+    "target/**": true,
+    "vendor/**": true,
+    "poetry.lock": true,
+    "Pipfile.lock": true,
+    "*.egg-info/**": true,
+    ".venv/**": true,
+    "venv/**": true
+  }
+}

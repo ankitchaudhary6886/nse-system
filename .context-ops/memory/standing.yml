@@ -1,0 +1,44 @@
+version: 1
+entries:
+  - id: done-means
+    slot: acceptance
+    value: tests pass + CI green
+    status: default
+    hits: 0
+    created_at: '2026-10-02T19:59:17.542Z'
+    last_seen: null
+  - id: high-risk-paths
+    slot: riskPaths
+    value: ''
+    status: default
+    hits: 0
+    created_at: '2026-10-02T19:59:17.542Z'
+    last_seen: null
+  - id: error-handling
+    slot: errorHandling
+    value: Services throw exceptions
+    status: detected
+    hits: 0
+    created_at: '2026-10-02T19:59:17.542Z'
+    last_seen: null
+  - id: naming-convention
+    slot: naming
+    value: ''
+    status: default
+    hits: 0
+    created_at: '2026-10-02T19:59:17.542Z'
+    last_seen: null
+  - id: performance-target
+    slot: performance
+    value: not measured
+    status: default
+    hits: 0
+    created_at: '2026-10-02T19:59:17.542Z'
+    last_seen: null
+  - id: logging-convention
+    slot: logging
+    value: ''
+    status: default
+    hits: 0
+    created_at: '2026-10-02T19:59:17.542Z'
+    last_seen: null

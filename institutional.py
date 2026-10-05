@@ -6,6 +6,7 @@ Stored in institutional(symbol,date,accum,delivery_pct).
 """
 import datetime as dt
 import db
+import universe_helper as U
 
 def _ensure(conn):
     conn.execute("""CREATE TABLE IF NOT EXISTS institutional(
@@ -67,10 +68,7 @@ def fetch_delivery_nse(symbol):
 def refresh(limit=300, use_nse=False):
     conn = db.get_conn()
     _ensure(conn)
-    syms = [r[0] for r in conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,))]
+    syms = U.band_universe(conn, limit)
     today = dt.date.today().isoformat()
     n = 0
     for sym in syms:

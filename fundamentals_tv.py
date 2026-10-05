@@ -32,6 +32,7 @@ import sys
 import time
 import datetime as dt
 import db
+import universe_helper as U
 from fundamentals_store import merge
 from data_sources import ProviderFetchError, get_registry
 from log_utils import get_logger
@@ -82,16 +83,9 @@ def _sector_map(conn):
 
 
 def _universe(conn, limit=None):
-    syms = set()
-    for r in conn.execute(
-            "SELECT symbol FROM stocks WHERE active=1"):
-        syms.add(r[0])
-    for r in conn.execute(
-            "SELECT symbol FROM universe_broad "
-            "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-            "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-            "ORDER BY mcap_cr DESC LIMIT 1500"):
-        syms.add(r[0])
+    syms = set(r[0] for r in conn.execute(
+        "SELECT symbol FROM stocks WHERE active=1"))
+    syms |= set(U.band_universe(conn, 1500))
     out = sorted(syms)
     return out[:limit] if limit else out
 

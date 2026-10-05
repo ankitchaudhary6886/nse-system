@@ -1,0 +1,3613 @@
+{
+ "root": "C:\\Users\\Ankit\\Desktop\\nse_system",
+ "module_count": 133,
+ "modules": {
+  ".agents/build_cache.py": {
+   "lines": 450,
+   "bytes": 16638,
+   "doc": "build_cache.py \u2014 deterministic system-index builder for nse_system. Regenerates .agents/cache/*.json from the live repository + database. Stdlib only (no pandas/lightgbm import), so it runs even on a broken venv. Usage (from repo root): .\\env\\Scripts\\python.exe .agents\\build_cache.py .\\env\\Scripts\\p",
+   "functions": [
+    "rel",
+    "sha256_file",
+    "py_files",
+    "read_text",
+    "docstring_of",
+    "top_names",
+    "imports_of",
+    "build_system_map",
+    "build_db_index",
+    "build_api_index",
+    "build_jobs_index",
+    "build_env_index",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  ".agents/memory.py": {
+   "lines": 412,
+   "bytes": 16304,
+   "doc": "memory.py \u2014 the session close-out for the NSE terminal. One command that does everything `.agents/MEMORY.md` \u00a716 requires: 1. validate \u2014 the 6 project skills parse, the cache artifacts are current 2. cache \u2014 rebuild .agents/cache/*.json from the live repo + DB 3. codegraph \u2014 re-sync the code index (",
+   "functions": [
+    "_ascii",
+    "run",
+    "git",
+    "validate_skills",
+    "validate_cache",
+    "validate_memory",
+    "rebuild_cache",
+    "resync_codegraph",
+    "changed_files",
+    "suggest_message",
+    "print_deploy_blocks",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  ".github/prompts/claude-finance-kit/finance-kit/scripts/fetch-single-metric.py": {
+   "lines": 130,
+   "bytes": 4819,
+   "doc": "Fetch Single Metric \u2014 quick lookup for one data point. Usage: python scripts/fetch-single-metric.py TICKER METRIC [--source VCI] Metrics: pe, pb, roe, roa, eps, price, market_cap, dividend_yield, debt_equity, current_ratio, gross_margin, net_margin, vnindex_pe, cpi, interest_rate, exchange_rate Outp",
+   "functions": [
+    "main",
+    "fetch_ratio_metric",
+    "fetch_price",
+    "fetch_market_cap",
+    "fetch_market_metric"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  ".github/prompts/claude-finance-kit/finance-kit/scripts/market-briefing.py": {
+   "lines": 85,
+   "bytes": 3183,
+   "doc": "Market Briefing \u2014 fetch VNINDEX valuation, top movers, macro indicators, commodities. Usage: python scripts/market-briefing.py [--index VNINDEX] Output: JSON to stdout with sections: market, movers, macro, commodities, funds",
+   "functions": [
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  ".github/prompts/claude-finance-kit/finance-kit/scripts/news-sentiment.py": {
+   "lines": 59,
+   "bytes": 1973,
+   "doc": "News Sentiment \u2014 crawl Vietnamese financial news and output for sentiment classification. Usage: python scripts/news-sentiment.py [TICKER] [--sites cafef,vnexpress] [--limit 20] Output: JSON to stdout with articles (title, url, description, publish_time, source) Note: Sentiment classification is don",
+   "functions": [
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  ".github/prompts/claude-finance-kit/finance-kit/scripts/stock-deep-dive.py": {
+   "lines": 128,
+   "bytes": 4706,
+   "doc": "Stock Deep Dive \u2014 fetch fundamental + technical + news data for a single ticker. Usage: python scripts/stock-deep-dive.py TICKER [--source KBS] [--days 200] Output: JSON to stdout with sections: overview, financials, ratios, technicals, news",
+   "functions": [
+    "main",
+    "safe_last",
+    "safe_last_df"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  ".github/prompts/claude-finance-kit/finance-kit/scripts/stock-screener.py": {
+   "lines": 188,
+   "bytes": 6832,
+   "doc": "Stock Screener \u2014 multi-criteria screening for Vietnamese stocks. Usage: python scripts/stock-screener.py [--group VN30] [--strategy magic|canslim|multifactor] [--top 10] Output: JSON with ranked stocks and scores Strategies: magic \u2014 Greenblatt Magic Formula (ROC + Earnings Yield) canslim \u2014 CAN SLIM ",
+   "functions": [
+    "main",
+    "get_ratios",
+    "screen_magic_formula",
+    "screen_canslim",
+    "screen_multifactor",
+    "safe_stock"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  ".github/prompts/claude-finance-kit/finance-kit/scripts/technical-composite-score.py": {
+   "lines": 273,
+   "bytes": 8161,
+   "doc": "Technical Composite Score \u2014 compute trend + momentum + volume + volatility scores. Usage: python scripts/technical-composite-score.py TICKER [--days 200] [--source VCI] Output: JSON with composite score (0-100), category scores, key indicators, levels Formula: score = trend(35%) + momentum(30%) + vo",
+   "functions": [
+    "main",
+    "compute_trend",
+    "compute_momentum",
+    "compute_volume",
+    "compute_volatility"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "alerts.py": {
+   "lines": 189,
+   "bytes": 6577,
+   "doc": "Unified alerts \u2014 Telegram text, photo, daily report, swing setup, all-weather setup. Canonical module (ID7 consolidation, 2026-09-12). Replaces the split between telegram_alerts.py and swing_alerts.py. Both of those remain as thin re-export shims for backwards compatibility. Credentials resolution: ",
+   "functions": [
+    "_creds",
+    "send",
+    "send_photo",
+    "report",
+    "notify_setup",
+    "notify_all_weather"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "chart_img",
+    "db",
+    "fund_veto"
+   ],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": [
+    "positional_scanner.py",
+    "scheduler_bg.py",
+    "swing_alerts.py",
+    "swing_live.py",
+    "telegram_alerts.py",
+    "terminal_api.py",
+    "trader_league.py",
+    "trend_scanner.py",
+    "value_radar.py",
+    "verify_deployment.py"
+   ]
+  },
+  "all_weather.py": {
+   "lines": 163,
+   "bytes": 4954,
+   "doc": "All-Weather Swing Mode \u2014 high-conviction setups during DEFENSIVE regime. Reads from strategy_config.ALL_WEATHER. v3 (2026-09-12): migrated to central config.",
+   "functions": [
+    "_quality_maps",
+    "_tier",
+    "_candle_pattern",
+    "candidates",
+    "detect",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "strategy_config",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "swing_live.py"
+   ]
+  },
+  "app.py": {
+   "lines": 548,
+   "bytes": 24539,
+   "doc": "",
+   "functions": [
+    "pill",
+    "card",
+    "goto",
+    "ml_explain"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "broad_scan",
+    "corporate",
+    "daily_update",
+    "db",
+    "deepdive",
+    "guide",
+    "ingest_fundamentals",
+    "ml_train",
+    "regime",
+    "scan",
+    "scoring",
+    "sentiment",
+    "swing",
+    "swing_live",
+    "telegram_alerts"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "plotly",
+    "streamlit"
+   ],
+   "imported_by": []
+  },
+  "backtest.py": {
+   "lines": 403,
+   "bytes": 16167,
+   "doc": "Optimized backtester. All parameters in strategy_config.BACKTEST. v5 (2026-09-12): migrated to central config.",
+   "functions": [
+    "_naive_index"
+   ],
+   "classes": [
+    "Trade",
+    "BacktestResult",
+    "Backtester"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "regime",
+    "setup",
+    "strategy_config"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": [
+    "fast_wf.py",
+    "main.py",
+    "test_backtest_integrity.py",
+    "validate.py"
+   ]
+  },
+  "breadth.py": {
+   "lines": 69,
+   "bytes": 2121,
+   "doc": "Market Breadth (A4). % of tracked universe above 50-EMA + advance/decline. Cached per day. Used to confirm the regime gate.",
+   "functions": [
+    "_ensure",
+    "_tracked",
+    "compute",
+    "breadth_ok"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": [
+    "swing_live.py",
+    "trader_league.py"
+   ]
+  },
+  "broad_scan.py": {
+   "lines": 88,
+   "bytes": 2907,
+   "doc": "",
+   "functions": [
+    "classify",
+    "fetch",
+    "run"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": [
+    "app.py"
+   ]
+  },
+  "build_setup_pool.py": {
+   "lines": 307,
+   "bytes": 9773,
+   "doc": "Build setup_pool \u2014 global historical setup features + forward outcomes. Walks history for a limited universe (top-N by mcap), extracts the feature snapshot at every SetupDetector trigger, and stores it. Then signature matching can find the N nearest pool rows to any live setup. Usage: python build_s",
+   "functions": [
+    "_ensure",
+    "_sma",
+    "_rsi",
+    "_features_at",
+    "_simulate",
+    "_sector_maps",
+    "build",
+    "stats"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "sector_gate",
+    "setup",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "scheduler_bg.py"
+   ]
+  },
+  "bullflag_rescue.py": {
+   "lines": 161,
+   "bytes": 5853,
+   "doc": "BULL_FLAG rescue experiment (evidence-first, no DB writes). Replays history per symbol (step slices), detects bull flags under 4 parameter variants, grades each detection with the LIVE gate rule: trigger within 3 bars, stop-first path, WIN at +1R, 45-bar window. PASS rule per variant: graded (W+L) >",
+   "functions": [
+    "detect_with",
+    "grade",
+    "run"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "patterns"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "chart_img.py": {
+   "lines": 99,
+   "bytes": 4024,
+   "doc": "Chart snapshot images for Telegram alerts. Pure matplotlib candlestick (no mplfinance): last 120 sessions + EMA10/20/200 + trigger/stop/target lines. Saves PNG, returns path.",
+   "functions": [
+    "render"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "matplotlib",
+    "pandas"
+   ],
+   "imported_by": [
+    "alerts.py"
+   ]
+  },
+  "check_stock.py": {
+   "lines": 29,
+   "bytes": 969,
+   "doc": "",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "scoring"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "compare_tool.py": {
+   "lines": 136,
+   "bytes": 5105,
+   "doc": "Compare tool \u2014 side-by-side metrics for 2-4 symbols. Reads only from existing tables + caches. No on-demand compute. Symbols with uncached research stats simply show '\u2014' in those rows. Usage: python compare_tool.py TANLA KPITTECH DIXON",
+   "functions": [
+    "_row",
+    "compare"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "terminal_api.py"
+   ]
+  },
+  "config.py": {
+   "lines": 10,
+   "bytes": 188,
+   "doc": "",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "db.py",
+    "ingest_prices.py",
+    "kite_import.py",
+    "kite_reconcile.py",
+    "kite_snapshot_report.py"
+   ]
+  },
+  "corporate.py": {
+   "lines": 155,
+   "bytes": 5641,
+   "doc": "",
+   "functions": [
+    "ensure",
+    "is_financial",
+    "fetch_calendar",
+    "tag_headlines",
+    "red_flags",
+    "report"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": [
+    "app.py"
+   ]
+  },
+  "daily_update.py": {
+   "lines": 71,
+   "bytes": 1777,
+   "doc": "",
+   "functions": [
+    "_safe",
+    "_telegram",
+    "_sheets",
+    "_pwin",
+    "_toppicks",
+    "run"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "log_utils",
+    "pwin_cache",
+    "sheets_sync",
+    "swing_live",
+    "telegram_alerts",
+    "top_picks"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "app.py",
+    "scheduler_bg.py"
+   ]
+  },
+  "data/check_wisdom.py": {
+   "lines": 38,
+   "bytes": 1103,
+   "doc": "Throwaway verification for wisdom.py.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "data_quality.py": {
+   "lines": 242,
+   "bytes": 8999,
+   "doc": "Data Quality Monitor for NSE Intelligence. Checks core tables, staleness, duplicates, OHLC integrity, tracked-universe coverage, suspicious jumps. Logs + Telegram alert.",
+   "functions": [
+    "_today",
+    "_parse_date",
+    "_safe_send",
+    "_ensure",
+    "_log",
+    "_table_exists",
+    "_get_universe_symbols",
+    "check_stale_price_date",
+    "check_duplicate_rows",
+    "check_invalid_ohlc",
+    "check_missing_recent_symbols",
+    "check_suspicious_jumps",
+    "check_core_tables",
+    "run"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "swing_alerts",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "ingest_missing.py",
+    "scheduler_bg.py"
+   ]
+  },
+  "data_sources/__init__.py": {
+   "lines": 20,
+   "bytes": 363,
+   "doc": "Shared data-source adapters and fallback orchestration.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "data_sources/adapters/__init__.py": {
+   "lines": 2,
+   "bytes": 77,
+   "doc": "Built-in data source adapters discovered by :mod:`data_sources.core`.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "data_sources/adapters/chartink.py": {
+   "lines": 27,
+   "bytes": 734,
+   "doc": "Chartink adapter for user-supplied screener URLs.",
+   "functions": [
+    "register_adapters"
+   ],
+   "classes": [
+    "ChartinkSymbolsAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": []
+  },
+  "data_sources/adapters/nse.py": {
+   "lines": 37,
+   "bytes": 1086,
+   "doc": "NSE constituent-list adapters used by the existing universe fallback.",
+   "functions": [
+    "register_adapters"
+   ],
+   "classes": [
+    "LocalNseConstituentsAdapter",
+    "NseApiConstituentsAdapter",
+    "NseArchiveConstituentsAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "universe"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "data_sources/adapters/tradingview.py": {
+   "lines": 35,
+   "bytes": 1179,
+   "doc": "TradingView India scanner adapter for the existing fundamentals fetcher.",
+   "functions": [
+    "register_adapters"
+   ],
+   "classes": [
+    "TradingViewFundamentalsAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": []
+  },
+  "data_sources/adapters/yahoo.py": {
+   "lines": 24,
+   "bytes": 703,
+   "doc": "Yahoo Finance adapter for incremental NSE price-history ingestion.",
+   "functions": [
+    "register_adapters"
+   ],
+   "classes": [
+    "YahooPriceHistoryAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "data_sources/core.py": {
+   "lines": 220,
+   "bytes": 7496,
+   "doc": "Typed adapter contract, source health, and explicit fallback routing.",
+   "functions": [
+    "get_registry"
+   ],
+   "classes": [
+    "SourceHealth",
+    "FetchResult",
+    "SourceAdapter",
+    "ProviderFetchError",
+    "RateWindow",
+    "BaseSourceAdapter",
+    "SourceRegistry"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "data_sources/provenance.py": {
+   "lines": 26,
+   "bytes": 814,
+   "doc": "Helpers for identifying and timestamping locally supplied source files.",
+   "functions": [
+    "file_metadata"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "db.py": {
+   "lines": 262,
+   "bytes": 9224,
+   "doc": "",
+   "functions": [
+    "_migrate",
+    "get_conn"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "config"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "alerts.py",
+    "all_weather.py",
+    "app.py",
+    "backtest.py",
+    "breadth.py",
+    "broad_scan.py",
+    "build_setup_pool.py",
+    "bullflag_rescue.py",
+    "chart_img.py",
+    "check_stock.py",
+    "compare_tool.py",
+    "corporate.py",
+    "data_quality.py",
+    "db_check.py",
+    "deepdive.py",
+    "delivery.py",
+    "diag.py",
+    "diagnose.py",
+    "events.py",
+    "fast_wf.py",
+    "fund_veto.py",
+    "fundamentals_compute.py",
+    "fundamentals_refresh.py",
+    "fundamentals_tv.py",
+    "ingest_fundamentals.py",
+    "ingest_missing.py",
+    "ingest_prices.py",
+    "ingest_smallcaps.py",
+    "institutional.py",
+    "ledger.py",
+    "macro.py",
+    "main.py",
+    "meta_model.py",
+    "ml_predict.py",
+    "ml_train.py",
+    "model_report.py",
+    "pattern_grader.py",
+    "patterns.py",
+    "positional_scanner.py",
+    "pwin_cache.py",
+    "quick_funnel.py",
+    "quick_setup_diag.py",
+    "research_cockpit.py",
+    "rule_engine.py",
+    "scan.py",
+    "scanx_import.py",
+    "scanx_snapshot_report.py",
+    "scheduler_bg.py",
+    "scoring.py",
+    "screener_engine.py",
+    "sector_gate.py",
+    "sectors_refresh.py",
+    "sentiment.py",
+    "sheets_sync.py",
+    "sizing.py",
+    "strategy_backtest.py",
+    "strategy_runs.py",
+    "swing.py",
+    "swing_live.py",
+    "technicals.py",
+    "template_match.py",
+    "terminal_api.py",
+    "test_fundamentals_integrity.py",
+    "top_picks.py",
+    "trader_league.py",
+    "traders/apurva_parikh.py",
+    "traders/chande.py",
+    "traders/ishaan_agnihotri.py",
+    "traders/john_crane.py",
+    "traders/larry_spears.py",
+    "traders/mcallen.py",
+    "traders/nison.py",
+    "traders/oneil.py",
+    "traders/oshaughnessy.py",
+    "traders/quantitative_value.py",
+    "traders/seven_simple_strategies.py",
+    "traders/singhal.py",
+    "traders/value_investing_made_easy.py",
+    "traders/way_of_the_turtle.py",
+    "trend_scanner.py",
+    "universe.py",
+    "universe_helper.py",
+    "validate.py",
+    "value_radar.py",
+    "verify_deployment.py"
+   ]
+  },
+  "db_check.py": {
+   "lines": 18,
+   "bytes": 603,
+   "doc": "",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "deepdive.py": {
+   "lines": 140,
+   "bytes": 5072,
+   "doc": "",
+   "functions": [
+    "download_prices",
+    "predict_one",
+    "score_one",
+    "ensure_symbol"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "fundamentals_compute",
+    "scoring"
+   ],
+   "imports_third_party": [
+    "joblib",
+    "numpy",
+    "yfinance"
+   ],
+   "imported_by": [
+    "app.py"
+   ]
+  },
+  "delivery.py": {
+   "lines": 329,
+   "bytes": 11588,
+   "doc": "NSE Delivery % Scanner. High delivery % (>50-60%) = real buying, not F&O churn. Low delivery % (<30%) on big green candle = speculative, likely to fade. Fetches bhavcopy CSV from NSE archives, stores daily delivery data, computes rolling delivery metrics, and flags accumulation/distribution. Tables:",
+   "functions": [
+    "_ensure",
+    "_session",
+    "_parse_csv",
+    "fetch",
+    "backfill",
+    "top",
+    "accumulation",
+    "for_symbol",
+    "delivery_score"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": [
+    "scheduler_bg.py",
+    "terminal_api.py"
+   ]
+  },
+  "diag.py": {
+   "lines": 38,
+   "bytes": 1153,
+   "doc": "",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "scoring"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "diagnose.py": {
+   "lines": 52,
+   "bytes": 1714,
+   "doc": "Funnel diagnostics: counts screener passes and setup failure reasons.",
+   "functions": [
+    "load"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "main",
+    "scanner",
+    "setup"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "events.py": {
+   "lines": 85,
+   "bytes": 3306,
+   "doc": "",
+   "functions": [
+    "ensure",
+    "detect"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "verify_deployment.py"
+   ]
+  },
+  "fast_wf.py": {
+   "lines": 150,
+   "bytes": 5583,
+   "doc": "Fast walk-forward \u2014 Backtester path. Verdict is PF-driven. Every run is logged to strategy_runs. Usage: python fast_wf.py # 3y / 400 syms / 3R full-exit python fast_wf.py --tranche # tranche exits (1/3 @ 2R, 1/3 @ 3R, trail) python fast_wf.py --r 2.5 # target override (full-exit only) python fast_wf",
+   "functions": [
+    "_verdict",
+    "_parse_args",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "backtest",
+    "db",
+    "strategy_runs",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "fund_veto.py": {
+   "lines": 105,
+   "bytes": 3035,
+   "doc": "Fundamental Veto Gate \u2014 the 'partial fundamentals' identity. Hard-excludes symbols with weak fundamentals from NEW swing alerts, stored signals, patterns and Top Picks: debt_eq > 3 -> over-leveraged roce < 8 -> poor capital efficiency promoter < 20 -> low promoter skin in the game Missing fundamenta",
+   "functions": [
+    "_fund_row",
+    "vetoed",
+    "count_universe"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "alerts.py",
+    "patterns.py",
+    "scheduler_bg.py",
+    "swing_live.py",
+    "top_picks.py"
+   ]
+  },
+  "fundamentals_compute.py": {
+   "lines": 128,
+   "bytes": 4688,
+   "doc": "",
+   "functions": [
+    "series",
+    "latest",
+    "cagr",
+    "fetch_one",
+    "run"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "fundamentals_store"
+   ],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": [
+    "deepdive.py"
+   ]
+  },
+  "fundamentals_refresh.py": {
+   "lines": 163,
+   "bytes": 5222,
+   "doc": "A1 \u2014 Fundamentals refresh (weekly / on-call). Modes: csv -> ingest data/fundamentals.csv (screener export), flexible headers yahoo -> best-effort yfinance refresh for top-N symbols auto -> csv if present, then yahoo",
+   "functions": [
+    "_norm",
+    "_clean_symbol",
+    "_table_cols",
+    "_sha256_file",
+    "_upsert",
+    "ingest_csv",
+    "refresh_yahoo",
+    "auto"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fundamentals_store"
+   ],
+   "imports_third_party": [
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": [
+    "test_fundamentals_integrity.py"
+   ]
+  },
+  "fundamentals_store.py": {
+   "lines": 223,
+   "bytes": 8211,
+   "doc": "Small, non-destructive storage helper for fundamentals imports. Importers deliberately use this module instead of row replacement. A source usually supplies only a subset of a fundamentals row; a null in that subset must not erase a value supplied by another source.",
+   "functions": [
+    "_present",
+    "_json_object",
+    "_quality_flags",
+    "_columns",
+    "_deprecated_fields",
+    "merge",
+    "integrity_report",
+    "flag_legacy_deprecated"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "fundamentals_compute.py",
+    "fundamentals_refresh.py",
+    "fundamentals_tv.py",
+    "ingest_fundamentals.py",
+    "test_fundamentals_integrity.py"
+   ]
+  },
+  "fundamentals_tv.py": {
+   "lines": 215,
+   "bytes": 7693,
+   "doc": "Fundamentals fetcher (canonical) \u2014 TradingView India scanner. v5 (2026-09-12): rewritten after TV column probe. Uses only columns that actually return values for NSE stocks. Available on TV India (validated by tv_column_probe.py, 30 symbols): close, market_cap_basic, price_earnings_ttm, return_on_eq",
+   "functions": [
+    "_fetch_batch",
+    "_sector_map",
+    "_universe",
+    "_fundamentals_values",
+    "run",
+    "count"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fundamentals_store",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "scheduler_bg.py",
+    "test_fundamentals_integrity.py"
+   ]
+  },
+  "guide.py": {
+   "lines": 88,
+   "bytes": 3377,
+   "doc": "",
+   "functions": [
+    "f2",
+    "family",
+    "fund_rows"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "app.py"
+   ]
+  },
+  "ingest_fundamentals.py": {
+   "lines": 65,
+   "bytes": 2443,
+   "doc": "",
+   "functions": [
+    "load"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "fundamentals_store"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": [
+    "app.py"
+   ]
+  },
+  "ingest_missing.py": {
+   "lines": 50,
+   "bytes": 1731,
+   "doc": "One-time: download history for tracked symbols missing recent data.",
+   "functions": [
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "data_quality",
+    "db"
+   ],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "ingest_prices.py": {
+   "lines": 68,
+   "bytes": 2468,
+   "doc": "",
+   "functions": [
+    "fetch_one",
+    "run"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "config",
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "verify_deployment.py"
+   ]
+  },
+  "ingest_smallcaps.py": {
+   "lines": 51,
+   "bytes": 1673,
+   "doc": "One-time: download 5y daily history for smallcap band (1000-8000 cr).",
+   "functions": [
+    "run"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "institutional.py": {
+   "lines": 105,
+   "bytes": 3530,
+   "doc": "A2 \u2014 Institutional footprint. - accumulation_score: up-volume share over last 20d (reliable proxy). - fetch_delivery_nse: best-effort NSE delivery % (skips if blocked). Stored in institutional(symbol,date,accum,delivery_pct).",
+   "functions": [
+    "_ensure",
+    "accumulation_score",
+    "fetch_delivery_nse",
+    "refresh",
+    "top_accumulation"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": [
+    "scheduler_bg.py",
+    "top_picks.py"
+   ]
+  },
+  "kite_import.py": {
+   "lines": 408,
+   "bytes": 15911,
+   "doc": "Import a KITE watchlist export into an isolated research snapshot table. The export has no financial-period or publication dates and must not update live fundamentals, daily prices, trading signals, or historical replays.",
+   "functions": [
+    "_read_csv",
+    "_number",
+    "_zero_sentinels",
+    "_instrument_map",
+    "_snapshot_rows",
+    "_backup",
+    "_apply",
+    "_print_summary",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "config",
+    "scanx_import"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "test_kite_import.py"
+   ]
+  },
+  "kite_reconcile.py": {
+   "lines": 360,
+   "bytes": 14660,
+   "doc": "Attest overlapping KITE and ScanX values, then refresh confirmed fields. Only same-date, symbol-matched values that meet explicit cross-source agreement rules are promoted. Unconfirmed metrics remain in their isolated source snapshots and are recorded as withheld in the attestation ledger.",
+   "functions": [
+    "values_agree",
+    "_ensure_audit_table",
+    "reconcile",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "config"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "test_kite_reconcile.py"
+   ]
+  },
+  "kite_snapshot_report.py": {
+   "lines": 124,
+   "bytes": 5236,
+   "doc": "Read-only coverage and quality report for KITE market snapshots.",
+   "functions": [
+    "report",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "config"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "ledger.py": {
+   "lines": 98,
+   "bytes": 2921,
+   "doc": "Paper-Trade Ledger & System Stats (N3). Reads graded swing_signals and computes system-level performance: Win Rate, Profit Factor, Expectancy (R), Max Drawdown.",
+   "functions": [
+    "compute_stats",
+    "get_trades"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "terminal_api.py"
+   ]
+  },
+  "log_utils.py": {
+   "lines": 38,
+   "bytes": 1098,
+   "doc": "Simple file + console logger for the NSE system. Writes to data/logs/nse.log (rotated daily, 14 days kept) and prints to stdout.",
+   "functions": [
+    "get_logger"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "build_setup_pool.py",
+    "daily_update.py",
+    "fundamentals_tv.py",
+    "positional_scanner.py",
+    "rule_engine.py",
+    "scheduler_bg.py",
+    "strategy_backtest.py",
+    "trader_league.py",
+    "traders/apurva_parikh.py",
+    "traders/chande.py",
+    "traders/ishaan_agnihotri.py",
+    "traders/john_crane.py",
+    "traders/larry_spears.py",
+    "traders/mcallen.py",
+    "traders/nison.py",
+    "traders/oneil.py",
+    "traders/oshaughnessy.py",
+    "traders/quantitative_value.py",
+    "traders/seven_simple_strategies.py",
+    "traders/singhal.py",
+    "traders/value_investing_made_easy.py",
+    "traders/way_of_the_turtle.py",
+    "trend_scanner.py"
+   ]
+  },
+  "macro.py": {
+   "lines": 124,
+   "bytes": 4035,
+   "doc": "A3 \u2014 FII/DII daily cash-flow macro layer. Sources: NSE archives (session-based, best-effort) or manual entry. Usage: python macro.py -> try auto-fetch (today, then up to 4 days back) python macro.py set F D -> manual entry for today (in crores)",
+   "functions": [
+    "_ensure",
+    "_parse_csv",
+    "_fetch_nse",
+    "set_flow",
+    "refresh",
+    "latest"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": [
+    "scheduler_bg.py",
+    "terminal_api.py"
+   ]
+  },
+  "main.py": {
+   "lines": 105,
+   "bytes": 4136,
+   "doc": "Entry point: python main.py scan # live EOD scan (smallcap band) python main.py backtest # 2-year backtest python main.py scan URL # scan a Chartink screener",
+   "functions": [
+    "smallcap_universe",
+    "extract_symbols_from_chartink",
+    "live_scan",
+    "run_backtest"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "backtest",
+    "db",
+    "regime",
+    "scanner",
+    "setup"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": [
+    "diagnose.py"
+   ]
+  },
+  "meta_model.py": {
+   "lines": 625,
+   "bytes": 22277,
+   "doc": "Setup Meta-Model v7 \u2014 C3 + Secret Sauce + Pattern flags + DTW + Delivery + trend-persistence features. Features: price/derived history only. Current fundamentals, sentiment and sector context are intentionally excluded until point-in-time history exists. + vcr/ret_std20/below52 + 7 pattern flags + d",
+   "functions": [
+    "get_model",
+    "reload_model",
+    "model_bundle_metadata",
+    "_pattern_flags",
+    "_dtw_map",
+    "_dtw_series",
+    "_delivery_map",
+    "_delivery_series",
+    "_symbols",
+    "_fund_map",
+    "_sentiment_map",
+    "sector_rs_map",
+    "_features_df",
+    "_coerce_numeric",
+    "build_train_data",
+    "_fit",
+    "_eval",
+    "train",
+    "lift_test",
+    "_attach_extra_feats",
+    "score_symbol",
+    "rank_symbols"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "model_report",
+    "sector_gate",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "joblib",
+    "lightgbm",
+    "numpy",
+    "pandas",
+    "sklearn",
+    "yfinance"
+   ],
+   "imported_by": [
+    "model_report.py",
+    "pwin_cache.py",
+    "scheduler_bg.py",
+    "terminal_api.py",
+    "test_ml_integrity.py"
+   ]
+  },
+  "ml_features.py": {
+   "lines": 46,
+   "bytes": 1826,
+   "doc": "Canonical feature definitions shared by ML training and prediction. Keep these calculations in one place: a score produced by the batch and deep-dive paths must mean the same thing as a score produced during training.",
+   "functions": [
+    "feature_frame",
+    "latest_features"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "ml_predict.py",
+    "ml_train.py",
+    "test_ml_integrity.py"
+   ]
+  },
+  "ml_predict.py": {
+   "lines": 79,
+   "bytes": 2591,
+   "doc": "",
+   "functions": [
+    "_compatible",
+    "predict_all"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "ml_features"
+   ],
+   "imports_third_party": [
+    "joblib",
+    "numpy"
+   ],
+   "imported_by": [
+    "verify_deployment.py"
+   ]
+  },
+  "ml_train.py": {
+   "lines": 127,
+   "bytes": 5398,
+   "doc": "",
+   "functions": [
+    "build_dataset",
+    "make_features",
+    "make_targets",
+    "_time_split",
+    "train"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "ml_features"
+   ],
+   "imports_third_party": [
+    "joblib",
+    "lightgbm",
+    "numpy",
+    "pandas",
+    "sklearn"
+   ],
+   "imported_by": [
+    "app.py",
+    "test_ml_integrity.py"
+   ]
+  },
+  "model_report.py": {
+   "lines": 59,
+   "bytes": 1857,
+   "doc": "Model run ledger \u2014 every train / lift-test records its metrics. Powers C3 lift re-test tracking + the Ledger UI panel (next batch).",
+   "functions": [
+    "_ensure",
+    "record",
+    "history",
+    "run_lift"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "meta_model"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "meta_model.py",
+    "terminal_api.py"
+   ]
+  },
+  "pattern_grader.py": {
+   "lines": 291,
+   "bytes": 9179,
+   "doc": "Pattern Hit-Rate Gate v5. v5 (2026-09-13): grades bearish patterns (H&S top warning) properly. For BULLISH: entry = breakout (above current), stop below, win if high reaches breakout + 1R within HOLD_BARS. For BEARISH: entry = breakout (below current), stop above, win if low reaches breakout - 1R. G",
+   "functions": [
+    "_ensure",
+    "_grade_one",
+    "grade_all",
+    "stats",
+    "report",
+    "regrade",
+    "enabled_patterns",
+    "disabled_patterns"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "patterns.py",
+    "terminal_api.py"
+   ]
+  },
+  "patterns.py": {
+   "lines": 931,
+   "bytes": 31164,
+   "doc": "Rule-Based Pattern Scanner v6. v6 (2026-09-13): every detector now records a per-condition checklist (checks list) which is stored in the pattern_tags.params JSON. Enables transparency UI \u2014 user sees exactly which conditions passed or failed. BULL_FLAG KILLED 2026-09-17 by evidence (rescue experimen",
+   "functions": [
+    "_ensure",
+    "_symbols",
+    "_load_df",
+    "_secret_sauce",
+    "_safe_float",
+    "_round",
+    "_status",
+    "_target_2r",
+    "_pivots",
+    "_mk",
+    "detect_high_tight_flag",
+    "detect_ascending_triangle",
+    "detect_double_bottom",
+    "detect_inverse_head_shoulders",
+    "detect_head_shoulders_top",
+    "detect_symbol",
+    "_save",
+    "run",
+    "backfill_tags",
+    "latest",
+    "for_symbol",
+    "history_for_symbol",
+    "_row_to_dict",
+    "print_latest"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fund_veto",
+    "pattern_grader",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "bullflag_rescue.py",
+    "scheduler_bg.py",
+    "terminal_api.py"
+   ]
+  },
+  "positional_scanner.py": {
+   "lines": 289,
+   "bytes": 9488,
+   "doc": "Positional Scanner \u2014 long-term holds (months to years). v3 (2026-09-12): uses canonical universe_helper (ID7). Score = 0.4*quality + 0.3*trend + 0.3*valuation Tiers: S (>=80 all pillars), A (>=65), B (>=50), C (ranked below). Runs weekly Sat 10:00 IST.",
+   "functions": [
+    "_ensure",
+    "_quality_score",
+    "_trend_score",
+    "_value_score",
+    "_sector_pe_medians",
+    "compute",
+    "top",
+    "_fmt_tg",
+    "report"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "alerts",
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "scheduler_bg.py",
+    "terminal_api.py"
+   ]
+  },
+  "pwin_cache.py": {
+   "lines": 90,
+   "bytes": 2891,
+   "doc": "Daily P(WIN) cache \u2014 one scoring pass per symbol per day. Makes /api/toppicks, /api/radar, /api/swing/signals instant.",
+   "functions": [
+    "_ensure",
+    "get_map",
+    "get_why",
+    "refresh_all"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "meta_model",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "daily_update.py",
+    "terminal_api.py",
+    "top_picks.py",
+    "verify_deployment.py"
+   ]
+  },
+  "quick_funnel.py": {
+   "lines": 102,
+   "bytes": 3312,
+   "doc": "Fast funnel diagnostic \u2014 where do setups die? 100 symbols, 2 years, step=5. Should run in 60-90 seconds.",
+   "functions": [
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "scanner",
+    "setup",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "quick_setup_diag.py": {
+   "lines": 167,
+   "bytes": 5527,
+   "doc": "Fast diagnostic \u2014 which of the 6 SetupDetector checks kills setups? v2: reads thresholds from setup.py so they stay in sync.",
+   "functions": [
+    "check_slice",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "scanner",
+    "setup",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "regime.py": {
+   "lines": 90,
+   "bytes": 3221,
+   "doc": "Market Regime Filter \u2014 Top-down gatekeeper. v2 (2026-09-12): 5-level spectrum via regime_spectrum.py. RegimeState remains backwards-compatible \u2014 is_bullish still present.",
+   "functions": [],
+   "classes": [
+    "RegimeState",
+    "MarketRegime"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "regime_spectrum"
+   ],
+   "imports_third_party": [
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": [
+    "app.py",
+    "backtest.py",
+    "main.py",
+    "sizing.py",
+    "swing_live.py",
+    "terminal_api.py",
+    "trader_league.py"
+   ]
+  },
+  "regime_spectrum.py": {
+   "lines": 97,
+   "bytes": 2766,
+   "doc": "Regime Spectrum \u2014 5 levels, not binary. Authorized 2026-09-12 (Feature C, per BACKLOG ID3). Levels: STRONG_BULL \u2014 close > EMA10 by >=2%, EMA10 rising, breadth >= 0.60 BULL \u2014 close > EMA10 AND EMA20, EMA10 rising NEUTRAL \u2014 close > EMA10 (but slope flat/falling) OR above EMA20 only WEAK \u2014 close < EMA1",
+   "functions": [
+    "classify",
+    "describe"
+   ],
+   "classes": [
+    "SpectrumState"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "regime.py",
+    "trader_league.py"
+   ]
+  },
+  "research_cockpit.py": {
+   "lines": 972,
+   "bytes": 35062,
+   "doc": "Research Cockpit \u2014 historical behaviour of setups similar to today's. Entry points: analyze_symbol(sym) \u2014 full per-symbol analysis (cached 7d) analyze_universe(limit) \u2014 today's setups + their cached stats warm_cache() \u2014 compute + cache stats for today's symbols sector_aggregate() \u2014 pool setups acros",
+   "functions": [
+    "_ensure_cache",
+    "_get_cached",
+    "_put_cache",
+    "_clear_cache",
+    "_classify_mother_bar",
+    "_candle_stats",
+    "_to_vector",
+    "signature_match",
+    "_sector_breakdown",
+    "_simulate_forward",
+    "_load_df",
+    "_features_at",
+    "_historical_setups",
+    "_aggregate",
+    "analyze_symbol",
+    "_latest_scan_dates",
+    "_today_symbols",
+    "_source_status",
+    "_latest_scan_symbols",
+    "analyze_universe",
+    "sector_aggregate",
+    "warm_cache",
+    "clear_cache",
+    "_print_symbol"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "setup"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "scheduler_bg.py",
+    "terminal_api.py",
+    "test_research_cockpit.py"
+   ]
+  },
+  "rule_engine.py": {
+   "lines": 671,
+   "bytes": 21715,
+   "doc": "Rule Engine \u2014 generic strategy evaluation. Strategies are JSON definitions stored in data/strategies.json. v2 (2026-09-12): score uses percentile ranks within the current universe. Raw-value scoring was outlier-dominated (holding companies with weird accounting inflating the whole score). Percentile",
+   "functions": [
+    "_ensure_file",
+    "load_strategies",
+    "save_strategies",
+    "get_strategy",
+    "save_strategy",
+    "delete_strategy",
+    "_seq_len",
+    "_ema",
+    "_sma",
+    "_rsi",
+    "_find_gapup",
+    "_impulse_pullback",
+    "_compute_features",
+    "_load_symbol_df",
+    "_load_fundamentals",
+    "_load_sectors",
+    "_load_sector_rs",
+    "_universe_symbols",
+    "_percentile_ranks",
+    "_condition_label",
+    "evaluate",
+    "_diagnose",
+    "run_strategy",
+    "run_all",
+    "seed_if_empty"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "sector_gate",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "strategy_backtest.py",
+    "terminal_api.py"
+   ]
+  },
+  "scan.py": {
+   "lines": 141,
+   "bytes": 5526,
+   "doc": "",
+   "functions": [
+    "run"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "scoring"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "app.py",
+    "verify_deployment.py"
+   ]
+  },
+  "scanner.py": {
+   "lines": 96,
+   "bytes": 3378,
+   "doc": "Screener v2 \u2014 Stage-2 baseline + liquidity + momentum + impulse volume. Reads thresholds from strategy_config.SCREENER.",
+   "functions": [],
+   "classes": [
+    "ScreenerResult",
+    "Screener"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "strategy_config"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "diagnose.py",
+    "main.py",
+    "quick_funnel.py",
+    "quick_setup_diag.py",
+    "swing_live.py"
+   ]
+  },
+  "scanx_import.py": {
+   "lines": 448,
+   "bytes": 17932,
+   "doc": "Import a dated ScanX fundamentals export using an NSE security master. The import is a current snapshot, not point-in-time historical data. Unmatched names are deliberately left out instead of fuzzy-matched.",
+   "functions": [
+    "_norm",
+    "_read_csv",
+    "_master_index",
+    "_resolve",
+    "_number",
+    "_zero_sentinel_fields",
+    "_snapshot_values",
+    "_backup",
+    "_apply",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "kite_import.py",
+    "test_scanx_import.py"
+   ]
+  },
+  "scanx_snapshot_report.py": {
+   "lines": 129,
+   "bytes": 5404,
+   "doc": "Read-only coverage and data-quality report for imported ScanX snapshots.",
+   "functions": [
+    "report",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "scheduler_bg.py": {
+   "lines": 367,
+   "bytes": 12936,
+   "doc": "Background scheduler \u2014 daily chain + swing + research cache + pool rebuild + patterns + fundamentals + value radar + positional + trend + validation.",
+   "functions": [
+    "_data_quality_job",
+    "_daily_job",
+    "_trend_job",
+    "_swing_job",
+    "_warm_research_job",
+    "_pool_rebuild_job",
+    "_purge_vetoed",
+    "_institutional_job",
+    "_macro_job",
+    "_delivery_job",
+    "_pattern_job",
+    "_template_job",
+    "_fundamentals_job",
+    "_retrain_job",
+    "_value_radar_job",
+    "_positional_job",
+    "_validate_mc_job",
+    "_validate_wf_job",
+    "_drift_check",
+    "_league_job",
+    "_league_scorecard_job",
+    "start",
+    "stop"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "alerts",
+    "build_setup_pool",
+    "daily_update",
+    "data_quality",
+    "db",
+    "delivery",
+    "fund_veto",
+    "fundamentals_tv",
+    "institutional",
+    "log_utils",
+    "macro",
+    "meta_model",
+    "patterns",
+    "positional_scanner",
+    "research_cockpit",
+    "swing_live",
+    "template_match",
+    "trader_league",
+    "trend_scanner",
+    "validate",
+    "value_radar"
+   ],
+   "imports_third_party": [
+    "apscheduler",
+    "pytz"
+   ],
+   "imported_by": [
+    "terminal_api.py"
+   ]
+  },
+  "scoring.py": {
+   "lines": 189,
+   "bytes": 6430,
+   "doc": "",
+   "functions": [
+    "is_financial",
+    "band_high",
+    "band_low",
+    "sector_pe_medians",
+    "price_stats",
+    "score_stock"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "app.py",
+    "check_stock.py",
+    "deepdive.py",
+    "diag.py",
+    "scan.py"
+   ]
+  },
+  "screener_engine.py": {
+   "lines": 235,
+   "bytes": 9045,
+   "doc": "On-Demand Screener \u2014 baseline (Stage-2 + momentum + volume) + VCP/pullback checks. DB-first (prices_daily), Yahoo fallback for unknown symbols (single-symbol mode only). Usage: python screener_engine.py RELIANCE -> full check breakdown for one stock python screener_engine.py scan -> run over top sma",
+   "functions": [
+    "_from_db",
+    "_from_yahoo",
+    "fetch_stock_data",
+    "fetch_index_data",
+    "check_global_regime",
+    "evaluate_stock",
+    "screen_universe"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": [
+    "terminal_api.py"
+   ]
+  },
+  "sector_gate.py": {
+   "lines": 73,
+   "bytes": 2128,
+   "doc": "Sector Momentum Gate (B1). Ranks sectors by relative strength and only allows swing setups from the top-N leadership sectors.",
+   "functions": [
+    "sector_perf",
+    "allowed_sectors",
+    "sector_of",
+    "passes"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": [
+    "build_setup_pool.py",
+    "meta_model.py",
+    "rule_engine.py",
+    "swing_live.py",
+    "top_picks.py",
+    "trader_league.py",
+    "traders/singhal.py"
+   ]
+  },
+  "sectors_refresh.py": {
+   "lines": 51,
+   "bytes": 1537,
+   "doc": "Fill stocks.sector for the tracked universe (best-effort via Yahoo). Activates sector gate (B1) + sector layer in Top Picks / meta model.",
+   "functions": [
+    "_upsert",
+    "refresh"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "sentiment.py": {
+   "lines": 96,
+   "bytes": 2977,
+   "doc": "",
+   "functions": [
+    "ensure",
+    "get_model",
+    "fetch_headlines",
+    "score_symbol"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "feedparser",
+    "transformers"
+   ],
+   "imported_by": [
+    "app.py"
+   ]
+  },
+  "setup.py": {
+   "lines": 192,
+   "bytes": 7239,
+   "doc": "Hiren Gabani Master Pullback \u2014 reads all thresholds from strategy_config.SETUP. Change values there, not here. v3.5 (2026-09-12): thresholds migrated to central config.",
+   "functions": [],
+   "classes": [
+    "Setup",
+    "SetupDetector"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "strategy_config"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "backtest.py",
+    "build_setup_pool.py",
+    "diagnose.py",
+    "main.py",
+    "quick_funnel.py",
+    "quick_setup_diag.py",
+    "research_cockpit.py",
+    "swing_live.py",
+    "terminal_api.py",
+    "top_picks.py",
+    "trader_league.py"
+   ]
+  },
+  "sheets_sync.py": {
+   "lines": 83,
+   "bytes": 2674,
+   "doc": "",
+   "functions": [
+    "_available",
+    "get_sh",
+    "write_tab",
+    "sync"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "gspread"
+   ],
+   "imported_by": [
+    "daily_update.py",
+    "verify_deployment.py"
+   ]
+  },
+  "sizing.py": {
+   "lines": 179,
+   "bytes": 6622,
+   "doc": "Transparent fixed-risk research sizing with hard safety caps.",
+   "functions": [
+    "get_capital",
+    "set_capital",
+    "_positive_finite",
+    "_regime_scale",
+    "_quality_mult",
+    "suggest"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "regime",
+    "strategy_config"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "terminal_api.py",
+    "test_sizing_safety.py"
+   ]
+  },
+  "strategy_backtest.py": {
+   "lines": 421,
+   "bytes": 15698,
+   "doc": "Strategy Backtest \u2014 walk history, apply strategy at each step, simulate trades, aggregate. For each historical date (step=5 bars), we: 1. Slice data up to that date 2. Compute features, apply strategy conditions 3. If passes \u2192 entry = next bar's open stop = entry * (1 - stop_pct) target = entry + ta",
+   "functions": [
+    "_load_cache",
+    "_save_cache",
+    "_strategy_fingerprint",
+    "_cache_key",
+    "_get_cached",
+    "_put_cached",
+    "clear_cache",
+    "_simulate",
+    "_validate_strategy_sandbox",
+    "_validate_parameters",
+    "_data_fingerprint",
+    "backtest_strategy"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "rule_engine"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "terminal_api.py",
+    "test_backtest_integrity.py"
+   ]
+  },
+  "strategy_config.py": {
+   "lines": 182,
+   "bytes": 6496,
+   "doc": "Central strategy configuration. EVERY tunable parameter for the swing strategy lives here. To change behavior: edit ONE value in this file, restart the service. No other file needs to be touched. Sections: SETUP \u2014 Gabani pullback detection thresholds SCREENER \u2014 Stage-2 baseline + liquidity filters B",
+   "functions": [
+    "dump"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "all_weather.py",
+    "backtest.py",
+    "scanner.py",
+    "setup.py",
+    "sizing.py",
+    "trader_league.py",
+    "verify_deployment.py"
+   ]
+  },
+  "strategy_runs.py": {
+   "lines": 129,
+   "bytes": 3885,
+   "doc": "Strategy run ledger \u2014 records every fast_wf sweep for comparison. Table: strategy_runs",
+   "functions": [
+    "_ensure",
+    "log",
+    "history",
+    "summary_by_target"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "fast_wf.py",
+    "terminal_api.py"
+   ]
+  },
+  "swing.py": {
+   "lines": 135,
+   "bytes": 4493,
+   "doc": "",
+   "functions": [
+    "ema",
+    "compute",
+    "swing",
+    "scan_top"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "app.py"
+   ]
+  },
+  "swing_alerts.py": {
+   "lines": 12,
+   "bytes": 361,
+   "doc": "Thin shim \u2014 delegates to alerts.py. Kept for backwards compatibility. New code should `import alerts` directly.",
+   "functions": [],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "alerts"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "data_quality.py"
+   ]
+  },
+  "swing_live.py": {
+   "lines": 312,
+   "bytes": 10870,
+   "doc": "Swing Desk engine (live, no execution). EOD: regime gate + breadth gate + sector gate + fund veto -> signals -> Telegram. When regime is DEFENSIVE, falls back to ALL-WEATHER mode. Daily: grade pending signals WIN / LOSS / EXPIRED / TIMEOUT.",
+   "functions": [
+    "universe",
+    "ensure",
+    "_is_vetoed",
+    "_scan_all_weather",
+    "scan",
+    "update_outcomes",
+    "report",
+    "backfill"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "alerts",
+    "all_weather",
+    "breadth",
+    "db",
+    "fund_veto",
+    "regime",
+    "scanner",
+    "sector_gate",
+    "setup",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": [
+    "app.py",
+    "daily_update.py",
+    "scheduler_bg.py",
+    "terminal_api.py",
+    "verify_deployment.py"
+   ]
+  },
+  "technicals.py": {
+   "lines": 59,
+   "bytes": 2163,
+   "doc": "",
+   "functions": [
+    "ensure",
+    "compute_all"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "verify_deployment.py"
+   ]
+  },
+  "telegram_alerts.py": {
+   "lines": 17,
+   "bytes": 515,
+   "doc": "Thin shim \u2014 delegates to alerts.py. Kept for backwards compatibility. New code should `import alerts` directly.",
+   "functions": [],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "alerts"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "app.py",
+    "daily_update.py"
+   ]
+  },
+  "template_match.py": {
+   "lines": 231,
+   "bytes": 7773,
+   "doc": "Template Sequence Matching (DTW) v2 \u2014 adds historical backfill. Compares the live price shape against ideal pattern templates using Dynamic Time Warping. Pure numpy, no extra dependencies. Templates: VCP, HIGH_TIGHT_FLAG, BULL_FLAG, DOUBLE_BOTTOM. Score: similarity 0-100 (higher = closer shape match",
+   "functions": [
+    "_from_points",
+    "_dtw",
+    "_shape",
+    "_sim",
+    "_ensure",
+    "_symbols",
+    "scan_symbol",
+    "run",
+    "backfill",
+    "top"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": [
+    "scheduler_bg.py"
+   ]
+  },
+  "terminal_api.py": {
+   "lines": 1041,
+   "bytes": 36992,
+   "doc": "",
+   "functions": [
+    "lifespan",
+    "verify_user",
+    "safe_float",
+    "get_conn",
+    "root",
+    "health",
+    "source_health",
+    "deployment_check",
+    "regime",
+    "macro_flow",
+    "list_traders_api",
+    "get_trader_api",
+    "scan_trader_api",
+    "trader_matches_api",
+    "_league_mode",
+    "league_overview",
+    "league_player",
+    "league_status",
+    "league_simulate",
+    "league_replay",
+    "list_strategies",
+    "seed_strategies",
+    "run_all_strategies",
+    "clear_backtest_cache",
+    "get_strategy",
+    "save_strategy",
+    "delete_strategy",
+    "run_strategy_api",
+    "backtest_strategy_api",
+    "research_api",
+    "research_universe_api",
+    "research_sector_api",
+    "research_cache_clear",
+    "compare_api",
+    "patterns_latest",
+    "patterns_stats",
+    "patterns_history",
+    "patterns_scan",
+    "patterns_for_symbol",
+    "toppicks",
+    "pwin_refresh",
+    "swing_signals",
+    "run_swing_scan",
+    "_run_swing_scan_job",
+    "swing_scan_status",
+    "radar",
+    "trend_api",
+    "trend_scan",
+    "templates_latest",
+    "delivery_top",
+    "delivery_accum",
+    "delivery_symbol",
+    "value_radar_api",
+    "positional_api",
+    "strategy_runs_api",
+    "strategy_summary_api",
+    "webhook_ingest",
+    "cockpit_chart",
+    "cockpit_summary",
+    "meta_score",
+    "model_runs",
+    "ledger_stats",
+    "ledger_trades",
+    "validate_latest",
+    "sizing",
+    "sizing_capital",
+    "screener_scan",
+    "screener_check"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "alerts",
+    "compare_tool",
+    "db",
+    "delivery",
+    "ledger",
+    "macro",
+    "meta_model",
+    "model_report",
+    "pattern_grader",
+    "patterns",
+    "positional_scanner",
+    "pwin_cache",
+    "regime",
+    "research_cockpit",
+    "rule_engine",
+    "scheduler_bg",
+    "screener_engine",
+    "setup",
+    "sizing",
+    "strategy_backtest",
+    "strategy_runs",
+    "swing_live",
+    "top_picks",
+    "trader_league",
+    "trend_scanner",
+    "universe_helper",
+    "value_radar"
+   ],
+   "imports_third_party": [
+    "dotenv",
+    "fastapi",
+    "pandas",
+    "uvicorn"
+   ],
+   "imported_by": []
+  },
+  "test_backtest_integrity.py": {
+   "lines": 46,
+   "bytes": 1754,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "BacktestIntegrityTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "backtest",
+    "strategy_backtest"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "test_data_sources.py": {
+   "lines": 97,
+   "bytes": 3546,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "_FakeAdapter",
+    "SourceRegistryTests"
+   ],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_fundamentals_integrity.py": {
+   "lines": 146,
+   "bytes": 6040,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "FundamentalsIntegrityTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fundamentals_refresh",
+    "fundamentals_store",
+    "fundamentals_tv"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_kite_import.py": {
+   "lines": 168,
+   "bytes": 7715,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "KiteImportTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "kite_import"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_kite_reconcile.py": {
+   "lines": 167,
+   "bytes": 6782,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "KiteReconcileTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "kite_reconcile"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_ml_integrity.py": {
+   "lines": 48,
+   "bytes": 1726,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "MLIntegrityTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "meta_model",
+    "ml_features",
+    "ml_train"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "test_research_cockpit.py": {
+   "lines": 111,
+   "bytes": 4374,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "ResearchCockpitTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "research_cockpit"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_scanx_import.py": {
+   "lines": 158,
+   "bytes": 6521,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "ScanXImportTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "scanx_import"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_sizing_safety.py": {
+   "lines": 37,
+   "bytes": 1490,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "SizingSafetyTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "sizing"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "top_picks.py": {
+   "lines": 194,
+   "bytes": 6603,
+   "doc": "Top Picks \u2014 daily shortlist (fast: reads pwin_daily cache). Composite = 45% ML P(WIN) + 25% accumulation + 15% sector RS + 15% delivery conviction (+10% live-setup bonus). v4: fundamentally vetoed symbols are skipped entirely.",
+   "functions": [
+    "_ensure",
+    "_sector_rs_map",
+    "_detect_setup",
+    "_latest_accumulation_map",
+    "_delivery_map",
+    "_universe",
+    "compute",
+    "top"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fund_veto",
+    "institutional",
+    "pwin_cache",
+    "sector_gate",
+    "setup",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": [
+    "daily_update.py",
+    "terminal_api.py",
+    "verify_deployment.py"
+   ]
+  },
+  "trader_league.py": {
+   "lines": 3109,
+   "bytes": 135661,
+   "doc": "Trader League \u2014 14 famous-trader books + OUR system compete with Rs 10,00,000 of play money each, on real NSE data. WHY THIS EXISTS \"We have to make something to backtest our system before deploying real money.\" This module is that something. For every player it answers: - What would Rs 10 lakh have",
+   "functions": [
+    "config",
+    "players",
+    "player_meta",
+    "_trader_module",
+    "classify",
+    "_parse_time_exit",
+    "_f",
+    "trade_costs",
+    "inr",
+    "ensure_tables",
+    "_conn",
+    "_now",
+    "_jd",
+    "_dumps",
+    "_last_price_date",
+    "_chunks",
+    "_load_prices",
+    "_load_wide",
+    "_covers",
+    "_fetch_benchmark",
+    "load_benchmark",
+    "regime_levels",
+    "_asof",
+    "_sector_scores",
+    "_breadth_series",
+    "_oneil_regimes",
+    "build_context",
+    "_load_limit",
+    "_prep",
+    "_upper",
+    "_mk_row",
+    "_bench_upto",
+    "_replay_book",
+    "_replay_home",
+    "_worker_init",
+    "_worker_conn",
+    "_worker_task",
+    "_code_hash",
+    "_segments",
+    "_day_before",
+    "_day_after",
+    "replay",
+    "_hms",
+    "_home_profile",
+    "exit_profile",
+    "_resolve_stop",
+    "_resolve_target",
+    "_resolve_hold",
+    "simulate",
+    "_max_dd",
+    "_pf",
+    "_group",
+    "monte_carlo_dd",
+    "compute_stats",
+    "readiness",
+    "_load_signals",
+    "_run_id",
+    "simulate_all",
+    "_run_rows",
+    "signal_genome",
+    "overview",
+    "player_detail",
+    "status",
+    "_pct",
+    "print_table",
+    "print_ready",
+    "print_player",
+    "_sym_info",
+    "collect_live",
+    "run_live",
+    "scorecard_text",
+    "send_scorecard",
+    "start_simulation",
+    "_pid_alive",
+    "replay_job_state",
+    "start_replay_process",
+    "_claim_replay",
+    "selftest",
+    "main"
+   ],
+   "classes": [
+    "PriceBook",
+    "_Pos"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "alerts",
+    "breadth",
+    "db",
+    "log_utils",
+    "regime",
+    "regime_spectrum",
+    "sector_gate",
+    "setup",
+    "strategy_config",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": [
+    "scheduler_bg.py",
+    "terminal_api.py"
+   ]
+  },
+  "traders/__init__.py": {
+   "lines": 53,
+   "bytes": 1212,
+   "doc": "Traders registry \u2014 each module declares: SLUG, NAME, PILLAR, SOURCE, METHODS, scan(conn, limit)",
+   "functions": [
+    "list_traders",
+    "get_trader"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "traders/apurva_parikh.py": {
+   "lines": 452,
+   "bytes": 14312,
+   "doc": "Apurva Parikh \u2014 11 Secrets to find Value Stocks. Classified: FUNDA (long-only, multi-factor composite). Single composite strategy: all 11 secrets merged into one filter chain per the owner's extraction instructions (not 11 methods). Today's scan implements Secrets 6, 7, 8, 9, 10 (partial), 11 \u2014 the ",
+   "functions": [
+    "_safe_f",
+    "_fmt_num",
+    "_try_emit",
+    "_is_excluded_sector",
+    "_fundamentals_map",
+    "_sector_map",
+    "_sector_median_pe",
+    "_load_df",
+    "_rsi",
+    "_uptrend",
+    "_signal",
+    "_evaluate_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/base.py": {
+   "lines": 216,
+   "bytes": 7087,
+   "doc": "Shared scan selection and calculation utilities for trader modules.",
+   "functions": [
+    "select_scan_symbols",
+    "tick_size",
+    "ticks",
+    "is_bearish",
+    "is_bullish",
+    "find_pivot_lows",
+    "find_pivot_highs",
+    "count_weekday_holidays",
+    "line_through",
+    "value_at",
+    "check_trendline_break_lows",
+    "check_trendline_break_highs",
+    "ssto_k",
+    "bars_to_dicts"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "traders/chande.py": {
+   "lines": 783,
+   "bytes": 31256,
+   "doc": "Tushar S. Chande \u2014 Beyond Technical Analysis (2001). Classified: MULTI (Swing + Positional, long-only). 5 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md. All methods price-only. No data blocks. Fully implementable today. Method 4 (Gold-Bond Intermarket) and Method 7 (Trend-Antitrend) were remo",
+   "functions": [
+    "_safe_f",
+    "_fmt_num",
+    "_try_emit",
+    "_load_df",
+    "_sma",
+    "_atr",
+    "_adx",
+    "_ravi",
+    "_exits_block",
+    "_signal",
+    "_detect_65sma_3cc",
+    "_detect_cb_pb",
+    "_detect_adx_burst",
+    "_detect_bottom_fishing",
+    "_detect_extraordinary",
+    "_scan_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/ishaan_agnihotri.py": {
+   "lines": 645,
+   "bytes": 22739,
+   "doc": "Ishaan Agnihotri \u2014 A Technical Trader's Handbook. Classified: SWING (positional for Method 4). Long-only extraction \u2014 no intraday, no shorting. 5 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md. All price-only. Fully implementable today. No data blocks. Bug-safety per R35: _fmt_num for null-saf",
+   "functions": [
+    "_safe_f",
+    "_fmt_num",
+    "_try_emit",
+    "_load_df",
+    "_ema",
+    "_sma_at",
+    "_rsi_series",
+    "_macd",
+    "_pivots",
+    "_is_bullish",
+    "_candle_shape",
+    "_is_hammer",
+    "_is_dragonfly_doji",
+    "_is_long_legged_doji",
+    "_is_bullish_engulfing",
+    "_support_level",
+    "_resistance_level",
+    "_sig",
+    "_detect_ema_reversal",
+    "_detect_pattern_breakout",
+    "_detect_candlestick_reversal",
+    "_detect_trend_pullback",
+    "_detect_momentum_divergence",
+    "_atr",
+    "_scan_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/john_crane.py": {
+   "lines": 637,
+   "bytes": 25069,
+   "doc": "John Crane \u2014 Advanced Swing Trading. Classified: SWING. Methods (see METHODS list below): reaction_swing \u2014 detect completed reaction swing time_forecast \u2014 Reverse Count \u2192 Forward Count \u2192 reversal date action_reaction \u2014 geometric projection lines retracement_window \u2014 60% / 30% retracement zones two_d",
+   "functions": [
+    "_reaction_swing",
+    "_project_reversal_date",
+    "_action_reaction",
+    "_retracement_window",
+    "_two_day_rule",
+    "_peg_leg",
+    "_gap_and_go",
+    "_gap_reversal",
+    "_continuation_gap",
+    "_major_reversal",
+    "_ssto_divergence",
+    "_scan_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/larry_spears.py": {
+   "lines": 430,
+   "bytes": 15709,
+   "doc": "Larry Spears \u2014 swing-trading setup identification. Classified: SWING. Setup filter set: beta_filter \u2014 symbol beta \u2265 1.30 vs ^NSEI amplitude_filter \u2014 5-day high-low range \u2265 5% of price gap_classification \u2014 open \u2265 0.5% from prior close ma_trend \u2014 SMA10/20/50 stacking with slopes counter_trend \u2014 2-3 co",
+   "functions": [
+    "_fetch_benchmark_returns",
+    "_beta",
+    "_amplitude",
+    "_gap_pct",
+    "_sma",
+    "_sma_series",
+    "_strictly_increasing",
+    "_strictly_decreasing",
+    "_ma_trend",
+    "_counter_trend",
+    "_force_index",
+    "_force_index_filter",
+    "_scan_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "traders/mcallen.py": {
+   "lines": 1160,
+   "bytes": 45606,
+   "doc": "Fred McAllen \u2014 Charting and Technical Analysis. Classified: MULTI (Swing + Positional, long-only extraction). 11 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md, restricted to the NET-NEW patterns not already implemented in patterns.py or in traders #1-#12 (Option B, per owner instruction I73).",
+   "functions": [
+    "_safe_f",
+    "_fmt_num",
+    "_try_emit",
+    "_load_df",
+    "_sma",
+    "_atr",
+    "_pivots",
+    "_candle_shape",
+    "_prior_downtrend",
+    "_prior_uptrend",
+    "_vol_ratio",
+    "_mk_exits",
+    "_signal",
+    "_detect_saucer",
+    "_detect_island_bottom",
+    "_detect_descending_triangle",
+    "_is_three_white_soldiers",
+    "_is_three_black_crows",
+    "_is_bullish_harami",
+    "_is_bearish_harami",
+    "_is_hanging_man",
+    "_is_shooting_star",
+    "_detect_exhaustion_gap",
+    "_detect_spike_top",
+    "_detect_saucer_signal",
+    "_detect_island_signal",
+    "_detect_three_white_soldiers_signal",
+    "_detect_bullish_harami_signal",
+    "_detect_three_black_crows_signal",
+    "_detect_bearish_harami_signal",
+    "_detect_hanging_man_signal",
+    "_detect_shooting_star_signal",
+    "_detect_exhaustion_gap_signal",
+    "_detect_spike_top_signal",
+    "_detect_descending_triangle_signal",
+    "_scan_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/nison.py": {
+   "lines": 972,
+   "bytes": 35047,
+   "doc": "Steve Nison \u2014 Beyond Candlesticks (1994). Classified: MULTI (Swing + Positional, long-only extraction). 6 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md. All methods price-only. No data blocks. Fully implementable today. Exit strategy \u2014 per owner's explicit instruction, R30's \"setup-identifica",
+   "functions": [
+    "_safe_f",
+    "_fmt_num",
+    "_try_emit",
+    "_load_df",
+    "_sma",
+    "_ema_series",
+    "_atr",
+    "_candle_shape",
+    "_is_hammer",
+    "_is_dragonfly_doji",
+    "_is_bullish_engulfing",
+    "_is_piercing",
+    "_is_morning_star",
+    "_any_bullish_reversal",
+    "_pivots",
+    "_nearest_support",
+    "_nearest_resistance",
+    "_at_support",
+    "_prior_downtrend",
+    "_mk_exits",
+    "_signal",
+    "_detect_candlestick_reversal",
+    "_detect_rising_window",
+    "_detect_long_white_candle",
+    "_detect_disparity_oversold",
+    "_detect_golden_cross",
+    "_build_tlb",
+    "_detect_tlb",
+    "_build_renko",
+    "_detect_renko",
+    "_build_kagi",
+    "_detect_kagi",
+    "_scan_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/oneil.py": {
+   "lines": 955,
+   "bytes": 33802,
+   "doc": "William J. O'Neil \u2014 How to Make Money in Stocks. Classified: MULTI (growth + chart pattern, long-only). 7 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md. DESIGN PRINCIPLE \u2014 R42 (no proxies): Every method implements the book's EXACT requirements. If a required field is None, the method returns ",
+   "functions": [
+    "_safe_f",
+    "_fmt_num",
+    "_try_emit",
+    "_load_df",
+    "_sma",
+    "_atr",
+    "_pivots",
+    "_load_index_df",
+    "_compute_market_regime",
+    "_detect_cup_with_handle",
+    "_detect_double_bottom_w",
+    "_detect_flat_base",
+    "_detect_high_tight_flag",
+    "_detect_ascending_base",
+    "_oneil_exits_block",
+    "_signal",
+    "_detect_can_slim",
+    "_breakout_signal",
+    "_detect_cup",
+    "_detect_db",
+    "_detect_flat",
+    "_detect_htf",
+    "_detect_ascending",
+    "_scan_symbol",
+    "_fundamentals_map",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/oshaughnessy.py": {
+   "lines": 663,
+   "bytes": 26826,
+   "doc": "James O'Shaughnessy \u2014 What Works on Wall Street (3rd Edition). Classified: FUNDA (long-horizon, annual-rebalanced fundamental strategies). 19 methods extracted from the book per docs/BOOK_EXTRACTION_PROMPT.md. All methods are LONG, annual-rebalance portfolio constructions. The \"signal\" here is \"symb",
+   "functions": [
+    "_passes",
+    "_is_utility",
+    "_pctile_rank",
+    "_fundamentals_map",
+    "_price_features",
+    "_compute_features",
+    "_universe_stats",
+    "_compute_rankings",
+    "_signal",
+    "_evaluate_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "traders/quantitative_value.py": {
+   "lines": 543,
+   "bytes": 21902,
+   "doc": "Wesley R. Gray & Tobias E. Carlisle \u2014 Quantitative Value (2012). Classified: FUNDA (long-horizon, annual-rebalanced value + quality). 20 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md. The book's core thesis: (1) cleanse the universe of frauds, manipulators, and financially distressed firms, t",
+   "functions": [
+    "_is_excluded_sector",
+    "_safe_num",
+    "_fmt_num",
+    "_try_emit",
+    "_fundamentals_map",
+    "_last_close",
+    "_build_features",
+    "_percentile_rank_map",
+    "_universe_stats",
+    "_compute_rankings",
+    "_signal",
+    "_evaluate_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "traders/seven_simple_strategies.py": {
+   "lines": 659,
+   "bytes": 23053,
+   "doc": "Alpesh B. Patel & Paresh H. Kiri \u2014 7 Simple Strategies of Highly Effective Traders (2010). Classified: SWING (long-only, no intraday, no shorting). 11 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md. Owner's extraction removed all intraday and short-side methods before handoff; this module impl",
+   "functions": [
+    "_safe_f",
+    "_fmt_num",
+    "_try_emit",
+    "_load_df",
+    "_atr",
+    "_sma_at",
+    "_sma_prev",
+    "_ema_series",
+    "_is_bullish",
+    "_has_downtrend",
+    "_is_hammer",
+    "_is_bullish_doji",
+    "_fit_line_from_pivots",
+    "_pivot_lows",
+    "_pivot_highs",
+    "_sig",
+    "_detect_breakout_momentum",
+    "_detect_mean_reversion",
+    "_detect_ma_cross",
+    "_detect_trend_line_with_trend",
+    "_detect_trend_line_break",
+    "_detect_channel_trade",
+    "_detect_golden_entry",
+    "_detect_hammer",
+    "_detect_doji",
+    "_scan_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/singhal.py": {
+   "lines": 1550,
+   "bytes": 60208,
+   "doc": "Aseem Singhal \u2014 51 Trading Strategies. Classified: MULTI (Swing + Positional, long-only, daily-bar only). 18 methods implemented per owner instruction I75: Ch 1 (Swing, 7): BB+9EMA, Williams+MACD+SMA, MACD+Fib, Triangle BO, Gap Retracement, BB Width, Ichimoku Cloud Ch 4 (Positional, 4): Macro Trend ",
+   "functions": [
+    "_safe_f",
+    "_fmt_num",
+    "_try_emit",
+    "_load_df",
+    "_sma",
+    "_ema",
+    "_atr",
+    "_bollinger",
+    "_bb_width_series",
+    "_williams_r",
+    "_macd",
+    "_fib_levels",
+    "_at_fib",
+    "_ichimoku",
+    "_supertrend",
+    "_pivot_points",
+    "_candle_shape",
+    "_is_pin_bar",
+    "_pivots",
+    "_vol_ratio",
+    "_consolidation",
+    "_vcp_pattern",
+    "_detect_two_leg_pullback",
+    "_mk_exits",
+    "_signal",
+    "_default_stop",
+    "_detect_bb_9ema",
+    "_detect_williams_macd_sma",
+    "_detect_macd_fib",
+    "_detect_triangle_breakout",
+    "_detect_institutional_gap",
+    "_detect_bb_width_breakout",
+    "_detect_ichimoku",
+    "_detect_macro_trend_pivot",
+    "_detect_supertrend_rsi",
+    "_detect_sector_rs",
+    "_rsi",
+    "_rsi_series",
+    "_detect_mw_rsi",
+    "_detect_ema9_21",
+    "_detect_positional_breakout_volume",
+    "_detect_pin_bar",
+    "_detect_pullback_retest",
+    "_detect_repo_rate",
+    "_detect_vcp",
+    "_detect_two_legged_pullback",
+    "_scan_symbol",
+    "_sector_rs_map",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "sector_gate",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/value_investing_made_easy.py": {
+   "lines": 509,
+   "bytes": 20517,
+   "doc": "Janet Lowe \u2014 Value Investing Made Easy (1996). Classified: FUNDA (long-horizon, annual-rebalanced value). 18 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md. The book is a simplified restatement of Benjamin Graham's principles for the individual investor. Core doctrines: - Margin of safety - Th",
+   "functions": [
+    "_is_excluded_sector",
+    "_safe_num",
+    "_fundamentals_map",
+    "_last_close",
+    "_build_features",
+    "_universe_stats",
+    "_compute_rankings",
+    "_signal",
+    "_evaluate_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "traders/way_of_the_turtle.py": {
+   "lines": 540,
+   "bytes": 20818,
+   "doc": "Curtis Faith \u2014 Way of the Turtle (2007). Classified: MULTI (daily-bar trend following, multi-week/multi-month). 9 methods extracted per docs/BOOK_EXTRACTION_PROMPT.md. The Turtle system is a mechanical, trend-following, volatility-normalized breakout system. It expects most trades to lose and relies",
+   "functions": [
+    "_safe_f",
+    "_load_df",
+    "_atr",
+    "_ema_series",
+    "_sma_at",
+    "_swing_levels",
+    "_sig",
+    "_detect_turtle_sys1",
+    "_detect_turtle_sys2",
+    "_detect_atr_channel",
+    "_detect_bollinger_breakout",
+    "_detect_donchian_trend",
+    "_detect_dual_ma",
+    "_detect_triple_ma",
+    "_detect_support_resistance",
+    "_scan_symbol",
+    "scan"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "traders/wisdom.py": {
+   "lines": 715,
+   "bytes": 35279,
+   "doc": "Market Wisdom \u2014 structured reference data. Cross-book principles, not a scanner. Consumed by: - terminal/static/wisdom.html (inlines its own copy) - future terminal UI panels via /api/wisdom - future AI sessions reading the codebase Content mirrors MARKET_WISDOM.md exactly. Rule R45: every book extr",
+   "functions": [
+    "by_theme",
+    "by_source",
+    "search",
+    "count"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "trend_scanner.py": {
+   "lines": 244,
+   "bytes": 7913,
+   "doc": "Trend-Regime Scanner \u2014 stocks above BOTH EMA50 and EMA200. v3 (2026-09-12): score is unbounded (no cap). Ranking is the point. Higher = stronger/more-pristine uptrend structure.",
+   "functions": [
+    "_ensure",
+    "_ema",
+    "_score",
+    "compute",
+    "top",
+    "report"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "alerts",
+    "db",
+    "log_utils",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "scheduler_bg.py",
+    "terminal_api.py"
+   ]
+  },
+  "tv_column_probe.py": {
+   "lines": 202,
+   "bytes": 6375,
+   "doc": "TradingView column probe \u2014 finds which fundamental fields TV's India scanner actually returns non-null values for. Tests a wide set of column names against ~30 NSE mid-caps. Reports: - accepted (any non-null value) - rejected (TV doesn't recognise the column name) - empty (column accepted but all va",
+   "functions": [
+    "_post_batch",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": []
+  },
+  "tv_probe.py": {
+   "lines": 28,
+   "bytes": 1149,
+   "doc": "",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": []
+  },
+  "tv_probe2.py": {
+   "lines": 16,
+   "bytes": 610,
+   "doc": "",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": []
+  },
+  "universe.py": {
+   "lines": 100,
+   "bytes": 3453,
+   "doc": "",
+   "functions": [
+    "pick",
+    "from_api",
+    "from_csv",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "pandas",
+    "requests"
+   ],
+   "imported_by": [
+    "data_sources/adapters/nse.py"
+   ]
+  },
+  "universe_helper.py": {
+   "lines": 80,
+   "bytes": 2754,
+   "doc": "Canonical universe queries (ID7 consolidation, 2026-09-12). Every module that needs a symbol list should call one of these instead of writing its own SQL WHERE clause. Universe layers: band_universe \u2014 smallcap/midcap band (1000-8000 cr) from universe_broad active_universe \u2014 Nifty 500 core (stocks.ac",
+   "functions": [
+    "_clean",
+    "band_universe",
+    "active_universe",
+    "combined_universe"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "all_weather.py",
+    "breadth.py",
+    "build_setup_pool.py",
+    "data_quality.py",
+    "fast_wf.py",
+    "fund_veto.py",
+    "fundamentals_tv.py",
+    "institutional.py",
+    "meta_model.py",
+    "patterns.py",
+    "positional_scanner.py",
+    "pwin_cache.py",
+    "quick_funnel.py",
+    "quick_setup_diag.py",
+    "rule_engine.py",
+    "screener_engine.py",
+    "sectors_refresh.py",
+    "swing_live.py",
+    "template_match.py",
+    "terminal_api.py",
+    "top_picks.py",
+    "trader_league.py",
+    "traders/apurva_parikh.py",
+    "traders/base.py",
+    "traders/chande.py",
+    "traders/ishaan_agnihotri.py",
+    "traders/john_crane.py",
+    "traders/larry_spears.py",
+    "traders/mcallen.py",
+    "traders/nison.py",
+    "traders/oneil.py",
+    "traders/oshaughnessy.py",
+    "traders/quantitative_value.py",
+    "traders/seven_simple_strategies.py",
+    "traders/singhal.py",
+    "traders/value_investing_made_easy.py",
+    "traders/way_of_the_turtle.py",
+    "trend_scanner.py",
+    "validate.py",
+    "value_radar.py"
+   ]
+  },
+  "validate.py": {
+   "lines": 180,
+   "bytes": 5651,
+   "doc": "Validation harness \u2014 is the edge real? v3 (2026-09-12): walk_forward now delegates to Backtester (fast path). Backtester precomputes indicators once per symbol \u2192 100x faster than the naive slice-and-eval approach.",
+   "functions": [
+    "_ensure",
+    "_graded_trades",
+    "monte_carlo",
+    "walk_forward",
+    "run_mode"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "backtest",
+    "db",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "scheduler_bg.py"
+   ]
+  },
+  "value_radar.py": {
+   "lines": 255,
+   "bytes": 8322,
+   "doc": "Long-Term Value Radar \u2014 quality names in downturns, for accumulation. Authorized 2026-09-12 (Feature B). v3 (2026-09-12): uses canonical universe_helper for symbol list (ID7 consolidation).",
+   "functions": [
+    "_quality_score",
+    "_value_score",
+    "_sector_pe_medians",
+    "_ensure",
+    "compute",
+    "top",
+    "_fmt_tg",
+    "report"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "alerts",
+    "db",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "scheduler_bg.py",
+    "terminal_api.py"
+   ]
+  },
+  "verify_deployment.py": {
+   "lines": 271,
+   "bytes": 8906,
+   "doc": "Deployment verification \u2014 fast checks first, pipeline optional. Usage: python verify_deployment.py # checks only (~5s) python verify_deployment.py --fast # checks + pipeline (skip prices) python verify_deployment.py --full # checks + full pipeline python verify_deployment.py --sweep # add 2y/3y/4y w",
+   "functions": [
+    "_check",
+    "_strip_prefix",
+    "_table_fresh",
+    "run_checks",
+    "run_pipeline",
+    "run_sweep"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "alerts",
+    "db",
+    "events",
+    "ingest_prices",
+    "ml_predict",
+    "pwin_cache",
+    "scan",
+    "sheets_sync",
+    "strategy_config",
+    "swing_live",
+    "technicals",
+    "top_picks"
+   ],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": []
+  }
+ }
+}

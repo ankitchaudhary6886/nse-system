@@ -1,0 +1,478 @@
+{
+ "route_count": 62,
+ "routes": [
+  {
+   "method": "GET",
+   "path": "/",
+   "file": "terminal_api.py",
+   "line": 69
+  },
+  {
+   "method": "GET",
+   "path": "/api/cockpit/{symbol}/chart",
+   "file": "terminal_api.py",
+   "line": 855
+  },
+  {
+   "method": "GET",
+   "path": "/api/cockpit/{symbol}/summary",
+   "file": "terminal_api.py",
+   "line": 912
+  },
+  {
+   "method": "GET",
+   "path": "/api/compare",
+   "file": "terminal_api.py",
+   "line": 525
+  },
+  {
+   "method": "GET",
+   "path": "/api/delivery/accum",
+   "file": "terminal_api.py",
+   "line": 759
+  },
+  {
+   "method": "GET",
+   "path": "/api/delivery/top",
+   "file": "terminal_api.py",
+   "line": 753
+  },
+  {
+   "method": "GET",
+   "path": "/api/delivery/{symbol}",
+   "file": "terminal_api.py",
+   "line": 765
+  },
+  {
+   "method": "GET",
+   "path": "/api/deployment-check",
+   "file": "terminal_api.py",
+   "line": 93
+  },
+  {
+   "method": "GET",
+   "path": "/api/health",
+   "file": "terminal_api.py",
+   "line": 74
+  },
+  {
+   "method": "GET",
+   "path": "/api/league/overview",
+   "file": "terminal_api.py",
+   "line": 336
+  },
+  {
+   "method": "GET",
+   "path": "/api/league/player/{slug}",
+   "file": "terminal_api.py",
+   "line": 348
+  },
+  {
+   "method": "POST",
+   "path": "/api/league/replay",
+   "file": "terminal_api.py",
+   "line": 377
+  },
+  {
+   "method": "POST",
+   "path": "/api/league/simulate",
+   "file": "terminal_api.py",
+   "line": 369
+  },
+  {
+   "method": "GET",
+   "path": "/api/league/status",
+   "file": "terminal_api.py",
+   "line": 360
+  },
+  {
+   "method": "GET",
+   "path": "/api/ledger/stats",
+   "file": "terminal_api.py",
+   "line": 964
+  },
+  {
+   "method": "GET",
+   "path": "/api/ledger/trades",
+   "file": "terminal_api.py",
+   "line": 970
+  },
+  {
+   "method": "GET",
+   "path": "/api/macro",
+   "file": "terminal_api.py",
+   "line": 193
+  },
+  {
+   "method": "GET",
+   "path": "/api/meta/{symbol}",
+   "file": "terminal_api.py",
+   "line": 948
+  },
+  {
+   "method": "GET",
+   "path": "/api/model/runs",
+   "file": "terminal_api.py",
+   "line": 958
+  },
+  {
+   "method": "GET",
+   "path": "/api/patterns/history/{symbol}",
+   "file": "terminal_api.py",
+   "line": 555
+  },
+  {
+   "method": "GET",
+   "path": "/api/patterns/latest",
+   "file": "terminal_api.py",
+   "line": 540
+  },
+  {
+   "method": "POST",
+   "path": "/api/patterns/scan",
+   "file": "terminal_api.py",
+   "line": 567
+  },
+  {
+   "method": "GET",
+   "path": "/api/patterns/stats",
+   "file": "terminal_api.py",
+   "line": 546
+  },
+  {
+   "method": "GET",
+   "path": "/api/patterns/{symbol}",
+   "file": "terminal_api.py",
+   "line": 574
+  },
+  {
+   "method": "GET",
+   "path": "/api/positional",
+   "file": "terminal_api.py",
+   "line": 784
+  },
+  {
+   "method": "POST",
+   "path": "/api/pwin/refresh",
+   "file": "terminal_api.py",
+   "line": 596
+  },
+  {
+   "method": "GET",
+   "path": "/api/radar",
+   "file": "terminal_api.py",
+   "line": 681
+  },
+  {
+   "method": "GET",
+   "path": "/api/regime",
+   "file": "terminal_api.py",
+   "line": 177
+  },
+  {
+   "method": "POST",
+   "path": "/api/research-cache/clear",
+   "file": "terminal_api.py",
+   "line": 511
+  },
+  {
+   "method": "GET",
+   "path": "/api/research-sector",
+   "file": "terminal_api.py",
+   "line": 502
+  },
+  {
+   "method": "GET",
+   "path": "/api/research-universe",
+   "file": "terminal_api.py",
+   "line": 491
+  },
+  {
+   "method": "GET",
+   "path": "/api/research/{symbol}",
+   "file": "terminal_api.py",
+   "line": 482
+  },
+  {
+   "method": "GET",
+   "path": "/api/screener/scan",
+   "file": "terminal_api.py",
+   "line": 1019
+  },
+  {
+   "method": "GET",
+   "path": "/api/screener/{symbol}",
+   "file": "terminal_api.py",
+   "line": 1030
+  },
+  {
+   "method": "POST",
+   "path": "/api/sizing/capital",
+   "file": "terminal_api.py",
+   "line": 1007
+  },
+  {
+   "method": "GET",
+   "path": "/api/sizing/{symbol}",
+   "file": "terminal_api.py",
+   "line": 996
+  },
+  {
+   "method": "GET",
+   "path": "/api/sources",
+   "file": "terminal_api.py",
+   "line": 86
+  },
+  {
+   "method": "GET",
+   "path": "/api/strategies",
+   "file": "terminal_api.py",
+   "line": 393
+  },
+  {
+   "method": "POST",
+   "path": "/api/strategies/backtest-cache/clear",
+   "file": "terminal_api.py",
+   "line": 415
+  },
+  {
+   "method": "POST",
+   "path": "/api/strategies/run-all",
+   "file": "terminal_api.py",
+   "line": 406
+  },
+  {
+   "method": "POST",
+   "path": "/api/strategies/seed",
+   "file": "terminal_api.py",
+   "line": 399
+  },
+  {
+   "method": "DELETE",
+   "path": "/api/strategies/{name}",
+   "file": "terminal_api.py",
+   "line": 443
+  },
+  {
+   "method": "GET",
+   "path": "/api/strategies/{name}",
+   "file": "terminal_api.py",
+   "line": 426
+  },
+  {
+   "method": "POST",
+   "path": "/api/strategies/{name}",
+   "file": "terminal_api.py",
+   "line": 435
+  },
+  {
+   "method": "GET",
+   "path": "/api/strategies/{name}/backtest",
+   "file": "terminal_api.py",
+   "line": 460
+  },
+  {
+   "method": "GET",
+   "path": "/api/strategies/{name}/run",
+   "file": "terminal_api.py",
+   "line": 450
+  },
+  {
+   "method": "GET",
+   "path": "/api/strategy-runs",
+   "file": "terminal_api.py",
+   "line": 794
+  },
+  {
+   "method": "GET",
+   "path": "/api/strategy-summary",
+   "file": "terminal_api.py",
+   "line": 803
+  },
+  {
+   "method": "POST",
+   "path": "/api/swing/scan",
+   "file": "terminal_api.py",
+   "line": 637
+  },
+  {
+   "method": "GET",
+   "path": "/api/swing/scan/status",
+   "file": "terminal_api.py",
+   "line": 675
+  },
+  {
+   "method": "GET",
+   "path": "/api/swing/signals",
+   "file": "terminal_api.py",
+   "line": 603
+  },
+  {
+   "method": "GET",
+   "path": "/api/templates/latest",
+   "file": "terminal_api.py",
+   "line": 736
+  },
+  {
+   "method": "GET",
+   "path": "/api/toppicks",
+   "file": "terminal_api.py",
+   "line": 586
+  },
+  {
+   "method": "GET",
+   "path": "/api/traders",
+   "file": "terminal_api.py",
+   "line": 208
+  },
+  {
+   "method": "GET",
+   "path": "/api/traders/matches/{symbol}",
+   "file": "terminal_api.py",
+   "line": 242
+  },
+  {
+   "method": "GET",
+   "path": "/api/traders/{slug}",
+   "file": "terminal_api.py",
+   "line": 217
+  },
+  {
+   "method": "GET",
+   "path": "/api/traders/{slug}/scan",
+   "file": "terminal_api.py",
+   "line": 227
+  },
+  {
+   "method": "GET",
+   "path": "/api/trend",
+   "file": "terminal_api.py",
+   "line": 720
+  },
+  {
+   "method": "POST",
+   "path": "/api/trend/scan",
+   "file": "terminal_api.py",
+   "line": 729
+  },
+  {
+   "method": "GET",
+   "path": "/api/validate/latest",
+   "file": "terminal_api.py",
+   "line": 976
+  },
+  {
+   "method": "GET",
+   "path": "/api/value-radar",
+   "file": "terminal_api.py",
+   "line": 774
+  },
+  {
+   "method": "POST",
+   "path": "/api/webhook/ingest",
+   "file": "terminal_api.py",
+   "line": 812
+  }
+ ],
+ "terminal_api_env_vars": [
+  "ADMIN_PASS",
+  "ADMIN_USER",
+  "API_HOST",
+  "WEBHOOK_TOKEN"
+ ],
+ "static_consumers": {
+  "terminal/static/app.js": [
+   "/api/",
+   "/api/cockpit/${symbol}/chart",
+   "/api/cockpit/${symbol}/summary",
+   "/api/compare",
+   "/api/delivery/${symbol}",
+   "/api/deployment-check",
+   "/api/health",
+   "/api/ledger/stats",
+   "/api/ledger/trades",
+   "/api/macro",
+   "/api/meta/${symbol}",
+   "/api/patterns/history/${symbol}",
+   "/api/patterns/latest",
+   "/api/patterns/scan",
+   "/api/patterns/stats",
+   "/api/radar",
+   "/api/regime",
+   "/api/screener/${encodeURIComponent",
+   "/api/sizing/${symbol}",
+   "/api/sizing/capital",
+   "/api/sources",
+   "/api/swing/scan",
+   "/api/swing/scan/status",
+   "/api/swing/signals",
+   "/api/templates/latest",
+   "/api/toppicks"
+  ],
+  "terminal/static/deployment.js": [
+   "/api/deployment-check"
+  ],
+  "terminal/static/league.js": [
+   "/api/league/overview",
+   "/api/league/player/${encodeURIComponent",
+   "/api/league/replay",
+   "/api/league/simulate",
+   "/api/league/status"
+  ],
+  "terminal/static/research.js": [
+   "/api/research/${symbol}"
+  ],
+  "terminal/static/research_sector.js": [
+   "/api/research-sector"
+  ],
+  "terminal/static/research_universe.js": [
+   "/api/research-universe"
+  ],
+  "terminal/static/scanners.js": [
+   "/api/positional",
+   "/api/trend",
+   "/api/value-radar"
+  ],
+  "terminal/static/strategies.js": [
+   "/api/strategies",
+   "/api/strategies/${encodeURIComponent",
+   "/api/strategies/seed"
+  ],
+  "terminal/static/strategy_editor.js": [
+   "/api/strategies/${encodeURIComponent"
+  ],
+  "terminal/static/strategy_runs.js": [
+   "/api/strategy-runs",
+   "/api/strategy-summary"
+  ],
+  "terminal/static/traders.js": [
+   "/api/traders",
+   "/api/traders/${encodeURIComponent",
+   "/api/traders/matches/${encodeURIComponent"
+  ],
+  "terminal/static/index.html": [
+   "/api/health",
+   "/api/macro",
+   "/api/regime"
+  ]
+ },
+ "asset_versions": {
+  "script_tags": [
+   "https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js",
+   "/static/cards.js?v=18",
+   "/static/app.js?v=19",
+   "/static/scanners.js?v=17",
+   "/static/strategy_runs.js?v=18",
+   "/static/research.js?v=18",
+   "/static/research_universe.js?v=18",
+   "/static/research_sector.js?v=18",
+   "/static/strategies.js?v=18",
+   "/static/strategy_editor.js?v=16",
+   "/static/traders.js?v=18",
+   "/static/league.js?v=20"
+  ],
+  "style_tags": [
+   "/static/style.css?v=19"
+  ]
+ }
+}

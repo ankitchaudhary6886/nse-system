@@ -1,0 +1,10 @@
+{
+  "version": "1.1.0",
+  "files": {
+    "planner.agent.md": "f812cb75f1fe7ec94e10cb18d9734bf37b07021c2854a84c1df4b38e0abd8a26",
+    "implementer.agent.md": "98b0c75a5873840111c4dbc46e3ed9b51e34b8a805c21f4bd4d5429499ad8cd6",
+    "reviewer.agent.md": "9b8fbdc8039acbd7f37df22fad3140c5f589ee915435aa7504b67cacf27bcc1b",
+    "pipeline.agent.md": "cadacf0180c3630c58250a496fe5804cd43df3f35ffc768a043b143716af9cb1",
+    "handoff/SKILL.md": "4256f23801d20c4f9c072ef6ed922eb6b707c0689d511cdcc60913002b9fc99b"
+  }
+}

@@ -1,0 +1,41 @@
+# --- TOKENSHIELD MANAGED ---
+# .copilotignore — Managed by TokenShield
+# VS Code Copilot respects this file like .gitignore.
+# Add your own patterns outside this managed block.
+# To regenerate: TokenShield: Configure Context Exclusions
+
+*.lock
+*.min.js
+*.min.css
+*.map
+*.d.ts
+*.generated.*
+dist/
+build/
+coverage/
+.git/
+node_modules/
+.next/
+.nuxt/
+__pycache__/
+*.pyc
+*.pyo
+target/
+vendor/
+poetry.lock
+Pipfile.lock
+*.egg-info/
+.venv/
+venv/
+# --- END TOKENSHIELD MANAGED ---
+
+# --- project additions (outside the managed block) ---
+# This repo's virtualenv is `env/` (see .gitignore line 5). TokenShield's default
+# excludes only .venv/ and venv/, so ctx-gate indexed site-packages and harvested
+# FastAPI's own tutorial routes as if they were this app's endpoints.
+# See .agents/cache/FINDINGS.md F-21.
+env/
+.agents/cache/
+.codegraph/
+.agentflow/
+.league_replay.pid

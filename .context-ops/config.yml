@@ -1,0 +1,25 @@
+version: 1
+enforcement: 'off'
+adapters:
+  active: copilot
+# Soft long-session warning threshold (heuristic cost-score units — turns
+# weighted plus bytes read, not a measured token count). Crossing it nudges
+# once per session to consider starting a fresh chat.
+sessionWarnAt: 6000
+# Firm long-session warning threshold, same units as sessionWarnAt. Fires at
+# most once more per session after the soft warning.
+sessionWarnHardAt: 15000
+# Set to false to disable the long-session cost warning entirely.
+sessionWarnings: true
+agentPack:
+  model: Claude Sonnet 4.5
+  commitArtifacts: false
+# ctx-gate mcp-audit / mcp-trim (see .vscode/mcp.json). audit: set to false
+# to skip MCP cost measurement entirely. unusedAfterDays: how many days of
+# zero calls (and zero days short of that watched) before a server is
+# eligible for a trim proposal. warnAboveTokens: mcp-audit prints a warning
+# when the workspace's total measured tool-definition tokens exceed this.
+mcp:
+  audit: true
+  unusedAfterDays: 30
+  warnAboveTokens: 8000

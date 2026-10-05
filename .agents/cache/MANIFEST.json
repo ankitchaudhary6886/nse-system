@@ -1,0 +1,12 @@
+{
+ "generated_at": "2026-10-05T12:54:45+00:00",
+ "generator": ".agents/build_cache.py",
+ "root": "C:\\Users\\Ankit\\Desktop\\nse_system",
+ "artifacts": {
+  "system_map.json": "dee0dd5843382a1663611c910453ae2c14f12e4db4365c8f3b494119be52ff12",
+  "db_index.json": "121c047b068355c13709992cb600b4376ddb2780141807d4af818755a0c4b339",
+  "api_index.json": "73fd3824350664401c6ebd21085d40f6c0caf0f54132c6eb59c1b23932a48535",
+  "jobs_index.json": "bbaa332a883a6f730c756837a237a3de9bca0c189f9925999a8cc4f9805087b6",
+  "env_index.json": "e404f48384a53aaa8e0335423aaa0d0ea97279c9c3cfe0ea212af6f5073a75dc"
+ }
+}

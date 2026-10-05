@@ -331,11 +331,8 @@ def _universe_symbols(conn, universe):
         rows = conn.execute(
             "SELECT symbol FROM stocks WHERE active=1").fetchall()
     elif universe == "band":
-        rows = conn.execute(
-            "SELECT symbol FROM universe_broad "
-            "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-            "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-            "ORDER BY mcap_cr DESC LIMIT 800").fetchall()
+        from universe_helper import band_universe
+        return band_universe(conn, 800)
     elif universe == "combined":
         from universe_helper import combined_universe
         return combined_universe(conn, band_limit=800)

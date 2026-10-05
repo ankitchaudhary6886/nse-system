@@ -7,6 +7,7 @@ v4: fundamentally vetoed symbols are skipped entirely.
 import datetime as dt
 import pandas as pd
 import db
+import universe_helper as U
 import pwin_cache
 import institutional
 import sector_gate
@@ -102,12 +103,7 @@ def _delivery_map(conn):
 
 
 def _universe(conn, limit=600):
-    rows = conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()
-    return [r[0] for r in rows]
+    return U.band_universe(conn, limit)
 
 
 def compute(force=False):

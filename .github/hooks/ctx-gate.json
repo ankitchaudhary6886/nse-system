@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "hooks": {
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "node \"C:/Users/Ankit/AppData/Roaming/npm/node_modules/agent-context-gate/bin/ctx-gate.js\" check",
+        "powershell": "node \"C:/Users/Ankit/AppData/Roaming/npm/node_modules/agent-context-gate/bin/ctx-gate.js\" check",
+        "timeout": 10
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "node \"C:/Users/Ankit/AppData/Roaming/npm/node_modules/agent-context-gate/bin/ctx-gate.js\" learn",
+        "powershell": "node \"C:/Users/Ankit/AppData/Roaming/npm/node_modules/agent-context-gate/bin/ctx-gate.js\" learn",
+        "timeout": 10
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "node \"C:/Users/Ankit/AppData/Roaming/npm/node_modules/agent-context-gate/bin/ctx-gate.js\" enforce",
+        "powershell": "node \"C:/Users/Ankit/AppData/Roaming/npm/node_modules/agent-context-gate/bin/ctx-gate.js\" enforce",
+        "timeout": 10
+      }
+    ]
+  }
+}

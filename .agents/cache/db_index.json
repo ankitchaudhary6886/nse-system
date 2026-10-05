@@ -1,0 +1,1856 @@
+{
+ "db_path": "data/app.db",
+ "exists": true,
+ "size_mb": 109.7,
+ "mtime": "2026-10-03T00:01:56",
+ "table_count": 32,
+ "tables": {
+  "breadth_daily": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "above50",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "adv",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dec",
+     "type": "REAL",
+     "pk": false
+    }
+   ]
+  },
+  "corp_calendar": {
+   "rows": 66,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "event_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "kind",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "detail",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "data_quality_log": {
+   "rows": 6,
+   "columns": [
+    {
+     "name": "run_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "severity",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "check_name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "message",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "run_at",
+    "value": "2026-09-05T15:30:03"
+   }
+  },
+  "delivery_daily": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "traded_qty",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "deliverable_qty",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "delivery_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "created_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "events": {
+   "rows": 153,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "kind",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "text",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-08-24"
+   }
+  },
+  "fundamentals": {
+   "rows": 503,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "sector",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "current_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "market_cap_cr",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pb",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roce",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "debt_to_equity",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "interest_coverage",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "operating_margin",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "net_profit_margin",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "sales_growth_3y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "profit_growth_3y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "promoter_holding",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pledge_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "fii_holding",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dividend_yield",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "cfo_positive",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "uploaded_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "beta_1y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "eps_fy",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "book_value",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "ev_ebitda",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "fcf_fy",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "net_debt_fy",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roic",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "data_source",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "field_sources",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "field_updated_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "data_quality_flags",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source_metadata",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "uploaded_at",
+    "value": "calc:2026-08-27T17:26:40.835339"
+   }
+  },
+  "institutional": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "accum",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "delivery_pct",
+     "type": "REAL",
+     "pk": false
+    }
+   ]
+  },
+  "macro_flow": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "fii_net_cr",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dii_net_cr",
+     "type": "REAL",
+     "pk": false
+    }
+   ]
+  },
+  "ml_predictions": {
+   "rows": 1456,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "prediction_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "ml_score_6m",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "ml_score_12m",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "final_ml_score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "ml_rank",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "model_version",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "prediction_date",
+    "value": "2026-08-26"
+   }
+  },
+  "model_runs": {
+   "rows": 1,
+   "columns": [
+    {
+     "name": "run_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "note",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "rows",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "winners",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "auc",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "base_win",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "top10_win",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "n_features",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "price_only_auc",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "delta_auc",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "delta_top10",
+     "type": "REAL",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "run_date",
+    "value": "2026-09-09"
+   }
+  },
+  "pattern_grades": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "tag_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "pattern",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "outcome",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "exit_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "r_multiple",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "graded_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "pattern_tags": {
+   "rows": 1154,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "pattern",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "direction",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "confidence",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "breakout_level",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "stop_level",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "target_level",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "notes",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "params",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "created_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-09-09"
+   }
+  },
+  "pipeline": {
+   "rows": 440,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "added_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "updated_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "reason",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "notes",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "review_date",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "price_meta": {
+   "rows": 500,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "last_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "rows",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "updated_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "updated_at",
+    "value": "2026-08-24T14:22:33.051788"
+   }
+  },
+  "prices_daily": {
+   "rows": 1130292,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "open",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "high",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "low",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "volume",
+     "type": "REAL",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-08-26"
+   }
+  },
+  "pwin_daily": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "p_win",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "why",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "model_version",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "research_cache": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "computed_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "payload",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "scan_reasons": {
+   "rows": 14000,
+   "columns": [
+    {
+     "name": "scan_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "rule_name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "passed",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "actual_value",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "expected_text",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "reason_text",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "scan_date",
+    "value": "2026-08-26"
+   }
+  },
+  "scan_results": {
+   "rows": 2000,
+   "columns": [
+    {
+     "name": "scan_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "passed",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "fundamental_score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "ml_score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "risk_flags",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "scan_date",
+    "value": "2026-08-26"
+   }
+  },
+  "scanx_fundamentals_snapshots": {
+   "rows": 750,
+   "columns": [
+    {
+     "name": "as_of_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "isin",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "scanx_name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "company_name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "sector",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "current_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "market_cap_cr",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pb",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roce",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "debt_to_equity",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "operating_margin",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "net_profit_margin",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "promoter_holding",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "fii_holding",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dii_holding",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dividend_yield",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "operating_cash_flow",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "cfo_positive",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "raw_json",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "match_method",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source_file",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "imported_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "financial_period_end",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "published_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "roe_avg_3y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roe_avg_10y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roa_avg_3y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roa_avg_5y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "opm_avg_5y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "opm_avg_10y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roce_growth_5y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roe_growth_5y",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "quarter_sales_yoy_growth",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "quarter_profit_yoy_growth",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "annual_revenue_growth",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "sales_growth_qoq",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "profit_growth_qoq",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "free_cash_flow",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "net_income_quarterly",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "profit_after_tax",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "net_change_in_cash",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "change_in_working_capital",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "annual_sales",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "current_assets",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "current_liabilities",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "total_assets",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "total_liabilities",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "total_equity",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "inventory",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "capex_growth",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "fixed_assets",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "investments",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "investing_cash_flow",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "financing_cash_flow",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dividend_per_share",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "payout_ratio",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "ev_ebitda",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pe_sector_ratio",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "market_cap_sales",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "industry_eps",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "industry_pe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "industry_pb",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "industry_dividend_yield",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "industry_operating_margin",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dii_holding_change",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "fii_holding_change",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "public_holding",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "promoter_holding_change",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "data_quality_flags",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "sentiment_headlines": {
+   "rows": 8,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "created_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "title",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "age_days",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "label",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "prob",
+     "type": "REAL",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "created_at",
+    "value": "2026-08-26T01:12:27.384668"
+   }
+  },
+  "sentiment_results": {
+   "rows": 9,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "created_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "headline_count",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "positive",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "neutral",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "negative",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "sentiment_score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "major_negative",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "created_at",
+    "value": "2026-08-26T01:12:27.384668"
+   }
+  },
+  "settings": {
+   "rows": 2,
+   "columns": [
+    {
+     "name": "key",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "value",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "stocks": {
+   "rows": 500,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "sector",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "active",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "updated_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "updated_at",
+    "value": "2026-08-17T00:46:23.746511"
+   }
+  },
+  "strategy_runs": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "run_at",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "target_r",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "years",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "symbols",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "max_pos",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "trades",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "wins",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "losses",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "win_rate",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "avg_win",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "avg_loss",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "expectancy_r",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pf",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "total_return",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "max_dd",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "holding_days",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "verdict",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "payload",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "swing_signals": {
+   "rows": 9,
+   "columns": [
+    {
+     "name": "signal_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "entry_trigger",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "stop",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "target",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "risk_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pullback",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "impulse",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "ema_zone",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "outcome",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "updated_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "signal_date",
+    "value": "2026-06-09"
+   }
+  },
+  "technicals_daily": {
+   "rows": 980,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dma20",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dma50",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dma200",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "rsi",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "vol_ratio",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "high52",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "low52",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "mom20",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "above200",
+     "type": "INTEGER",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-08-24"
+   }
+  },
+  "template_scores": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "template",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "similarity",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "created_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "top_picks": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "p_win",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "accum",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "sector_rs",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "sector",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "setup",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "composite",
+     "type": "REAL",
+     "pk": false
+    }
+   ]
+  },
+  "universe_broad": {
+   "rows": 1522,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "mcap_cr",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "perf1m",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "perf3m",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "relvol",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "updated_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "updated_at",
+    "value": "2026-08-26T02:22:57.663828"
+   }
+  },
+  "validation_log": {
+   "rows": 3,
+   "columns": [
+    {
+     "name": "run_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "mode",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "payload",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "run_date",
+    "value": "2026-09-08"
+   }
+  },
+  "webhook_events": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "created_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "kind",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "payload",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  }
+ },
+ "schema": {
+  "declared_in_db_py": [
+   "breadth_daily",
+   "corp_calendar",
+   "data_quality_log",
+   "delivery_daily",
+   "events",
+   "fundamentals",
+   "institutional",
+   "macro_flow",
+   "ml_predictions",
+   "model_runs",
+   "pattern_grades",
+   "pattern_tags",
+   "pipeline",
+   "price_meta",
+   "prices_daily",
+   "pwin_daily",
+   "research_cache",
+   "scan_reasons",
+   "scan_results",
+   "sentiment_headlines",
+   "sentiment_results",
+   "settings",
+   "stocks",
+   "strategy_runs",
+   "swing_signals",
+   "technicals_daily",
+   "template_scores",
+   "top_picks",
+   "universe_broad",
+   "validation_log",
+   "webhook_events"
+  ],
+  "created_at_runtime_by": {
+   "breadth_daily": "breadth.py",
+   "corp_calendar": "corporate.py",
+   "data_quality_log": "data_quality.py",
+   "delivery_daily": "delivery.py",
+   "events": "app.py",
+   "institutional": "institutional.py",
+   "kite_market_snapshots": "kite_import.py",
+   "league_equity": "trader_league.py",
+   "league_index": "trader_league.py",
+   "league_open": "trader_league.py",
+   "league_progress": "trader_league.py",
+   "league_runs": "trader_league.py",
+   "league_signals": "trader_league.py",
+   "league_trades": "trader_league.py",
+   "macro_flow": "macro.py",
+   "market_data_attestations": "kite_reconcile.py",
+   "model_runs": "model_report.py",
+   "pattern_grades": "pattern_grader.py",
+   "pattern_tags": "patterns.py",
+   "positional_picks": "positional_scanner.py",
+   "pwin_daily": "pwin_cache.py",
+   "research_cache": "research_cockpit.py",
+   "scanx_fundamentals_snapshots": "scanx_import.py",
+   "sentiment_headlines": "sentiment.py",
+   "setup_pool": "build_setup_pool.py",
+   "strategy_runs": "strategy_runs.py",
+   "swing_signals": "swing_live.py",
+   "technicals_daily": "technicals.py",
+   "template_scores": "template_match.py",
+   "top_picks": "top_picks.py",
+   "trend_candidates": "trend_scanner.py",
+   "universe_broad": "broad_scan.py",
+   "validation_log": "validate.py",
+   "value_radar": "value_radar.py",
+   "webhook_events": "terminal_api.py"
+  },
+  "present_but_undeclared": [],
+  "absent_here_created_at_runtime": [
+   "kite_market_snapshots",
+   "league_equity",
+   "league_index",
+   "league_open",
+   "league_progress",
+   "league_runs",
+   "league_signals",
+   "league_trades",
+   "market_data_attestations",
+   "positional_picks",
+   "setup_pool",
+   "trend_candidates",
+   "value_radar"
+  ],
+  "note": "Tables under 'absent_here_created_at_runtime' do not exist in the LOCAL data/app.db because the module that creates them has not run on this machine. They exist on the VM. Absence locally is a stale-data signal, not a code defect."
+ }
+}

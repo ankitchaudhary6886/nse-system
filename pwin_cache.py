@@ -5,6 +5,7 @@ Makes /api/toppicks, /api/radar, /api/swing/signals instant.
 import json
 import datetime as dt
 import db
+import universe_helper as U
 import meta_model
 
 MODEL_VERSION = meta_model.MODEL_VERSION
@@ -57,11 +58,7 @@ def refresh_all(limit=600):
     done = {r[0] for r in conn.execute(
         "SELECT symbol FROM pwin_daily WHERE date=? AND model_version=?",
         (d, MODEL_VERSION)).fetchall()}
-    syms = [r[0] for r in conn.execute(
-        "SELECT symbol FROM universe_broad "
-        "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-        "AND symbol NOT LIKE '%$%' AND symbol NOT LIKE '% %' "
-        "ORDER BY mcap_cr DESC LIMIT ?", (limit,)).fetchall()]
+    syms = U.band_universe(conn, limit)
     core = [r[0] for r in conn.execute(
         "SELECT symbol FROM stocks WHERE active=1").fetchall()]
     todo = [s for s in sorted(set(syms) | set(core)) if s not in done]

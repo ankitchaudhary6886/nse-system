@@ -1,0 +1,708 @@
+{
+  "$schemaVersion": 1,
+  "generatedAt": "2026-10-02T19:58:25.225Z",
+  "ctxGateVersion": "0.1.5",
+  "stacks": {
+    "node": {
+      "detected": false
+    },
+    "react": {
+      "detected": false
+    },
+    "python": {
+      "detected": true,
+      "framework": "fastapi"
+    },
+    "dotnet": {
+      "detected": false
+    }
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "route": "/users/",
+      "path": "env/Lib/site-packages/fastapi/applications.py",
+      "confidence": "low",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/applications.py",
+      "confidence": "low",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/applications.py#read_items",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/applications.py#read_items",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "PUT",
+      "route": "/items/{item_id}",
+      "path": "env/Lib/site-packages/fastapi/applications.py#replace_item",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/applications.py#create_item",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "DELETE",
+      "route": "/items/{item_id}",
+      "path": "env/Lib/site-packages/fastapi/applications.py#delete_item",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "PATCH",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/applications.py#update_item",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/send-notification/{email}",
+      "path": "env/Lib/site-packages/fastapi/background.py#send_notification",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/files/",
+      "path": "env/Lib/site-packages/fastapi/datastructures.py#create_file",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/uploadfile/",
+      "path": "env/Lib/site-packages/fastapi/datastructures.py#create_upload_file",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/{item_id}",
+      "path": "env/Lib/site-packages/fastapi/exceptions.py#read_item",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/{item_id}",
+      "path": "env/Lib/site-packages/fastapi/param_functions.py#read_items",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/param_functions.py#read_items",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/users/me/items/",
+      "path": "env/Lib/site-packages/fastapi/param_functions.py#read_own_items",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/users/",
+      "path": "env/Lib/site-packages/fastapi/routing.py#read_users",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/routing.py#read_items",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "PUT",
+      "route": "/items/{item_id}",
+      "path": "env/Lib/site-packages/fastapi/routing.py#replace_item",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/routing.py#create_item",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "DELETE",
+      "route": "/items/{item_id}",
+      "path": "env/Lib/site-packages/fastapi/routing.py#delete_item",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "PATCH",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/routing.py#update_item",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/security/api_key.py#read_items",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/security/api_key.py#read_items",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/items/",
+      "path": "env/Lib/site-packages/fastapi/security/api_key.py#read_items",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/users/me",
+      "path": "env/Lib/site-packages/fastapi/security/http.py#read_current_user",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/users/me",
+      "path": "env/Lib/site-packages/fastapi/security/http.py#read_current_user",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/users/me",
+      "path": "env/Lib/site-packages/fastapi/security/http.py#read_current_user",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/login",
+      "path": "env/Lib/site-packages/fastapi/security/oauth2.py#login",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/login",
+      "path": "env/Lib/site-packages/fastapi/security/oauth2.py#login",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/",
+      "path": "env/Lib/site-packages/huggingface_hub/_oauth.py#greet_json",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/chat/completions",
+      "path": "env/Lib/site-packages/transformers/cli/serving/server.py#chat_completions",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/completions",
+      "path": "env/Lib/site-packages/transformers/cli/serving/server.py#completions",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/responses",
+      "path": "env/Lib/site-packages/transformers/cli/serving/server.py#responses",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/audio/transcriptions",
+      "path": "env/Lib/site-packages/transformers/cli/serving/server.py#audio_transcriptions",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/load_model",
+      "path": "env/Lib/site-packages/transformers/cli/serving/server.py#load_model",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/reset",
+      "path": "env/Lib/site-packages/transformers/cli/serving/server.py#reset",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/models",
+      "path": "env/Lib/site-packages/transformers/cli/serving/server.py#list_models",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/health",
+      "path": "env/Lib/site-packages/transformers/cli/serving/server.py#health",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/",
+      "path": "terminal_api.py#root",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "path": "terminal_api.py#health",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/sources",
+      "path": "terminal_api.py#source_health",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/deployment-check",
+      "path": "terminal_api.py#deployment_check",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/regime",
+      "path": "terminal_api.py#regime",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/macro",
+      "path": "terminal_api.py#macro_flow",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/traders",
+      "path": "terminal_api.py#list_traders_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/traders/{slug}",
+      "path": "terminal_api.py#get_trader_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/traders/{slug}/scan",
+      "path": "terminal_api.py#scan_trader_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/league/overview",
+      "path": "terminal_api.py#league_overview",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/league/player/{slug}",
+      "path": "terminal_api.py#league_player",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/league/status",
+      "path": "terminal_api.py#league_status",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/league/simulate",
+      "path": "terminal_api.py#league_simulate",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/league/replay",
+      "path": "terminal_api.py#league_replay",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/strategies",
+      "path": "terminal_api.py#list_strategies",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/strategies/seed",
+      "path": "terminal_api.py#seed_strategies",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/strategies/run-all",
+      "path": "terminal_api.py#run_all_strategies",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/strategies/backtest-cache/clear",
+      "path": "terminal_api.py#clear_backtest_cache",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/strategies/{name}",
+      "path": "terminal_api.py#get_strategy",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/strategies/{name}",
+      "path": "terminal_api.py#save_strategy",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/strategies/{name}",
+      "path": "terminal_api.py#delete_strategy",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/strategies/{name}/run",
+      "path": "terminal_api.py#run_strategy_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/strategies/{name}/backtest",
+      "path": "terminal_api.py#backtest_strategy_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/research/{symbol}",
+      "path": "terminal_api.py#research_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/research-universe",
+      "path": "terminal_api.py#research_universe_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/research-sector",
+      "path": "terminal_api.py#research_sector_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/research-cache/clear",
+      "path": "terminal_api.py#research_cache_clear",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/compare",
+      "path": "terminal_api.py#compare_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/patterns/latest",
+      "path": "terminal_api.py#patterns_latest",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/patterns/stats",
+      "path": "terminal_api.py#patterns_stats",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/patterns/history/{symbol}",
+      "path": "terminal_api.py#patterns_history",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/patterns/scan",
+      "path": "terminal_api.py#patterns_scan",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/patterns/{symbol}",
+      "path": "terminal_api.py#patterns_for_symbol",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/toppicks",
+      "path": "terminal_api.py#toppicks",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/pwin/refresh",
+      "path": "terminal_api.py#pwin_refresh",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/swing/signals",
+      "path": "terminal_api.py#swing_signals",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/swing/scan",
+      "path": "terminal_api.py#run_swing_scan",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/radar",
+      "path": "terminal_api.py#radar",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/trend",
+      "path": "terminal_api.py#trend_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/trend/scan",
+      "path": "terminal_api.py#trend_scan",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/templates/latest",
+      "path": "terminal_api.py#templates_latest",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/delivery/top",
+      "path": "terminal_api.py#delivery_top",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/delivery/accum",
+      "path": "terminal_api.py#delivery_accum",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/delivery/{symbol}",
+      "path": "terminal_api.py#delivery_symbol",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/value-radar",
+      "path": "terminal_api.py#value_radar_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/positional",
+      "path": "terminal_api.py#positional_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/strategy-runs",
+      "path": "terminal_api.py#strategy_runs_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/strategy-summary",
+      "path": "terminal_api.py#strategy_summary_api",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/webhook/ingest",
+      "path": "terminal_api.py#webhook_ingest",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/cockpit/{symbol}/chart",
+      "path": "terminal_api.py#cockpit_chart",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/cockpit/{symbol}/summary",
+      "path": "terminal_api.py#cockpit_summary",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/meta/{symbol}",
+      "path": "terminal_api.py#meta_score",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/model/runs",
+      "path": "terminal_api.py#model_runs",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/ledger/stats",
+      "path": "terminal_api.py#ledger_stats",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/ledger/trades",
+      "path": "terminal_api.py#ledger_trades",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/validate/latest",
+      "path": "terminal_api.py#validate_latest",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/sizing/{symbol}",
+      "path": "terminal_api.py#sizing",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "POST",
+      "route": "/api/sizing/capital",
+      "path": "terminal_api.py#sizing_capital",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/screener/scan",
+      "path": "terminal_api.py#screener_scan",
+      "confidence": "high",
+      "source": "fastapi"
+    },
+    {
+      "method": "GET",
+      "route": "/api/screener/{symbol}",
+      "path": "terminal_api.py#screener_check",
+      "confidence": "high",
+      "source": "fastapi"
+    }
+  ]
+}

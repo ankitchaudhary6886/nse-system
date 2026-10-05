@@ -1,0 +1,239 @@
+{
+ "scheduler_file": "scheduler_bg.py",
+ "job_count": 19,
+ "jobs": [
+  {
+   "id": "pool_rebuild",
+   "function": "_pool_rebuild_job",
+   "ist_time": "06:00",
+   "day_of_week": "sun",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"sun\", hour=6, minute=0, timezone=IST)",
+   "doc": "Weekly full rebuild of setup_pool \u2014 the corpus that powers signature matching in the research cockpit. 800 symbols \u00d7 5y \u00d7 step 5. ~8-10 minutes."
+  },
+  {
+   "id": "fundamentals_refresh",
+   "function": "_fundamentals_job",
+   "ist_time": "08:00",
+   "day_of_week": "sat",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"sat\", hour=8, minute=0, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "validate_mc",
+   "function": "_validate_mc_job",
+   "ist_time": "08:00",
+   "day_of_week": "mon",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"mon\", hour=8, minute=0, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "meta_retrain",
+   "function": "_retrain_job",
+   "ist_time": "09:00",
+   "day_of_week": "sat",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"sat\", hour=9, minute=0, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "value_radar",
+   "function": "_value_radar_job",
+   "ist_time": "09:00",
+   "day_of_week": "sun",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"sun\", hour=9, minute=0, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "positional_scan",
+   "function": "_positional_job",
+   "ist_time": "10:00",
+   "day_of_week": "sat",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"sat\", hour=10, minute=0, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "validate_wf",
+   "function": "_validate_wf_job",
+   "ist_time": "10:00",
+   "day_of_week": null,
+   "day_of_month": "1",
+   "trigger": "CronTrigger(day=1, hour=10, minute=0, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "league_scorecard",
+   "function": "_league_scorecard_job",
+   "ist_time": "11:00",
+   "day_of_week": "sat",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"sat\", hour=11, minute=0, timezone=IST)",
+   "doc": "Weekly Telegram scorecard of the league."
+  },
+  {
+   "id": "data_quality",
+   "function": "_data_quality_job",
+   "ist_time": "15:30",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=15, minute=30, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "daily_update",
+   "function": "_daily_job",
+   "ist_time": "15:45",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=15, minute=45, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "trend_scan",
+   "function": "_trend_job",
+   "ist_time": "15:50",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=15, minute=50, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "delivery_fetch",
+   "function": "_delivery_job",
+   "ist_time": "16:00",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=16, minute=0, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "swing_scan",
+   "function": "_swing_job",
+   "ist_time": "16:15",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=16, minute=15, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "research_warm",
+   "function": "_warm_research_job",
+   "ist_time": "16:20",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=16, minute=20, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "institutional",
+   "function": "_institutional_job",
+   "ist_time": "16:45",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=16, minute=45, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "macro_flow",
+   "function": "_macro_job",
+   "ist_time": "17:30",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=17, minute=30, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "pattern_scan",
+   "function": "_pattern_job",
+   "ist_time": "18:05",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=18, minute=5, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "template_scan",
+   "function": "_template_job",
+   "ist_time": "18:35",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=18, minute=35, timezone=IST)",
+   "doc": ""
+  },
+  {
+   "id": "trader_league",
+   "function": "_league_job",
+   "ist_time": "19:00",
+   "day_of_week": "mon-fri",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"mon-fri\", hour=19, minute=0, timezone=IST)",
+   "doc": "Trader League (#087): store today's signals from the 14 books + our Swing Desk, then re-simulate the live Rs 10 lakh paper league."
+  }
+ ],
+ "daily_update_trace": [
+  {
+   "order": 1,
+   "stage": "prices",
+   "module": "ingest_prices",
+   "entry": "run"
+  },
+  {
+   "order": 2,
+   "stage": "technicals",
+   "module": "technicals",
+   "entry": "compute_all"
+  },
+  {
+   "order": 3,
+   "stage": "scan",
+   "module": "scan",
+   "entry": "run"
+  },
+  {
+   "order": 4,
+   "stage": "ml",
+   "module": "ml_predict",
+   "entry": "predict_all"
+  },
+  {
+   "order": 5,
+   "stage": "pwin",
+   "module": "pwin_cache",
+   "entry": "refresh_all"
+  },
+  {
+   "order": 6,
+   "stage": "toppicks",
+   "module": "top_picks",
+   "entry": ""
+  },
+  {
+   "order": 7,
+   "stage": "events",
+   "module": "events",
+   "entry": "detect"
+  },
+  {
+   "order": 8,
+   "stage": "swing",
+   "module": "swing_live",
+   "entry": "update_outcomes, scan"
+  },
+  {
+   "order": 9,
+   "stage": "telegram",
+   "module": "telegram_alerts",
+   "entry": "report"
+  },
+  {
+   "order": 10,
+   "stage": "sheets",
+   "module": "sheets_sync",
+   "entry": "sync"
+  }
+ ]
+}

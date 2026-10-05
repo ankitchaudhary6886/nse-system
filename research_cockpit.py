@@ -16,6 +16,7 @@ import json
 import datetime as dt
 import numpy as np
 import pandas as pd
+import setup_sim
 import db
 from setup import SetupDetector
 
@@ -320,61 +321,13 @@ def _sector_breakdown(matches):
 # Core simulation
 # ============================================================
 def _simulate_forward(df, signal_i, trigger, stop):
-    n = len(df)
-    h = df["High"].values
-    l = df["Low"].values
-    risk = trigger - stop
-    if risk <= 0:
-        return None
-    trig_bar = None
-    for j in range(signal_i + 1, min(signal_i + 4, n)):
-        if h[j] >= trigger:
-            trig_bar = j
-            break
-    if trig_bar is None:
-        return {
-            "triggered": False, "outcome": "EXPIRED",
-            "mfe_r": 0.0, "mae_r": 0.0,
-            "hit_1r": False, "hit_2r": False,
-            "hit_3r": False, "hit_4r": False,
-            "bars_to_1r": None, "bars_to_2r": None,
-            "bars_to_3r": None, "bars_to_4r": None,
-        }
-    end_bar = min(trig_bar + HOLD_BARS, n)
-    mfe = 0.0
-    mae = 0.0
-    hit_1r = hit_2r = hit_3r = hit_4r = False
-    b_1r = b_2r = b_3r = b_4r = None
-    outcome = "TIMEOUT"
-    for k in range(trig_bar, end_bar):
-        up_r = (h[k] - trigger) / risk
-        dn_r = (l[k] - trigger) / risk
-        if up_r > mfe:
-            mfe = up_r
-        if dn_r < mae:
-            mae = dn_r
-        bars_since = k - trig_bar
-        if not hit_1r and up_r >= 1.0:
-            hit_1r = True; b_1r = bars_since
-        if not hit_2r and up_r >= 2.0:
-            hit_2r = True; b_2r = bars_since
-        if not hit_3r and up_r >= 3.0:
-            hit_3r = True; b_3r = bars_since
-        if not hit_4r and up_r >= 4.0:
-            hit_4r = True; b_4r = bars_since
-        if l[k] <= stop:
-            outcome = "LOSS"
-            break
-    if outcome != "LOSS" and not hit_1r:
-        outcome = "TIMEOUT"
-    return {
-        "triggered": True, "outcome": outcome,
-        "mfe_r": round(float(mfe), 2), "mae_r": round(float(mae), 2),
-        "hit_1r": hit_1r, "hit_2r": hit_2r,
-        "hit_3r": hit_3r, "hit_4r": hit_4r,
-        "bars_to_1r": b_1r, "bars_to_2r": b_2r,
-        "bars_to_3r": b_3r, "bars_to_4r": b_4r,
-    }
+    """Adapter over setup_sim.simulate_forward (B5, 2026-10-05).
+
+    The rule set was already identical to build_setup_pool._simulate; only the
+    return shape differed. The shared core keeps this superset shape.
+    """
+    return setup_sim.simulate_forward(df, signal_i, trigger, stop,
+                                     hold_bars=HOLD_BARS)
 
 
 def _load_df(conn, sym, years=5):

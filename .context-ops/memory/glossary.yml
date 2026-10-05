@@ -1,0 +1,499 @@
+version: 1
+terms:
+  - term: items
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/fastapi/applications.py
+      - env/Lib/site-packages/fastapi/param_functions.py
+      - env/Lib/site-packages/fastapi/routing.py
+      - env/Lib/site-packages/fastapi/security/api_key.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: '{symbol}'
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: '{item_id}'
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/fastapi/applications.py
+      - env/Lib/site-packages/fastapi/exceptions.py
+      - env/Lib/site-packages/fastapi/param_functions.py
+      - env/Lib/site-packages/fastapi/routing.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: scan
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: '{name}'
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: latest
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: me
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/fastapi/security/http.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: '{slug}'
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: clear
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: completions
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/transformers/cli/serving/server.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: health
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/transformers/cli/serving/server.py
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: login
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/fastapi/security/oauth2.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: stats
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: traders
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+      - traders
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: users
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/fastapi/applications.py
+      - env/Lib/site-packages/fastapi/routing.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: '{email}'
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/fastapi/background.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: accum
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: backtest
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: capital
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: chart
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: compare
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: data
+    aka: []
+    definition: ''
+    paths:
+      - data
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: data_sources
+    aka: []
+    definition: ''
+    paths:
+      - data_sources
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: deployment-check
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: docs
+    aka: []
+    definition: ''
+    paths:
+      - docs
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: env
+    aka: []
+    definition: ''
+    paths:
+      - env
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: files
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/fastapi/datastructures.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: ingest
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: load_model
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/transformers/cli/serving/server.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: macro
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: models
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/transformers/cli/serving/server.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: overview
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: positional
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: radar
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: refresh
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: regime
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: replay
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: research-sector
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: research-universe
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: reset
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/transformers/cli/serving/server.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: responses
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/transformers/cli/serving/server.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: run
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: run-all
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: runs
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: seed
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: signals
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: simulate
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: sources
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: status
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: strategies
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: strategy-runs
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: strategy-summary
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: summary
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: terminal
+    aka: []
+    definition: ''
+    paths:
+      - terminal
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: top
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: toppicks
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: trades
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: transcriptions
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/transformers/cli/serving/server.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: trend
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: uploadfile
+    aka: []
+    definition: ''
+    paths:
+      - env/Lib/site-packages/fastapi/datastructures.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'
+  - term: value-radar
+    aka: []
+    definition: ''
+    paths:
+      - terminal_api.py
+    status: candidate
+    hits: 0
+    last_used: '2026-10-02T20:00:08.341Z'

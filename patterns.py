@@ -17,6 +17,7 @@ import datetime as dt
 import pandas as pd
 import numpy as np
 import db
+import universe_helper as U
 
 
 MIN_CONFIDENCE_TO_STORE = 58.0
@@ -91,16 +92,7 @@ def _ensure(conn):
 def _symbols(conn, limit=DEFAULT_SYMBOL_LIMIT):
     symbols = set()
     try:
-        rows = conn.execute(
-            "SELECT symbol FROM universe_broad "
-            "WHERE mcap_cr BETWEEN 1000 AND 8000 "
-            "AND symbol NOT LIKE '%$%' "
-            "AND symbol NOT LIKE '% %' "
-            "ORDER BY mcap_cr DESC LIMIT ?",
-            (limit,)
-        ).fetchall()
-        for r in rows:
-            symbols.add(r[0])
+        symbols.update(U.band_universe(conn, limit))
     except Exception:
         pass
     try:
