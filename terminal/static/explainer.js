@@ -77,17 +77,27 @@
       });
   }
 
-  /* One delegated listener covers every present and future element. */
+  /* One delegated listener covers every present and future element.
+   *
+   * Two behaviours, chosen per element:
+   *   data-explain            -> show the explanation AND let the element do its
+   *                              own job (nav buttons still navigate, metric
+   *                              cards still switch view).
+   *   data-explain-stop       -> show the explanation INSTEAD of the surrounding
+   *                              action. Used for figures inside a row that would
+   *                              otherwise navigate away on click.
+   *
+   * Capture phase, so this decides before the row's own handler runs.
+   */
   document.addEventListener("click", function (ev) {
     var el = ev.target.closest ? ev.target.closest("[data-explain]") : null;
     if (!el) return;
-    /* Elements that also navigate keep navigating only if they say so. */
-    if (el.hasAttribute("data-explain-only")) {
+    if (el.hasAttribute("data-explain-stop")) {
       ev.preventDefault();
       ev.stopPropagation();
     }
     open(el.getAttribute("data-explain"));
-  });
+  }, true);
 
   /* Keyboard: Enter/Space on anything marked as an explain target. */
   document.addEventListener("keydown", function (ev) {

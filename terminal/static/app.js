@@ -200,10 +200,11 @@ async function loadTopPicks() {
     box.innerHTML = "";
     (data.picks || []).forEach(x => {
       const subtitle = x.sector || "Unknown sector";
-      const primary = `Composite ${scorePct(x.composite)} · event score ${scorePct(x.p_win)}`
-        + ` · accumulation ${fmt(x.accum)}`;
-      const secondary = `Sector relative strength ${scorePct(x.sector_rs)}`
-        + (x.delivery != null ? ` · delivery ${scorePct(x.delivery)}` : "");
+      const primary = `<span data-explain="composite" data-explain-stop title="Click to learn what this means">Overall rank ${scorePct(x.composite)}</span>`
+        + ` · <span data-explain="p_win" data-explain-stop title="Click to learn what this means">chance of a good move ${scorePct(x.p_win)}</span>`
+        + ` · <span data-explain="accum" data-explain-stop title="Click to learn what this means">quiet accumulation ${fmt(x.accum)}</span>`;
+      const secondary = `<span data-explain="sector_rs" data-explain-stop title="Click to learn what this means">Industry strength ${scorePct(x.sector_rs)}</span>`
+        + (x.delivery != null ? ` · <span data-explain="delivery" data-explain-stop title="Click to learn what this means">shares held overnight ${scorePct(x.delivery)}</span>` : "");
       const card = window.renderUnifiedCard({
         symbol: x.symbol,
         setup: !!x.setup,
@@ -235,10 +236,12 @@ async function loadSwing() {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${s.date}</td>
         <td><strong>${s.symbol}</strong> ${s.p_win != null ? `<span class="model-score" title="${window.MODEL_EVENT_SCORE_HELP}">Event ${scorePct(s.p_win)}</span>` : ""} ${s.mode === "ALL_WEATHER" ? '<span class="outcome TIMEOUT">All-weather</span>' : ""}</td>
-        <td>${fmt(s.trigger)}</td><td>${fmt(s.stop)}</td><td>${fmt(s.target)}</td>
-        <td>${fmt(s.risk_pct, "%")}</td>
-        <td>${s.pullback ? (s.pullback * 100).toFixed(1) + "%" : "—"}</td>
-        <td>${s.impulse ? (s.impulse * 100).toFixed(1) + "%" : "—"}</td>
+        <td>${fmt(s.trigger)}</td>
+        <td><span data-explain="stop" data-explain-stop title="Click to learn what this is">${fmt(s.stop)}</span></td>
+        <td><span data-explain="target" data-explain-stop title="Click to learn what this is">${fmt(s.target)}</span></td>
+        <td><span data-explain="risk_pct" data-explain-stop title="Click to learn what this is">${fmt(s.risk_pct, "%")}</span></td>
+        <td><span data-explain="pullback" data-explain-stop title="Click to learn what this is">${s.pullback ? (s.pullback * 100).toFixed(1) + "%" : "—"}</span></td>
+        <td><span data-explain="impulse" data-explain-stop title="Click to learn what this is">${s.impulse ? (s.impulse * 100).toFixed(1) + "%" : "—"}</span></td>
         <td>${s.ema_zone || "—"}</td>
         <td>${outcomeBadge(s.outcome)}</td>`;
       tr.addEventListener("click", () => { setView("research"); loadSymbol(s.symbol); });
@@ -788,10 +791,10 @@ async function loadSymbol(symbol) {
         <div class="level"><span>Target (3R)</span><strong>${setup.target}</strong></div>
         <button class="toggle-btn" data-target="setupDetails">Show setup details</button>
         <div id="setupDetails" class="details-panel hidden">
-          <div class="level"><span>Pullback</span><strong>${(setup.pullback * 100).toFixed(1)}%</strong></div>
-          <div class="level"><span>Impulse</span><strong>${(setup.impulse * 100).toFixed(1)}%</strong></div>
-          <div class="level"><span>EMA Zone</span><strong>${setup.zone}</strong></div>
-          <div class="level"><span>Shape score</span><strong>${setup.shape ?? "—"}/100</strong></div>
+          <div class="level"><span data-explain="pullback" title="Click to learn what this is">The pause dip</span><strong>${(setup.pullback * 100).toFixed(1)}%</strong></div>
+          <div class="level"><span data-explain="impulse" title="Click to learn what this is">The earlier rise</span><strong>${(setup.impulse * 100).toFixed(1)}%</strong></div>
+          <div class="level"><span>Resting on average price</span><strong>${setup.zone}</strong></div>
+          <div class="level"><span data-explain="shape_score" title="Click to learn what this is">How tidy the pause is</span><strong>${setup.shape ?? "—"}/100</strong></div>
         </div>`;
     }
     try {

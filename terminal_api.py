@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Header, Query
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 import secrets
 import db
 import scheduler_bg
@@ -88,6 +88,13 @@ def source_health(user: str = Depends(verify_user)):
     from data_sources import get_registry
     return {"sources": get_registry().health(),
             "time": dt.datetime.now().isoformat()}
+
+
+@app.get("/glossary", response_class=HTMLResponse)
+def glossary_page(user: str = Depends(verify_user)):
+    """Every term explained in ordinary words, generated from explain.py."""
+    import glossary_ui
+    return glossary_ui.render()
 
 
 @app.get("/api/explain")
