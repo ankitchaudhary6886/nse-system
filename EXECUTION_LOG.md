@@ -10,6 +10,44 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #103 - Plain-language explanations for everything clickable - VERIFIED
+- **Owner request:** the terminal must be minimal, polished and understandable in
+  ordinary words, and **everything clickable must answer 5W1H** - what it is, why
+  it matters, what to look for, where else it is used, when to act, how it is
+  worked out, plus how to spot it by eye with no tools.
+- **New `explain.py`** - the single source of truth for 20 terms, each authored
+  in plain English (no jargon). Keeping the wording in one place means the
+  terminal, the API and the alerts can never drift apart, and fixing a confusing
+  sentence fixes it everywhere. Seven sections per term.
+- **New endpoints:** `GET /api/explain` (index of terms) and
+  `GET /api/explain/{key}` (one term's full 5W1H). Both auth-protected. An
+  unknown key returns a helpful message plus the known keys instead of a 404.
+- **New `terminal/static/explainer.js`** - one delegated click listener, so
+  anything carrying `data-explain="<key>"` becomes explainable, including
+  elements rendered later. Reuses the existing `#dataDetailDialog` rather than
+  inventing a second modal. Keyboard-accessible (Enter/Space), responses cached
+  per key.
+- **Wired 14 click targets:** the four market-overview metric cards, the market
+  weather banner, all seven navigation items, and the system-status panes. Labels
+  were rewritten in human language at the same time (e.g. "Loading market
+  regime..." -> "Loading market weather..."; "Deployment Check" -> "Is everything
+  working"; "Data Source Health" -> "Where the numbers come from").
+- **CSS appended** to `style.css` (not replaced): explainer styling reusing the
+  existing palette tokens, a distinct highlighted block for the
+  "spot it yourself" answer, and a stacked layout under 620px because the phone
+  is the owner's main screen. Brace balance verified 186/186.
+- **Verification before claiming success:** all 13 static JS files pass
+  `node --check`; `explain.py` and `terminal_api.py` compile; HTML tag balance
+  clean; every `data-explain` key resolves in `explain.py`; on the VM, all 9
+  wired terms return 200 with **7/7 sections each**, the index lists 20 terms,
+  and `index`/`explainer.js`/`style.css` all return 200. One missing section
+  (`volume.how`) was found by the completeness check and fixed.
+- **Deployed:** pushed and pulled on the VM; service restarted and `active`.
+  Static assets need a hard refresh (phone: incognito or `?v=2`).
+- **Known gap:** 11 further terms are authored and API-reachable but not yet
+  attached to screen elements (`accum`, `breadth`, `composite`, `delivery`,
+  `impulse`, `pullback`, `shape_score`, `sizing`, `stop`, `veto`, `volume`).
+
 ### #102 - B2: consolidate band-universe SQL into universe_helper - VERIFIED
 - **Owner-approved batch B2** — the codebase's largest single-point-of-failure.
   The band SQL (`mcap_cr BETWEEN 1000 AND 8000 …`) existed as **17 inline
