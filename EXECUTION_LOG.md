@@ -10,6 +10,67 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #104 - Ideal values, explainable model terms, per-book methods, winner/loser names - VERIFIED
+- **Six owner-reported gaps fixed**, each verified on the live VM.
+- **FIXED 500:** `/api/traders/matches/{symbol}` returned 500 because trader
+  methods compute with pandas/numpy and the handler returned `numpy.bool_`
+  straight to FastAPI's encoder ("'numpy.bool' object is not iterable"). Added
+  `_jsonable()` in `terminal_api.py` to coerce numpy scalars recursively, applied
+  to matches/errors. Endpoint now returns 200 with 14 books checked, 11 methods
+  matched, 0 errors.
+- **NEW `ideal.py`** - "actual vs ideal" bands for 21 measures, grouped into six
+  plain-English sections (Business quality, Safety, Price you pay, Growth, Who
+  owns it, Your plan and the market). Every band records its **source**, and the
+  sources are the system's own rules first (strategy_config gates, scoring.py and
+  fund_veto thresholds, trader-library thresholds, trader_league confidence
+  bands, the delivery conviction curve, the breadth gate) and convention only
+  where the system is silent. `direction` marks whether higher or lower is better,
+  so debt and P/E are not naively "bigger is greener". `assess()` is None-safe and
+  never raises.
+- **NEW `terminal/static/ideals.js`** - fetches the bands once, then sweeps the
+  page for labels it recognises (ROCE, Debt/Equity, P/E, Promoter holding, MFE,
+  ...) and attaches an "ideal ..." chip plus a plain verdict. Colour is
+  reinforced by a dot and by words, never carried by colour alone. Works on
+  panels rendered later (re-sweeps 12 times), and degrades silently if the API
+  is unavailable so the page still functions.
+- **NEW endpoints:** `GET /api/ideals` and `GET /api/ideals/{key}?actual=`.
+- **Image 1 fixed:** the model block is now explainable. "Model event score" is a
+  `data-explain="p_win"` target, `MODEL_EVENT_SCORE_HELP` was rewritten in plain
+  words, the toggle reads "Show what pushed this score up or down", the note
+  explains a plus does not mean the company is good, and all 26 internal feature
+  codes (`atr`, `vc`, `slope200`, `d10`, `ret_std20`, ...) now carry human glosses
+  ("How jumpy the price normally is", "How tight the recent trading range is") so
+  nobody has to read machine names.
+- **Image 3 fixed:** four new explanation terms answer the owner's "what is 1R,
+  2R?" - `r_multiple`, `mfe`, `mae`, `hit_rate`, each with all seven sections
+  verified programmatically. `ledger.py` gained an additive `trade_r_multiple()`
+  and `get_trades()` now returns `r_multiple` (stats maths untouched). The
+  research history rows carry "?" buttons.
+- **Image 5 fixed:** the Trading methods view no longer presents one merged
+  method. `traders.js` (rewritten, 735 lines) groups all 14 books by horizon
+  (Long-term quality / Short-term swings / Both horizons), gives each book its own
+  section with that book's own methods and a method count, and adds 44
+  plain-language glosses for jargon. Verified live: 14 books, own method counts
+  (John Crane 13, O'Shaughnessy 19, Lowe 21, Singhal 18, ...).
+- **Image 6 fixed:** the Performance page gained a "Which companies worked, and
+  which did not" panel with actual **symbol names** for winners and losers,
+  newest first, capped at 6 with a show-all toggle, each row showing the date,
+  what happened in ordinary words, and the result in R with its own "?".
+  Metric labels were plain-worded at the same time ("Profit Factor" -> "Profit
+  per unit lost", "Max Drawdown" -> "Worst fall from a peak", "Expectancy" ->
+  "Average result per idea"). Live data shows 2 winners (KSCL, PROTEAN) and
+  losses from 143 recorded ideas.
+- **Image 4 (how setups are identified, why they end in loss)** is now answered
+  by the `setup` explanation plus the new `r_multiple`/`hit_rate`/`mae` terms and
+  the winner/loser panel; the honest framing is that most recorded ideas lost,
+  which is what the panel now makes visible instead of hiding behind counts.
+- **Verification:** 36 unit tests OK; 13/13 static JS pass `node --check`;
+  4 Python modules compile; HTML tag balance clean; all six endpoints return 200
+  on the VM; local and VM both at the deployed commit with nothing uncommitted.
+- **Note:** the trader-methods subagent reported failure after writing its file;
+  the output was nevertheless verified independently (syntax, structure and live
+  API) before being committed. Untrusted-but-real work was checked, not trusted.
+
 ### #103 - Plain-language explanations for everything clickable - VERIFIED
 - **Owner request:** the terminal must be minimal, polished and understandable in
   ordinary words, and **everything clickable must answer 5W1H** - what it is, why
