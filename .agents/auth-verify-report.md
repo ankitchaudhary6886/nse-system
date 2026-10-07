@@ -14,12 +14,12 @@
 | # | Claim | Verdict |
 |---|---|---|
 | 1 | No HTTP Basic gate remains on any route (`/`, `/glossary`, `/docs`, `/redoc`, `/openapi.json`, `/static/*`, every `/api/*`) | **PASS** — 0×401 and 0×403 across 67 live probes |
-| 2 | `ankitc21` and `change_this_password` appear in **ZERO tracked files** | **PASS** (working tree) — but **FAIL in git history**, see §6 |
+| 2 | `REDACTED-PW` and `REDACTED-DEFAULT-PW` appear in **ZERO tracked files** | **PASS** (working tree) — but **FAIL in git history**, see §6 |
 | 3 | `ankit` as a credential default is gone from any auth path | **PASS** — no auth path exists; only prose/path-string occurrences remain |
 | 4 | No route declares an auth dependency; no `WWW-Authenticate` is ever sent | **PASS** — 0 `Depends` in executable source; 0 `WWW-Authenticate` headers observed |
 | — | No other secret present | **FAIL** — a live Telegram bot token is tracked and committed, see §7 |
 
-**Bottom line:** the gate really is gone and credentials are genuinely *ignored* (not merely optional). The defect is **residue**, not a live gate: the owner's real password `ankitc21` is permanently readable in the git history that has been pushed to GitHub, and a **live Telegram bot token is committed as a tracked file right now.**
+**Bottom line:** the gate really is gone and credentials are genuinely *ignored* (not merely optional). The defect is **residue**, not a live gate: the owner's real password `REDACTED-PW` is permanently readable in the git history that has been pushed to GitHub, and a **live Telegram bot token is committed as a tracked file right now.**
 
 ---
 
@@ -168,8 +168,8 @@ wronguser:wrongpass              /api/strategies  200
 wronguser:wrongpass              /glossary        200
 wronguser:wrongpass              /openapi.json    200
 ankit:deliberately-wrong-password  (all 6 routes)  200
-ankit:ankitc21                     (all 6 routes)  200
-ADMIN:change_this_password         (all 6 routes)  200
+ankit:REDACTED-PW                     (all 6 routes)  200
+ADMIN:REDACTED-DEFAULT-PW         (all 6 routes)  200
 
 POST   /api/sizing/capital   with wronguser:wrongpass  -> 400 (validation only)
 DELETE /api/strategies/nonexistent-strategy-xyz with wronguser:wrongpass -> 200
@@ -218,15 +218,15 @@ The `Depends\s*\(` form I first tried returned 0 hits — a **false negative**, 
 
 `git grep` over the working tree is clean. **Git history is not.**
 
-### 6.1 `ankitc21` (the owner's real password) — RECOVERABLE VERBATIM
+### 6.1 `REDACTED-PW` (the owner's real password) — RECOVERABLE VERBATIM
 
 **All four commits below are reachable from `origin/main`** (`git merge-base --is-ancestor <sha> HEAD` → true for each):
 
 | Commit | Date | File:line | Recovered text |
 |---|---|---|---|
-| `3aae9419ecd88a6a0211e8d7268038f4a509d3cf` | 2026-09-07 | `PROJECT_HANDOFF.md:33` | `- Login: ADMIN_USER=ankit, ADMIN_PASS=ankitc21 (stored in ~/nse-system/.env on VM; change anytime)` |
+| `3aae9419ecd88a6a0211e8d7268038f4a509d3cf` | 2026-09-07 | `PROJECT_HANDOFF.md:33` | `- Login: ADMIN_USER=ankit, ADMIN_PASS=REDACTED-PW (stored in ~/nse-system/.env on VM; change anytime)` |
 | `c0ba7be6ce14c500fb17a5b2dbafea8b0b61f7d2` | 2026-09-12 | `PROJECT_HANDOFF.md:34` | same login line |
-| `c0ba7be6ce14c500fb17a5b2dbafea8b0b61f7d2` | 2026-09-12 | `verify_deployment.py:139` | `auth=("ankit", "ankitc21"), timeout=5)` |
+| `c0ba7be6ce14c500fb17a5b2dbafea8b0b61f7d2` | 2026-09-12 | `verify_deployment.py:139` | `auth=("ankit", "REDACTED-PW"), timeout=5)` |
 | `ceb4d5a7da09081c7664dcecdc085cd8b1ef2605` | 2026-09-26 | `PROJECT_HANDOFF.md:38`, `verify_deployment.py:166` | same login line / same `auth=` line (**not** reachable from HEAD; dangling ref, still in `.git`) |
 | `3057927d34d8fe73629767c7581144641a1a789b` | 2026-10-05 | `PROJECT_HANDOFF.md:38`, `verify_deployment.py:166`, `.agents/AGENT_SETUP.md:161`, `.agents/MEMORY.md:184`, `.agents/cache/FINDINGS.md:257`, `.agents/cache/JOIN_HERE.md:187` | same credential, now also quoted in agent docs |
 
@@ -236,35 +236,35 @@ The `Depends\s*\(` form I first tried returned 0 hits — a **false negative**, 
 
 ```powershell
 git show 3aae9419:PROJECT_HANDOFF.md | Select-String "ADMIN_PASS"
-# -> - Login: ADMIN_USER=ankit, ADMIN_PASS=ankitc21 (stored in ~/nse-system/.env on VM; change anytime)
+# -> - Login: ADMIN_USER=ankit, ADMIN_PASS=REDACTED-PW (stored in ~/nse-system/.env on VM; change anytime)
 
 git show c0ba7be6:verify_deployment.py | Select-String "auth="
-# -> auth=("ankit", "ankitc21"), timeout=5)
+# -> auth=("ankit", "REDACTED-PW"), timeout=5)
 ```
 
 **Exposure surface:** `origin/main` == `HEAD` == `63b60e9` and the remote is `github.com/ankitchaudhary6886/nse-system.git`. The secret has been **pushed**. It is therefore in (a) the GitHub private repo's history, (b) the VM clone `~/nse-system` history, and (c) every developer clone. A private repo is not a secret store.
 
-### 6.2 `change_this_password` (the in-code default) — RECOVERABLE
+### 6.2 `REDACTED-DEFAULT-PW` (the in-code default) — RECOVERABLE
 
 | Commit | Date | File:line |
 |---|---|---|
-| `602a2674e62126f45ec8ab2e3de6934d11df9b0a` | 2026-08-30 | `terminal/terminal_api.py` — `APP_PASS = os.getenv("ADMIN_PASS", "change_this_password")` |
+| `602a2674e62126f45ec8ab2e3de6934d11df9b0a` | 2026-08-30 | `terminal/terminal_api.py` — `APP_PASS = os.getenv("ADMIN_PASS", "REDACTED-DEFAULT-PW")` |
 | `3057927d34d8fe73629767c7581144641a1a789b` | 2026-10-05 | `terminal_api.py:19`, `.agents/cache/env_index.json:181` |
 
 Both reachable from `HEAD`; removed by `63b60e96`.
 
 ```powershell
 git show 602a2674:terminal/terminal_api.py | Select-String "APP_PASS"
-# -> APP_PASS = os.getenv("ADMIN_PASS", "change_this_password")
+# -> APP_PASS = os.getenv("ADMIN_PASS", "REDACTED-DEFAULT-PW")
 ```
 
 ### 6.3 The git-history commands used
 
 ```powershell
-git log HEAD --format="%H|%ad|%s" --date=short -S "ankitc21"
-git log HEAD --format="%H|%ad|%s" --date=short -S "change_this_password"
-git log --all  --format="%H|%ad|%s" --date=short -S "ankitc21"
-git grep -n -i -e "ankitc21" -e "change_this_password" <sha>
+git log HEAD --format="%H|%ad|%s" --date=short -S "REDACTED-PW"
+git log HEAD --format="%H|%ad|%s" --date=short -S "REDACTED-DEFAULT-PW"
+git log --all  --format="%H|%ad|%s" --date=short -S "REDACTED-PW"
+git grep -n -i -e "REDACTED-PW" -e "REDACTED-DEFAULT-PW" <sha>
 ```
 
 **No history rewrite was attempted**, per instruction. Rewriting `main` after a push would not remove the objects from GitHub anyway (needs a GitHub-side purge / support request).
@@ -311,7 +311,7 @@ Reported for completeness; none is a usable credential.
 
 | Artifact | Detail | Tracked? |
 |---|---|---|
-| `.codegraph/codegraph.db` | The local code-graph index still contains the literal `change_this_password` and the old `APP_USER = os.getenv("ADMIN_USER", "ankit")` / `security = HTTPBasic()` nodes. Does **not** contain `ankitc21`. | No — gitignored (`.gitignore`: `.codegraph/`) |
+| `.codegraph/codegraph.db` | The local code-graph index still contains the literal `REDACTED-DEFAULT-PW` and the old `APP_USER = os.getenv("ADMIN_USER", "ankit")` / `security = HTTPBasic()` nodes. Does **not** contain `REDACTED-PW`. | No — gitignored (`.gitignore`: `.codegraph/`) |
 | `__pycache__/glossary_ui.cpython-314.pyc` | Stale bytecode containing the docstring string `verify_user`. | No — gitignored (`__pycache__/`, `*.pyc`) |
 | `glossary_ui.py:16` | Stale module **docstring** showing `def glossary(user: str = Depends(verify_user)):`. Copy-paste hazard for a future agent, not a live dependency. | **Yes** |
 | `.agents/MEMORY.md:168`, `.agents/SUBAGENTS.md:188` | Rule text "every new route needs `Depends(verify_user)`" now describes a dependency that does not exist. | **Yes** |
@@ -337,10 +337,10 @@ Reported for completeness; none is a usable credential.
 
 ## 10. What the owner must still do
 
-1. **ROTATE the password `ankitc21`.** It cannot be un-published from git history. Since it was the owner's real login (and per `3aae9419:PROJECT_HANDOFF.md:33` it was also stored in `~/nse-system/.env` on the VM), treat it as compromised **everywhere it was reused** — GitHub, SSH, email, anywhere. Changing it in the repo does nothing; the old value stays in history.
+1. **ROTATE the password `REDACTED-PW`.** It cannot be un-published from git history. Since it was the owner's real login (and per `3aae9419:PROJECT_HANDOFF.md:33` it was also stored in `~/nse-system/.env` on the VM), treat it as compromised **everywhere it was reused** — GitHub, SSH, email, anywhere. Changing it in the repo does nothing; the old value stays in history.
 2. **ROTATE the Telegram bot token.** `data/tg_secret.txt:1` is tracked, committed (`2580d84`), pushed to GitHub, and read live by `alerts.py:22`. Revoke it via `@BotFather` (`/revoke`) and issue a new one. This is the only *currently live* credential in the working tree.
 3. **Untrack `data/tg_secret.txt` and move it out of the repo.** `git rm --cached data/tg_secret.txt`, add `data/tg_secret.txt` to `.gitignore`, and keep the real token in an env var or outside the tree. Note: this does **not** remove it from history.
-4. **Decide on the VM `~/nse-system/.env`.** `PROJECT_HANDOFF.md` (historical) documented `ADMIN_USER=ankit`, `ADMIN_PASS=ankitc21` there. `terminal_api.py` no longer reads either variable, so they are inert for this app — but the file may still exist on the VM with a live, reused password in plaintext.
+4. **Decide on the VM `~/nse-system/.env`.** `PROJECT_HANDOFF.md` (historical) documented `ADMIN_USER=ankit`, `ADMIN_PASS=REDACTED-PW` there. `terminal_api.py` no longer reads either variable, so they are inert for this app — but the file may still exist on the VM with a live, reused password in plaintext.
 5. **Decide on git-history purge (optional).** If the private repo's history must be cleaned, that requires `git filter-repo` **plus** a GitHub-side purge (force-push is not sufficient — old objects remain fetchable by SHA and in forks/clones). Confirm no other clone or fork exists first.
 6. **Clean the stale auth references** listed in §8 (`glossary_ui.py:16` docstring, `.agents/MEMORY.md:168`, `.agents/SUBAGENTS.md:188`, `to do list.txt:7`, and the self-contradictory `PROJECT_HANDOFF.md:36` / `:261`) so a future agent does not re-add a gate on the strength of stale instructions.
 7. **Accept or reverse the public exposure** of §9. If the terminal is meant to stay on the open internet, that is now an unauthenticated control surface; if not, restore a gate (the owner's instruction was to remove it, so this is a decision to surface, not to make unilaterally).
@@ -357,10 +357,10 @@ curl.exe -s http://127.0.0.1:8023/openapi.json
 curl.exe -s -D - -o NUL http://127.0.0.1:8023/            # expect 200, NO WWW-Authenticate
 curl.exe -s -o NUL -w "%{http_code}" -u wrong:wrong http://127.0.0.1:8023/api/health   # expect 200
 # 2. working tree clean of both strings (expect no hits)
-git grep -n -i -e "ankitc21" -e "change_this_password"
+git grep -n -i -e "REDACTED-PW" -e "REDACTED-DEFAULT-PW"
 # 3. history is NOT clean (expect hits)
-git log HEAD --format="%H|%ad|%s" --date=short -S "ankitc21"
-git log HEAD --format="%H|%ad|%s" --date=short -S "change_this_password"
+git log HEAD --format="%H|%ad|%s" --date=short -S "REDACTED-PW"
+git log HEAD --format="%H|%ad|%s" --date=short -S "REDACTED-DEFAULT-PW"
 git show 3aae9419:PROJECT_HANDOFF.md | Select-String "ADMIN_PASS"
 git show c0ba7be6:verify_deployment.py | Select-String "auth="
 # 4. tracked live secret

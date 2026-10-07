@@ -243,6 +243,26 @@ Each phase is independently useful. No phase blocks a later one.
   10 panels include 6 that restate data already on screen; 15 duplicated
   disclaimer sentences; 21 nav affordances for 8 destinations). Auth: the HTTP
   Basic login gate is removed entirely - every route answers without credentials
-  - and the owner's `ankitc21` / `change_this_password` strings are gone from
-  every tracked file. Verified: 30/30 viewport-route combinations clean at
+  - and the owner's credential strings are gone from every tracked file. Verified: 30/30 viewport-route combinations clean at
   375/390/768/1440, all 9 `test_*.py` pass, zero credential hits repo-wide.
+
+- 2026-10-07 (pass 3) — **Independent re-verification, on the owner's request.**
+  Four verifiers re-checked the pass-2 claims against the live app rather than
+  the narration. Corrections found and applied: the average set was missing
+  **SMA entirely** (SMA 10 and SMA 20 are now computed client-side from closes,
+  and the default price pane draws exactly four lines - SMA 10, EMA 20, EMA 50,
+  EMA 200 - with EMA 10 and SMA 20 available but off, because EMA 10 duplicates
+  SMA 10 and SMA 20 sits on EMA 20); the popup shape is now proven for **all 27
+  keys** (every one renders tier 1 with a headline and 4 rows, `.ex-foot` gone);
+  the 16 ideal-chip keys no longer share one identical paragraph. The clutter
+  audit's own headline was **wrong**: the portal is not cluttered by panel count
+  but by two enormous list dumps - "Chart Patterns Found Today" measured
+  **17,366 px (19.3 screens, 78% of the research page)** and "Trading Methods"
+  **16,058 px**, together **63% of all vertical scroll**. Two further claims were
+  refuted: only **3** disclaimer copies actually render (not 15), and the
+  "Graded win rate" tile and ledger "Win Rate" are the **same 14.3%**, not two
+  different numbers. Security: the auth verifier found the password recoverable
+  from git history (commits `3aae9419`, `c0ba7be6`, `3057927d`) and a **live
+  Telegram bot token tracked at HEAD** in `data/tg_secret.txt` - the file is now
+  untracked and gitignored, but the token must still be revoked and the password
+  rotated. See `.agents/{auth,clutter,popup}-*report.md`.

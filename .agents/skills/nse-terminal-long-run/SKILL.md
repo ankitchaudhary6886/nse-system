@@ -88,6 +88,41 @@ short bounded poll, then kill the job when verification ends so the port frees:
 pwsh(run_in_background: true): .\env\Scripts\python.exe -m uvicorn terminal_api:app --host 127.0.0.1 --port 8020
 ```
 
+## Rule 8 — never re-publish a secret while reporting on it
+
+If a credential audit finds a live secret, the REPORT must not quote it. Writing
+`the token is 86503310:AA...` into a markdown file puts the secret back into the
+repository, undoing the scrub that prompted the audit. This actually happened:
+an auth verifier quoted the owner's password 16 times and the old default 10
+times as "evidence", and the report was committed before anyone noticed.
+
+Write findings as a location and a shape, not a value:
+
+- good: `data/tg_secret.txt:1 — live 46-char Telegram bot token (redacted)`
+- good: `recoverable from commit 3aae9419 in PROJECT_HANDOFF.md:33`
+- bad: the token, the password, a partial token with the middle elided, or a
+  hash that can be cracked offline.
+
+Before committing any report, run the same sweep the scrub used and expect ZERO
+hits:
+
+```
+Get-ChildItem -Recurse -File -Include *.md,*.py,*.js,*.mjs,*.txt,*.json,*.html,*.css,*.bat,*.ps1,*.yml -ErrorAction SilentlyContinue |
+  Where-Object { $_.FullName -notmatch '\\env\\|node_modules|\\.git\\' } |
+  Select-String -Pattern '<secret-a>|<secret-b>'
+```
+
+A verification report that contains the credential is a failed verification.
+
+## Rule 9 — kill the Chrome tree, not just the process
+
+`child.kill()` on Windows leaves the whole Chrome renderer tree alive. One
+`eval.mjs` run leaked 11 processes and a temp profile. Every harness script that
+spawns Chrome must use `taskkill /PID <pid> /T /F` on win32 when the child is
+still running (`audit.mjs` is the reference implementation). Also: never kill
+`chrome.exe` by name — the owner's own browser uses the same binary. Match on
+`--user-data-dir=...\(eval|shot|audit|cssprobe|probe)-` and the creation time.
+
 ## Quick checklist
 
 - [ ] Any call that could exceed 60s is a background job or a bounded batch
@@ -95,4 +130,5 @@ pwsh(run_in_background: true): .\env\Scripts\python.exe -m uvicorn terminal_api:
 - [ ] Output is filtered to the `summary:` line
 - [ ] Progress is reported as `n/m clean` between batches
 - [ ] On abort, resume the unfinished batch rather than starting over
+- [ ] No secret value appears in any report (sweep before committing)
 - [ ] Servers are killed at the end

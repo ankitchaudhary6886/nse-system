@@ -1299,14 +1299,18 @@ function _applyMarkersToSeries() {
     return;
   }
   /* Text labels are the biggest offenders at phone width; keep the markers,
-     drop the words. */
+     drop the words. Labels are also suppressed on the last few bars: there the
+     text is painted into the price-scale gutter and comes out clipped (signals
+     whose date is newer than the last stored bar all stack on that bar). */
   const showText = window.innerWidth >= 768;
+  const _times = [..._chartCandleByTime.keys()];
+  const _liveEdge = _times.length ? _times[Math.max(0, _times.length - 8)] : "";
   const markers = _patternSignals.map((s) => {
     const d = String(s.date).slice(0, 10);
     let color = "#fbbf24";
     let position = "aboveBar";
     let shape = "circle";
-    const text = showText && s.pattern ? s.pattern.slice(0, 6) : "";
+    const text = (showText && s.pattern && !(d >= _liveEdge)) ? s.pattern.slice(0, 6) : "";
     if (s.outcome === "WIN") { color = "#34d399"; shape = "arrowUp"; position = "belowBar"; }
     else if (s.outcome === "LOSS") { color = "#fb7185"; shape = "arrowDown"; position = "aboveBar"; }
     else if (s.outcome === "EXPIRED" || s.outcome === "TIMEOUT") { color = "#fbbf24"; shape = "circle"; }
