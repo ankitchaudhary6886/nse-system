@@ -1,4 +1,5 @@
 let chart = null, candleSeries = null, ema10 = null, ema20 = null, ema50 = null, ema200 = null;
+let sma10 = null, sma20 = null;
 /* Second chart instance = the RSI pane. lightweight-charts 4.1.3 shipped here
    has no pane API (no `addPane`/`panes` in the standalone bundle), so the two
    panes are two charts in two flex cells with their time axes mirrored. */
@@ -9,7 +10,7 @@ let _chartEmaByTime = new Map();
 let _chartRsiByTime = new Map();
 let _chartLastBar = null;
 let _chartLastRsi = null;
-let _maData = { ema10: false, ema20: false, ema50: false, ema200: false };
+let _maData = {};
 let _paneSync = false;
 const $ = (id) => document.getElementById(id);
 let _restoringNavigation = false;
@@ -906,10 +907,97 @@ async function loadSourceHealth() {
    a phone and hide the candles. They are off by default under 768px and the user
    can bring them back with the pill toggle above the chart. */
 const FX_PATTERN_PREF = "nse.showPatterns";
+const FX_MA_PREF = "nse.showMA";
 const FX_EMA10_PREF = "nse.showEma10";
 let _patternSignals = [];
 let _patternsVisible = null;
-let _ema10Visible = null;
+let _maVisible = null;
+let _maPanelOpen = false;
+
+/* The average set. Owner asked for "10, 20, 50 ema/sma — whatever's important";
+   this system's own evidence points at 20/50/200 (see justifyDefaultSet below).
+   `def: true` lines are drawn on load; everything else is one click away. */
+const MA_DEFS = [
+  { key: "sma10", label: "SMA 10", short: "s10", kind: "sma", period: 10, color: "#22d3ee", width: 1, dashed: true, def: true },
+  { key: "ema10", label: "EMA 10", short: "e10", kind: "ema", period: 10, color: "#60a5fa", width: 1, dashed: false, def: false },
+  { key: "sma20", label: "SMA 20", short: "s20", kind: "sma", period: 20, color: "#f472b6", width: 1, dashed: true, def: false },
+  { key: "ema20", label: "EMA 20", short: "e20", kind: "ema", period: 20, color: "#fbbf24", width: 2, dashed: false, def: true },
+  { key: "ema50", label: "EMA 50", short: "e50", kind: "ema", period: 50, color: "#a78bfa", width: 2, dashed: false, def: true },
+  { key: "ema200", label: "EMA 200", short: "e200", kind: "ema", period: 200, color: "#94a3b8", width: 2, dashed: false, def: true },
+];
+/* Why exactly these four are drawn on load:
+   - SMA 10  : the owner's "10" as a simple mean — the immediate trend line, and
+               the only SMA the terminal had (there was none before this pass).
+   - EMA 20  : the system's short-term trend / pullback-zone reference
+               (setup.py ema_proximity, meta features d10/d20).
+   - EMA 50  : medium-term trend, used by the scanners and slope50.
+   - EMA 200 : long-term trend filter used by every scan (above200, slope200,
+               days_above_200_30); dropping it would hide the regime line.
+   EMA 10 and SMA 20 stay available but OFF: EMA 10 duplicates SMA 10 almost
+   exactly, and SMA 20 sits on top of EMA 20, so both add ink without adding
+   information. Four drawn lines is the ceiling we hold. */
+function _maSeriesByKey(key) {
+  return { sma10, ema10, sma20, ema20, ema50, ema200 }[key] || null;
+}
+
+function _maVisibleMap() {
+  if (_maVisible) return _maVisible;
+  _maVisible = {};
+  MA_DEFS.forEach((d) => { _maVisible[d.key] = d.def; });
+  try {
+    const raw = sessionStorage.getItem(FX_MA_PREF);
+    if (raw) {
+      const stored = JSON.parse(raw) || {};
+      MA_DEFS.forEach((d) => {
+        if (typeof stored[d.key] === "boolean") _maVisible[d.key] = stored[d.key];
+      });
+    } else {
+      /* Carry over a choice made by the previous EMA-10-only toggle. */
+      const legacy = sessionStorage.getItem(FX_EMA10_PREF);
+      if (legacy === "1") _maVisible.ema10 = true;
+      else if (legacy === "0") _maVisible.ema10 = false;
+    }
+  } catch (e) {}
+  return _maVisible;
+}
+
+function _maWantVisible(key) { return !!_maVisibleMap()[key]; }
+
+function _setMaVisible(key, value) {
+  _maVisibleMap()[key] = !!value;
+  try { sessionStorage.setItem(FX_MA_PREF, JSON.stringify(_maVisibleMap())); } catch (e) {}
+  _applyMaVisibility();
+}
+
+/* Every average that has data AND is switched on. Legend, toolbar and readout
+   all read from this one list, so they can never disagree with the pane. */
+function _maDrawn() {
+  return MA_DEFS.filter((d) => _maData[d.key] && _maWantVisible(d.key));
+}
+
+function _applyMaVisibility() {
+  MA_DEFS.forEach((d) => {
+    const s = _maSeriesByKey(d.key);
+    if (s) s.applyOptions({ visible: _maWantVisible(d.key) });
+  });
+  _renderChartChrome();
+  _paintReadout();
+}
+
+/* Simple moving average of the closes — first point at index period-1. */
+function _sma(candles, period) {
+  const out = [];
+  if (!candles || candles.length < period) return out;
+  let sum = 0;
+  for (let i = 0; i < candles.length; i++) {
+    sum += Number(candles[i].close);
+    if (i >= period) sum -= Number(candles[i - period].close);
+    if (i >= period - 1) {
+      out.push({ time: candles[i].time, value: Math.round((sum / period) * 100) / 100 });
+    }
+  }
+  return out;
+}
 
 function _patternsWantVisible() {
   if (_patternsVisible !== null) return _patternsVisible;
@@ -920,18 +1008,6 @@ function _patternsWantVisible() {
   } catch (e) {}
   _patternsVisible = window.innerWidth >= 768;
   return _patternsVisible;
-}
-
-/* EMA 10 stays available but ships OFF: the owner's clean default is 20/50/200. */
-function _ema10WantVisible() {
-  if (_ema10Visible !== null) return _ema10Visible;
-  try {
-    const stored = sessionStorage.getItem(FX_EMA10_PREF);
-    if (stored === "1") { _ema10Visible = true; return true; }
-    if (stored === "0") { _ema10Visible = false; return false; }
-  } catch (e) {}
-  _ema10Visible = false;
-  return _ema10Visible;
 }
 
 /* RSI-14 with Wilder smoothing, derived from the candle closes we already hold.
@@ -1057,10 +1133,9 @@ function _paintReadout(bar, time, rsi) {
   }
   bits.push(`<span class="ro-rsi">RSI ${rv == null ? "—" : Number(rv).toFixed(1)}</span>`);
   if (wide) {
-    [["ema20", "e20"], ["ema50", "e50"], ["ema200", "e200"]].forEach(([key, label]) => {
-      if (_maData[key]) bits.push(`<span class="ro-k">${label}</span>${n2(ema[key])}`);
+    _maDrawn().forEach((d) => {
+      bits.push(`<span class="ro-k">${d.short}</span>${n2(ema[d.key])}`);
     });
-    if (_maData.ema10 && _ema10WantVisible()) bits.push(`<span class="ro-k">e10</span>${n2(ema.ema10)}`);
   }
   el.innerHTML = bits.join(" ");
 }
@@ -1082,27 +1157,31 @@ function _setChartData(data) {
   const candles = (data && data.candles) || [];
   _chartCandleByTime = new Map(candles.map((c) => [String(c.time), c]));
   _chartLastBar = candles.length ? candles[candles.length - 1] : null;
-  _maData = {
-    ema10: !!(data.ema10 && data.ema10.length),
-    ema20: !!(data.ema20 && data.ema20.length),
-    ema50: !!(data.ema50 && data.ema50.length),
-    ema200: !!(data.ema200 && data.ema200.length),
+  const maData = {
+    sma10: _sma(candles, 10),
+    sma20: _sma(candles, 20),
+    ema10: data.ema10 || [],
+    ema20: data.ema20 || [],
+    ema50: data.ema50 || [],
+    ema200: data.ema200 || [],
   };
+  _maData = {};
+  MA_DEFS.forEach((d) => { _maData[d.key] = !!(maData[d.key] && maData[d.key].length); });
   candleSeries.setData(candles);
-  ema10.setData(data.ema10 || []);
-  ema20.setData(data.ema20 || []);
-  ema50.setData(data.ema50 || []);
-  ema200.setData(data.ema200 || []);
-  ema10.applyOptions({ visible: _ema10WantVisible() });
+  MA_DEFS.forEach((d) => {
+    const s = _maSeriesByKey(d.key);
+    if (s) s.setData(maData[d.key] || []);
+  });
   _chartEmaByTime = new Map();
-  ["ema10", "ema20", "ema50", "ema200"].forEach((key) => {
-    (data[key] || []).forEach((point) => {
+  MA_DEFS.forEach((d) => {
+    (maData[d.key] || []).forEach((point) => {
       const t = String(point.time);
       const rec = _chartEmaByTime.get(t) || {};
-      rec[key] = point.value;
+      rec[d.key] = point.value;
       _chartEmaByTime.set(t, rec);
     });
   });
+  _applyMaVisibility();
   const rsi = _rsi14(candles, 14);
   _chartRsiByTime = new Map(rsi.map((point) => [String(point.time), point.value]));
   _chartLastRsi = rsi.length ? rsi[rsi.length - 1].value : null;
@@ -1123,42 +1202,54 @@ function _setChartData(data) {
   });
 }
 
-function _applyEma10() {
-  const on = _ema10WantVisible();
-  if (ema10) ema10.applyOptions({ visible: on });
-  _renderChartChrome();
-  _paintReadout();
-}
-
 function _renderChartChrome() {
   const toolbar = $("chartToolbar");
   const n = _patternSignals.length;
   const on = _patternsWantVisible();
-  const ema10On = _ema10WantVisible();
+  const drawn = _maDrawn();
+  const available = MA_DEFS.filter((d) => _maData[d.key]);
   if (toolbar) {
     toolbar.innerHTML = `
       <span class="fx-chip mono-sans" style="color:var(--fx-zinc-500)">
         <span class="fx-dot" style="background:var(--fx-bull)"></span>Price
-        <span style="opacity:.5">/</span>EMA 20 · 50 · 200
+        <span style="opacity:.5">/</span>${drawn.length} of ${available.length} averages
       </span>
-      ${_maData.ema10 ? `<button type="button" id="ema10Toggle" class="fx-toggle" aria-pressed="${ema10On ? "true" : "false"}"
-        title="Show or hide the fast 10-period average. Off by default so the 20/50/200 set stays readable.">
-        <span>EMA 10</span>
-      </button>` : ""}
+      <button type="button" id="maPanelToggle" class="fx-toggle" aria-pressed="${_maPanelOpen ? "true" : "false"}"
+        aria-expanded="${_maPanelOpen ? "true" : "false"}"
+        title="Choose which averages are drawn on the price pane. SMA lines are dashed, EMA lines are solid.">
+        <span>Averages</span>
+        <span class="fx-chip-count">(${drawn.length} on)</span>
+      </button>
       <button type="button" id="patternToggle" class="fx-toggle" aria-pressed="${on ? "true" : "false"}"
         data-icon="layers" data-icon-size="14"
         title="${n ? "Show or hide the algorithmic pattern annotations over the price lines" : "No stored pattern annotations for this symbol yet"}">
         <span>${on ? "Hide" : "Show"} Patterns</span>
         <span class="fx-chip-count">(${n})</span>
-      </button>`;
-    const emaBtn = $("ema10Toggle");
-    if (emaBtn) {
-      emaBtn.addEventListener("click", () => {
-        _ema10Visible = !_ema10WantVisible();
-        try { sessionStorage.setItem(FX_EMA10_PREF, _ema10Visible ? "1" : "0"); } catch (e) {}
-        _applyEma10();
+      </button>
+      <div id="maPanel" class="fx-ma-panel"${_maPanelOpen ? "" : " hidden"}>
+        ${available.map((d) => {
+          const vis = _maWantVisible(d.key);
+          return `<button type="button" class="fx-ma-chip${vis ? " is-on" : ""}" data-ma="${d.key}"
+            aria-pressed="${vis ? "true" : "false"}"
+            title="${d.label}: ${d.kind === "sma" ? "simple" : "exponential"} ${d.period}-period average of the close, drawn ${d.dashed ? "dashed" : "solid"}. Click to ${vis ? "hide" : "show"} it.">
+            <span class="fx-ma-dot" style="background:${d.color}"></span>${d.label}
+            <span class="fx-ma-state">${vis ? "on" : "off"}</span>
+          </button>`;
+        }).join("")}
+      </div>`;
+    const panelBtn = $("maPanelToggle");
+    if (panelBtn) {
+      panelBtn.addEventListener("click", () => {
+        _maPanelOpen = !_maPanelOpen;
+        _renderChartChrome();
       });
     }
+    toolbar.querySelectorAll(".fx-ma-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const key = chip.dataset.ma;
+        _setMaVisible(key, !_maWantVisible(key));
+      });
+    });
     const btn = $("patternToggle");
     if (btn) {
       btn.addEventListener("click", () => {
@@ -1172,16 +1263,16 @@ function _renderChartChrome() {
   const legend = $("chartLegend");
   if (legend) {
     legend.hidden = !candleSeries;
-    /* Only lines that are actually drawn get a swatch, and a hidden MA is shown
-       as hidden — never as if it were on the pane. */
+    /* Every average that exists gets an entry, and its state is explicit: drawn
+       = full-strength swatch, switched off = dimmed swatch + "off". An off line
+       can never look drawn. */
     const items = ['<span class="lg-item"><span class="lg-swatch c-candle"></span>Price</span>'];
-    [["ema10", "EMA 10", "c-ema10", ema10On],
-     ["ema20", "EMA 20", "c-ema20", true],
-     ["ema50", "EMA 50", "c-ema50", true],
-     ["ema200", "EMA 200", "c-ema200", true]].forEach(([key, label, cls, drawn]) => {
-      if (!_maData[key]) return;
-      items.push(`<span class="lg-item${drawn ? "" : " is-off"}"><span class="lg-swatch ${cls}"></span>${label}`
-        + `${drawn ? "" : ' <span class="lg-off">off</span>'}</span>`);
+    MA_DEFS.forEach((d) => {
+      if (!_maData[d.key]) return;
+      const vis = _maWantVisible(d.key);
+      items.push(`<span class="lg-item${vis ? "" : " is-off"}">`
+        + `<span class="lg-swatch c-${d.key}"></span>${d.label}`
+        + `${vis ? "" : ' <span class="lg-off">off</span>'}</span>`);
     });
     if (rsiReady) {
       items.push('<span class="lg-item"><span class="lg-swatch c-rsi"></span>RSI 14 '
@@ -1237,7 +1328,7 @@ function resetChart() {
   if (chart) { try { chart.remove(); } catch (e) {} }
   if (rsiChart) { try { rsiChart.remove(); } catch (e) {} }
   chart = null; candleSeries = null;
-  ema10 = ema20 = ema50 = ema200 = null;
+  sma10 = ema10 = sma20 = ema20 = ema50 = ema200 = null;
   rsiChart = null; rsiSeries = null; rsiBand = null; rsiReady = false;
   priceEl.innerHTML = "";
   rsiEl.innerHTML = "";
@@ -1263,10 +1354,25 @@ function resetChart() {
     handleScroll: scroll,
   }));
   candleSeries = chart.addCandlestickSeries({ upColor: "#34d399", downColor: "#fb7185", borderVisible: false, wickUpColor: "#34d399", wickDownColor: "#fb7185" });
-  ema10 = chart.addLineSeries({ color: "#60a5fa", lineWidth: 1, visible: false, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-  ema20 = chart.addLineSeries({ color: "#fbbf24", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-  ema50 = chart.addLineSeries({ color: "#a78bfa", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-  ema200 = chart.addLineSeries({ color: "#94a3b8", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+  /* One line series per entry in MA_DEFS. SMA lines are dashed and EMA lines are
+     solid, so the family is readable even before the legend is consulted. */
+  MA_DEFS.forEach((d) => {
+    const line = chart.addLineSeries({
+      color: d.color,
+      lineWidth: d.width,
+      lineStyle: d.dashed ? LightweightCharts.LineStyle.Dashed : LightweightCharts.LineStyle.Solid,
+      visible: _maWantVisible(d.key),
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    if (d.key === "sma10") sma10 = line;
+    else if (d.key === "sma20") sma20 = line;
+    else if (d.key === "ema10") ema10 = line;
+    else if (d.key === "ema20") ema20 = line;
+    else if (d.key === "ema50") ema50 = line;
+    else if (d.key === "ema200") ema200 = line;
+  });
 
   /* RSI pane: own 0-100 scale, shaded 30-70 band, dashed 30/70 levels. */
   rsiChart = LightweightCharts.createChart(rsiEl, Object.assign({}, theme, {

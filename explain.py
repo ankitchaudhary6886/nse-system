@@ -546,8 +546,8 @@ PROPOSED_TOP12 = {
                 "Score line on the research page.",
         "action": "Use it to decide what to read first, then check the pattern and the "
                   "stop on that name.",
-        "caution": "This score is uncalibrated and has been wrong in bulk before; it is "
-                   "not the odds of a trade working out.",
+        "caution": "This score is a rough machine guess and has been wrong in bulk "
+                   "before; it is not the odds of a trade working out.",
     },
     "target": {
         "title": "The point where you take profit",
@@ -609,8 +609,8 @@ PROPOSED_TOP12 = {
         "use": "A high figure next to a flat final result means profit was given back. "
                "Around one R (one unit of the money risked) or less means it never "
                "really went your way.",
-        "spot": "The row labelled MFE in R - the best moment, counted in units of "
-                "risk - on the research page, shown as a middle figure and a "
+        "spot": "The row labelled MFE in R on the research page - MFE means the best "
+                "moment, counted in units of risk. It shows a middle figure and a "
                 "best-case figure.",
         "action": "Compare the best moment with the final result to see whether the "
                   "exit plan handed money back.",
@@ -624,9 +624,9 @@ PROPOSED_TOP12 = {
                 "multiple of the money you had risked.",
         "use": "Well under one R (one unit of the money risked) is a comfortable ride. "
                "Reaching or passing one R means your safety line was tested or hit.",
-        "spot": "The row labelled MAE in R - the deepest dip against you, counted in "
-                "units of risk - on the research page, directly under the best-moment "
-                "row.",
+        "spot": "The row labelled MAE in R on the research page, directly under the "
+                "best-moment row - MAE means the deepest dip against you, in units of "
+                "risk.",
         "action": "Ask whether you could sit through that dip without exiting at the "
                   "bottom.",
         "caution": "Ideas that go far against you first are the ones people abandon "
@@ -679,8 +679,8 @@ CARD_FIELDS.update({
     "regime": {
         "headline": "Market weather decides how much else is worth reading",
         "use": "A calm, rising market is the safest backdrop for a new idea. A "
-               "falling one holds new ideas back and leaves only deep-value bargains "
-               "worth reading.",
+               "falling one holds new ideas back and leaves only deeply fallen shares "
+               "worth a look.",
         "spot": "The weather banner at the top of the page. On any index chart, check "
                 "whether the line is above or below its recent average, and which way "
                 "that average points.",
@@ -770,8 +770,8 @@ CARD_FIELDS.update({
     },
     "sizing": {
         "headline": "How many shares keeps one loss small and survivable",
-        "use": "A wider distance to the stop means fewer shares. Hard ceilings stop "
-               "any single idea from dominating the account.",
+        "use": "A wider distance to the stop means fewer shares, and a hard maximum "
+               "keeps any single idea from dominating the account.",
         "spot": "The position-size box on the research page. It turns the distance to "
                 "the stop into a number of shares.",
         "action": "Check the loss at the suggested size and compare it with the rest "
@@ -817,14 +817,14 @@ CARD_FIELDS.update({
         "caution": "One huge winner can flatter this figure for a long time.",
     },
     "max_drawdown": {
-        "headline": "The worst fall from a peak, in R; the number that tests nerve",
+        "headline": "The deepest fall from a peak, in units of risk",
         "what": "The deepest the running total of results fell from its highest "
                 "point, counted in R (the money risked on one idea).",
         "use": "Smaller is easier to live with. Compare it with the average result per "
                "idea: a big fall against a small average means a rough ride.",
-        "spot": "The worst fall from a peak figure on the performance page. Look at "
-                "the losing results in order and ask how many in a row would make you "
-                "quit.",
+        "spot": "The figure labelled worst fall from a peak on the performance page. "
+                "Look at the losing results in order and ask how many in a row would "
+                "make you quit.",
         "action": "Check the worst fall against what you could sit through before "
                   "trusting a good-looking average.",
         "caution": "A plan abandoned in a bad patch is no plan at all.",
@@ -842,10 +842,10 @@ CARD_FIELDS.update({
                    "known weakness.",
     },
     "sources": {
-        "headline": "If a data source breaks, everything looks fine but is not",
+        "headline": "If a source breaks, the numbers still look fine",
         "use": "Every source needs to show healthy with a recent success. Warnings "
                "and errors are informative, not cosmetic.",
-        "spot": "The source health box on the system page. It lists each outside "
+        "spot": "The source health box on the System page. It lists each outside "
                 "service with its last success and its last error.",
         "action": "Check the source list first whenever many results look wrong at "
                   "once.",

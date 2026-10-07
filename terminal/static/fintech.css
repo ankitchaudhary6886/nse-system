@@ -1299,3 +1299,51 @@ button[class*="btn"] {
 .fx-legend .lg-item.is-off .lg-swatch.c-ema10 {
   background: repeating-linear-gradient(90deg, #60a5fa 0 3px, transparent 3px 7px);
 }
+
+/* ------------------------------- 21 average toggles (SMA/EMA) ------------- *
+ * One "Averages" disclosure in the toolbar opens a chip row: every average the
+ * loaded symbol has, each with its own on/off state. SMA swatches are dashed to
+ * match the dashed SMA lines on the pane; an off chip is dimmed and says "off".
+ * ------------------------------------------------------------------------- */
+.fx-ma-panel {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 1px;
+}
+/* An author `display:flex` beats the UA `[hidden] {display:none}` rule, so the
+   disclosure has to close itself explicitly. */
+.fx-ma-panel[hidden] { display: none; }
+.fx-ma-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--fx-hairline-soft);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--fx-zinc-400);
+  font-family: var(--fx-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fx-ma-chip:hover { color: var(--fx-zinc-100); }
+.fx-ma-chip.is-on {
+  color: var(--fx-zinc-100);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.fx-ma-chip .fx-ma-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; opacity: 0.3; }
+.fx-ma-chip.is-on .fx-ma-dot { opacity: 1; }
+.fx-ma-chip .fx-ma-state { font-size: 10px; letter-spacing: 0.02em; color: var(--fx-zinc-500); }
+.fx-ma-chip.is-on .fx-ma-state { color: var(--fx-bull); }
+.fx-ma-chip:not(.is-on) { opacity: 0.62; }
+
+/* Legend swatch in the colour of each drawn line. */
+.fx-legend .lg-swatch.c-sma10 { background: repeating-linear-gradient(90deg, #22d3ee 0 4px, transparent 4px 8px); }
+.fx-legend .lg-swatch.c-sma20 { background: repeating-linear-gradient(90deg, #f472b6 0 4px, transparent 4px 8px); }
+.fx-legend .lg-item.is-off .lg-swatch { opacity: 0.35; }

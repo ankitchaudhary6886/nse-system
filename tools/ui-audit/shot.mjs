@@ -115,7 +115,17 @@ try {
   console.log("[shot] wrote", OUT, fs.statSync(OUT).size, "bytes");
   await cdp.close();
 } finally {
+  /* On Windows child.kill() leaves the whole Chrome renderer tree alive.
+     audit.mjs already solves this with taskkill /T; do the same here so repeated
+     runs cannot pile up orphaned temp-profile browsers. */
   try { child.kill(); } catch {}
+  if (child.exitCode === null && process.platform === "win32") {
+    try {
+      spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+        stdio: "ignore", windowsHide: true,
+      });
+    } catch {}
+  }
   await sleep(400);
   try { fs.rmSync(profile, { recursive: true, force: true }); } catch {}
 }

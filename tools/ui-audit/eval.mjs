@@ -8,7 +8,7 @@
  *   node tools/ui-audit/eval.mjs --hash "#research/KEI" --click "#patternToggle" \
  *        --expr "document.querySelector('#chartMobileNote').textContent"
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -99,7 +99,17 @@ try {
   console.log(typeof r.result.value === "string" ? r.result.value : JSON.stringify(r.result.value, null, 2));
   await cdp.close();
 } finally {
+  /* On Windows child.kill() leaves the whole Chrome renderer tree alive.
+     audit.mjs already solves this with taskkill /T; do the same here so repeated
+     runs cannot pile up orphaned temp-profile browsers. */
   try { child.kill(); } catch {}
+  if (child.exitCode === null && process.platform === "win32") {
+    try {
+      spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+        stdio: "ignore", windowsHide: true,
+      });
+    } catch {}
+  }
   await sleep(400);
   try { fs.rmSync(profile, { recursive: true, force: true }); } catch {}
 }

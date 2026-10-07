@@ -47,11 +47,144 @@
   var HEADLINE_EMPTY = "No plain-language note is stored for this yet";
   var HEADLINE_FAILED = "Could not load the note right now";
   var TIER4_NOTE = "Notes live in one file, so every screen says the same thing.";
+  /* Tier 3 (an ideal band with no written entry yet) used to serve one identical
+     paragraph to all 16 keys, which is the same monotony the popup rework was
+     meant to kill. Each entry below gives that key its own decision line. The
+     fallbacks at the end still cover any band added later. */
   var TIER3_WHAT = "Compare the figure beside it with that level. A figure below " +
     "it is a weak spot, not a verdict on the company.";
   var TIER3_SPOT = "The label you just tapped, with the ideal chip beside it.";
   var TIER3_ACTION = "Read the number against the level before using it in a " +
     "decision.";
+  var TIER3_BY_KEY = {
+    roce: {
+      what: "How much profit the company makes on the money tied up in the business.",
+      use: "Higher is better here. The level shown is the floor this screen treats as worth a second look.",
+      spot: "In the fundamentals list, on the ROCE row.",
+      action: "Read it together with the debt row, then look at the trend over years.",
+    },
+    roe: {
+      what: "Profit earned on the shareholders' own money.",
+      use: "A high figure is good only if debt is not doing the work. Check the debt row beside it.",
+      spot: "In the fundamentals list, on the ROE row, next to ROCE.",
+      action: "Compare it with ROCE; a wide gap usually means borrowing is flattering the number.",
+    },
+    pe: {
+      what: "The price you pay for each rupee of yearly profit.",
+      use: "A low figure can mean cheap or can mean the market expects profit to fall.",
+      spot: "In the fundamentals list, on the PE row.",
+      action: "Compare it with the company's own past years before treating it as cheap.",
+    },
+    debt_to_equity: {
+      what: "How much the company borrows compared with what shareholders put in.",
+      use: "Lower is safer. Rising debt while profit stalls is the pattern to watch for.",
+      spot: "In the fundamentals list, on the debt row.",
+      action: "Check whether debt rose while profit stayed flat or fell.",
+    },
+    operating_margin: {
+      what: "The share of each sale that is left after running the business.",
+      use: "Falling margins over time usually show up in the price later.",
+      spot: "In the fundamentals list, on the margin row.",
+      action: "Compare this year's figure with the last few years.",
+    },
+    promoter_holding: {
+      what: "The share of the company still owned by its promoters.",
+      use: "A steady or rising stake is reassuring; a steady slide is worth noticing.",
+      spot: "In the shareholding rows.",
+      action: "Check whether the stake changed in the last few quarters.",
+    },
+    pledge_pct: {
+      what: "The share of promoter holdings pledged as loan collateral.",
+      use: "Any pledge is a caution; a high or rising figure is a bigger one.",
+      spot: "In the shareholding rows, on the pledge row.",
+      action: "Check whether the pledged share rose in the last few quarters.",
+    },
+    sales_growth: {
+      what: "How much more the company sold than in the same period last year.",
+      use: "Steady growth is the point. One big year on its own means little.",
+      spot: "In the fundamentals list, on the sales or revenue row.",
+      action: "Check that several years in a row grew, not just one.",
+    },
+    profit_growth: {
+      what: "How much more profit the company made than in the same period last year.",
+      use: "Profit growing faster than sales is better than the reverse.",
+      spot: "In the fundamentals list, on the profit row.",
+      action: "Compare it with the sales growth beside it.",
+    },
+    eps: {
+      what: "Profit divided across each share, so it can be compared with the price.",
+      use: "It only helps if it is rising or at least steady.",
+      spot: "In the fundamentals list, on the EPS row.",
+      action: "Check the direction over the last few years.",
+    },
+    book_value: {
+      what: "The accounting value of each share if the company were wound up.",
+      use: "Price well above book is normal for a good business, so compare within the same industry.",
+      spot: "In the fundamentals list, on the book value row.",
+      action: "Compare it with peers in the same industry, not across industries.",
+    },
+    dividend_yield: {
+      what: "The yearly cash paid to shareholders as a share of the price.",
+      use: "A very high figure can signal a falling price rather than generosity.",
+      spot: "In the fundamentals list, on the dividend row.",
+      action: "Check whether the payout has been steady or was just cut.",
+    },
+    sales: {
+      what: "Total value the company sold in the period.",
+      use: "Read it as a trend across years, never as a single number.",
+      spot: "In the fundamentals list, on the sales row.",
+      action: "Check the direction over several years.",
+    },
+    net_profit: {
+      what: "What is left after all costs are paid.",
+      use: "A loss is not automatically disqualifying, but repeated losses are.",
+      spot: "In the fundamentals list, on the profit row.",
+      action: "Check whether the figure is improving or getting worse.",
+    },
+    opm: {
+      what: "The share of sales left after running the business, before interest and tax.",
+      use: "Falling is the warning; the absolute level matters less than the direction.",
+      spot: "In the fundamentals list, on the margin row.",
+      action: "Compare this year with the last few years.",
+    },
+    cfo_positive: {
+      what: "Whether the business actually collected cash from its operations.",
+      use: "Profit on paper with no cash coming in is the thing to be suspicious of.",
+      spot: "In the fundamentals list, on the cash-flow row.",
+      action: "Check whether cash from operations is positive while profit is also positive.",
+    },
+    market_cap: {
+      what: "The total value the market puts on the company.",
+      use: "Smaller companies can move further in both directions.",
+      spot: "At the top of the company header.",
+      action: "Check that the size fits the kind of holding you are researching.",
+    },
+    dividend_payout: {
+      what: "The share of profit paid out as dividends rather than kept.",
+      use: "Very high payout can mean little is being reinvested for growth.",
+      spot: "In the fundamentals list, on the payout row.",
+      action: "Check whether the payout ratio has been stable across years.",
+    },
+    debt: {
+      what: "How much the company owes in total.",
+      use: "Read it against profit, not on its own.",
+      spot: "In the fundamentals list, near the debt rows.",
+      action: "Compare total debt with yearly profit to see how many years it would take to clear.",
+    },
+    high_low: {
+      what: "How far the price sits between its own yearly low and high.",
+      use: "Near the low is not automatically cheap, and near the high is not automatically late.",
+      spot: "In the price rows above the fundamentals list.",
+      action: "Check what the business did to move between those two points.",
+    },
+    industry_pe: {
+      what: "The average price-to-profit of the industry this company sits in.",
+      use: "It is the yardstick for judging the company's own PE.",
+      spot: "In the industry rows.",
+      action: "Compare the company's PE with this figure before calling it cheap.",
+    },
+  };
+  function tier3Copy(key) { return TIER3_BY_KEY[key] || null; }
 
   function dialog() {
     return document.getElementById("dataDetailDialog");
@@ -216,10 +349,20 @@
   }
 
   /* The band text can carry a caveat after a separator ("under 1.0x - growth
-   * costs less than it is worth"). The headline keeps the level; the `what` row
-   * keeps the whole definition. */
+   * costs less than it is worth"). The headline keeps the level that fits in 70
+   * characters; the `what` row keeps the whole definition. The longest leading
+   * piece that still fits wins, so "yes - cash coming in" keeps both halves
+   * while "under 15x, ideally near or below its industry's average" keeps the
+   * level only instead of being cut mid-phrase. */
   function bandPhrase(ideal) {
-    return tidy(ideal).split(/\s*[;(]\s*|\s+-\s+/)[0];
+    var parts = tidy(ideal).split(/\s*[;]\s*|\s+-\s+|\s*,\s*|\s*\(\s*/)
+      .map(tidy)
+      .filter(function (p) { return p && p.indexOf(")") < 0; });
+    for (var i = parts.length - 1; i >= 0; i--) {
+      var cand = parts.slice(0, i + 1).join(", ");
+      if (("The level we look for here is " + cand).length <= MAX_HEADLINE) return cand;
+    }
+    return parts[0] || tidy(ideal);
   }
 
   function tier3Card(key, band) {
@@ -235,9 +378,12 @@
     if (definition) {
       rows.push({ key: "what", label: LABELS.what, text: label + " - " + definition });
     }
-    rows.push({ key: "use", label: LABELS.use, text: TIER3_WHAT });
-    rows.push({ key: "spot", label: LABELS.spot, text: TIER3_SPOT });
-    rows.push({ key: "action", label: LABELS.action, text: TIER3_ACTION });
+    /* Per-key decision copy when we have it; the shared fallback only for bands
+       added later that nobody has written a line for yet. */
+    var own = tier3Copy(key) || {};
+    rows.push({ key: "use", label: LABELS.use, text: own.use || TIER3_WHAT });
+    rows.push({ key: "spot", label: LABELS.spot, text: own.spot || TIER3_SPOT });
+    rows.push({ key: "action", label: LABELS.action, text: own.action || TIER3_ACTION });
     return {
       tier: 3,
       title: label,
