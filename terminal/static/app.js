@@ -239,8 +239,11 @@ async function loadRegime() {
         ${fxPill(s.tone, "Size", s.size, { title: `Regime size guidance: ${s.note}` })}
       </div>`;
     } else {
-      html = `<div class="fx-banner neut">${fxPill("neut", "Regime unavailable", null, { sans: true })}
-        <span class="fx-chip mono-sans">${r.error || "no read returned"}</span></div>`;
+      /* No regime read: show nothing rather than a full-width empty-state card.
+         Measured at 390px this banner is ~84px of an 844px screen and it carried
+         no information, pushing the chart further down for no benefit. The
+         honest signal lives in the System view instead. */
+      html = "";
     }
     let flow = null;
     try {
@@ -257,8 +260,9 @@ async function loadRegime() {
     }
     box.innerHTML = html;
   } catch (e) {
-    box.classList.add("defensive");
-    box.innerHTML = `<div class="fx-banner neut">${fxPill("neut", "Regime API unavailable", null, { sans: true })}</div>`;
+    /* Same rule as the empty stance: never spend a phone screen on a message
+       that carries no data. */
+    box.innerHTML = "";
   }
 }
 
@@ -1945,11 +1949,38 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   window.addEventListener("popstate", _restoreNavigation);
   _wireMobileNav();
+  _wireCompactHeader();
   hydrateTips(document);
   window.addEventListener("resize", _onViewportChange);
   _restoreNavigation(true);
   refreshAll(true);
 });
+
+/* ---------------------------------------------------------------------------
+   Compact sticky header (phones). Measured: the full header stack is 238px of
+   an 844px screen, which pushed the chart to 822px - nothing useful was visible
+   on the first screen. Once the page is scrolled the header collapses to a
+   single thin row; it expands again at the top. The flag is toggled from a
+   scroll listener because `animation-timeline: scroll()` is not available in
+   every browser; CSS owns the actual appearance.
+   ------------------------------------------------------------------------- */
+function _wireCompactHeader() {
+  const bar = document.querySelector(".fx-topbar");
+  if (!bar) return;
+  let ticking = false;
+  const apply = () => {
+    ticking = false;
+    const compact = window.innerWidth <= 950 && window.scrollY > 24;
+    bar.classList.toggle("is-compact", compact);
+  };
+  window.addEventListener("scroll", () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(apply);
+  }, { passive: true });
+  window.addEventListener("resize", apply);
+  apply();
+}
 
 /** Long-form panel prose lives in data-tip and is surfaced on hover/focus, so it
  *  never pushes indicators below the fold. */

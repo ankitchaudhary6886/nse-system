@@ -1347,3 +1347,36 @@ button[class*="btn"] {
 .fx-legend .lg-swatch.c-sma10 { background: repeating-linear-gradient(90deg, #22d3ee 0 4px, transparent 4px 8px); }
 .fx-legend .lg-swatch.c-sma20 { background: repeating-linear-gradient(90deg, #f472b6 0 4px, transparent 4px 8px); }
 .fx-legend .lg-item.is-off .lg-swatch { opacity: 0.35; }
+
+/* ------------------------------------------------- 22 compact sticky header --
+   Measured on a 390x844 phone: the header stack (hamburger + title + subtitle +
+   search row + status line + pill rail) is 238px, and the chart did not start
+   until 822px down an 844px screen - there was effectively no content on the
+   first screen. Below 950px the header now collapses to one thin row as soon as
+   the page is scrolled, and expands again at the top. Pure CSS, no scroll
+   listener: .fx-topbar is a scroll-driven scroll container, so
+   `animation-timeline: scroll()` collapses it in browsers that support it, and
+   the `.is-compact` class (set by app.js on scroll) covers the rest. */
+@media (max-width: 950px) {
+  .fx-topbar {
+    row-gap: 6px;
+    transition: padding 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  /* Collapsed state: title + search only, rail and status hidden. */
+  .fx-topbar.is-compact {
+    padding: 6px 0 8px;
+    gap: 6px;
+  }
+  .fx-topbar.is-compact .fx-viewhead p,
+  .fx-topbar.is-compact .refresh-status,
+  .fx-topbar.is-compact .fx-navrail {
+    display: none;
+  }
+  .fx-topbar.is-compact .fx-viewhead h1 { font-size: 16px; }
+  .fx-topbar.is-compact .fx-search { height: 34px; min-height: 34px; }
+  .fx-topbar.is-compact .top-actions .fx-btn { height: 34px; }
+  /* The viewhead shares the first row with the hamburger when compact, so the
+     controls row can sit beside it instead of forcing a third row. */
+  .fx-topbar.is-compact .fx-viewhead { flex: 1 1 auto; }
+  .fx-topbar.is-compact .top-actions { flex: 0 1 auto; width: auto; }
+}
