@@ -4,7 +4,7 @@ let _researchRequestId = 0;
 
 function _researchRow(label, value, colour) {
   const col = colour || "#edf3ff";
-  return `<div class="level" style="padding:8px 12px;">
+  return `<div class="fx-row" style="padding:8px 12px;">
     <span>${label}</span>
     <strong style="color:${col};">${value}</strong>
   </div>`;
@@ -26,7 +26,7 @@ function _renderCandleBlock(data) {
   keys.sort((a, b) => (cs[b].n_setups || 0) - (cs[a].n_setups || 0));
   let html = `<h4 style="margin:14px 0 8px; font-size:13px;">🕯️ Candle behaviour (mother-bar classification)</h4>`;
   if (currentType) {
-    html += `<div class="level" style="padding:8px 12px; border-left:3px solid #60a5fa;">
+    html += `<div class="fx-row" style="padding:8px 12px; border-left:3px solid #60a5fa;">
       <span>Today's mother bar</span>
       <strong>${currentType}</strong>
     </div>`;
@@ -79,15 +79,15 @@ function _renderSignatureBlock(data) {
   const outcomes = Object.entries(sm.outcome_mix || {})
     .map(([k, v]) => `${k}:${v}`).join(" · ");
   let html = `<h4 style="margin:14px 0 8px; font-size:13px;">🎯 Signature match — ${sm.k} nearest of ${sm.n_pool} pool setups</h4>`;
-  html += `<div class="level" style="padding:8px 12px;">
+  html += `<div class="fx-row" style="padding:8px 12px;">
     <span>Hit rate (given trigger)<span class="ledger-sight" data-explain="hit_rate" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does hit rate mean?">?</span></span>
     <strong>+1R ${_pctStr(sm.p_1r)} · +2R ${_pctStr(sm.p_2r)} · +3R ${_pctStr(sm.p_3r)}</strong>
   </div>`;
-  html += `<div class="level" style="padding:8px 12px;">
+  html += `<div class="fx-row" style="padding:8px 12px;">
     <span>MFE in R<span class="ledger-sight" data-explain="mfe" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does MFE mean?">?</span></span>
     <strong>median ${_num(sm.median_mfe_r)} · p95 ${_num(sm.p95_mfe_r)}</strong>
   </div>`;
-  html += `<div class="level" style="padding:8px 12px;">
+  html += `<div class="fx-row" style="padding:8px 12px;">
     <span>MAE in R<span class="ledger-sight" data-explain="mae" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does MAE mean?">?</span></span>
     <strong>median ${_num(sm.median_mae_r)} · p5 ${_num(sm.p5_mae_r)}</strong>
   </div>`;
@@ -147,16 +147,16 @@ function renderResearch(data) {
     ? "—" : `${Number(value) > 0 ? "+" : ""}${Number(value).toFixed(1)}%`;
   html += `<div class="setup-box">
     <h4 style="margin:0 0 8px;font-size:13px;">Latest market state · ${state.as_of || data.as_of || "date unavailable"}</h4>
-    <div class="level"><span>Close / daily change</span><strong>${_num(state.close)} · ${marketPct(state.change_1d_pct)}</strong></div>
-    <div class="level"><span>20 / 60 session move</span><strong>${marketPct(state.change_20d_pct)} · ${marketPct(state.change_60d_pct)}</strong></div>
-    <div class="level"><span>Trend context</span><strong>${emaStatus}</strong></div>
-    <div class="level"><span>Volume vs 20-session average</span><strong>${state.volume_ratio_20 == null ? "unavailable" : `${_num(state.volume_ratio_20)}×`}</strong></div>
+    <div class="fx-row"><span>Close / daily change</span><strong>${_num(state.close)} · ${marketPct(state.change_1d_pct)}</strong></div>
+    <div class="fx-row"><span>20 / 60 session move</span><strong>${marketPct(state.change_20d_pct)} · ${marketPct(state.change_60d_pct)}</strong></div>
+    <div class="fx-row"><span>Trend context</span><strong>${emaStatus}</strong></div>
+    <div class="fx-row"><span>Volume vs 20-session average</span><strong>${state.volume_ratio_20 == null ? "unavailable" : `${_num(state.volume_ratio_20)}×`}</strong></div>
     <p class="method-note">This is observed end-of-day price behaviour, not a forecast. ${state.bars_available || data.history_bars_tested || 0} daily bars available in the analysis window.</p>
   </div>`;
 
   if (data.current_setup) {
     const cs = data.current_setup;
-    html += `<div class="level" style="padding:8px 12px; border-left:3px solid #34d399;">
+    html += `<div class="fx-row" style="padding:8px 12px; border-left:3px solid #34d399;">
       <span><b style="color:#34d399;">LIVE SETUP TODAY</b> — signal ${cs.signal_date}</span>
       <strong>entry ${cs.entry} · stop ${cs.stop} · 3R ${cs.target_3r}</strong>
     </div>`;
@@ -169,7 +169,7 @@ function renderResearch(data) {
       html += _researchRow("Mother bar", cs.mother_type);
     }
   } else {
-    html += `<div class="level" style="padding:8px 12px; border-left:3px solid #7f8da9;">
+    html += `<div class="fx-row" style="padding:8px 12px; border-left:3px solid #7f8da9;">
       <span>LIVE SETUP</span><strong>none triggered today</strong>
     </div>`;
   }
@@ -193,15 +193,15 @@ function renderResearch(data) {
   }
   html += _researchRow("Triggered",
     `${h.n_triggered} of ${h.n_setups} (P=${_pctStr(h.p_trigger)})`);
-  html += `<div class="level" style="padding:8px 12px;">
+  html += `<div class="fx-row" style="padding:8px 12px;">
     <span>Hit rate<span class="ledger-sight" data-explain="hit_rate" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does hit rate mean?">?</span></span>
     <strong>+1R ${_pctStr(h.p_1r_given_trigger)} · +2R ${_pctStr(h.p_2r_given_trigger)} · +3R ${_pctStr(h.p_3r_given_trigger)}</strong>
   </div>`;
-  html += `<div class="level" style="padding:8px 12px;">
+  html += `<div class="fx-row" style="padding:8px 12px;">
     <span>MFE in R<span class="ledger-sight" data-explain="mfe" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does MFE mean?">?</span></span>
     <strong>median ${_num(h.median_mfe_r)} · p95 ${_num(h.p95_mfe_r)}</strong>
   </div>`;
-  html += `<div class="level" style="padding:8px 12px;">
+  html += `<div class="fx-row" style="padding:8px 12px;">
     <span>MAE in R<span class="ledger-sight" data-explain="mae" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does MAE mean?">?</span></span>
     <strong>median ${_num(h.median_mae_r)} · p5 ${_num(h.p5_mae_r)}</strong>
   </div>`;

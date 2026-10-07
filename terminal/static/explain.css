@@ -117,3 +117,96 @@
   line-height: 1.6;
 }
 .ledger-note { margin: 12px 0 0; }
+
+/* ------------------------------------------- the decision-first card ----- */
+/* The click popup used to be seven equal-weight paragraphs plus a developer
+ * footer, so nothing stood out. It is now one headline, four short labelled
+ * rows and an optional "Careful" line. These rules only touch the popup, and
+ * they use the existing tokens so the dialog keeps following the theme. */
+
+/* The body element is a <pre> (kept from the old JSON dumps) - reset the
+ * monospace/pre-wrap once, here. Figures stay mono inside their own rows. */
+#dataDetailDialog #dataDetailBody {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: normal;
+}
+
+/* The one thing that matters most: unlabelled, bold, first. */
+#dataDetailDialog .ex-headline {
+  margin: 0 0 14px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+  color: var(--fx-zinc-100, var(--text));
+}
+
+#dataDetailDialog .ex-row {
+  grid-template-columns: 116px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+}
+#dataDetailDialog .ex-label {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted, #8b97ad);
+}
+#dataDetailDialog .ex-text { font-size: 14px; line-height: 1.6; }
+
+/* "How to spot it" is the identification method the owner asked for by name -
+ * give it the one tinted block so it is findable at a glance. */
+#dataDetailDialog .ex-spot {
+  background: rgba(130, 183, 255, 0.06);
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+#dataDetailDialog .ex-spot .ex-label { color: var(--blue); }
+
+/* ...and the single check to do next closes the card with a little more weight. */
+#dataDetailDialog .ex-action {
+  border-top: 1px solid var(--border);
+  border-left: 2px solid var(--blue);
+  padding-left: 12px;
+  margin-top: 8px;
+}
+#dataDetailDialog .ex-action .ex-text { font-weight: 600; }
+
+/* "Careful" - only rendered when a real trap exists, never boilerplate. */
+#dataDetailDialog .ex-caution {
+  display: grid;
+  grid-template-columns: 116px 1fr;
+  gap: 12px;
+  align-items: start;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.07);
+  border: 1px solid rgba(251, 191, 36, 0.22);
+}
+#dataDetailDialog .ex-caution .ex-label { color: var(--yellow, #fbbf24); }
+#dataDetailDialog .ex-caution .ex-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--fx-zinc-300, var(--text));
+}
+
+/* The tier-4 footnote is the only footnote allowed. The old developer footer is
+ * retired - it stays hidden in case an older page still carries one. */
+#dataDetailDialog .ex-foot { display: none !important; }
+#dataDetailDialog .ex-note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted, #8b97ad);
+}
+
+@media (max-width: 620px) {
+  #dataDetailDialog .ex-row,
+  #dataDetailDialog .ex-caution { grid-template-columns: 1fr; gap: 4px; }
+  #dataDetailDialog .ex-headline { font-size: 17px; }
+}

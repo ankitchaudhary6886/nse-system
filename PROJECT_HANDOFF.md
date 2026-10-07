@@ -35,7 +35,7 @@ retrain. Mondays: 08:00 Monte-Carlo. 1st of month: 10:00 walk-forward.
 - Git repo (PRIVATE): https://github.com/ankitchaudhary6886/nse-system ; VM clone: ~/nse-system
 - Modern terminal: http://140.238.226.249:8000 (FastAPI, HTTP Basic login)
 - Legacy Streamlit backup: http://140.238.226.249:8501 (service nse; cosmetic @import glitch; can disable)
-- Login: ADMIN_USER=ankit, ADMIN_PASS=ankitc21 (stored in ~/nse-system/.env on VM; change anytime)
+- Login: disabled — no auth gate; the HTTP Basic gate was removed from terminal_api.py (no credentials stored)
 - Telegram: token read from data/tg_secret.txt line 1 or env TELEGRAM_TOKEN; chat id line 2
   (or env TELEGRAM_CHAT_ID). Repo is private; rotate bot via @BotFather if leaked.
 - Open ports (Oracle security list + iptables): TCP 8501, 8000 from 0.0.0.0/0

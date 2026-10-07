@@ -177,11 +177,6 @@
   },
   {
    "file": "terminal_api.py",
-   "line": 19,
-   "code": "APP_PASS = os.getenv(\"ADMIN_PASS\", \"change_this_password\")"
-  },
-  {
-   "file": "terminal_api.py",
    "line": 815,
    "code": "token = os.getenv(\"WEBHOOK_TOKEN\")"
   }

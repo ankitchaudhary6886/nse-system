@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#090d16">
 <title>NSE Research Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 <style>
   .rel-pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; }
   .rel-strong { background: rgba(52,211,153,.18); color: #34d399; }
@@ -214,21 +219,29 @@
     .lg-chart { height:220px; }
   }
 </style>
-<link rel="stylesheet" href="/static/style.css?v=20">
-<link rel="stylesheet" href="/static/polish.css?v=1">
-<link rel="stylesheet" href="/static/explain.css?v=1">
+<link rel="stylesheet" href="/static/style.css?v=21">
+<link rel="stylesheet" href="/static/polish.css?v=2">
+<link rel="stylesheet" href="/static/explain.css?v=2">
+<link rel="stylesheet" href="/static/fintech.css?v=3">
+<link rel="stylesheet" href="/static/tailwind.css?v=1">
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
-<div class="app-shell">
-  <aside class="sidebar">
-    <button class="brand" type="button" data-view="research" aria-label="Go to research home">
-      <span class="brand-mark">N</span>
-      <span>
-        <span class="brand-title">NSE Research</span>
-        <span class="brand-subtitle">Market decision support</span>
-      </span>
-    </button>
+<input type="checkbox" id="panelNavToggle" class="panel-nav" hidden aria-hidden="true" tabindex="-1">
+<label class="fx-nav-scrim" for="panelNavToggle" aria-label="Close navigation"></label>
+<div class="app-shell fx-shell">
+  <aside class="sidebar fx-side" id="panelNav">
+    <div class="fx-brandline">
+      <button class="brand" type="button" data-view="research" aria-label="Go to research home">
+        <span class="brand-mark">N</span>
+        <span>
+          <span class="brand-title">NSE Research</span>
+          <span class="brand-subtitle">Market decision support</span>
+        </span>
+      </button>
+      <button class="fx-btn fx-btn-ghost fx-btn-xs fx-healthchip" type="button" id="navCloseBtn"
+        aria-label="Close navigation" title="Close navigation" data-close-nav>Close</button>
+    </div>
     <nav class="nav" aria-label="Main navigation">
       <div class="nav-group">Explore</div>
       <button class="nav-btn" data-view="funda" data-explain="sector_rs"
@@ -274,18 +287,56 @@
     </button>
   </aside>
 
-  <main class="main">
-    <div class="topbar">
-      <div>
+  <main class="main fx-main">
+    <div class="topbar fx-topbar">
+      <div class="fx-nav-toggle">
+        <label class="fx-btn fx-btn-ghost fx-btn-icon" for="panelNavToggle"
+          title="Open navigation" aria-label="Open navigation">
+          <svg class="fx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </label>
+      </div>
+      <div class="fx-viewhead">
         <h1 id="viewTitle">Research</h1>
         <p id="viewSubtitle">Explore company data, signals, and research evidence.</p>
       </div>
-      <div class="top-actions">
-        <input id="symbolSearch" aria-label="NSE symbol to research" placeholder="NSE symbol, e.g. DIXON" autocomplete="off" />
-        <button id="loadSymbolBtn" title="Open symbol research">Open symbol</button>
-        <button id="refreshBtn" title="Reload the latest saved data from the terminal">Refresh</button>
+      <div class="top-actions fx-controls">
+        <label class="fx-input fx-search">
+          <svg class="fx-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg>
+          <input id="symbolSearch" aria-label="NSE symbol to research" placeholder="Symbol e.g. DIXON"
+            autocomplete="off" spellcheck="false"
+            style="flex:1 1 auto; min-width:0; padding:0; border:0; background:transparent; height:100%; outline:none;" />
+        </label>
+        <button id="loadSymbolBtn" class="fx-btn fx-btn-primary" data-icon="line-chart" title="Open symbol research">
+          <svg class="fx-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m8 15 3.5-4 3 3L20 7"/></svg>
+          <span class="fx-open-label">Open symbol</span>
+        </button>
+        <button id="refreshBtn" class="fx-btn fx-btn-ghost" data-icon="refresh-cw" title="Reload the latest saved data from the terminal">
+          <svg class="fx-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+          <span class="fx-open-label">Refresh</span>
+        </button>
         <span id="refreshStatus" class="refresh-status" role="status" aria-live="polite"></span>
       </div>
+      <nav class="fx-navrail" id="navRail" aria-label="Primary">
+        <button class="nav-btn active" data-view="research" data-explain="signal"
+          title="One company in detail. Click the label to learn what a signal is">Research</button>
+        <button class="nav-btn" data-view="funda" data-explain="sector_rs"
+          title="Long-term quality views. Click the label to learn what is checked">Fundamentals</button>
+        <button class="nav-btn" data-view="swing" data-explain="setup"
+          title="Short-term setups. Click the label to learn the pattern we look for">Swing</button>
+        <button class="nav-btn" data-view="traders" data-explain="setup"
+          title="Ideas from published books. Click the label to learn the shared pattern">Methods</button>
+        <button class="nav-btn" data-view="ledger" data-explain="p_win"
+          title="How the system has actually done. Click the label to learn the scoring">Performance</button>
+        <button class="nav-btn" data-view="league" data-explain="target"
+          title="Pretend money, real prices. Click the label to learn how targets work">League</button>
+        <button class="nav-btn" data-view="system" data-explain="data_quality"
+          title="Is everything working. Click the label to learn what is checked">System</button>
+        <a class="nav-btn" href="/glossary" title="Every word and number, explained in plain English">Glossary</a>
+      </nav>
     </div>
 
     <section id="marketOverview" class="market-overview" aria-label="Market overview">
@@ -351,7 +402,7 @@
       </div>
 
       <div class="panel" style="margin-top:18px">
-        <div class="panel-header">        <div><h2 data-explain="composite" class="panel-title" title="Click to learn what this means">Today's Shortlist</h2><p>Composite ranks model event score, accumulation, sector relative strength, and delivery. The score is an uncalibrated model output for a +10% high within 20 sessions, not a trade win probability.</p></div></div>
+        <div class="panel-header">        <div><h2 data-explain="composite" class="panel-title" title="Click to learn what this means">Today's Shortlist</h2><p data-tip="Composite ranks model event score, accumulation, sector relative strength, and delivery. The score is an uncalibrated model output for a +10% high within 20 sessions, not a trade win probability.">Ranks event score, accumulation, sector strength, delivery.</p></div></div>
         <div class="card-list" id="picksList"><p>Loading...</p></div>
       </div>
     </section>
@@ -371,8 +422,8 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Short-Term Ideas</h2><p>Forward-validation log, including All-weather setups. Model event score means a +10% high within 20 sessions; it is uncalibrated and not trade win odds.</p></div>
-          <button id="runSwingBtn">Run Swing Scan</button>
+          <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Short-Term Ideas</h2><p data-tip="Forward-validation log, including All-weather setups. Model event score means a +10% high within 20 sessions; it is uncalibrated and not trade win odds.">Graded forward-validation log.</p></div>
+          <button class="fx-btn" id="runSwingBtn" data-icon="activity">Run Swing Scan</button>
         </div>
         <p id="swingScanStatus" class="method-note" role="status" aria-live="polite"></p>
         <div class="table-wrap">
@@ -415,7 +466,7 @@
     <!-- ================= RESEARCH ================= -->
     <section id="view-research" class="view active-view">
       <div class="terminal-grid">
-        <div class="panel large">
+        <div class="panel large" style="grid-column:1/-1">
           <div class="panel-header">
             <div>
               <h2 id="chartTitle">Chart Inspector</h2>
@@ -423,7 +474,14 @@
             </div>
             <span class="badge muted" id="setupBadge">No setup loaded</span>
           </div>
-          <div id="chart"></div>
+          <div id="chartToolbar" class="fx-chart-tools"></div>
+          <div id="chart" class="fx-chart-wrap">
+            <div id="chartPrice" class="fx-chart-pane fx-pane-price"></div>
+            <div id="chartRsi" class="fx-chart-pane fx-pane-rsi"></div>
+            <div id="chartReadout" class="fx-chart-readout mono-sans" aria-live="polite"></div>
+          </div>
+          <div class="fx-legend flex flex-wrap items-center gap-2" id="chartLegend" aria-label="Chart legend"></div>
+          <p class="fx-chart-note fx-chart-note-mobile" id="chartMobileNote"></p>
         </div>
         <div class="panel">
           <div class="panel-header"><div><h2 data-explain="sizing" class="panel-title" title="Click to learn what this means">The Pattern and How Much to Risk</h2><p>Trigger, stop, target, position size</p></div></div>
@@ -435,14 +493,14 @@
       <div class="terminal-grid" style="margin-top:18px;">
         <div class="panel">
           <div class="panel-header">
-            <div><h2 data-explain="signal" class="panel-title" title="Click to learn what this means">This Company at a Glance</h2><p>Latest available daily bar; this is not an intraday feed or forecast.</p></div>
+            <div><h2 data-explain="signal" class="panel-title" title="Click to learn what this means">This Company at a Glance</h2><p data-tip="The latest stored daily bar. This is not an intraday feed and not a forecast.">Latest stored daily bar.</p></div>
           </div>
           <div class="setup-box" id="stockPulse"><p>Choose a symbol to load its latest stored market state.</p></div>
         </div>
         <div class="panel">
           <div class="panel-header">
-            <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Which Book Ideas Fit This Stock</h2><p>Current scan rules checked against this symbol. A match is research evidence, not a buy instruction.</p></div>
-            <button id="refreshTraderMatches" type="button" disabled>Check methods</button>
+            <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Which Book Ideas Fit This Stock</h2><p data-tip="A match is research evidence, not a buy instruction.">Which book rules this symbol currently passes.</p></div>
+            <button class="fx-btn" id="refreshTraderMatches" type="button" data-icon="search" disabled>Check methods</button>
           </div>
           <div class="setup-box" id="traderMatchBox"><p>Choose a symbol to check the registered methods.</p></div>
         </div>
@@ -450,59 +508,60 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2 data-explain="composite" class="panel-title" title="Click to learn what this means">Compare Companies</h2><p>Compare 2–4 symbols side by side. Event score tracks a +10% high within 20 sessions; it is uncalibrated, not a trade win probability.</p></div>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <input id="compareInput" placeholder="TANLA, KPITTECH, DIXON" style="min-width:280px; padding:8px 10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:8px; color:#edf3ff;" />
-            <button id="compareRunBtn">Compare</button>
+          <div><h2 data-explain="composite" class="panel-title" title="Click to learn what this means">Compare Companies</h2><p data-tip="Event score tracks a +10% high within 20 sessions; it is uncalibrated, not a trade win probability.">Compare 2–4 symbols side by side.</p></div>
+          <div class="fx-controls">
+            <input id="compareInput" class="fx-input" placeholder="TANLA, KPITTECH, DIXON"
+              aria-label="Symbols to compare, comma separated" style="min-width:190px; flex:1 1 190px;" />
+            <button id="compareRunBtn" class="fx-btn fx-btn-primary">Compare</button>
           </div>
         </div>
-        <div id="compareBox" style="overflow-x:auto; margin-top:10px;">
-          <p style="color:#7f8da9;">Enter symbols and press Compare. Or press Enter.</p>
+        <div id="compareBox" class="table-wrap" style="margin-top:10px;">
+          <p style="color:#a1a1aa;">Enter symbols and press Compare. Or press Enter.</p>
         </div>
       </div>
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div><h2 data-explain="signal" class="panel-title" title="Click to learn what this means">One Company, In Detail</h2><p>Historical setup behaviour and similar past cases; available history and limits are shown.</p></div>
-          <button id="runResearchBtn">Compute for loaded symbol</button>
+          <button class="fx-btn" id="runResearchBtn" data-icon="line-chart">Compute for loaded symbol</button>
         </div>
         <div class="setup-box" id="researchBox"><p>Load a symbol and press "Compute".</p></div>
       </div>
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2 data-explain="data_quality" class="panel-title" title="Click to learn what this means">Companies You Can Research</h2><p>Latest stored swing/trend scan plus historical stats. Sortable.</p></div>
+          <div><h2 data-explain="data_quality" class="panel-title" title="Click to learn what this means">Companies You Can Research</h2><p data-tip="Latest stored swing or trend scan plus historical stats. Click a column heading to sort.">Latest stored scan plus historical stats.</p></div>
           <div style="display:flex; gap:6px;">
-            <button id="refreshResearchUniverse">Refresh</button>
-            <button id="computeMissingBtn">Compute Missing</button>
+            <button class="fx-btn" id="refreshResearchUniverse" data-icon="refresh-cw">Refresh</button>
+            <button class="fx-btn" id="computeMissingBtn" data-icon="check">Compute Missing</button>
           </div>
         </div>
-        <div class="level" id="researchUniverseBadge" style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
+        <div class="fx-row" id="researchUniverseBadge"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Status</span><span class="fx-v is-mut">loading…</span></div>
         <div id="researchUniverseBox" style="overflow-x:auto;"><p>Loading universe...</p></div>
       </div>
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div><h2 data-explain="sector_rs" class="panel-title" title="Click to learn what this means">Industry Groups</h2><p>Pooled by sector. Real pooling.</p></div>
-          <button id="refreshResearchSector">Refresh</button>
+          <button class="fx-btn" id="refreshResearchSector" data-icon="refresh-cw">Refresh</button>
         </div>
-        <div class="level" id="researchSectorBadge" style="margin-bottom:10px;"><span>Status</span><strong>loading…</strong></div>
+        <div class="fx-row" id="researchSectorBadge"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Status</span><span class="fx-v is-mut">loading…</span></div>
         <div id="researchSectorBox" style="overflow-x:auto;"><p>Loading sectors...</p></div>
       </div>
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Chart Patterns Found Today</h2><p>HTF · Asc Triangle · Double Bottom · Inv H&S · H&S Top warning</p></div>
-          <button id="runPatternScan">Run Full Scan</button>
+          <button class="fx-btn" id="runPatternScan" data-icon="layers">Run Full Scan</button>
         </div>
-        <div class="level" id="patternStatus"><span>Status</span><strong>loading…</strong></div>
+        <div class="fx-row" id="patternStatus"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Status</span><span class="fx-v is-mut">loading…</span></div>
         <div class="card-list" id="patternList" style="margin-top:14px"></div>
       </div>
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div><h2 data-explain="veto" class="panel-title" title="Click to learn what this means">Find Companies By Numbers</h2><p>Baseline + VCP checks for the symbol in the search field above.</p></div>
-          <button id="runScreenerBtn">Run Screener</button>
+          <button class="fx-btn" id="runScreenerBtn" data-icon="sliders-horizontal">Run Screener</button>
         </div>
         <div class="terminal-grid" style="margin-top:10px;">
           <div class="setup-box" id="screenerMetrics"><p>Type a symbol above and press Run Screener.</p></div>
@@ -517,7 +576,7 @@
         <div class="panel-header">
           <div>
             <h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Trading Methods</h2>
-            <p>Every book keeps its own methods. They are listed separately, never merged into one list. Press the ? beside any book or method for a plain-words explanation.</p>
+            <p data-tip="Every book keeps its own methods, listed separately and never merged into one list.">Methods from 14 published books, kept separate.</p>
           </div>
         </div>
         <div id="tradersIntroTotal" class="tm-intro"></div>
@@ -531,7 +590,7 @@
         <div class="panel-header">
           <div>
             <h2 data-explain="target" class="panel-title" title="Click to learn what this means">Practice League (Pretend Money)</h2>
-            <p>14 famous-trader books vs our system on real NSE data, after every Indian cost. Compare entries, full-book exits, and the market regimes where each approach historically worked.</p>
+            <p data-tip="14 famous-trader books vs our system on real NSE data, after every Indian cost. Compares entries, full-book exits, and the market regimes where each approach historically worked.">14 books vs the system, after all Indian costs.</p>
           </div>
         </div>
         <div id="leagueRoot" style="margin-top:14px;"><p>Loading league...</p></div>
@@ -571,7 +630,7 @@
     <section id="view-system" class="view">
       <div class="panel">
         <div class="panel-header">
-          <div><h2>Is everything working</h2><p>Data freshness, model files, and whether the service is responding. Click the heading area to learn what the checks mean.</p></div>
+          <div><h2>Is everything working</h2><p data-tip="Checks data freshness, model files, and whether the service is responding.">Data freshness, model files, service health.</p></div>
           <span class="badge muted" id="deploymentBadge">—</span>
         </div>
         <div id="deploymentBox" class="setup-box" data-explain="data_quality"><p>Loading...</p></div>
@@ -579,37 +638,63 @@
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
           <div><h2>Where the numbers come from</h2><p>Each outside service the system reads from, and whether it is working right now</p></div>
-          <button id="refreshSourceHealthBtn" type="button">Refresh</button>
+          <button class="fx-btn" id="refreshSourceHealthBtn" type="button" data-icon="refresh-cw">Refresh</button>
         </div>
         <div id="sourceHealthBox" class="setup-box" data-explain="sources"><p>Loading...</p></div>
       </div>
       <div class="panel" style="margin-top:18px">
         <div class="panel-header"><div><h2 class="panel-title">For Developers</h2><p>For developers / migration</p></div></div>
         <div class="setup-box">
-          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/PORTAL_REDESIGN.md" target="_blank" rel="noopener noreferrer"><span>Portal redesign vision</span><strong>PORTAL_REDESIGN.md ↗</strong></a>
-          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/backlog.md" target="_blank" rel="noopener noreferrer"><span>Instructions &amp; rules</span><strong>backlog.md ↗</strong></a>
-          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/EXECUTION_LOG.md" target="_blank" rel="noopener noreferrer"><span>Batch history</span><strong>EXECUTION_LOG.md ↗</strong></a>
-          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/data/strategies.json" target="_blank" rel="noopener noreferrer"><span>Strategies</span><strong>strategies.json ↗</strong></a>
-          <a class="level doc-link" href="https://github.com/ankitchaudhary6886/nse-system/tree/main/traders" target="_blank" rel="noopener noreferrer"><span>Traders</span><strong>traders/ ↗</strong></a>
+          <a class="fx-row doc-link"" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/PORTAL_REDESIGN.md" target="_blank" rel="noopener noreferrer"><span>Portal redesign vision</span><strong>PORTAL_REDESIGN.md ↗</strong></a>
+          <a class="fx-row doc-link"" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/backlog.md" target="_blank" rel="noopener noreferrer"><span>Instructions &amp; rules</span><strong>backlog.md ↗</strong></a>
+          <a class="fx-row doc-link"" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/EXECUTION_LOG.md" target="_blank" rel="noopener noreferrer"><span>Batch history</span><strong>EXECUTION_LOG.md ↗</strong></a>
+          <a class="fx-row doc-link"" href="https://github.com/ankitchaudhary6886/nse-system/blob/main/data/strategies.json" target="_blank" rel="noopener noreferrer"><span>Strategies</span><strong>strategies.json ↗</strong></a>
+          <a class="fx-row doc-link"" href="https://github.com/ankitchaudhary6886/nse-system/tree/main/traders" target="_blank" rel="noopener noreferrer"><span>Traders</span><strong>traders/ ↗</strong></a>
         </div>
       </div>
     </section>
+    <details class="fx-method" id="methodologyBlock">
+      <summary>
+        <svg class="fx-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        Methodology &amp; Disclaimers
+        <svg class="fx-icon-sm fx-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </summary>
+      <div class="fx-method-body">
+        <p><strong style="color:var(--fx-zinc-300)">Research only.</strong> This terminal presents stored data and
+          model output for study. It never places orders, and nothing on it is investment advice.</p>
+        <p><strong style="color:var(--fx-zinc-300)">Model event score</strong> is an uncalibrated machine estimate of a
+          +10% high within 20 sessions. It is a rough lean, not a forecast and not the odds of a trade working out.
+          The system's own graded record is shown alongside it and is usually far lower.</p>
+        <p><strong style="color:var(--fx-zinc-300)">Price data</strong> is daily end-of-day only. Bars describe recent
+          behaviour; they do not predict the next move. Every panel states its source bar date where it matters.</p>
+        <p><strong style="color:var(--fx-zinc-300)">Position sizing</strong> is a fixed-risk research estimate limited by
+          planned stop risk and maximum allocation. Gaps, slippage, fees, and taxes can increase losses beyond the
+          planned amount.</p>
+        <p><strong style="color:var(--fx-zinc-300)">Historical results</strong> come from forward validation with a
+          visible sample size. Small samples are labelled as such and should not be read as an edge.</p>
+        <p>Press the <span class="fx-help" aria-hidden="true">?</span> beside any label, or click a heading, for the
+          plain words behind that specific number.</p>
+      </div>
+    </details>
   </main>
 </div>
 <dialog id="dataDetailDialog" aria-labelledby="dataDetailTitle">
   <div class="detail-dialog-head">
     <h2 id="dataDetailTitle">Data details</h2>
-    <button type="button" id="dataDetailClose" aria-label="Close details">Close</button>
+    <button class="fx-btn" type="button" id="dataDetailClose" aria-label="Close details">Close</button>
   </div>
   <div class="detail-dialog-body">
     <pre id="dataDetailBody" class="detail-json"></pre>
     <div id="methodGuideBody" class="method-guide hidden"></div>
   </div>
 </dialog>
-<script src="/static/cards.js?v=18"></script>
+<script type="module" src="/static/icons.js?v=1"></script>
+<script src="/static/cards.js?v=19"></script>
 <script src="/static/explainer.js?v=2"></script>
 <script src="/static/ideals.js?v=1"></script>
-<script src="/static/app.js?v=20"></script>
+<script src="/static/app.js?v=21"></script>
 <script src="/static/scanners.js?v=17"></script>
 <script src="/static/strategy_runs.js?v=18"></script>
 <script src="/static/research.js?v=18"></script>

@@ -42,6 +42,10 @@ data/league_replay.pid
 
 # local tooling caches
 .agents/__pycache__/
+node_modules/
+
+# ui-audit run artifacts (screenshots + report.json; regenerable via tools/ui-audit)
+tools/ui-audit/out/
 
 # unrelated third-party clone (own git repo, GPL v3) - see .agents/cache/FINDINGS.md F-23
 trading-agents-swarm/

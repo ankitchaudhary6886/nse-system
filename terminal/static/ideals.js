@@ -121,7 +121,7 @@
   function sweep() {
     if (!BANDS) return;
 
-    /* Common shapes: <div class="level"><span>ROCE</span><strong>8.1%</strong>
+    /* Common shapes: <div class="fx-row"><span>ROCE</span><strong>8.1%</strong>
        and <tr><td>ROCE</td><td>8.1</td></tr>. Handle both without touching
        panel code. */
     var rows = document.querySelectorAll(

@@ -282,14 +282,14 @@ diff on a fresh VM DB and owner sign-off.
 
 ---
 
-## F-16 · Hardcoded credentials in a verification script — `OPEN` (security)
+## F-16 · Hardcoded credentials in a verification script — `FIXED` (security)
 
-`verify_deployment.py:165-166` performs a live `GET /api/health` with
-`auth=("ankit", "ankitc21")`. Two problems: the credential is committed to a
-(private) repo, and the check reports a false API failure the moment
-`ADMIN_PASS` is rotated (the in-code default is `change_this_password`;
-production overrides it from `.env`). Read `ADMIN_USER`/`ADMIN_PASS` from the
-environment instead.
+`verify_deployment.py:165-166` performed a live `GET /api/health` with a
+hardcoded owner credential. Two problems: the credential was committed to a
+(private) repo, and the check reported a false API failure the moment the
+password was rotated. Fixed with the login-gate removal: the literal was
+deleted, the check reads `API_BASE` from the environment, and no password is
+stored anywhere in the script.
 
 ---
 

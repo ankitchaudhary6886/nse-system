@@ -113,12 +113,12 @@ async function loadResearchSectors() {
       box.innerHTML = data.date
         ? `<p>No cached sector history for the latest scan date (${data.date}). Compute missing symbol histories first.</p>`
         : "<p>No trader scan data is stored yet.</p>";
-      if (badge) badge.textContent = data.date ? `no cached sectors · ${data.date}` : "no scan data";
+      if (badge) setStatusRow(badge, data.date ? `no cached sectors · ${data.date}` : "no scan data", "neut");
       return;
     }
     if (badge) {
-      badge.textContent =
-        `${data.n_sectors} sectors · ${data.n_symbols_cached} symbols · ${data.date || "date unavailable"}`;
+      setStatusRow(badge,
+        `${data.n_sectors} sectors · ${data.n_symbols_cached} symbols · ${data.date || "date unavailable"}`, "bull");
     }
     box.innerHTML = (data.n_symbols_missing
       ? `<p class="method-warning">${data.n_symbols_missing} symbol histories could not be included in the sector aggregates.</p>`
@@ -126,7 +126,7 @@ async function loadResearchSectors() {
     _bindSectorEvents(box);
   } catch (e) {
     box.textContent = `Sector view error: ${e.message}`;
-    if (badge) badge.textContent = "unavailable";
+    if (badge) setStatusRow(badge, "unavailable", "bear");
   }
 }
 

@@ -1,0 +1,51 @@
+/* =============================================================================
+ * terminal/static/tailwind.src.css - SOURCE for the compiled tailwind.css
+ * =============================================================================
+ * Build:  npm run build:css   (minified)
+ *         npm run watch:css   (watch, unminified)
+ * Output: terminal/static/tailwind.css  (see terminal/static/build.config.json)
+ *
+ * PREFLIGHT IS DELIBERATELY EXCLUDED.
+ * The terminal already ships 1000+ lines of hand-written CSS (style.css,
+ * polish.css, explain.css, fintech.css) that must keep owning element defaults.
+ * A plain `@import "tailwindcss"` would pull in Preflight (the `base` layer),
+ * whose `*, ::before, ::after { box-sizing: border-box; margin: 0; ... }` reset
+ * would wreck those stylesheets. So we import ONLY the `theme` tokens and the
+ * `utilities` implementation - never `tailwindcss/preflight.css`. Nothing is
+ * ever imported into the base layer, so no element reset is ever emitted.
+ *
+ * UTILITIES ARE DELIBERATELY EMITTED UNLAYERED.
+ * Tailwind v4's default is to wrap generated utilities in the native cascade
+ * layer `@layer utilities` (that is what `layer(utilities)` on the import does).
+ * The legacy sheets this project must coexist with are UNLAYERED, and per the
+ * CSS cascade-layers spec an unlayered normal declaration beats EVERY layered
+ * declaration regardless of specificity or source order. Layered utilities would
+ * therefore silently lose to legacy component rules (e.g. `.p-4` on a `.card`
+ * that style.css already pads), no matter where the <link> sits in the page.
+ * So utilities.css is imported WITHOUT `layer(...)`: the utility classes become
+ * ordinary unlayered rules that compete with the legacy sheets by specificity
+ * and source order - load tailwind.css last and it wins ties. The `theme`
+ * custom-property block stays layered because it only declares design tokens on
+ * :root, which nothing else competes with.
+ * ========================================================================== */
+
+/* Keep the layer order declared for the theme block only. */
+@layer theme;
+
+/* Design tokens: --color-*, --spacing, --font-*, --radius-*, --shadow-* ...
+   Layered, as noted above (token declarations never conflict with utilities). */
+@import "tailwindcss/theme.css" layer(theme);
+
+/* The utility classes themselves - NOTE: no `layer(...)` here, on purpose.
+   `source(none)` disables Tailwind's automatic repo-wide content detection so
+   the scan set is exactly what is @source'd below (deterministic builds; no
+   utility names accidentally harvested from the Python sources or the repo
+   docs). */
+@import "tailwindcss/utilities.css" source(none);
+
+/* Explicit scan set: the served static assets only, i.e. every .html and every
+   .js living under terminal/static (recursively). Paths in @source are
+   resolved relative to this file. Written as two separate globs because brace
+   expansion (star + .{html,js}) is rejected by the CSS parser. */
+@source "./**/*.html";
+@source "./**/*.js";

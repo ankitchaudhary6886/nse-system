@@ -125,8 +125,15 @@ async function loadResearchUniverse(computeMissing) {
   const button = computeMissing ? compute : refresh;
   if (button) {
     button.disabled = true;
-    button.dataset.previousText = button.textContent;
-    button.textContent = computeMissing ? "Computing…" : "Refreshing…";
+    /* Preserve the icon: only the label span is swapped while loading. */
+    const span = button.querySelector("span");
+    if (span) {
+      button.dataset.previousText = span.textContent;
+      span.textContent = computeMissing ? "Computing…" : "Refreshing…";
+    } else {
+      button.dataset.previousText = button.textContent;
+      button.textContent = computeMissing ? "Computing…" : "Refreshing…";
+    }
   }
   box.innerHTML = "<p>Loading...</p>";
   try {
@@ -139,25 +146,27 @@ async function loadResearchUniverse(computeMissing) {
       box.innerHTML = data.date
         ? `<p>No setups were stored for the latest scan date (${data.date}). Price data: ${data.source_dates?.prices || "unavailable"}.</p>`
         : "<p>No trader scans are stored yet. Run the swing or trend scan, then refresh this view.</p>";
-      if (badge) badge.textContent = data.date ? `0 setups · ${data.date}` : "no scan data";
+      if (badge) setStatusRow(badge, data.date ? `0 setups · ${data.date}` : "no scan data", "neut");
       return;
     }
     const stale = data.stale ? " · scan older than stored prices" : "";
     const missing = data.n_errors ? ` · ${data.n_errors} history unavailable` : "";
-    if (badge) badge.textContent =
-      `${_universeRows.length} symbols · ${data.date || "date unavailable"}${stale}${missing}`;
+    if (badge) setStatusRow(badge,
+      `${_universeRows.length} symbols · ${data.date || "date unavailable"}${stale}${missing}`, "bull");
     box.innerHTML = (data.stale
       ? `<p class="method-warning">The latest scan is older than the newest stored price bar (${data.source_dates?.prices || "unknown"}). Refresh price data and rerun the scan before relying on this result.</p>`
       : "") + _renderUniverseTable();
     _bindUniverseEvents(box);
   } catch (e) {
     box.textContent = `Research universe error: ${e.message}`;
-    if (badge) badge.textContent = "unavailable";
+    if (badge) setStatusRow(badge, "unavailable", "bear");
   } finally {
     if (button) {
       button.disabled = false;
-      button.textContent = button.dataset.previousText ||
-        (computeMissing ? "Compute Missing" : "Refresh");
+      const text = button.dataset.previousText || (computeMissing ? "Compute Missing" : "Refresh");
+      const span = button.querySelector("span");
+      if (span) span.textContent = text;
+      else button.textContent = text;
       delete button.dataset.previousText;
     }
   }

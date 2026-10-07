@@ -1,4 +1,16 @@
 let chart = null, candleSeries = null, ema10 = null, ema20 = null, ema50 = null, ema200 = null;
+/* Second chart instance = the RSI pane. lightweight-charts 4.1.3 shipped here
+   has no pane API (no `addPane`/`panes` in the standalone bundle), so the two
+   panes are two charts in two flex cells with their time axes mirrored. */
+let rsiChart = null, rsiSeries = null, rsiBand = null, rsiReady = false;
+let rsiLevelLines = [];
+let _chartCandleByTime = new Map();
+let _chartEmaByTime = new Map();
+let _chartRsiByTime = new Map();
+let _chartLastBar = null;
+let _chartLastRsi = null;
+let _maData = { ema10: false, ema20: false, ema50: false, ema200: false };
+let _paneSync = false;
 const $ = (id) => document.getElementById(id);
 let _restoringNavigation = false;
 let _symbolRequestId = 0;
@@ -28,6 +40,19 @@ function moneyFmt(v) {
     ? "—" : `₹${n.toLocaleString()}`;
 }
 function outcomeBadge(v) { return `<span class="outcome ${v || "PENDING"}">${v || "PENDING"}</span>`; }
+
+/** Update a compact status row (the "Status" lines above lists) with a tone. */
+function setStatusRow(el, value, tone) {
+  if (!el) return;
+  const t = tone === "bull" || tone === "bear" || tone === "neut" ? tone : "info";
+  const color = t === "bull" ? "var(--fx-bull)" : t === "bear" ? "var(--fx-bear)"
+    : t === "neut" ? "var(--fx-neut)" : "var(--fx-info)";
+  el.innerHTML = `<span class="fx-k"><span class="fx-dot${t === "info" ? " pulse" : ""}"`
+    + ` style="background:${color}"></span>Status</span>`
+    + `<span class="fx-v ${t === "bull" ? "is-bull" : t === "bear" ? "is-bear" : t === "neut" ? "is-neut" : "is-mut"}">${value}</span>`;
+}
+window.setStatusRow = setStatusRow;
+
 
 function _normalizeView(name) {
   if (name === "overview") return "research";
@@ -162,30 +187,78 @@ async function loadHealth() {
   } catch (e) { const el = $("healthStatus"); if (el) el.textContent = `Unavailable: ${e.message}`; }
 }
 
+// Status pills replace raw text alerts: one line, a pulse dot, mono figures.
+function fxPill(tone, label, value, opts) {
+  const o = opts || {};
+  const cls = tone === "bull" ? "bull" : tone === "bear" ? "bear" : tone === "neut" ? "neut" : "info";
+  const dot = o.pulse
+    ? `<span class="fx-dot pulse"></span>`
+    : `<span class="fx-dot" style="opacity:.7"></span>`;
+  const val = value == null || value === ""
+    ? ""
+    : `<span class="fx-fig" style="font-size:12px;color:inherit">${value}</span>`;
+  return `<span class="fx-chip ${cls}${o.sans ? " mono-sans" : ""}"${o.title ? ` title="${o.title}"` : ""}>`
+    + `${dot}${label ? `<span>${label}</span>` : ""}${val}</span>`;
+}
+/** Numeric-only pill: green when positive, rose when negative, amber for zero. */
+function fxNumPill(label, value, opts) {
+  const o = opts || {};
+  const n = Number(value);
+  const tone = !Number.isFinite(n) ? "neut" : n > 0 ? "bull" : n < 0 ? "bear" : "neut";
+  const shown = Number.isFinite(n) ? `${n > 0 ? "+" : ""}${n.toFixed(o.dp == null ? 0 : o.dp)}` : "—";
+  return fxPill(tone, label, shown, { title: o.title, pulse: o.pulse });
+}
+window.fxPill = fxPill;
+window.fxNumPill = fxNumPill;
+
 async function loadRegime() {
   const box = $("regimeBanner");
   if (!box) return;
   try {
     const r = await api("/api/regime");
     box.classList.remove("loading", "bull", "defensive");
-    let regimeHtml = "";
-    if (r.stance === "STRONG_BULL") { box.classList.add("bull"); regimeHtml = `🟢🟢 <strong>STRONG BULL</strong> — ${r.symbol} close ${r.index_close} > EMA10 ${r.ema10}. Size ×1.0`; }
-    else if (r.stance === "BULL") { box.classList.add("bull"); regimeHtml = `🟢 <strong>BULL</strong> — ${r.symbol} close ${r.index_close} > EMA10 ${r.ema10}. Size ×1.0`; }
-    else if (r.stance === "NEUTRAL") { regimeHtml = `🟡 <strong>NEUTRAL</strong> — ${r.symbol} close ${r.index_close} vs EMA10 ${r.ema10}. Size ×0.75`; }
-    else if (r.stance === "WEAK") { box.classList.add("defensive"); regimeHtml = `🟠 <strong>WEAK</strong> — ${r.symbol} close ${r.index_close} < EMA10 ${r.ema10}. Size ×0.5, AW only`; }
-    else if (r.stance === "CAPITULATION") { box.classList.add("defensive"); regimeHtml = `🔴 <strong>CAPITULATION</strong> — ${r.symbol} close ${r.index_close} < EMA10 ${r.ema10}. Size ×0.25, AW only`; }
-    else { regimeHtml = `⚠️ Regime unavailable: ${r.error || ""}`; }
-    let macroHtml = "";
+    /* Stance -> tone. Word first, then the evidence, then what we would do. */
+    const STANCE = {
+      STRONG_BULL: { tone: "bull", pulse: true, size: "×1.0", note: "full size" },
+      BULL: { tone: "bull", pulse: true, size: "×1.0", note: "full size" },
+      NEUTRAL: { tone: "neut", pulse: false, size: "×0.75", note: "smaller size" },
+      WEAK: { tone: "bear", pulse: false, size: "×0.5", note: "smaller size, defensive only" },
+      CAPITULATION: { tone: "bear", pulse: true, size: "×0.25", note: "minimum size, defensive only" },
+    };
+    const s = STANCE[r.stance];
+    let html = "";
+    if (s) {
+      if (s.tone === "bull") box.classList.add("bull");
+      if (s.tone === "bear") box.classList.add("defensive");
+      const zone = r.stance === "NEUTRAL" ? "vs" : (String(r.stance).includes("BULL") ? ">" : "<");
+      html = `<div class="fx-banner ${s.tone}">
+        ${fxPill(s.tone, r.stance, null, { pulse: s.pulse, sans: true })}
+        ${fxPill("", `${r.symbol} close`, fmt(r.index_close), { title: "Index close used for the regime read" })}
+        ${fxPill("", `EMA10 ${zone}`, fmt(r.ema10), { title: "The 10-session average of the index close" })}
+        ${fxPill(s.tone, "Size", s.size, { title: `Regime size guidance: ${s.note}` })}
+      </div>`;
+    } else {
+      html = `<div class="fx-banner neut">${fxPill("neut", "Regime unavailable", null, { sans: true })}
+        <span class="fx-chip mono-sans">${r.error || "no read returned"}</span></div>`;
+    }
+    let flow = null;
     try {
       const m = await api("/api/macro");
-      if (m && m.fii_net !== null && m.dii_net !== null) {
-        const net = m.fii_net + m.dii_net;
-        const icon = net >= 0 ? "🟢" : "🛑";
-        macroHtml = `<div style="margin-top:8px; font-size:14px; opacity:0.9;">${icon} Smart Money Flow: FII ${m.fii_net > 0 ? "+" : ""}${m.fii_net.toFixed(0)}Cr / DII ${m.dii_net > 0 ? "+" : ""}${m.dii_net.toFixed(0)}Cr (Net: ${m.net_flow > 0 ? "+" : ""}${m.net_flow.toFixed(0)}Cr)</div>`;
-      }
+      if (m && m.fii_net !== null && m.dii_net !== null) flow = m;
     } catch (e) {}
-    box.innerHTML = regimeHtml + macroHtml;
-  } catch (e) { box.classList.add("defensive"); box.innerHTML = "⚠️ Regime API unavailable."; }
+    if (flow) {
+      html += `<div class="fx-banner" style="margin-top:8px">
+        ${fxNumPill("FII", flow.fii_net, { dp: 0, title: "Foreign institutional net flow, rupees crore" })}
+        ${fxNumPill("DII", flow.dii_net, { dp: 0, title: "Domestic institutional net flow, rupees crore" })}
+        ${fxNumPill("Net", flow.net_flow, { dp: 0, pulse: true, title: "FII + DII net flow, rupees crore" })}
+        <span class="fx-chip mono-sans" style="color:var(--fx-zinc-500)">Smart money · ₹ cr</span>
+      </div>`;
+    }
+    box.innerHTML = html;
+  } catch (e) {
+    box.classList.add("defensive");
+    box.innerHTML = `<div class="fx-banner neut">${fxPill("neut", "Regime API unavailable", null, { sans: true })}</div>`;
+  }
 }
 
 // ============================================================
@@ -200,11 +273,12 @@ async function loadTopPicks() {
     box.innerHTML = "";
     (data.picks || []).forEach(x => {
       const subtitle = x.sector || "Unknown sector";
-      const primary = `<span data-explain="composite" data-explain-stop title="Click to learn what this means">Overall rank ${scorePct(x.composite)}</span>`
-        + ` · <span data-explain="p_win" data-explain-stop title="Click to learn what this means">chance of a good move ${scorePct(x.p_win)}</span>`
-        + ` · <span data-explain="accum" data-explain-stop title="Click to learn what this means">quiet accumulation ${fmt(x.accum)}</span>`;
-      const secondary = `<span data-explain="sector_rs" data-explain-stop title="Click to learn what this means">Industry strength ${scorePct(x.sector_rs)}</span>`
-        + (x.delivery != null ? ` · <span data-explain="delivery" data-explain-stop title="Click to learn what this means">shares held overnight ${scorePct(x.delivery)}</span>` : "");
+      /* Plain "label value" pairs separated by · — the card renderer turns them
+         into mono key/value cells. No markup in the data path. */
+      const primary = `Rank ${scorePct(x.composite)} · Event ${scorePct(x.p_win)}`
+        + ` · Accum ${fmt(x.accum)}`;
+      const secondary = `Sector RS ${scorePct(x.sector_rs)}`
+        + (x.delivery != null ? ` · Delivery ${scorePct(x.delivery)}` : "");
       const card = window.renderUnifiedCard({
         symbol: x.symbol,
         setup: !!x.setup,
@@ -313,7 +387,9 @@ async function loadPatterns() {
     const en = vals.filter(v => v.status === "ENABLED").length;
     const pr = vals.filter(v => v.status === "PROVISIONAL").length;
     const di = vals.filter(v => v.status === "DISABLED").length;
-    if (st) st.innerHTML = `<span>Stored formations</span><strong>${rows.length}${rows.length ? " · latest " + rows[0].date : ""} · gate: ${en} ON / ${pr} PROV / ${di} OFF</strong>`;
+    if (st) setStatusRow(st,
+      `${rows.length}${rows.length ? " · latest " + rows[0].date : ""} · gate ${en} ON / ${pr} PROV / ${di} OFF`,
+      rows.length ? "bull" : "neut");
     list.innerHTML = "";
     if (!rows.length) {
       list.innerHTML = "<p>No stored patterns yet. Press Run Full Scan above (or wait for the 18:05 IST nightly job), then Refresh.</p>";
@@ -517,10 +593,11 @@ async function loadRadar() {
       if (!box) return;
       box.innerHTML = "";
       (items || []).slice(0, 18).forEach(x => {
-        const subtitle = `1M ${fmt(x.perf1m, "%")} · 3M ${fmt(x.perf3m, "%")} · Vol ${fmt(x.relvol, "x")}`;
-        const primary = `₹${fmt(x.mcap_cr)} cr mcap`;
-        const secondary = x.p_win != null
-          ? `Model event score ${scorePct(x.p_win)} · uncalibrated` : "";
+        const subtitle = x.sector || "";
+        const primary = `Mcap ₹${fmt(x.mcap_cr)}cr`
+          + (x.p_win != null ? ` · Event ${scorePct(x.p_win)}` : "");
+        const secondary = `1M ${fmt(x.perf1m, "%")} · 3M ${fmt(x.perf3m, "%")}`
+          + ` · Vol ${fmt(x.relvol, "x")}`;
         box.appendChild(window.renderUnifiedCard({
           symbol: x.symbol, subtitle, primary, secondary,
         }));
@@ -575,13 +652,13 @@ async function loadLedger() {
       box.innerHTML = "<p>No graded trades yet. Run swing scans daily to build history.</p>";
     } else {
       box.innerHTML = `
-        <div class="level"><span>Ideas Recorded</span><strong>${stats.total_trades}</strong></div>
-        <div class="level"><span>Wins / Losses</span><strong>${stats.wins} / ${stats.losses}</strong></div>
-        <div class="level">${_ledgerLabel("Win Rate", "signal")}<strong>${fmt(stats.win_rate, "%")}</strong></div>
-        <div class="level">${_ledgerLabel("Profit per unit lost", "profit_factor")}<strong>${stats.profit_factor}</strong></div>
-        <div class="level">${_ledgerLabel("Average result per idea", "expectancy")}<strong>${fmt(stats.expectancy_r)}R</strong></div>
-        <div class="level">${_ledgerLabel("Total return", "r_multiple")}<strong>${fmt(stats.total_r)}R</strong></div>
-        <div class="level">${_ledgerLabel("Worst fall from a peak", "max_drawdown")}<strong>${fmt(stats.max_drawdown_r)}R</strong></div>`;
+        <div class="fx-row"><span>Ideas Recorded</span><strong>${stats.total_trades}</strong></div>
+        <div class="fx-row"><span>Wins / Losses</span><strong>${stats.wins} / ${stats.losses}</strong></div>
+        <div class="fx-row">${_ledgerLabel("Win Rate", "signal")}<strong>${fmt(stats.win_rate, "%")}</strong></div>
+        <div class="fx-row">${_ledgerLabel("Profit per unit lost", "profit_factor")}<strong>${stats.profit_factor}</strong></div>
+        <div class="fx-row">${_ledgerLabel("Average result per idea", "expectancy")}<strong>${fmt(stats.expectancy_r)}R</strong></div>
+        <div class="fx-row">${_ledgerLabel("Total return", "r_multiple")}<strong>${fmt(stats.total_r)}R</strong></div>
+        <div class="fx-row">${_ledgerLabel("Worst fall from a peak", "max_drawdown")}<strong>${fmt(stats.max_drawdown_r)}R</strong></div>`;
     }
     const rows = (trades && trades.trades) || [];
     const tbody = $("ledgerTable");
@@ -765,7 +842,7 @@ async function loadDeployment() {
     checks.forEach(c => {
       const icon = c.ok ? "✓" : "✗";
       const color = c.ok ? "#34d399" : "#fb7185";
-      html += `<div class="level" style="padding:8px 12px;">
+      html += `<div class="fx-row" style="padding:8px 12px;">
         <span style="color:${color}; font-weight:bold; min-width:20px; display:inline-block;">${icon}</span>
         <span style="flex:1; margin-left:8px;">${c.label}</span>
         <strong style="color:#9fb0cc; font-size:12px;">${c.detail || ""}</strong>
@@ -791,20 +868,29 @@ async function loadSourceHealth() {
       return;
     }
     sources.forEach(source => {
+      /* One hairline row per source: provider on the left, state chips on the
+         right, last error (if any) as a wrapped sub-line. */
       const row = document.createElement("div");
-      row.className = "level";
-      row.style.padding = "8px 12px";
-      const name = document.createElement("strong");
+      row.className = "fx-row";
+      const name = document.createElement("span");
+      name.className = "fx-k";
       name.textContent = source.provider;
-      const details = document.createElement("span");
-      details.style.cssText = "flex:1; margin-left:12px; color:#9fb0cc";
-      details.textContent = `${source.state} · rate limit ${source.rate_limit_ok ? "available" : "reached"} · ${source.calls} calls / ${source.failures} failures`;
-      row.append(name, details);
+      const status = document.createElement("span");
+      const stateTone = source.state === "ok" || source.state === "healthy" ? "is-bull"
+        : source.state === "error" || source.state === "failed" ? "is-bear" : "is-mut";
+      status.className = "fx-v " + stateTone;
+      const limitTone = source.rate_limit_ok ? "is-mut" : "is-neut";
+      status.innerHTML = `<span>${source.state}</span>`
+        + ` <span class="${limitTone}">${source.rate_limit_ok ? "rate ok" : "rate reached"}</span>`
+        + ` <span class="is-mut">${source.calls}/${source.failures}</span>`;
+      row.append(name, status);
       if (source.last_error) {
-        const error = document.createElement("small");
-        error.style.cssText = "display:block; color:#fb7185; margin-left:12px";
+        const error = document.createElement("p");
+        error.className = "fx-v is-bear";
+        error.style.cssText = "flex:1 1 100%; white-space:normal; font-size:11px; text-align:right";
         error.textContent = source.last_error;
         row.appendChild(error);
+        row.style.flexWrap = "wrap";
       }
       box.appendChild(row);
     });
@@ -816,22 +902,404 @@ async function loadSourceHealth() {
 // ============================================================
 // Chart
 // ============================================================
-function resetChart() {
-  const el = $("chart");
-  if (!el) return;
-  el.innerHTML = "";
-  chart = LightweightCharts.createChart(el, {
-    layout: { background: { color: "transparent" }, textColor: "#9fb0cc" },
-    grid: { vertLines: { color: "rgba(255,255,255,.05)" }, horzLines: { color: "rgba(255,255,255,.05)" } },
-    rightPriceScale: { borderColor: "rgba(255,255,255,.08)" },
-    timeScale: { borderColor: "rgba(255,255,255,.08)" },
-    crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
+/* Pattern annotations ("HEAD_S", "BULL_INVERS", "ASCEND", "DOUBLE"...) pile up on
+   a phone and hide the candles. They are off by default under 768px and the user
+   can bring them back with the pill toggle above the chart. */
+const FX_PATTERN_PREF = "nse.showPatterns";
+const FX_EMA10_PREF = "nse.showEma10";
+let _patternSignals = [];
+let _patternsVisible = null;
+let _ema10Visible = null;
+
+function _patternsWantVisible() {
+  if (_patternsVisible !== null) return _patternsVisible;
+  try {
+    const stored = sessionStorage.getItem(FX_PATTERN_PREF);
+    if (stored === "1") { _patternsVisible = true; return true; }
+    if (stored === "0") { _patternsVisible = false; return false; }
+  } catch (e) {}
+  _patternsVisible = window.innerWidth >= 768;
+  return _patternsVisible;
+}
+
+/* EMA 10 stays available but ships OFF: the owner's clean default is 20/50/200. */
+function _ema10WantVisible() {
+  if (_ema10Visible !== null) return _ema10Visible;
+  try {
+    const stored = sessionStorage.getItem(FX_EMA10_PREF);
+    if (stored === "1") { _ema10Visible = true; return true; }
+    if (stored === "0") { _ema10Visible = false; return false; }
+  } catch (e) {}
+  _ema10Visible = false;
+  return _ema10Visible;
+}
+
+/* RSI-14 with Wilder smoothing, derived from the candle closes we already hold.
+   /api/cockpit/{symbol}/chart returns no RSI key and terminal_api.py is owned by
+   another writer this pass, so computing it client-side keeps the API contract
+   untouched and still gives a real oscillator. */
+function _rsi14(candles, period) {
+  const p = period || 14;
+  const out = [];
+  if (!candles || candles.length <= p) return out;
+  const close = (i) => Number(candles[i].close);
+  let gain = 0, loss = 0;
+  for (let i = 1; i <= p; i++) {
+    const d = close(i) - close(i - 1);
+    if (d >= 0) gain += d; else loss -= d;
+  }
+  let avgGain = gain / p, avgLoss = loss / p;
+  const push = (i) => {
+    let value;
+    if (avgLoss === 0) value = 100;
+    else if (avgGain === 0) value = 0;
+    else value = 100 - 100 / (1 + avgGain / avgLoss);
+    out.push({ time: candles[i].time, value: Math.round(value * 100) / 100 });
+  };
+  push(p);
+  for (let i = p + 1; i < candles.length; i++) {
+    const d = close(i) - close(i - 1);
+    avgGain = (avgGain * (p - 1) + (d > 0 ? d : 0)) / p;
+    avgLoss = (avgLoss * (p - 1) + (d < 0 ? -d : 0)) / p;
+    push(i);
+  }
+  return out;
+}
+
+function _chartTheme() {
+  return {
+    layout: {
+      background: { color: "transparent" }, textColor: "#a1a1aa",
+      fontFamily: getComputedStyle(document.body).fontFamily, fontSize: 11,
+    },
+    grid: {
+      vertLines: { color: "rgba(255,255,255,.04)" },
+      horzLines: { color: "rgba(255,255,255,.04)" },
+    },
+  };
+}
+
+/* Two chart instances means two right price scales. If they differ in width the
+   shared time axis drifts, so both are pinned to the same measured width. */
+function _paneScaleWidth(c) {
+  try {
+    const ps = c && typeof c.priceScale === "function" ? c.priceScale("right") : null;
+    return ps && typeof ps.width === "function" ? Number(ps.width()) || 0 : 0;
+  } catch (e) { return 0; }
+}
+
+function _equalizePaneScales() {
+  if (!chart || !rsiChart) return;
+  const pw = _paneScaleWidth(chart), rw = _paneScaleWidth(rsiChart);
+  const w = Math.max(76, pw, rw);
+  try {
+    if (pw && Math.abs(pw - w) > 1) chart.priceScale("right").applyOptions({ minimumWidth: w });
+    if (rw && Math.abs(rw - w) > 1) rsiChart.priceScale("right").applyOptions({ minimumWidth: w });
+  } catch (e) {}
+}
+
+function _resizePanes() {
+  const fit = (el, c) => {
+    if (!el || !c) return;
+    const r = el.getBoundingClientRect();
+    const w = Math.floor(r.width), h = Math.floor(r.height);
+    if (w > 0 && h > 0) { try { c.resize(w, h); } catch (e) {} }
+  };
+  fit($("chartPrice"), chart);
+  fit($("chartRsi"), rsiChart);
+}
+
+/* Panning or zooming either pane moves the other: one shared time axis. */
+function _linkTimeScales(a, b) {
+  if (!a || !b) return;
+  const mirror = (src, dst) => src.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+    if (!range || _paneSync) return;
+    _paneSync = true;
+    try { dst.timeScale().setVisibleLogicalRange(range); } catch (e) {}
+    _paneSync = false;
   });
+  mirror(a, b);
+  mirror(b, a);
+}
+
+function _bindCrosshairReadout() {
+  const bind = (c) => {
+    if (!c) return;
+    c.subscribeCrosshairMove((param) => {
+      if (!param || !param.time) { _paintReadout(); return; }
+      const t = String(param.time);
+      _paintReadout(_chartCandleByTime.get(t), t, _chartRsiByTime.get(t));
+    });
+  };
+  bind(chart);
+  bind(rsiChart);
+}
+
+/* One legible readout: OHLC + RSI value, plus the MAs that are actually drawn.
+   Falls back to the latest stored bar when the pointer is off the chart. */
+function _paintReadout(bar, time, rsi) {
+  const el = $("chartReadout");
+  if (!el) return;
+  const b = bar || _chartLastBar;
+  if (!b) { el.textContent = ""; return; }
+  const t = time || b.time;
+  const wide = window.innerWidth >= 768;
+  const n2 = (v) => (v == null || !Number.isFinite(Number(v))) ? "—" : Number(v).toFixed(2);
+  const rv = (rsi === undefined || rsi === null)
+    ? (time ? _chartRsiByTime.get(t) : _chartLastRsi) : rsi;
+  const ema = _chartEmaByTime.get(t) || {};
+  const bits = [`<span class="ro-date">${t}</span>`];
+  if (wide) {
+    bits.push(`<span class="ro-k">O</span>${n2(b.open)} <span class="ro-k">H</span>${n2(b.high)} `
+      + `<span class="ro-k">L</span>${n2(b.low)} <span class="ro-k">C</span>${n2(b.close)}`);
+  } else {
+    bits.push(`<span class="ro-k">C</span>${n2(b.close)}`);
+  }
+  bits.push(`<span class="ro-rsi">RSI ${rv == null ? "—" : Number(rv).toFixed(1)}</span>`);
+  if (wide) {
+    [["ema20", "e20"], ["ema50", "e50"], ["ema200", "e200"]].forEach(([key, label]) => {
+      if (_maData[key]) bits.push(`<span class="ro-k">${label}</span>${n2(ema[key])}`);
+    });
+    if (_maData.ema10 && _ema10WantVisible()) bits.push(`<span class="ro-k">e10</span>${n2(ema.ema10)}`);
+  }
+  el.innerHTML = bits.join(" ");
+}
+
+/* Show the recent, readable window instead of cramming all ~420 bars into the
+   pane; fitContent only when the stored history is already short. */
+function _applyDefaultRange() {
+  if (!chart) return;
+  const n = _chartCandleByTime.size;
+  if (!n) return;
+  const target = window.innerWidth < 620 ? 60 : window.innerWidth < 950 ? 100 : 140;
+  try {
+    if (n > target + 8) chart.timeScale().setVisibleLogicalRange({ from: n - target, to: n + 3 });
+    else chart.timeScale().fitContent();
+  } catch (e) {}
+}
+
+function _setChartData(data) {
+  const candles = (data && data.candles) || [];
+  _chartCandleByTime = new Map(candles.map((c) => [String(c.time), c]));
+  _chartLastBar = candles.length ? candles[candles.length - 1] : null;
+  _maData = {
+    ema10: !!(data.ema10 && data.ema10.length),
+    ema20: !!(data.ema20 && data.ema20.length),
+    ema50: !!(data.ema50 && data.ema50.length),
+    ema200: !!(data.ema200 && data.ema200.length),
+  };
+  candleSeries.setData(candles);
+  ema10.setData(data.ema10 || []);
+  ema20.setData(data.ema20 || []);
+  ema50.setData(data.ema50 || []);
+  ema200.setData(data.ema200 || []);
+  ema10.applyOptions({ visible: _ema10WantVisible() });
+  _chartEmaByTime = new Map();
+  ["ema10", "ema20", "ema50", "ema200"].forEach((key) => {
+    (data[key] || []).forEach((point) => {
+      const t = String(point.time);
+      const rec = _chartEmaByTime.get(t) || {};
+      rec[key] = point.value;
+      _chartEmaByTime.set(t, rec);
+    });
+  });
+  const rsi = _rsi14(candles, 14);
+  _chartRsiByTime = new Map(rsi.map((point) => [String(point.time), point.value]));
+  _chartLastRsi = rsi.length ? rsi[rsi.length - 1].value : null;
+  rsiReady = rsi.length > 0;
+  rsiSeries.setData(rsi);
+  /* The RSI line starts 14 bars late (Wilder warm-up). The band is therefore
+     drawn on EVERY price bar's timestamp, so the RSI pane owns the same time
+     axis as the price pane and logical-space pan/zoom mirroring lines up
+     exactly instead of drifting by the warm-up offset. */
+  rsiBand.setData(candles.map((c) => ({ time: c.time, value: 70 })));
+  _renderChartChrome();
+  _applyDefaultRange();
+  requestAnimationFrame(() => {
+    _resizePanes();
+    _applyDefaultRange();
+    _equalizePaneScales();
+    _paintReadout();
+  });
+}
+
+function _applyEma10() {
+  const on = _ema10WantVisible();
+  if (ema10) ema10.applyOptions({ visible: on });
+  _renderChartChrome();
+  _paintReadout();
+}
+
+function _renderChartChrome() {
+  const toolbar = $("chartToolbar");
+  const n = _patternSignals.length;
+  const on = _patternsWantVisible();
+  const ema10On = _ema10WantVisible();
+  if (toolbar) {
+    toolbar.innerHTML = `
+      <span class="fx-chip mono-sans" style="color:var(--fx-zinc-500)">
+        <span class="fx-dot" style="background:var(--fx-bull)"></span>Price
+        <span style="opacity:.5">/</span>EMA 20 · 50 · 200
+      </span>
+      ${_maData.ema10 ? `<button type="button" id="ema10Toggle" class="fx-toggle" aria-pressed="${ema10On ? "true" : "false"}"
+        title="Show or hide the fast 10-period average. Off by default so the 20/50/200 set stays readable.">
+        <span>EMA 10</span>
+      </button>` : ""}
+      <button type="button" id="patternToggle" class="fx-toggle" aria-pressed="${on ? "true" : "false"}"
+        data-icon="layers" data-icon-size="14"
+        title="${n ? "Show or hide the algorithmic pattern annotations over the price lines" : "No stored pattern annotations for this symbol yet"}">
+        <span>${on ? "Hide" : "Show"} Patterns</span>
+        <span class="fx-chip-count">(${n})</span>
+      </button>`;
+    const emaBtn = $("ema10Toggle");
+    if (emaBtn) {
+      emaBtn.addEventListener("click", () => {
+        _ema10Visible = !_ema10WantVisible();
+        try { sessionStorage.setItem(FX_EMA10_PREF, _ema10Visible ? "1" : "0"); } catch (e) {}
+        _applyEma10();
+      });
+    }
+    const btn = $("patternToggle");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        _patternsVisible = !_patternsWantVisible();
+        try { sessionStorage.setItem(FX_PATTERN_PREF, _patternsVisible ? "1" : "0"); } catch (e) {}
+        _applyMarkersToSeries();
+        _renderChartChrome();
+      });
+    }
+  }
+  const legend = $("chartLegend");
+  if (legend) {
+    legend.hidden = !candleSeries;
+    /* Only lines that are actually drawn get a swatch, and a hidden MA is shown
+       as hidden — never as if it were on the pane. */
+    const items = ['<span class="lg-item"><span class="lg-swatch c-candle"></span>Price</span>'];
+    [["ema10", "EMA 10", "c-ema10", ema10On],
+     ["ema20", "EMA 20", "c-ema20", true],
+     ["ema50", "EMA 50", "c-ema50", true],
+     ["ema200", "EMA 200", "c-ema200", true]].forEach(([key, label, cls, drawn]) => {
+      if (!_maData[key]) return;
+      items.push(`<span class="lg-item${drawn ? "" : " is-off"}"><span class="lg-swatch ${cls}"></span>${label}`
+        + `${drawn ? "" : ' <span class="lg-off">off</span>'}</span>`);
+    });
+    if (rsiReady) {
+      items.push('<span class="lg-item"><span class="lg-swatch c-rsi"></span>RSI 14 '
+        + '<span class="lg-off">30/70</span></span>');
+    }
+    legend.innerHTML = items.join("");
+  }
+  const note = $("chartMobileNote");
+  if (note) {
+    note.textContent = on
+      ? "Pattern annotations are on. Turn them off to read the price lines cleanly."
+      : "Pattern annotations are hidden on narrow screens so the price line stays readable.";
+  }
+}
+
+/** Draw (or clear) the stored pattern annotations according to the toggle. */
+function _applyMarkersToSeries() {
+  if (!candleSeries) return;
+  const visible = _patternsWantVisible();
+  const wrap = document.querySelector(".fx-chart-wrap");
+  if (wrap) wrap.classList.toggle("is-patterns-hidden", !visible);
+  if (!visible || !_patternSignals.length) {
+    candleSeries.setMarkers([]);
+    return;
+  }
+  /* Text labels are the biggest offenders at phone width; keep the markers,
+     drop the words. */
+  const showText = window.innerWidth >= 768;
+  const markers = _patternSignals.map((s) => {
+    const d = String(s.date).slice(0, 10);
+    let color = "#fbbf24";
+    let position = "aboveBar";
+    let shape = "circle";
+    const text = showText && s.pattern ? s.pattern.slice(0, 6) : "";
+    if (s.outcome === "WIN") { color = "#34d399"; shape = "arrowUp"; position = "belowBar"; }
+    else if (s.outcome === "LOSS") { color = "#fb7185"; shape = "arrowDown"; position = "aboveBar"; }
+    else if (s.outcome === "EXPIRED" || s.outcome === "TIMEOUT") { color = "#fbbf24"; shape = "circle"; }
+    else { color = "#60a5fa"; shape = "square"; }
+    if (s.direction === "BEARISH") {
+      shape = "arrowDown";
+      position = "aboveBar";
+      if (s.outcome === "LOSS") color = "#34d399";
+    }
+    return { time: d, position, color, shape, text, size: 0.8 };
+  });
+  candleSeries.setMarkers(markers);
+}
+
+function resetChart() {
+  const priceEl = $("chartPrice");
+  const rsiEl = $("chartRsi");
+  if (!priceEl || !rsiEl) return;
+  if (chart) { try { chart.remove(); } catch (e) {} }
+  if (rsiChart) { try { rsiChart.remove(); } catch (e) {} }
+  chart = null; candleSeries = null;
+  ema10 = ema20 = ema50 = ema200 = null;
+  rsiChart = null; rsiSeries = null; rsiBand = null; rsiReady = false;
+  priceEl.innerHTML = "";
+  rsiEl.innerHTML = "";
+  const theme = _chartTheme();
+  const crosshair = {
+    mode: LightweightCharts.CrosshairMode.Normal,
+    vertLine: { color: "rgba(255,255,255,.3)", width: 1, style: LightweightCharts.LineStyle.Dashed, labelVisible: true },
+    horzLine: { color: "rgba(255,255,255,.3)", width: 1, style: LightweightCharts.LineStyle.Dashed, labelVisible: true },
+  };
+  const scale = { borderColor: "rgba(255,255,255,.08)", minimumWidth: 76 };
+  const scroll = { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false };
+
+  /* Price pane: no time axis of its own — the RSI pane below carries the shared
+     dates, which is the two-pane TradingView / Angel-One arrangement. */
+  chart = LightweightCharts.createChart(priceEl, Object.assign({}, theme, {
+    autoSize: true,
+    rightPriceScale: Object.assign({ scaleMargins: { top: 0.14, bottom: 0.14 } }, scale),
+    timeScale: {
+      visible: false, borderColor: "rgba(255,255,255,.08)",
+      rightOffset: 4, barSpacing: 6, fixLeftEdge: true, fixRightEdge: true,
+    },
+    crosshair,
+    handleScroll: scroll,
+  }));
   candleSeries = chart.addCandlestickSeries({ upColor: "#34d399", downColor: "#fb7185", borderVisible: false, wickUpColor: "#34d399", wickDownColor: "#fb7185" });
-  ema10 = chart.addLineSeries({ color: "#60a5fa", lineWidth: 2 });
-  ema20 = chart.addLineSeries({ color: "#fbbf24", lineWidth: 2 });
-  ema50 = chart.addLineSeries({ color: "#a78bfa", lineWidth: 1 });
-  ema200 = chart.addLineSeries({ color: "#94a3b8", lineWidth: 1 });
+  ema10 = chart.addLineSeries({ color: "#60a5fa", lineWidth: 1, visible: false, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+  ema20 = chart.addLineSeries({ color: "#fbbf24", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+  ema50 = chart.addLineSeries({ color: "#a78bfa", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+  ema200 = chart.addLineSeries({ color: "#94a3b8", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+
+  /* RSI pane: own 0-100 scale, shaded 30-70 band, dashed 30/70 levels. */
+  rsiChart = LightweightCharts.createChart(rsiEl, Object.assign({}, theme, {
+    autoSize: true,
+    rightPriceScale: Object.assign({ scaleMargins: { top: 0.12, bottom: 0.12 } }, scale),
+    timeScale: {
+      visible: true, borderColor: "rgba(255,255,255,.08)",
+      rightOffset: 4, barSpacing: 6, fixLeftEdge: true, fixRightEdge: true,
+    },
+    crosshair,
+    handleScroll: scroll,
+  }));
+  rsiBand = rsiChart.addBaselineSeries({
+    baseValue: { type: "price", price: 30 },
+    topFillColor1: "rgba(96,165,250,.17)",
+    topFillColor2: "rgba(96,165,250,.05)",
+    bottomFillColor1: "rgba(0,0,0,0)",
+    bottomFillColor2: "rgba(0,0,0,0)",
+    topLineColor: "rgba(0,0,0,0)",
+    bottomLineColor: "rgba(0,0,0,0)",
+    lineWidth: 1, lineVisible: false,
+    priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+  });
+  rsiSeries = rsiChart.addLineSeries({ color: "#c084fc", lineWidth: 2, priceLineVisible: false, lastValueVisible: true, crosshairMarkerVisible: true, crosshairMarkerRadius: 3 });
+  rsiSeries.applyOptions({ autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }) });
+  rsiLevelLines = [
+    rsiSeries.createPriceLine({ price: 70, color: "rgba(251,113,133,.75)", lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "" }),
+    rsiSeries.createPriceLine({ price: 30, color: "rgba(52,211,153,.75)", lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "" }),
+  ];
+
+  _linkTimeScales(chart, rsiChart);
+  _bindCrosshairReadout();
+  _renderChartChrome();
   chart.subscribeClick((param) => {
     if (!param || !param.time || !param.seriesData) return;
     const candle = param.seriesData.get(candleSeries);
@@ -845,36 +1313,19 @@ function resetChart() {
       close: candle.close,
     });
   });
+  requestAnimationFrame(() => { _resizePanes(); _equalizePaneScales(); _paintReadout(); });
 }
 
 async function _applyPatternMarkers(symbol) {
   if (!candleSeries) return;
   try {
     const h = await api(`/api/patterns/history/${symbol}?limit=500`);
-    const sigs = (h && h.signals) || [];
-    if (!sigs.length) {
-      candleSeries.setMarkers([]);
-      return;
-    }
-    const markers = sigs.map(s => {
-      const d = String(s.date).slice(0, 10);
-      let color = "#fbbf24";
-      let position = "aboveBar";
-      let shape = "circle";
-      let text = s.pattern ? s.pattern.slice(0, 6) : "";
-      if (s.outcome === "WIN") { color = "#34d399"; shape = "arrowUp"; position = "belowBar"; }
-      else if (s.outcome === "LOSS") { color = "#fb7185"; shape = "arrowDown"; position = "aboveBar"; }
-      else if (s.outcome === "EXPIRED" || s.outcome === "TIMEOUT") { color = "#fbbf24"; shape = "circle"; }
-      else { color = "#60a5fa"; shape = "square"; }
-      if (s.direction === "BEARISH") {
-        shape = "arrowDown";
-        position = "aboveBar";
-        if (s.outcome === "LOSS") color = "#34d399";
-      }
-      return { time: d, position, color, shape, text, size: 0.8 };
-    });
-    candleSeries.setMarkers(markers);
-  } catch (e) {}
+    _patternSignals = (h && h.signals) || [];
+  } catch (e) {
+    _patternSignals = [];
+  }
+  _applyMarkersToSeries();
+  _renderChartChrome();
 }
 
 async function loadSymbol(symbol) {
@@ -916,11 +1367,7 @@ async function loadSymbol(symbol) {
     if (setupSummary) setupSummary.textContent = "No stored price history.";
     return;
   }
-  candleSeries.setData(chartData.candles);
-  ema10.setData(chartData.ema10 || []);
-  ema20.setData(chartData.ema20 || []);
-  ema50.setData(chartData.ema50 || []);
-  ema200.setData(chartData.ema200 || []);
+  _setChartData(chartData);
   if (subEl) subEl.textContent = `${summary.sector || "Unknown sector"} · ₹${fmt(summary.mcap_cr)} cr · Fund ${fmt(summary.fund_score)}`;
   renderStockPulse(symbol, chartData.candles);
   if (window.loadResearch) window.loadResearch(symbol);
@@ -936,15 +1383,15 @@ async function loadSymbol(symbol) {
     candleSeries.createPriceLine({ price: setup.target, color: "#60a5fa", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "Target 3R" });
     if (setupSummary) {
       setupSummary.innerHTML = `
-        <div class="level"><span>Trigger</span><strong>${setup.trigger}</strong></div>
-        <div class="level"><span>PDL Stop</span><strong>${setup.stop}</strong></div>
-        <div class="level"><span>Target (3R)</span><strong>${setup.target}</strong></div>
+        <div class="fx-row"><span>Trigger</span><strong>${setup.trigger}</strong></div>
+        <div class="fx-row"><span>PDL Stop</span><strong>${setup.stop}</strong></div>
+        <div class="fx-row"><span>Target (3R)</span><strong>${setup.target}</strong></div>
         <button class="toggle-btn" data-target="setupDetails">Show setup details</button>
         <div id="setupDetails" class="details-panel hidden">
-          <div class="level"><span data-explain="pullback" title="Click to learn what this is">The pause dip</span><strong>${(setup.pullback * 100).toFixed(1)}%</strong></div>
-          <div class="level"><span data-explain="impulse" title="Click to learn what this is">The earlier rise</span><strong>${(setup.impulse * 100).toFixed(1)}%</strong></div>
-          <div class="level"><span>Resting on average price</span><strong>${setup.zone}</strong></div>
-          <div class="level"><span data-explain="shape_score" title="Click to learn what this is">How tidy the pause is</span><strong>${setup.shape ?? "—"}/100</strong></div>
+          <div class="fx-row"><span data-explain="pullback" title="Click to learn what this is">The pause dip</span><strong>${(setup.pullback * 100).toFixed(1)}%</strong></div>
+          <div class="fx-row"><span data-explain="impulse" title="Click to learn what this is">The earlier rise</span><strong>${(setup.impulse * 100).toFixed(1)}%</strong></div>
+          <div class="fx-row"><span>Resting on average price</span><strong>${setup.zone}</strong></div>
+          <div class="fx-row"><span data-explain="shape_score" title="Click to learn what this is">How tidy the pause is</span><strong>${setup.shape ?? "—"}/100</strong></div>
         </div>`;
     }
     try {
@@ -955,10 +1402,10 @@ async function loadSymbol(symbol) {
     if (setupBadge) { setupBadge.className = "badge muted"; setupBadge.textContent = "No live setup"; }
     if (setupSummary) {
       setupSummary.innerHTML = `
-        <div class="level"><span>Symbol</span><strong>${symbol}</strong></div>
-        <div class="level"><span>Status</span><strong>${summary.status || "—"}</strong></div>
-        <div class="level"><span>Fund Score</span><strong>${fmt(summary.fund_score)}</strong></div>
-        <div class="level"><span>Mcap</span><strong>₹${fmt(summary.mcap_cr)} cr</strong></div>`;
+        <div class="fx-row"><span>Symbol</span><strong>${symbol}</strong></div>
+        <div class="fx-row"><span>Status</span><strong>${summary.status || "—"}</strong></div>
+        <div class="fx-row"><span>Fund Score</span><strong>${fmt(summary.fund_score)}</strong></div>
+        <div class="fx-row"><span>Mcap</span><strong>₹${fmt(summary.mcap_cr)} cr</strong></div>`;
     }
     try {
       const sz = await api(`/api/sizing/${symbol}`);
@@ -966,8 +1413,8 @@ async function loadSymbol(symbol) {
     } catch (e) {}
   }
   try {
-    const meta = await api(`/api/meta/${symbol}`);
-    if (meta && meta.p_win != null && setupSummary) {
+    const meta = (await api(`/api/meta/${symbol}`)) || {};
+    if (setupSummary) {
       /* Feature names are internal codes (atr, vc, slope200...). Nobody outside
          the model should have to read them, so each gets a plain gloss. */
       const FEATURE_PLAIN = {
@@ -1001,22 +1448,48 @@ async function loadSymbol(symbol) {
       };
       const why = (meta.why || []).map(w => {
         const plain = FEATURE_PLAIN[w.feature] || w.feature.replace(/_/g, " ");
-        return `<div class="level"><span title="Internal feature name: ${w.feature}">${plain}</span>`
-          + `<strong>${w.impact > 0 ? "+" : ""}${w.impact}</strong></div>`;
+        return `<div class="fx-row"><span class="fx-k" title="Internal feature name: ${w.feature}">${plain}</span>`
+          + `<span class="fx-v ${w.impact > 0 ? "is-bull" : "is-bear"}">${w.impact > 0 ? "+" : ""}${w.impact}</span></div>`;
       }).join("");
+      /* The score row is the whole card: label + target chip + the figure. No
+         prose in the layout — the help text lives behind the (?) and inside the
+         collapsible methodology block below. The row renders even when no score
+         is stored, so the layout is never silently missing: it says so instead. */
+      const hasScore = meta.p_win != null && Number.isFinite(Number(meta.p_win));
+      const pct = hasScore ? Math.round(Number(meta.p_win) * 100) : null;
+      const tone = !hasScore ? "is-none" : pct >= 50 ? "is-bull" : pct >= 35 ? "is-neut" : "is-bear";
+      const target = meta.target_pct != null && Number.isFinite(Number(meta.target_pct))
+        ? Math.round(Number(meta.target_pct) * 100)
+        : 50;
+      const targetChip = `<span class="fx-score-target">Target &gt;${target}%</span>`;
+      const scoreValue = hasScore ? `${pct}%` : "—";
+      const scoreNote = hasScore ? "" : `<span class="fx-score-note">no score stored</span>`;
       const whyBlock = why
-        ? `<button class="toggle-btn" data-target="shapDetails">Show what pushed this score up or down</button>
-           <div id="shapDetails" class="details-panel hidden">
-             <div class="level"><span data-explain="p_win" title="Click to learn what this is">Chance of a good move</span><strong>${scorePct(meta.p_win)}</strong></div>
-             <p class="method-note">Each line below is one thing the model looked at, and how much it pushed today's score up (+) or down (&minus;). A plus does not mean the company is good &mdash; only that this model weighed it that way.</p>
+        ? `<details class="fx-method"><summary>
+             <svg class="fx-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m8 15 3.5-4 3 3L20 7"/></svg>
+             What pushed this score up or down
+             <svg class="fx-icon-sm fx-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+           </summary>
+           <div class="fx-method-body">
+             <p>Each line is one thing the model looked at, and how much it pushed today's score up (+) or down (&minus;). A plus does not mean the company is good &mdash; only that this model weighed it that way.</p>
              ${why}
-           </div>`
+           </div>
+         </details>`
         : "";
       setupSummary.insertAdjacentHTML("beforeend", `
         <div class="model-explainer">
-          <div class="level"><span data-explain="p_win" title="Click to learn what this score means">Model event score</span><strong>${scorePct(meta.p_win)}</strong></div>
-          <p class="method-note">${window.MODEL_EVENT_SCORE_HELP}</p>
-          <p class="method-note">This is one opinion, not a verdict. The system's own measured record sits far below what a score like this suggests, so treat it as a lean to check against the plain checklist above.</p>
+          <div class="fx-score-row ${tone}">
+            <span class="fx-score-label">
+              <span data-explain="p_win" data-explain-stop title="${window.MODEL_EVENT_SCORE_HELP}">Model Event Score</span>
+              <button type="button" class="fx-help" data-explain="p_win"
+                aria-label="What is the model event score?">?</button>
+            </span>
+            ${scoreNote}
+            ${targetChip}
+            <span class="fx-score-value">${scoreValue}</span>
+          </div>
         </div>${whyBlock}`);
     }
   } catch (e) {}
@@ -1054,7 +1527,6 @@ async function loadSymbol(symbol) {
   }
   await _applyPatternMarkers(symbol);
   if (requestId !== _symbolRequestId) return;
-  if (chart) chart.timeScale().fitContent();
 }
 window.loadSymbol = loadSymbol;
 
@@ -1075,10 +1547,14 @@ function renderStockPulse(symbol, candles) {
   };
   const daily = previous && Number(previous.close) > 0
     ? (close / Number(previous.close) - 1) * 100 : null;
-  const fmtPct = value => value == null || !Number.isFinite(value)
+  const pctText = value => value == null || !Number.isFinite(value)
     ? "insufficient bars" : `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
-  const latestLine = (label, value) => `
-    <div class="level"><span>${label}</span><strong>${value}</strong></div>`;
+  const pctTone = value => value == null || !Number.isFinite(value)
+    ? "is-mut" : value > 0 ? "is-bull" : value < 0 ? "is-bear" : "is-mut";
+  /* Clean key/value rows — no boxes, no disabled-input look. */
+  const latestLine = (label, value, cls) => `
+    <div class="fx-row"><span class="fx-k">${label}</span>
+      <span class="fx-v ${cls || ""}">${value}</span></div>`;
   const calcEma = period => {
     if (bars.length < period) return null;
     const alpha = 2 / (period + 1);
@@ -1097,15 +1573,32 @@ function renderStockPulse(symbol, candles) {
     .filter(([, value]) => value != null && Number.isFinite(Number(value)));
   const trend = available.length
     ? available.map(([name, value]) =>
-      `${close >= Number(value) ? "above" : "below"} ${name}`).join(" · ")
+      `${close >= Number(value) ? "above" : "below"} ${name}`).join(" / ")
     : "EMA context unavailable";
+  const trendTone = available.length && available.every(([, v]) => close >= Number(v))
+    ? "is-bull" : "is-mut";
   box.innerHTML = `
-    <div class="level"><span>Latest stored close · ${last.time}</span><strong>₹${close.toFixed(2)}</strong></div>
-    ${latestLine("1-session change", fmtPct(daily))}
-    ${latestLine("20-session change", fmtPct(change(20)))}
-    ${latestLine("60-session change", fmtPct(change(60)))}
-    ${latestLine("Trend context", trend)}
-    <p class="method-note">Daily end-of-day data only. This describes recent price behaviour; it does not predict the next move. Source bar date: ${last.time}.</p>`;
+    <div class="fx-row">
+      <span class="fx-k">Latest stored close <span class="fx-label">${last.time}</span></span>
+      <span class="fx-v is-lead">₹${close.toFixed(2)}</span>
+    </div>
+    ${latestLine("1-session change", pctText(daily), pctTone(daily))}
+    ${latestLine("20-session change", pctText(change(20)), pctTone(change(20)))}
+    ${latestLine("60-session change", pctText(change(60)), pctTone(change(60)))}
+    ${latestLine("Trend context", trend, `${trendTone} is-long`)}
+    <details class="fx-method">
+      <summary>
+        <svg class="fx-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        Methodology &amp; source
+        <svg class="fx-icon-sm fx-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </summary>
+      <div class="fx-method-body">
+        <p>Daily end-of-day data only. This describes recent price behaviour; it does not predict the next move.</p>
+        <p>Source bar date: <span class="fx-fig">${last.time}</span>. Changes are measured close-to-close against the stored bars, not against an intraday feed.</p>
+      </div>
+    </details>`;
 }
 
 // ============================================================
@@ -1123,29 +1616,29 @@ function renderSizing(sz) {
   }
   let compact, details;
   if (sz.error) {
-    compact = `<div class="level"><span>Sizing</span><strong>unavailable yet</strong></div>`;
+    compact = `<div class="fx-row"><span>Sizing</span><strong>unavailable yet</strong></div>`;
     details = capitalEditor(sz.capital);
   } else if (sz.shares !== undefined) {
     const allocatedPct = sz.actual_alloc_pct ?? sz.alloc_pct;
     const plannedRiskPct = sz.actual_planned_risk_pct ?? sz.risk_pct;
-    compact = `<div class="level"><span>Research position size</span><strong>${moneyFmt(sz.suggested_value)} (${fmt(allocatedPct, "%")})</strong></div>
-      <div class="level"><span>Quantity at trigger</span><strong>${sz.shares} shares${sz.actionable === false ? " (not actionable)" : ""}</strong></div>`;
+    compact = `<div class="fx-row"><span>Research position size</span><strong>${moneyFmt(sz.suggested_value)} (${fmt(allocatedPct, "%")})</strong></div>
+      <div class="fx-row"><span>Quantity at trigger</span><strong>${sz.shares} shares${sz.actionable === false ? " (not actionable)" : ""}</strong></div>`;
     details = `
-      <div class="level"><span>Capital</span><strong>${moneyFmt(sz.capital)}</strong></div>
-      <div class="level"><span>Planned stop-risk budget</span><strong>${fmt(sz.planned_risk_budget_pct ?? sz.risk_per_trade_pct, "%")}</strong></div>
-      <div class="level"><span>Regime adjustment</span><strong>${sz.regime_level || "—"} · ×${fmt(sz.regime_mult)}</strong></div>
-      <div class="level"><span>Shape adjustment</span><strong>${fmt(sz.shape_score)} / 100 · ×${fmt(sz.quality_mult)}</strong></div>
-      <div class="level"><span>Planned loss at stop</span><strong>${moneyFmt(sz.risk_amount)} (${fmt(plannedRiskPct, "%")})</strong></div>
-      <div class="level"><span>Limiting rule</span><strong>${sz.binding_cap || "—"}</strong></div>
+      <div class="fx-row"><span>Capital</span><strong>${moneyFmt(sz.capital)}</strong></div>
+      <div class="fx-row"><span>Planned stop-risk budget</span><strong>${fmt(sz.planned_risk_budget_pct ?? sz.risk_per_trade_pct, "%")}</strong></div>
+      <div class="fx-row"><span>Regime adjustment</span><strong>${sz.regime_level || "—"} · ×${fmt(sz.regime_mult)}</strong></div>
+      <div class="fx-row"><span>Shape adjustment</span><strong>${fmt(sz.shape_score)} / 100 · ×${fmt(sz.quality_mult)}</strong></div>
+      <div class="fx-row"><span>Planned loss at stop</span><strong>${moneyFmt(sz.risk_amount)} (${fmt(plannedRiskPct, "%")})</strong></div>
+      <div class="fx-row"><span>Limiting rule</span><strong>${sz.binding_cap || "—"}</strong></div>
       <p class="method-note">${sz.risk_note || "Fixed-risk research sizing. No calibrated trade win probability or Kelly input is used. Quantity is limited by planned stop risk and maximum allocation; gaps, slippage, fees, and taxes can increase losses."}</p>
       ${sz.reason ? `<p class="method-warning">${sz.reason}</p>` : ""}`;
   } else {
-    compact = `<div class="level"><span>Suggested allocation</span><strong>${fmt(sz.alloc_pct, "%")} of capital</strong></div>`;
+    compact = `<div class="fx-row"><span>Suggested allocation</span><strong>${fmt(sz.alloc_pct, "%")} of capital</strong></div>`;
     details = `
-      <div class="level"><span>Capital</span><strong>${moneyFmt(sz.capital)}</strong></div>
-      <div class="level"><span>Planned stop-risk budget</span><strong>${fmt(sz.planned_risk_budget_pct ?? sz.risk_per_trade_pct, "%")}</strong></div>
-      <div class="level"><span>Regime adjustment</span><strong>${sz.regime_level || "—"} · ×${fmt(sz.regime_mult)}</strong></div>
-      <div class="level"><span>Shape adjustment</span><strong>${fmt(sz.shape_score)} / 100 · ×${fmt(sz.quality_mult)}</strong></div>
+      <div class="fx-row"><span>Capital</span><strong>${moneyFmt(sz.capital)}</strong></div>
+      <div class="fx-row"><span>Planned stop-risk budget</span><strong>${fmt(sz.planned_risk_budget_pct ?? sz.risk_per_trade_pct, "%")}</strong></div>
+      <div class="fx-row"><span>Regime adjustment</span><strong>${sz.regime_level || "—"} · ×${fmt(sz.regime_mult)}</strong></div>
+      <div class="fx-row"><span>Shape adjustment</span><strong>${fmt(sz.shape_score)} / 100 · ×${fmt(sz.quality_mult)}</strong></div>
       <p class="method-note">${sz.risk_note || "Fixed-risk research sizing; no calibrated trade win probability or Kelly input is used. Planned stop risk can be exceeded by gaps, slippage, fees, and taxes."}</p>
       ${sz.reason ? `<p class="method-warning">${sz.reason}</p>` : ""}`;
   }
@@ -1160,7 +1653,7 @@ function renderSizing(sz) {
   bindCapitalSave();
 }
 function capitalEditor(cap) {
-  return `<div class="level"><span>Set capital</span><strong style="display:flex;gap:6px;">
+  return `<div class="fx-row"><span>Set capital</span><strong style="display:flex;gap:6px;">
     <input id="capitalInput" style="min-width:110px;padding:6px 8px;" type="number" value="${cap || 1000000}"/>
     <button id="saveCapitalBtn" style="padding:6px 10px;">Save</button>
   </strong></div>`;
@@ -1197,19 +1690,19 @@ async function loadDelivery(symbol) {
     if (last || dv.score != null) {
       box.innerHTML = `
         <h3 style="margin:0;font-size:15px;">📦 Delivery %</h3>
-        <div class="level"><span>Conviction score</span><strong>${dv.score != null ? (dv.score * 100).toFixed(0) + "/100" : "—"}</strong></div>
+        <div class="fx-row"><span>Conviction score</span><strong>${dv.score != null ? (dv.score * 100).toFixed(0) + "/100" : "—"}</strong></div>
         <button class="toggle-btn" data-target="deliveryDetails">Show raw delivery data</button>
         <div id="deliveryDetails" class="details-panel hidden">
-          <div class="level"><span>Latest (${last ? last.date : "—"})</span><strong>${last ? last.delivery_pct + "%" : "—"}</strong></div>
-          <div class="level"><span>Traded / Deliverable</span><strong>${last ? (last.traded_qty / 100000).toFixed(1) + "L / " + (last.deliverable_qty / 100000).toFixed(1) + "L" : "—"}</strong></div>
+          <div class="fx-row"><span>Latest (${last ? last.date : "—"})</span><strong>${last ? last.delivery_pct + "%" : "—"}</strong></div>
+          <div class="fx-row"><span>Traded / Deliverable</span><strong>${last ? (last.traded_qty / 100000).toFixed(1) + "L / " + (last.deliverable_qty / 100000).toFixed(1) + "L" : "—"}</strong></div>
         </div>`;
     } else {
       box.innerHTML = `<h3 style="margin:0;font-size:15px;">📦 Delivery %</h3>
-        <div class="level"><span>Status</span><strong>no data yet</strong></div>`;
+        <div class="fx-row"><span>Status</span><strong>no data yet</strong></div>`;
     }
   } catch (e) {
     box.innerHTML = `<h3 style="margin:0;font-size:15px;">📦 Delivery %</h3>
-      <div class="level"><span>Status</span><strong>endpoint unavailable</strong></div>`;
+      <div class="fx-row"><span>Status</span><strong>endpoint unavailable</strong></div>`;
   }
 }
 
@@ -1255,7 +1748,9 @@ document.addEventListener("click", (e) => {
 async function refreshAll(initialLoad = false) {
   const button = $("refreshBtn");
   const status = $("refreshStatus");
-  if (button) { button.disabled = true; button.textContent = "Refreshing…"; }
+  const btnLabel = button ? button.querySelector(".fx-open-label") : null;
+  if (button) button.disabled = true;
+  if (btnLabel) btnLabel.textContent = "Refreshing…";
   if (status) status.textContent = "Reloading latest saved data…";
   const tasks = [
     loadHealth, loadRegime, loadTopPicks, loadSwing,
@@ -1295,7 +1790,8 @@ async function refreshAll(initialLoad = false) {
         : "Latest saved data reloaded. Use scan buttons to compute new results.";
     }
   } finally {
-    if (button) { button.disabled = false; button.textContent = "Refresh"; }
+    if (button) button.disabled = false;
+    if (btnLabel) btnLabel.textContent = "Refresh";
   }
 }
 document.addEventListener("DOMContentLoaded", () => {
@@ -1338,6 +1834,50 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") runCompare();
   });
   window.addEventListener("popstate", _restoreNavigation);
+  _wireMobileNav();
+  hydrateTips(document);
+  window.addEventListener("resize", _onViewportChange);
   _restoreNavigation(true);
   refreshAll(true);
 });
+
+/** Long-form panel prose lives in data-tip and is surfaced on hover/focus, so it
+ *  never pushes indicators below the fold. */
+function hydrateTips(root) {
+  (root || document).querySelectorAll("[data-tip]").forEach((el) => {
+    if (!el.getAttribute("title")) el.setAttribute("title", el.dataset.tip);
+  });
+}
+window.hydrateTips = hydrateTips;
+
+/* ---------------------------------------------------------------------------
+   Mobile navigation drawer: the sidebar becomes an off-canvas sheet under
+   950px and is opened by the hamburger. It closes on navigation, on Escape,
+   and when the scrim is tapped. Desktop keeps the sticky sidebar.
+   ------------------------------------------------------------------------- */
+function _wireMobileNav() {
+  const toggle = $("panelNavToggle");
+  const close = () => { if (toggle) toggle.checked = false; };
+  document.querySelectorAll("[data-close-nav]").forEach((el) => {
+    el.addEventListener("click", close);
+  });
+  document.querySelectorAll("#panelNav .nav-btn, #navRail .nav-btn").forEach((btn) => {
+    btn.addEventListener("click", close);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && toggle && toggle.checked) close();
+  });
+}
+
+/* Pattern labels are only drawn from 768px up; keep that in sync on resize. */
+let _resizeTimer = null;
+function _onViewportChange() {
+  if (_resizeTimer) clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    _applyMarkersToSeries();
+    _resizePanes();
+    _equalizePaneScales();
+    _renderChartChrome();
+    _paintReadout();
+  }, 160);
+}

@@ -184,7 +184,7 @@ registry + `/api/sources` health, `db.py`'s central schema + migrations.
 | F-13 | LOW | A swing symbol is veto-checked twice and can emit a "suppressed" Telegram *after* the row was inserted |
 | F-14 | LOW | `BULL_FLAG` is a zombie: killed as a detector but still in `pattern_grader.ALL_PATTERNS`, `template_match.TEMPLATES`, `PAT_MAP`, meta features (+161 orphan tags) |
 | F-15 | LOW | Duplicated universe SQL in 12+ modules; duplicated Stage-2 logic in `screener_engine.py`; duplicated forward simulation in `build_setup_pool` vs `research_cockpit` |
-| F-16 | LOW | `verify_deployment.py` hardcodes credentials `ankit/ankitc21` |
+| F-16 | FIXED | `verify_deployment.py` hardcoded a credential (scrubbed; login gate removed) |
 
 **Gated, do NOT act on without explicit owner approval:**
 ID71 legacy proxy cleanup (blocked on DR-01 v2), real-money trading (verdict

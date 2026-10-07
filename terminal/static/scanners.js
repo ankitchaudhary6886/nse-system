@@ -15,11 +15,11 @@ async function loadTrendPanel() {
     if (badge) badge.textContent = `${picks.length} candidates`;
     box.innerHTML = "";
     picks.forEach(p => {
-      const subtitle = `score ${p.score}`;
-      const primary = `₹${p.close} · EMA50 ₹${p.ema50} · EMA200 ₹${p.ema200}`;
-      const secondary = p.notes || "";
+      const subtitle = "EMA50 > EMA200 uptrend";
+      const primary = `Close ₹${p.close} · EMA50 ₹${p.ema50} · EMA200 ₹${p.ema200}`;
+      const secondary = `Score ${p.score}`;
       box.appendChild(window.renderUnifiedCard({
-        symbol: p.symbol, subtitle, primary, secondary,
+        symbol: p.symbol, subtitle, primary, secondary, note: p.notes || "",
       }));
     });
   } catch (e) {
@@ -46,11 +46,11 @@ async function loadPositionalPanel() {
       const tierCls = (p.tier === "S" || p.tier === "A") ? "WIN"
                     : p.tier === "B" ? "OPEN" : "PENDING";
       const badges = [`<span class="outcome ${tierCls}">TIER ${p.tier}</span>`];
-      const subtitle = `₹${p.last_price}`;
-      const primary = `Q${p.quality_score}/T${p.trend_score}/V${p.value_score} · composite ${p.composite}`;
-      const secondary = p.notes || "";
+      const subtitle = "Quality / trend / value blend";
+      const primary = `Close ₹${p.last_price} · Composite ${p.composite}`;
+      const secondary = `Quality ${p.quality_score} · Trend ${p.trend_score} · Value ${p.value_score}`;
       box.appendChild(window.renderUnifiedCard({
-        symbol: p.symbol, badges, subtitle, primary, secondary,
+        symbol: p.symbol, badges, subtitle, primary, secondary, note: p.notes || "",
       }));
     });
   } catch (e) {
@@ -77,11 +77,11 @@ async function loadValueRadarPanel() {
       const tierCls = p.tier === "A" ? "WIN" : (p.tier === "B" ? "OPEN" : "PENDING");
       const badges = [`<span class="outcome ${tierCls}">TIER ${p.tier}</span>`];
       const below = p.below_52w != null ? (p.below_52w * 100).toFixed(0) : "—";
-      const subtitle = `₹${p.last_price} · ${below}% off 52w high`;
-      const primary = `Q${p.quality_score}/V${p.value_score} · composite ${p.composite}`;
-      const secondary = p.notes || "";
+      const subtitle = "Cheap but solid";
+      const primary = `Close ₹${p.last_price} · Composite ${p.composite}`;
+      const secondary = `Quality ${p.quality_score} · Value ${p.value_score} · ${below}% off 52w high`;
       box.appendChild(window.renderUnifiedCard({
-        symbol: p.symbol, badges, subtitle, primary, secondary,
+        symbol: p.symbol, badges, subtitle, primary, secondary, note: p.notes || "",
       }));
     });
   } catch (e) {

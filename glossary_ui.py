@@ -74,8 +74,13 @@ def render() -> str:
     for key in explain.all_keys():
         e = explain.EXPLAIN[key]
         rows = []
-        for skey, label in explain.SECTIONS:
-            value = e.get(skey)
+        # GLOSSARY_SECTIONS is the legacy seven-question contract; SECTIONS is the
+        # fallback for an older explain.py. `how` also lives under `method` once a
+        # term carries the decision-first card, so read either name - the glossary
+        # keeps the full text even though the click popup never shows it.
+        sections = getattr(explain, "GLOSSARY_SECTIONS", explain.SECTIONS)
+        for skey, label in sections:
+            value = e.get(skey) or (e.get("method") if skey == "how" else None)
             if not value:
                 continue
             cls = ' class="grow gsight"' if skey == "sight" else ' class="grow"'

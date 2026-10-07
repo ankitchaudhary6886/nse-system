@@ -158,8 +158,8 @@ system runs on Oracle Always Free and forbids paid services.
    `git show 8ef71218:backlog.md`.
 3. **F-21 — `.copilotignore` missed `env/`** — now fixed (Applied #5). The stale
    ctx-gate index and glossary still need deleting (§2).
-4. **F-16 — `verify_deployment.py:165-166` hardcodes `ankit/ankitc21`.** Read
-   `ADMIN_USER`/`ADMIN_PASS` from the environment and rotate the credential.
+4. **F-16 — `verify_deployment.py` hardcoded an owner credential (FIXED, auth
+   gate removed).** No password remains; the API check reads `API_BASE` from env.
 5. **F-05 — `/static`, `/docs`, `/redoc`, `/openapi.json` are unauthenticated.**
 
 ---

@@ -1,0 +1,1301 @@
+/* ============================================================================
+   fintech.css — NSE Research design system layer
+   ----------------------------------------------------------------------------
+   Appended last, so it refines style.css + polish.css by cascade instead of
+   replacing them. Nothing above is deleted, so no panel can break.
+
+   Design signature (Antseed / Linear / Raycast):
+     - dark zinc canvas, hairline surfaces, no heavy borders or shadows
+     - labels: tiny, uppercase, tracked, muted
+     - every financial figure: strict monospace + tabular numerals
+     - rows, not boxes: read-only data must never look like a form input
+     - dense but breathable: 4px rhythm, one accent per state
+     - mobile is the primary screen: no horizontal scroll, no vertical words
+   ============================================================================ */
+
+/* ------------------------------------------------------------- 01 tokens --- */
+:root {
+  /* canvas + surfaces (zinc, opaque where it matters) */
+  --fx-canvas: #090d16;
+  --fx-canvas-soft: #0b1019;
+  --fx-zinc-950: #09090b;
+  --fx-zinc-900: #18181b;
+  --fx-zinc-800: #27272a;
+  --fx-zinc-700: #3f3f46;
+  --fx-zinc-500: #71717a;
+  --fx-zinc-400: #a1a1aa;
+  --fx-zinc-300: #d4d4d8;
+  --fx-zinc-100: #f4f4f5;
+
+  /* rebind the legacy tokens the rest of the sheets read, so the whole portal
+     inherits the new palette in one move */
+  --bg: var(--fx-canvas);
+  --bg2: #0e141f;
+  --text: var(--fx-zinc-100);
+  --muted: var(--fx-zinc-400);
+  --panel: rgba(24, 24, 27, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+
+  --fx-card: rgba(24, 24, 27, 0.5);
+  --fx-card-solid: #10141d;
+  --fx-hairline: rgba(255, 255, 255, 0.08);
+  --fx-hairline-soft: rgba(255, 255, 255, 0.05);
+  --fx-hairline-strong: rgba(255, 255, 255, 0.14);
+  --fx-inset: rgba(255, 255, 255, 0.03);
+
+  --surface-1: var(--fx-card);
+  --surface-2: rgba(255, 255, 255, 0.055);
+  --surface-3: rgba(255, 255, 255, 0.09);
+  --hairline: var(--fx-hairline-soft);
+  --hairline-strong: var(--fx-hairline);
+
+  /* semantic state: bullish / bearish / neutral */
+  --fx-bull: #34d399;
+  --fx-bull-bg: rgba(16, 185, 129, 0.1);
+  --fx-bull-line: rgba(16, 185, 129, 0.2);
+  --fx-bear: #fb7185;
+  --fx-bear-bg: rgba(244, 63, 94, 0.1);
+  --fx-bear-line: rgba(244, 63, 94, 0.2);
+  --fx-neut: #fbbf24;
+  --fx-neut-bg: rgba(245, 158, 11, 0.1);
+  --fx-neut-line: rgba(245, 158, 11, 0.2);
+  --fx-info: #60a5fa;
+  --fx-info-bg: rgba(96, 165, 250, 0.1);
+  --fx-info-line: rgba(96, 165, 250, 0.22);
+
+  --green: var(--fx-bull);
+  --red: var(--fx-bear);
+  --yellow: var(--fx-neut);
+  --blue: var(--fx-info);
+
+  /* type */
+  --fx-sans: "Inter var", Inter, "Geist", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fx-mono: "JetBrains Mono", "Geist Mono", ui-monospace, "SFMono-Regular",
+    "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+  --fx-h: 36px;   /* unified control height */
+  --fx-h-sm: 32px;
+  --fx-r: 10px;   /* unified radius */
+  --fx-r-sm: 8px;
+  --fx-r-pill: 999px;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--fx-sans);
+  background:
+    radial-gradient(900px 460px at 82% -8%, rgba(96, 165, 250, 0.10), transparent 70%),
+    radial-gradient(700px 400px at 4% 104%, rgba(16, 185, 129, 0.07), transparent 70%),
+    linear-gradient(180deg, var(--fx-canvas) 0%, #0a0f18 55%, #090d16 100%);
+  background-attachment: fixed;
+  color: var(--fx-zinc-100);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --------------------------------------------- 02 tabular figures ---------- */
+/* Every number the eye compares: one font, one width, one alignment. */
+.fx-fig,
+.fx-mono,
+.num,
+[data-num],
+td.num,
+th.num,
+.lg-big,
+.lg-card-mid,
+.lg-stat strong,
+.metric-card strong,
+.metric-card small,
+.cmp-value,
+.ledger-r {
+  font-family: var(--fx-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  letter-spacing: -0.01em;
+}
+
+.fx-fig { color: var(--fx-zinc-100); }
+.fx-fig-sm { font-family: var(--fx-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.fx-fig-lg { font-family: var(--fx-mono); font-size: 21px; font-weight: 600; line-height: 1.05; }
+.text-bull { color: var(--fx-bull); }
+.text-bear { color: var(--fx-bear); }
+.text-neut { color: var(--fx-neut); }
+.text-mut { color: var(--fx-zinc-400); }
+
+/* -------------------------------------------------- 03 type hierarchy ------ */
+.fx-label,
+.fx-eyebrow,
+.nav-group,
+.lg-stat span,
+.tm-count-note {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--fx-zinc-400);
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+.fx-title {
+  font-size: 14.5px;
+  font-weight: 500;
+  letter-spacing: -0.011em;
+  color: var(--fx-zinc-100);
+  margin: 0;
+}
+
+.fx-sub {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--fx-zinc-400);
+  margin: 2px 0 0;
+  max-width: 70ch;
+}
+
+/* Long technical tokens (pattern codes, symbols) break only when they must */
+.fx-tight { overflow-wrap: normal; word-break: keep-all; }
+.fx-break { overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------- 04 primitives -------- */
+.fx-card {
+  background: var(--fx-card);
+  border: 1px solid var(--fx-hairline);
+  border-radius: 14px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.fx-panel {
+  background: var(--fx-card);
+  border: 1px solid var(--fx-hairline);
+  border-radius: 14px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Key/value row — this is what read-only data looks like. Never a box. */
+.fx-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  min-width: 0;
+  border-bottom: 1px solid rgba(39, 39, 42, 0.55);
+}
+.fx-row:last-child { border-bottom: 0; }
+
+/* A long value (a trend sentence, an error string) may wrap to a second line,
+   but it must stay on the value side and never force the row wider. */
+.fx-row > .fx-v.is-long {
+  white-space: normal;
+  max-width: 62%;
+  min-width: 0;
+}
+
+.fx-k {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--fx-zinc-400);
+  overflow-wrap: normal;
+  word-break: keep-all;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fx-v {
+  flex: 0 0 auto;
+  text-align: right;
+  font-family: var(--fx-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fx-zinc-100);
+  white-space: nowrap;
+}
+.fx-v.is-bull { color: var(--fx-bull); }
+.fx-v.is-bear { color: var(--fx-bear); }
+.fx-v.is-neut { color: var(--fx-neut); }
+.fx-v.is-mut { color: var(--fx-zinc-400); }
+.fx-v.is-lead { font-size: 16px; font-weight: 600; }
+
+/* Legacy markup (<div class="fx-row"><span>k</span><strong>v</strong>) inherits
+   the same key/value treatment, so a row can never drift back into a box. */
+.fx-row > strong,
+.fx-row > b {
+  flex: 0 0 auto;
+  text-align: right;
+  font-family: var(--fx-mono);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--fx-zinc-100);
+}
+.fx-row > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--fx-zinc-400);
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+.fx-row > .fx-k { font-size: 12px; }
+.fx-row > .fx-v { font-size: 13px; }
+
+/* Dense variant: many rows, tight rhythm, still one line per metric. */
+.fx-rows-dense .fx-row { padding: 6px 0; }
+
+/* ------------------------------------------------------------- 05 chips --- */
+.fx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--fx-r-pill);
+  border: 1px solid var(--fx-hairline-strong);
+  background: var(--fx-inset);
+  font-family: var(--fx-mono);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+  color: var(--fx-zinc-300);
+  font-variant-numeric: tabular-nums;
+}
+.fx-chip.bull { color: var(--fx-bull); background: var(--fx-bull-bg); border-color: var(--fx-bull-line); }
+.fx-chip.bear { color: var(--fx-bear); background: var(--fx-bear-bg); border-color: var(--fx-bear-line); }
+.fx-chip.neut { color: var(--fx-neut); background: var(--fx-neut-bg); border-color: var(--fx-neut-line); }
+.fx-chip.info { color: var(--fx-info); background: var(--fx-info-bg); border-color: var(--fx-info-line); }
+.fx-chip.mono-sans { font-family: var(--fx-sans); letter-spacing: 0.02em; }
+
+.fx-dot {
+  width: 8px; height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: currentColor;
+}
+.fx-dot.pulse { animation: fx-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes fx-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+
+/* Pill banner: one line of status, tags wrap, never pushes content down. */
+.fx-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--fx-hairline);
+  background: var(--fx-card);
+  min-width: 0;
+}
+.fx-banner.bull { border-color: var(--fx-bull-line); background: linear-gradient(180deg, var(--fx-bull-bg), transparent 140%); }
+.fx-banner.bear { border-color: var(--fx-bear-line); background: linear-gradient(180deg, var(--fx-bear-bg), transparent 140%); }
+.fx-banner.neut { border-color: var(--fx-neut-line); background: linear-gradient(180deg, var(--fx-neut-bg), transparent 140%); }
+.fx-banner > * { min-width: 0; }
+
+.fx-tagbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 1px;
+}
+.fx-tagbar::-webkit-scrollbar { display: none; }
+
+/* --------------------------------------------------------- 06 controls ---- */
+.fx-btn,
+.fx-input,
+.fx-select {
+  height: var(--fx-h);
+  min-height: var(--fx-h);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  border-radius: var(--fx-r);
+  border: 1px solid var(--fx-hairline-strong);
+  background: var(--fx-inset);
+  color: var(--fx-zinc-100);
+  font-family: var(--fx-sans);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fx-btn:hover { background: var(--surface-3); border-color: rgba(255, 255, 255, 0.2); }
+.fx-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.fx-btn-xs { height: var(--fx-h-sm); min-height: var(--fx-h-sm); font-size: 12px; padding: 0 10px; }
+.fx-btn-primary {
+  background: rgba(96, 165, 250, 0.14);
+  border-color: rgba(96, 165, 250, 0.34);
+  color: #cfe2ff;
+}
+.fx-btn-primary:hover { background: rgba(96, 165, 250, 0.24); border-color: rgba(96, 165, 250, 0.5); }
+.fx-btn-ghost { background: transparent; border-color: var(--fx-hairline); color: var(--fx-zinc-400); }
+.fx-btn-ghost:hover { color: var(--fx-zinc-100); background: var(--fx-inset); }
+.fx-btn-icon { width: var(--fx-h); padding: 0; justify-content: center; }
+.fx-icon { width: 16px; height: 16px; flex: none; display: block; }
+.fx-icon-sm { width: 14px; height: 14px; flex: none; display: block; }
+
+.fx-input {
+  cursor: text;
+  min-width: 0;
+  background: rgba(9, 12, 20, 0.7);
+  font-family: var(--fx-mono);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.fx-input::placeholder { text-transform: none; letter-spacing: 0; font-family: var(--fx-sans); }
+.fx-input:focus-visible { border-color: rgba(96, 165, 250, 0.55); }
+
+/* Grouped control cluster: one visual unit, consistent radii. */
+.fx-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* Segmented pill toggle, e.g. [Show Patterns (12)] */
+.fx-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: var(--fx-h-sm);
+  padding: 0 11px;
+  border-radius: var(--fx-r-pill);
+  border: 1px solid var(--fx-hairline-strong);
+  background: var(--fx-inset);
+  color: var(--fx-zinc-400);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fx-toggle:hover { color: var(--fx-zinc-100); }
+.fx-toggle[aria-pressed="true"] {
+  color: var(--fx-info);
+  border-color: var(--fx-info-line);
+  background: var(--fx-info-bg);
+}
+.fx-toggle .fx-chip-count {
+  font-family: var(--fx-mono);
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* ------------------------------------------------- 07 help affordances --- */
+/* Inline (?) trigger — replaces prose that used to sit in the layout. */
+.fx-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px; height: 15px;
+  flex: none;
+  margin-left: 5px;
+  padding: 0;
+  font-family: var(--fx-sans);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--fx-info);
+  background: transparent;
+  border: 1px solid rgba(96, 165, 250, 0.42);
+  border-radius: 999px;
+  cursor: help;
+  vertical-align: 1px;
+  opacity: 0.85;
+}
+.fx-help:hover { opacity: 1; background: var(--fx-info-bg); }
+.fx-help::after { content: none; }
+
+.fx-method {
+  margin-top: 10px;
+  border: 1px solid var(--fx-hairline);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+  overflow: hidden;
+}
+.fx-method > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fx-zinc-400);
+}
+.fx-method > summary::-webkit-details-marker { display: none; }
+.fx-method > summary:hover { color: var(--fx-zinc-100); background: var(--fx-inset); }
+.fx-method > summary .fx-chev { margin-left: auto; transition: transform 160ms; }
+.fx-method[open] > summary .fx-chev { transform: rotate(180deg); }
+.fx-method-body {
+  padding: 0 12px 11px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fx-zinc-400);
+}
+.fx-method-body p { margin: 6px 0 0; }
+.fx-method-body p:first-child { margin-top: 0; }
+
+/* ------------------------------------------------------- 08 shell / nav --- */
+.fx-shell { min-width: 0; }
+.fx-side { min-width: 0; }
+.fx-main { min-width: 0; padding-bottom: 28px; }
+
+.fx-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0 12px;
+  margin-bottom: 14px;
+  background: linear-gradient(180deg, var(--fx-canvas) 72%, rgba(9, 13, 22, 0));
+}
+
+.fx-navrail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 3px;
+  border: 1px solid var(--fx-hairline);
+  border-radius: var(--fx-r-pill);
+  background: rgba(24, 24, 27, 0.55);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.fx-navrail::-webkit-scrollbar { display: none; }
+.fx-navrail .nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: max-content;
+  height: 30px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: var(--fx-r-pill);
+  background: transparent;
+  color: var(--fx-zinc-400);
+  font-size: 12.5px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fx-navrail .nav-btn .nav-hint,
+.fx-navrail .nav-group { display: none; }
+.fx-navrail .nav-btn:hover { color: var(--fx-zinc-100); background: var(--fx-inset); }
+.fx-navrail .nav-btn.active {
+  color: var(--fx-zinc-100);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 0 0 1px var(--fx-hairline);
+}
+
+.fx-brandline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin-bottom: 12px;
+}
+.fx-brandline .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  width: auto;
+  text-align: left;
+}
+.fx-brandline .brand-title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; display: block; }
+.fx-brandline .brand-subtitle { font-size: 11px; color: var(--fx-zinc-400); display: block; }
+.fx-brandline .brand-mark {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(96, 165, 250, 0.28), rgba(16, 185, 129, 0.18));
+  border: 1px solid rgba(96, 165, 250, 0.32);
+  font-family: var(--fx-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: #dbeafe;
+}
+.fx-healthchip { margin-left: auto; }
+
+/* The drawer's Close control is meaningless on desktop, where the sidebar is
+   always visible. */
+@media (min-width: 951px) {
+  #navCloseBtn { display: none; }
+}
+[data-close-nav][hidden] { display: none; }
+
+/* Mobile menu trigger lives in the topbar and is hidden on desktop. */
+.fx-nav-toggle { display: none; }
+
+/* ------------------------------------------- 09 desktop sidebar collapse -- */
+@media (min-width: 951px) {
+  .app-shell {
+    grid-template-columns: 232px minmax(0, 1fr);
+    min-width: 0;
+  }
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    background: rgba(12, 16, 25, 0.72);
+    border-right: 1px solid var(--fx-hairline);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+  .sidebar .nav { margin-top: 4px; grid-template-columns: minmax(0, 1fr); }
+  .sidebar .nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    padding: 8px 10px;
+    border-radius: var(--fx-r-sm);
+  }
+  .sidebar .nav-btn .nav-label { font-size: 13px; font-weight: 550; }
+  .sidebar .nav-btn .nav-hint { font-size: 10.5px; color: var(--fx-zinc-500); }
+  .sidebar-footer { margin-top: auto; }
+}
+
+/* ----------------------------------------------- 10 mobile: sheet + dock -- */
+@media (max-width: 950px) {
+  .fx-main { padding: 12px 12px 24px; }
+
+  .fx-nav-toggle { display: inline-flex; }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 60;
+    width: min(288px, 84vw);
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    padding: 16px 14px 22px;
+    background: rgba(10, 13, 21, 0.97);
+    border-right: 1px solid var(--fx-hairline-strong);
+    transform: translateX(-104%);
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  /* The scrim and the drawer are siblings of .app-shell, not descendants: the
+     mobile sheet is driven by the hidden #panelNavToggle checkbox. */
+  #panelNavToggle:checked ~ .app-shell .sidebar,
+  .panel-nav:checked ~ .app-shell .sidebar {
+    transform: translateX(0);
+    box-shadow: 24px 0 60px rgba(0, 0, 0, 0.5);
+  }
+  .fx-nav-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    display: none;
+    background: rgba(3, 6, 12, 0.6);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+  #panelNavToggle:checked ~ .fx-nav-scrim,
+  .panel-nav:checked ~ .fx-nav-scrim { display: block; }
+
+  .sidebar .nav { margin-top: 6px; grid-template-columns: minmax(0, 1fr); }
+  .sidebar .nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    padding: 9px 10px;
+    border-radius: var(--fx-r-sm);
+  }
+  .sidebar .nav-btn .nav-label { font-size: 13.5px; }
+  .sidebar .nav-btn .nav-hint { font-size: 11px; color: var(--fx-zinc-500); }
+
+  .fx-topbar { gap: 8px; padding: 8px 0 10px; }
+  .fx-navrail { order: 3; width: 100%; margin: 0 -12px; padding: 3px 12px; border: 0; background: transparent; }
+  .fx-topbar .fx-viewhead { flex: 1 1 auto; min-width: 0; }
+
+  .terminal-grid,
+  .radar-layout { grid-template-columns: minmax(0, 1fr); }
+
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+  input, .fx-input { min-width: 0; }
+
+  /* Phone header: one row for the menu + view title, a second row for the
+     controls. The legacy sheet forced the controls into a 3-column grid and the
+     status line into the flex row, which stretched the search field to 130px
+     tall. Each row now owns its own line. */
+  .fx-topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    align-content: flex-start;
+    gap: 8px;
+  }
+  .fx-topbar .fx-nav-toggle { order: 0; }
+  .fx-topbar .fx-viewhead { order: 1; flex: 1 1 100%; min-width: 0; }
+  .fx-topbar .top-actions {
+    order: 2;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    flex: 1 1 100%;
+    width: 100%;
+    margin-left: 0;
+    gap: 8px;
+  }
+  .fx-topbar .fx-search { flex: 1 1 0; min-width: 0; width: auto; height: 40px; min-height: 40px; }
+  .fx-topbar .top-actions .fx-btn { height: 40px; flex: 0 0 auto; }
+  .fx-topbar .refresh-status {
+    order: 3;
+    flex: 1 1 100%;
+    min-height: 0;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--fx-zinc-400);
+  }
+}
+
+@media (max-width: 400px) {
+  .fx-topbar .fx-open-label { display: none; }
+  .fx-topbar .top-actions .fx-btn { padding: 0 10px; }
+}
+
+@media (max-width: 480px) {
+  .fx-main { padding: 10px 10px 22px; }
+  .fx-brandline .brand-subtitle { display: none; }
+}
+
+/* ------------------------------------------------------ 11 panels/cards -- */
+
+/* Topbar controls: one row of equal-height controls, wrapping on narrow screens.
+   The legacy sheet forced .top-actions into a 3-column grid and .top-actions
+   input to min-width:100%, which pushed the search box over the buttons. */
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-left: auto;
+}
+.top-actions .fx-search {
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 180px;
+  min-width: 0;
+  height: var(--fx-h);
+  min-height: var(--fx-h);
+  padding: 0 10px;
+  cursor: text;
+}
+.top-actions .fx-btn { height: var(--fx-h); }
+.fx-search input,
+.top-actions input {
+  min-width: 0 !important;
+  width: 100%;
+  height: 100%;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  outline: none;
+  color: var(--fx-zinc-100);
+  font-size: 13px;
+}
+.top-actions .refresh-status { flex: 1 1 auto; font-size: 11.5px; color: var(--fx-zinc-400); }
+
+/* The chart canvas keeps a fixed, readable height at every width. */
+#chart { height: 420px; min-width: 0; }
+@media (max-width: 950px) { #chart { height: 330px; } }
+@media (max-width: 620px) { #chart { height: 290px; } }
+
+/* View heading — compact, never competing with the controls. */
+.fx-viewhead { min-width: 0; }
+.fx-viewhead h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fx-viewhead p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--fx-zinc-400);
+  max-width: 62ch;
+}
+.panel,
+.fx-panel {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.panel { min-width: 0; }
+.panel-header { min-width: 0; gap: 12px; }
+.panel-header > div { min-width: 0; }
+.panel-header h2 { letter-spacing: -0.012em; overflow-wrap: normal; word-break: keep-all; }
+.panel-header p {
+  color: var(--fx-zinc-400);
+  overflow-wrap: anywhere;
+}
+
+/* The shortlist / radar card: a scannable instrument row, not a paragraph. */
+.unified-card,
+.stock-card {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--fx-hairline);
+  background: rgba(24, 24, 27, 0.4);
+  min-width: 0;
+}
+.unified-card:hover,
+.stock-card:hover {
+  border-color: var(--fx-hairline-strong);
+  background: rgba(39, 39, 42, 0.45);
+}
+.uc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+.uc-symbol {
+  font-family: var(--fx-mono);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--fx-zinc-100);
+  white-space: nowrap;
+}
+.uc-head .uc-spark { margin-left: auto; }
+.uc-sect {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--fx-zinc-400);
+}
+.uc-kv {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  gap: 2px 10px;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid var(--fx-hairline-soft);
+}
+.uc-cell { min-width: 0; }
+.uc-cell .k {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fx-zinc-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.uc-cell .v {
+  display: block;
+  font-family: var(--fx-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fx-zinc-100);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.uc-cell .v.bull { color: var(--fx-bull); }
+.uc-cell .v.bear { color: var(--fx-bear); }
+.uc-cell .v.mut { color: var(--fx-zinc-500); }
+
+/* Metric tiles: never taller than they need to be, never squashed. */
+.metric-grid { grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 10px; }
+.metric-card {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(24, 24, 27, 0.42);
+  border: 1px solid var(--fx-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.metric-card:hover { background: rgba(39, 39, 42, 0.5); border-color: var(--fx-hairline-strong); }
+.metric-card span {
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+.metric-card strong {
+  margin: 2px 0 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--fx-zinc-100);
+}
+.metric-card small {
+  font-family: var(--fx-sans);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--fx-zinc-500);
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.regime-card {
+  border-radius: 12px;
+  background: rgba(24, 24, 27, 0.45);
+  border: 1px solid var(--fx-hairline);
+  min-width: 0;
+}
+
+/* ------------------------------------------ 12 the Model Event Score row -- */
+/* Uncompressed flex row: label (flexible) + target chip (fixed) + big figure.
+   min-w-0 on the label, nowrap on everything that must stay on one line. */
+.fx-score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  min-width: 0;
+  border-bottom: 1px solid rgba(39, 39, 42, 0.55);
+}
+.fx-score-row:last-child { border-bottom: 0; }
+.fx-score-row .fx-score-label {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fx-zinc-300);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+.fx-score-row .fx-score-target {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--fx-hairline);
+  background: var(--fx-inset);
+  font-family: var(--fx-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--fx-zinc-400);
+}
+.fx-score-row .fx-score-value {
+  flex: 0 0 auto;
+  min-width: 54px;
+  text-align: right;
+  font-family: var(--fx-mono);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: var(--fx-zinc-100);
+}
+.fx-score-row.is-bull .fx-score-value { color: var(--fx-bull); }
+.fx-score-row.is-bear .fx-score-value { color: var(--fx-bear); }
+.fx-score-row.is-neut .fx-score-value { color: var(--fx-neut); }
+/* No score stored: the row still renders, muted, so the layout never looks
+   broken or silently absent. */
+.fx-score-row.is-none .fx-score-value { color: var(--fx-zinc-500); }
+.fx-score-row .fx-score-note {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  color: var(--fx-zinc-500);
+  white-space: nowrap;
+  font-family: var(--fx-sans);
+  letter-spacing: 0;
+}
+@media (max-width: 480px) {
+  .fx-score-row .fx-score-value { font-size: 19px; min-width: 50px; }
+  .fx-score-row .fx-score-target { display: none; }
+  .fx-score-row.is-compact .fx-score-target { display: inline-flex; }
+}
+
+/* Sparkline in a metric row: fixed box so it can never reflow the text. */
+.fx-spark { width: 74px; height: 22px; flex: none; display: block; }
+@media (max-width: 480px) { .fx-spark { width: 58px; } }
+
+/* ------------------------------------------- 13 chart shell and toolbar -- */
+.fx-chart-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+.fx-chart-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.fx-legend {
+  display: flex;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 6px;
+  flex-wrap: wrap;
+  padding: 9px 2px 0;
+  border-top: 1px solid var(--fx-hairline-soft);
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--fx-zinc-400);
+}
+.fx-legend .lg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--fx-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fx-legend .lg-swatch { width: 12px; height: 2px; border-radius: 2px; flex: none; }
+.fx-legend .lg-swatch.c-candle { background: linear-gradient(90deg, var(--fx-bull) 50%, var(--fx-bear) 50%); }
+.fx-legend .lg-swatch.c-ema20 { background: var(--fx-neut); }
+.fx-legend .lg-swatch.c-ema50 { background: #a78bfa; }
+.fx-legend .lg-swatch.c-ema200 { background: #94a3b8; }
+.fx-chart-wrap { position: relative; min-width: 0; }
+.fx-chart-wrap.is-patterns-hidden .tv-lightweight-charts table tr td div[style*="position: absolute"] { }
+.fx-chart-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--fx-zinc-500);
+}
+
+/* On phones the chart canvas keeps only price + EMA lines and the axis tags. */
+@media (max-width: 767px) {
+  .fx-chart-wrap.is-patterns-hidden { /* markers suppressed in JS */ }
+  .fx-chart-note-mobile { display: block; }
+}
+@media (min-width: 768px) {
+  .fx-chart-note-mobile { display: none; }
+}
+
+/* -------------------------------------------------- 14 tables ------------ */
+.table-wrap { min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.table-wrap table { min-width: 0; }
+th, td { font-variant-numeric: tabular-nums; }
+tbody td { color: var(--fx-zinc-300); }
+tbody td strong, .uc-symbol { color: var(--fx-zinc-100); }
+
+/* Table cells are the one place where wrapping is worse than scrolling: a date
+   or a price broken across three lines ("2026-06-09" -> "2026-", "06-",
+   "09") is unreadable. Cells stay on one line and the wrapper scrolls. */
+table td, table th { white-space: nowrap; }
+table td.wrap, table th.wrap { white-space: normal; }
+/* Prose inside a card still wraps; only table cells are held to one line. */
+.news-item, .method-note, .method-warning, .tm-method-desc, .fx-method-body p {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* Compare table: sticky metric column so 4 symbols stay comparable. */
+#compareBox { overflow-x: auto; }
+.cmp-table { min-width: 0; }
+.cmp-label { font-size: 12px; color: var(--fx-zinc-400); overflow-wrap: normal; word-break: keep-all; }
+.cmp-value { font-family: var(--fx-mono); font-variant-numeric: tabular-nums; color: var(--fx-zinc-100); }
+.cmp-section td {
+  color: var(--fx-info);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(96, 165, 250, 0.07);
+}
+
+/* ------------------------------------------------------- 15 mobile fit --- */
+@media (max-width: 620px) {
+  :root { --fx-h: 34px; --fx-h-sm: 30px; }
+
+  /* The single most damaging legacy rule on a phone: it sliced labels into
+     one-letter columns ("Mo / del / ev / ent"). Rows never do that now. */
+  .fx-row,
+  .fx-score-row,
+  .fx-k,
+  .fx-score-label,
+  .fx-v,
+  .fx-score-value,
+  .metric-card span,
+  .uc-symbol,
+  .uc-cell .k,
+  .uc-cell .v,
+  .cmp-label,
+  .panel-header h2,
+  .fx-label {
+    overflow-wrap: normal;
+    word-break: keep-all;
+  }
+
+  .panel { padding: 12px; border-radius: 12px; }
+  .panel-header { gap: 8px; padding-bottom: 10px; margin-bottom: 10px; }
+  .panel-header p { font-size: 12px; }
+  .fx-sub { font-size: 12px; }
+  .fx-card, .fx-panel, .unified-card, .stock-card { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .fx-score-row .fx-score-value { font-size: 18px; }
+  .ufn { display: none; }
+}
+
+/* Nothing in the portal may stick out horizontally on a narrow screen. */
+@media (max-width: 767px) {
+  img, svg, canvas { max-width: 100%; }
+  .fx-tagbar, .fx-navrail, .table-wrap { overflow-x: auto; }
+}
+
+/* --------------------------------------------------- 16 states ---------- */
+.badge,
+[class*="badge"] { border-radius: var(--fx-r-pill); font-variant-numeric: tabular-nums; }
+.outcome { font-family: var(--fx-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; }
+.outcome.WIN { color: var(--fx-bull); background: var(--fx-bull-bg); border-color: var(--fx-bull-line); }
+.outcome.LOSS { color: var(--fx-bear); background: var(--fx-bear-bg); border-color: var(--fx-bear-line); }
+.outcome.TIMEOUT, .outcome.EXPIRED, .outcome.PENDING, .outcome.OPEN {
+  color: var(--fx-neut); background: var(--fx-neut-bg); border-color: var(--fx-neut-line);
+}
+
+.level {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 7px 0;
+  margin: 0;
+  border-bottom: 1px solid rgba(39, 39, 42, 0.5);
+}
+.level:last-child { border-bottom: 0; }
+.level span { min-width: 0; font-size: 12px; color: var(--fx-zinc-400); overflow-wrap: normal; word-break: keep-all; }
+.level strong {
+  flex: none;
+  text-align: right;
+  font-family: var(--fx-mono);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--fx-zinc-100);
+}
+
+.method-note,
+.method-warning { color: var(--fx-zinc-500); font-size: 11.5px; line-height: 1.5; }
+.model-explainer { margin-top: 10px; }
+
+/* De-inputized data containers. These used to be 12px-padded grid boxes with a
+   fill + hairline, which made read-only data look like a disabled form field.
+   Now they are plain stacks of key/value rows. */
+.setup-box,
+.details-panel,
+.model-explainer {
+  display: block;
+  gap: 0;
+  color: var(--fx-zinc-300);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.setup-box > * + * { margin-top: 0; }
+.setup-box h3,
+.details-panel h3 {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fx-zinc-400);
+}
+.setup-box p,
+.details-panel p { color: var(--fx-zinc-400); font-size: 12.5px; }
+
+/* Grouped metric block: a heading + its rows, separated by hairline sections. */
+.fx-kv-block { padding: 10px 0; border-top: 1px solid var(--fx-hairline-soft); min-width: 0; }
+.fx-kv-block:first-child { border-top: 0; padding-top: 0; }
+.fx-kv-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fx-zinc-500);
+}
+
+/* Toggle buttons from the legacy sheets become small pill buttons. */
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--fx-h-sm);
+  margin: 10px 0 0;
+  padding: 0 11px;
+  border-radius: var(--fx-r-pill);
+  border: 1px solid var(--fx-info-line);
+  background: var(--fx-info-bg);
+  color: #bcd9ff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.toggle-btn:hover { background: rgba(96, 165, 250, 0.2); }
+
+/* Action buttons inside a flex header must never be squeezed into a column of
+   single letters ("Backtest" once rendered across 8 lines at 390px). */
+.strategy-head > div:last-child,
+.strategy-head .strategy-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+.strategy-bt-btn,
+.strategy-edit-btn,
+.strategy-run-btn,
+.cmp-symbol-link,
+button[class*="btn"] {
+  flex: 0 0 auto;
+  min-width: max-content;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------- 18 news and dialogs --- */
+.news-item {
+  font-size: 12.5px;
+  color: var(--fx-zinc-300);
+  padding: 7px 0;
+  border-bottom: 1px solid var(--fx-hairline-soft);
+}
+.news-item:last-child { border-bottom: 0; }
+.news-box h3 { font-size: 12.5px; color: var(--fx-zinc-400); }
+#dataDetailDialog {
+  border: 1px solid var(--fx-hairline-strong);
+  border-radius: 14px;
+  background: #0d1220;
+  color: var(--fx-zinc-100);
+  max-width: min(760px, 92vw);
+}
+#dataDetailDialog::backdrop { background: rgba(3, 6, 12, 0.62); }
+.detail-json { font-family: var(--fx-mono); font-size: 11.5px; }
+
+/* --------------------------------------------------- 19 motion / print -- */
+@media (prefers-reduced-motion: reduce) {
+  .fx-dot.pulse { animation: none; }
+  .sidebar { transition: none; }
+}
+@media print {
+  .fx-nav-toggle, .sidebar, .fx-topbar { display: none !important; }
+}
+
+/* ---------------------------------- 20 two-pane chart (price + RSI) ------- *
+ * Appended for the chart rework: #chart is now a column flex box holding
+ * #chartPrice (~70%) and #chartRsi (~30%). Two chart instances share one time
+ * axis because lightweight-charts 4.1.3 has no pane API. Keep the total box
+ * under ~360px on phones so the pane never dominates the screen.
+ * ------------------------------------------------------------------------- */
+#chart {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+  height: 520px;
+}
+#chart .fx-chart-pane {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+#chart .fx-pane-price { flex: 7 1 0; }
+#chart .fx-pane-rsi { flex: 3 1 0; }
+@media (max-width: 950px) { #chart { height: 430px; } }
+@media (max-width: 620px) { #chart { height: 340px; } }
+
+/* Crosshair legend: latest bar by default, hovered bar while moving. Anchored
+ * just above the RSI divider, not at top-left, because the terminal's sticky
+ * header covers the top of the chart at most scroll positions. */
+.fx-chart-readout {
+  position: absolute;
+  bottom: calc(30% + 10px);
+  left: 8px;
+  z-index: 3;
+  pointer-events: none;
+  max-width: calc(100% - 92px);
+  padding: 3px 7px;
+  border: 1px solid var(--fx-hairline-soft);
+  border-radius: 6px;
+  background: rgba(9, 13, 22, 0.66);
+  font-family: var(--fx-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--fx-zinc-300);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.fx-chart-readout .ro-date { color: var(--fx-zinc-100); font-weight: 600; }
+.fx-chart-readout .ro-k { color: var(--fx-zinc-500); }
+.fx-chart-readout .ro-rsi { color: #c084fc; }
+
+/* Legend swatches for the new series; an MA that is off is never shown as on. */
+.fx-legend .lg-swatch.c-ema10 { background: #60a5fa; }
+.fx-legend .lg-swatch.c-rsi { background: #c084fc; }
+.fx-legend .lg-off { color: var(--fx-zinc-500); font-size: 10px; letter-spacing: 0.02em; }
+.fx-legend .lg-item.is-off { opacity: 0.5; }
+.fx-legend .lg-item.is-off .lg-swatch.c-ema10 {
+  background: repeating-linear-gradient(90deg, #60a5fa 0 3px, transparent 3px 7px);
+}

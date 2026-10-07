@@ -8,6 +8,58 @@ function _ucEsc(s) {
     .replace(/>/g, "&gt;");
 }
 
+/* ----------------------------------------------------------------------------
+   Unified stock card — the single instrument row used by every list.
+   Layout: symbol + sector header, then key/value cells (mono, tabular), then
+   optional note. Built from strings so it is cheap for long lists.
+   -------------------------------------------------------------------------- */
+
+/** Pull compact key/value cells out of free text such as
+ *  "1M +4.2% · 3M +11.0% · Vol 2.1x" or "Overall rank 82% · quiet accumulation 0.61". */
+function ucMetricCells(text) {
+  if (!text) return [];
+  const LABELS = [
+    [/^(1m|1-month|1 month)/i, "1M"],
+    [/^(3m|3-month|3 month)/i, "3M"],
+    [/^(6m|6-month|6 month)/i, "6M"],
+    [/^vol(ume)?\b/i, "Vol"],
+    [/^event|model event|chance of a good move/i, "Event"],
+    [/^overall rank|^rank/i, "Rank"],
+    [/^industry strength|^sector/i, "Sector RS"],
+    [/^quiet accumulation|accum/i, "Accum"],
+    [/^shares held overnight|delivery/i, "Delivery"],
+    [/^close|^price|^ltp/i, "Close"],
+    [/^mcap|market cap/i, "Mcap"],
+    [/^trend/i, "Trend"],
+    [/^risk/i, "Risk"],
+    [/^target/i, "Target"],
+    [/^stop/i, "Stop"],
+    [/^trigger/i, "Trigger"],
+  ];
+  const cells = [];
+  String(text).split("·").forEach((part) => {
+    const raw = part.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    if (!raw) return;
+    const m = raw.match(/^([A-Za-z0-9][^0-9+\-₹]{0,22}?)\s*[:]?\s*([+\-]?[₹$]?[\d][\d.,]*(?:\s?(?:%|x|cr|shares|R))?.*)$/);
+    let label = raw;
+    let value = "";
+    if (m) {
+      label = m[1].trim();
+      value = m[2].trim();
+    }
+    let key = label.replace(/\s+/g, " ").slice(0, 14);
+    for (const [re, name] of LABELS) {
+      if (re.test(label)) { key = name; break; }
+    }
+    let tone = "";
+    if (/^[+]/.test(value)) tone = "bull";
+    else if (/^-/.test(value)) tone = "bear";
+    if (/uncalibrated/i.test(raw)) tone = tone || "mut";
+    cells.push({ key, value: value || "—", tone });
+  });
+  return cells.slice(0, 4);
+}
+
 function renderUnifiedCard(item) {
   // item: {symbol, setup, badges, subtitle, primary, secondary, note, onClick}
   const div = document.createElement("div");
@@ -15,24 +67,25 @@ function renderUnifiedCard(item) {
   div.tabIndex = 0;
   div.setAttribute("role", "button");
   div.setAttribute("aria-label", `Open research for ${item.symbol}`);
-  const setupBadge = item.setup
-    ? '<span class="outcome WIN">🏄 LIVE</span>' : '';
+  const setupChip = item.setup
+    ? '<span class="fx-chip bull mono-sans" style="font-size:10px"><span class="fx-dot"></span>LIVE</span>'
+    : "";
   const extra = (item.badges || []).join(" ");
   let html = `<div class="uc-head">
     <span class="uc-symbol">${_ucEsc(item.symbol)}</span>
-    ${setupBadge}${extra}
+    ${setupChip}${extra}
   </div>`;
   if (item.subtitle) {
-    html += `<div class="uc-line">${item.subtitle}</div>`;
+    html += `<div class="uc-sect">${item.subtitle}</div>`;
   }
-  if (item.primary) {
-    html += `<div class="uc-line">${item.primary}</div>`;
-  }
-  if (item.secondary) {
-    html += `<div class="uc-line uc-dim">${item.secondary}</div>`;
+  const cells = ucMetricCells(item.primary).concat(ucMetricCells(item.secondary));
+  if (cells.length) {
+    html += `<div class="uc-kv">${cells.map(c =>
+      `<div class="uc-cell"><span class="k">${_ucEsc(c.key)}</span>`
+      + `<span class="v ${c.tone}">${_ucEsc(c.value)}</span></div>`).join("")}</div>`;
   }
   if (item.note) {
-    html += `<div class="uc-line uc-note">${item.note}</div>`;
+    html += `<div class="uc-kv"><div class="uc-cell"><span class="v mut">${item.note}</span></div></div>`;
   }
   div.innerHTML = html;
   const open = item.onClick || (() => {
@@ -195,4 +248,5 @@ function renderCompareTable(payload) {
 }
 
 window.renderUnifiedCard = renderUnifiedCard;
+window.ucMetricCells = ucMetricCells;
 window.renderCompareTable = renderCompareTable;

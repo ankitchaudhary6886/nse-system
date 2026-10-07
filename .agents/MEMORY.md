@@ -215,7 +215,7 @@ a partial patch, never "replace lines 40-55".
 | HIGH | Laptop DB ~40 days stale | local numbers are not production |
 | HIGH | `/static`, `/docs`, `/redoc` unauthenticated | secrets must never go in `terminal/static/` |
 | — | `sizing.py` has no Kelly maths despite the name | caps only |
-| — | `verify_deployment.py` hardcodes `ankit/ankitc21` | rotate + read from env |
+| — | `verify_deployment.py` hardcoded a credential (FIXED) | login gate removed; no password stored |
 
 Full evidence: `.agents/cache/FINDINGS.md` (25 entries).
 

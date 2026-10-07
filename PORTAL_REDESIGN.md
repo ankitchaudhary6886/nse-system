@@ -203,3 +203,46 @@ Each phase is independently useful. No phase blocks a later one.
 - 2026-09-26 — Owner decisions recorded and initial source adapter
   framework added; see EXECUTION_LOG #091. Official dated filings and
   remaining provider migrations are still outstanding.
+
+- 2026-10-07 — **Frontend overhaul: dark fintech design system.** New
+  `terminal/static/fintech.css` design layer (zinc canvas `#090d16`, hairline
+  glass surfaces, mono tabular figures, one accent per state) over the existing
+  sheets, plus a real Tailwind v4 build (`tailwind.src.css` to `tailwind.css`,
+  `npm run build:css`) with preflight excluded so the legacy cascade survives.
+  `clsx` + `tailwind-merge` (via `vendor/cn.js`) and 15 Lucide icons
+  (`vendor/lucide.js`, hydrated from `data-icon`) are vendored locally - no CDN.
+  Fixed: the Model Event Score row no longer squashes into one-letter columns or
+  wraps "43%" (flex `min-w-0` + `nowrap` + tabular figures); the header no
+  longer stretches the search field to 130px; the sidebar becomes an off-canvas
+  sheet under 950px with a hamburger, scrim, and Escape-close, plus a compact
+  pill rail in the header. Chart pattern annotations now default to hidden below
+  768px behind a `Show Patterns (N)` pill, and a four-item legend names Price /
+  EMA 20 / 50 / 200. Read-only data is no longer boxed like a disabled input:
+  metric rows are hairline key/value rows, and the Model Event Score row now
+  renders even when no model score is stored (it says "no score stored" rather
+  than vanishing), so the card layout requirement is observable on every symbol.
+  Verbose disclaimers moved into
+  `data-tip` tooltips and a collapsible **Methodology & Disclaimers** block, and
+  regime / smart-money alerts became pulse-dot pill banners. Verified with
+  `tools/ui-audit/audit.mjs` (headless Chrome over CDP): zero page-level
+  horizontal overflow and zero text-outside-box at 375, 390, 768, and 1440 px
+  across research, funda, swing, ledger, system, traders, and league.
+
+- 2026-10-07 (pass 2) — **Charts, knowledge popups, clutter trim, and the login
+  gate removed.** Chart: the price pane now carries EMA 20/50/200 by default with
+  EMA 10 available behind a toggle (ships off), and a real RSI-14 pane sits
+  beneath it with the 30/70 band shaded on its own 0-100 scale, sharing one time
+  axis so pan and zoom stay in sync (`lightweight-charts` 4.1.3 has no pane API,
+  so the pane is a second synced chart instance with equalized price-scale
+  widths). Knowledge popups: the fixed 4W1H dump is replaced by a decision-first
+  card - one headline plus "What it is / How to use it / How to spot it / Do this
+  next" and an optional "Careful" - with a 5-tier fallback so no click is ever an
+  empty shell and the 16 ideal-chip keys that had no entry now compose a real card
+  from data already on screen. Clutter: deleted the orphaned `deployment.js`;
+  see `.agents/clutter-audit.md` for the classified trim plan (research view's
+  10 panels include 6 that restate data already on screen; 15 duplicated
+  disclaimer sentences; 21 nav affordances for 8 destinations). Auth: the HTTP
+  Basic login gate is removed entirely - every route answers without credentials
+  - and the owner's `ankitc21` / `change_this_password` strings are gone from
+  every tracked file. Verified: 30/30 viewport-route combinations clean at
+  375/390/768/1440, all 9 `test_*.py` pass, zero credential hits repo-wide.
