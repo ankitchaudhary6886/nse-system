@@ -185,8 +185,8 @@ and its verdict is never softened.
 
 **Goal:** the phone UI never blanks and never leaks.
 
-- Auth is opt-in per route: every new route needs `Depends(verify_user)`
-  (F-05). Never put a secret in `terminal/static/`.
+- There is NO auth gate (removed 2026-10-07): every route is public by design.
+  Never put a secret in `terminal/static/`.
 - Register literal paths **before** the same prefix's `{symbol}` catch-all (F-06).
 - Editing a static file means bumping its `?v=` in `index.html`; the current
   versions are in `api_index.json.asset_versions`.

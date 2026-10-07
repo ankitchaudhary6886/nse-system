@@ -13,7 +13,7 @@ Mount it from terminal_api with:
 
     from fastapi.responses import HTMLResponse
     @app.get("/glossary", response_class=HTMLResponse)
-    def glossary(user: str = Depends(verify_user)):
+    def glossary():
         import glossary_ui
         return glossary_ui.render()
 

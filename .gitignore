@@ -18,6 +18,12 @@ data/uploaded_fundamentals.csv
 data/charts/
 data/incoming/
 
+# credentials — NEVER commit (see .agents/auth-verify-report.md)
+data/tg_secret.txt
+data/*secret*
+data/*token*
+.env.*
+
 # local artifacts
 project_dump.txt
 terminal.log

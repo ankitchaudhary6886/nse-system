@@ -164,8 +164,9 @@ a partial patch, never "replace lines 40-55".
 - **Before executing, identify what changes and who is affected** — read
   `system_map.json.imported_by` or run `codegraph impact <symbol>` first. Plan the
   whole change set, then execute. Do not discover breakage one file at a time.
-- `terminal_api.py` auth is **opt-in per route** — a new route without
-  `Depends(verify_user)` is silently public. **Always add it.**
+- `terminal_api.py` has **no auth gate at all** (removed 2026-10-07; see
+  `.agents/auth-verify-report.md`). Every route is public by design. Do NOT
+  re-add a per-route dependency without an explicit owner decision.
 - Register literal routes **before** the same prefix's `{symbol}` catch-all.
 - `/static`, `/docs`, `/redoc`, `/openapi.json` are unauthenticated — **no secrets there.**
 - All tunable numbers belong in **`strategy_config.py`** (rule R22), not inline.

@@ -4,7 +4,7 @@
 *   ✅ S1 telegram_alerts.py — token no longer hardcoded (reads tg_secret.txt / env)
 *   ⬜ S2 ROTATE Telegram bot token via @BotFather -> update data/tg_secret.txt   [HUMAN]
 *   ⬜ S3 ROTATE GCP service-account key (IAM -> new key, delete old)             [HUMAN]
-*   ⬜ S4 .env with real ADMIN_USER / ADMIN_PASS for terminal_api                 [HUMAN]
+*   ✅ S4 Login gate removed entirely - no ADMIN_USER / ADMIN_PASS needed
 
 **P1 · CRASH FIXES**
 *   ✅ F1 scheduler_bg.py — _drift_check import fixed

@@ -33,7 +33,7 @@ retrain. Mondays: 08:00 Monte-Carlo. 1st of month: 10:00 walk-forward.
 - VM: Oracle Always Free Ubuntu, public IP 140.238.226.249, user ubuntu
 - SSH: ssh -i C:\Users\Ankit\.ssh\nse.pem ubuntu@140.238.226.249
 - Git repo (PRIVATE): https://github.com/ankitchaudhary6886/nse-system ; VM clone: ~/nse-system
-- Modern terminal: http://140.238.226.249:8000 (FastAPI, HTTP Basic login)
+- Modern terminal: http://140.238.226.249:8000 (FastAPI, NO login gate)
 - Legacy Streamlit backup: http://140.238.226.249:8501 (service nse; cosmetic @import glitch; can disable)
 - Login: disabled — no auth gate; the HTTP Basic gate was removed from terminal_api.py (no credentials stored)
 - Telegram: token read from data/tg_secret.txt line 1 or env TELEGRAM_TOKEN; chat id line 2
@@ -258,7 +258,7 @@ permitted source becomes available.
 
 ## 13. A0 OUTLINE (deferred by owner; not a current deployment task)
 Buy domain (or free DuckDNS subdomain) → A record → 140.238.226.249 → VM: sudo apt install nginx certbot
-python3-certbot-nginx → nginx reverse proxy / → 127.0.0.1:8000 (keep Basic auth) → open TCP 80/443 in Oracle
+python3-certbot-nginx → nginx reverse proxy / → 127.0.0.1:8000 → open TCP 80/443 in Oracle
 security list + iptables → sudo certbot --nginx -d yourdomain → auto-renew. Keep :8000 as fallback.
 
 ## 14. OPERATIONS RUNBOOK (VM, after source venv/bin/activate)
