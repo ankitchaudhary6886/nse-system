@@ -6,14 +6,6 @@
   ],
   "mcp": {
     "servers": {
-      "codegraph": {
-        "command": "codegraph",
-        "args": [
-          "serve",
-          "--mcp"
-        ],
-        "type": "stdio"
-      },
       "token-cache": {
         "command": "node",
         "args": [
@@ -21,6 +13,20 @@
           "c:\\Users\\Ankit\\Desktop\\nse_system"
         ],
         "type": "stdio"
+      },
+      "headroom": {
+        "command": "headroom",
+        "args": [
+          "mcp",
+          "serve"
+        ],
+        "type": "stdio",
+        "env": {
+          "HEADROOM_BEACON": "off",
+          "HEADROOM_TELEMETRY": "off",
+          "HEADROOM_OFFLINE": "1",
+          "DO_NOT_TRACK": "1"
+        }
       }
     }
   },
@@ -47,6 +53,10 @@
     "Pipfile.lock": true,
     "*.egg-info/**": true,
     ".venv/**": true,
-    "venv/**": true
+    "venv/**": true,
+    "package-lock.json": true,
+    "yarn.lock": true,
+    "pnpm-lock.yaml": true,
+    ".yarn/**": true
   }
 }

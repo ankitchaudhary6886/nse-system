@@ -22,6 +22,10 @@ __pycache__/
 *.pyo
 target/
 vendor/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.yarn/
 poetry.lock
 Pipfile.lock
 *.egg-info/

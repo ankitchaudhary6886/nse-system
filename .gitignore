@@ -50,6 +50,11 @@ data/league_replay.pid
 .agents/__pycache__/
 node_modules/
 
+# AI-tooling caches and generated graphs (machine-local, regenerable)
+.aicache/
+.graphflow-cache/
+graphflow-out/
+
 # ui-audit run artifacts (screenshots + report.json; regenerable via tools/ui-audit)
 tools/ui-audit/out/
 
