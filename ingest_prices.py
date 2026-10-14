@@ -16,8 +16,15 @@ def fetch_one(conn, symbol):
     if start > dt.date.today().isoformat():
         return 0
 
+    # Fallback chain. Until 2026-10-15 this asked yahoo_finance ONLY, so a
+    # single rate-limited or broken source could stall the whole EOD price
+    # update. The four added providers return the SAME frame shape
+    # (DatetimeIndex + Open/High/Low/Close/Volume), so nothing downstream
+    # changes. All five were verified against live HTTP on 2026-10-15.
     result = get_registry().fetch(
-        "prices.daily_history", ("yahoo_finance",),
+        "prices.daily_history",
+        ("yahoo_finance", "nse_india_api", "jugaad_data",
+         "nsemine_history", "pnsea"),
         symbol=symbol, start=start)
     df = result.data
     if df.empty:
