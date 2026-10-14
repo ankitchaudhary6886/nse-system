@@ -38,6 +38,15 @@ class MarketRegime:
     def _fetch(cls, days_back):
         end = dt.date.today()
         start = end - dt.timedelta(days=days_back)
+        # yfinance silently returns zero rows (not an exception) when its cache
+        # folder cannot host SQLite, which would look like "Index Data
+        # Unavailable" here. Repair the cache location first; it is guarded and
+        # a no-op on a healthy machine.
+        try:
+            from data_sources.yf_cache import ensure_yf_cache
+            ensure_yf_cache()
+        except Exception:
+            pass
         for sym in cls.INDEX_CANDIDATES:
             try:
                 df = yf.Ticker(sym).history(

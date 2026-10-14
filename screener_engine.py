@@ -52,6 +52,14 @@ def _from_db(ticker):
 
 def _from_yahoo(ticker, period_days=550):
     try:
+        # yfinance returns an EMPTY frame (no exception) when its cache folder
+        # cannot host SQLite, which is indistinguishable from "no such symbol".
+        # Repair the location first; guarded, and a no-op on a healthy machine.
+        try:
+            from data_sources.yf_cache import ensure_yf_cache
+            ensure_yf_cache()
+        except Exception:
+            pass
         end = dt.date.today()
         start = end - dt.timedelta(days=period_days)
         df = yf.download(f"{ticker}.NS",
@@ -82,6 +90,11 @@ def fetch_index_data(index_ticker=None):
     candidates = ([index_ticker] if index_ticker else
                   ["^CNXSMALLCAP", "^CNXSC",
                    "NIFTY_SMALLCAP_100.NS", "^NSEI"])
+    try:
+        from data_sources.yf_cache import ensure_yf_cache
+        ensure_yf_cache()
+    except Exception:
+        pass
     for sym in candidates:
         try:
             df = yf.download(sym, period="1mo",
