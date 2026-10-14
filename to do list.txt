@@ -46,3 +46,112 @@
 *   ⬜ N1 "Scan whole band" button (screen_universe endpoint + UI)
 *   ⬜ N2 Delivery % auto-ingest when NSE unblocks (use_nse=True)
 *   ⬜ N3 Paper-trade ledger -> monthly stats
+
+---
+
+## 📥 NEW BRIEF — 2026-10-15 (HybridSwingNet · LSTM · NSE data · exits)
+
+### H1 · ALL_WEATHER GATE  [instruction 1]
+*   Gate properly: trend filter + liquidity filter + sector gate.
+*   Actually use the fundamental tier `all_weather._tier()` already computes (currently dead code).
+*   Evidence driving this: 68 of 71 graded trades are ALL_WEATHER (not SWING),
+*   5.9% win rate, -52R of the -55R. Entry median 35.5% below the 52w high,
+*   4.3% above the 52w low, in a defensive tape = falling-knife entry.
+
+### H2 · SWING DESK  [instruction 2 — do NOT leave alone]
+*   Exit calibration: the 3R target is unreachable (0 of 67 losers ever reached +2R).
+*   Re-score sweep 0.25R-3R: 3R = -0.775R/idea, 0.25R = -0.296R/idea, all negative.
+*   Add MFE/MAE instrumentation + walk-forward evaluation of alternative exits.
+
+### H3 · LSTM  [instruction 3]
+*   PyTorch LSTM (torch 2.13.0+cpu already installed) for forward-return forecasting.
+*   Walk-forward validation, strict no-leakage. Integrate as an additional score.
+
+### H4 · HYBRIDSWINGNET  [instruction 5]
+*   https://github.com/Onkarj012/HybridSwingNet — Python package imports as `stockxpert`.
+*   V3: ResNLS(7d) + BiGRU(21d) + BiLSTM(60d) + Context MLP + Sentiment -> cross-attention
+*   -> per-horizon direction/magnitude heads for H1, H3, H5, H7, H10.
+*   Data + weights ship via GitHub Releases, NOT in git.
+*   ⚠ HONESTY: the authors' own pre-registered walk-forward OOS (2018-2026) is
+*   NEGATIVE: -64.3% return, Sharpe -0.79. Integrate as a measured research
+*   component, never as a live signal, until our own OOS says otherwise.
+
+### H5 · DATA SOURCES  [instruction 4]
+*   On PyPI: jugaad-data 0.35.10, nselib 2.5.1, nsemine 2.2.1, pnsea 1.2.1, openchart 0.2.0.
+*   NseIndiaApi installs as PyPI package **`nse`** — there is no `nseindiaapi` package.
+*   `indianstockmarketapi` and `nseindiaapi` are NOT on PyPI -> git installs
+*   (0xramm/Indian-Stock-Market-API, BennyThadikaran/NseIndiaApi).
+*   openchart (marketcalls) is a charting/preview library, not a data feed.
+*   Add them as adapters under data_sources/adapters/ (auto-discovered, optional imports).
+
+### H6 · NSE HISTORICAL ARCHIVES  [instruction 6]
+*   https://www.nseindia.com/resources/historical-reports-capital-market-daily-monthly-archives
+*   Download daily/monthly bhavcopy archives -> ingest into prices_daily.
+*   This is the authoritative source; yfinance stays as fallback.
+
+**Rule for this brief:** every new dependency is OPTIONAL at import time
+(golden rule 7) so the live terminal can never blank if a package is missing.
+
+---
+
+## ✅ STATUS — 2026-10-15 (all six executed; 16/16 test suites green)
+
+**H1 ALL_WEATHER GATE — DONE.** Four switchable gates (trend / liquidity / sector /
+fundamental tier) in `all_weather.py` v4 + `python all_weather.py audit` replay tool.
+Result: the trend gate rejects ~100% of the v3 population by construction, so AW now
+emits 0 signals (was 5). That is treatment matching the evidence: 68 of 71 graded
+trades and -52R of -55R came from this module. Config keys added to
+`strategy_config.ALL_WEATHER`. Tests: 22.
+NOTE: the tier gate is presently a DATA-AVAILABILITY gate, not a quality gate
+(band-universe fundamentals coverage is empty -> almost everything rates UNK), and the
+sector gate is near-inert (only 6 of 533 band symbols have a `sector` row). Fix that
+coverage before trusting either as a quality measure.
+
+**H2 SWING DESK — DONE.** `exit_policy.py` (exit planning + R scoring + MFE/MAE
+instrumentation, read-only), `setup.py` made configurable with live behaviour proven
+byte-identical. Verdict from three samples: the exit target is NOT where SWING loses
+money — keep `SETUP["TARGET_R_MULTIPLE"] = 3.0`. For ALL_WEATHER the evidence went the
+other way on two independent samples, so `ALL_WEATHER["TARGET_R"]` 3.0 -> 1.0.
+Tests: 70 checks.
+
+**H3 LSTM — DONE, NEGATIVE RESULT.** `lstm_model.py` + `lstm_train.py` with a purged
+walk-forward and an explicitly asserted embargo. Out-of-sample: AUC ~0.509, accuracy
+BELOW the majority-class rate, rank IC +0.014 (t=1.43, not significant). No
+demonstrable skill. Kept as an informational hook only — do NOT give it scoring weight.
+Tests: 27.
+
+**H4 HYBRIDSWINGNET — DONE, NEGATIVE RESULT.** Vendored at upstream commit
+`901bcd223363a08eab371a8e4903d10201f88f55` (MIT). It RUNS here on Python 3.14 with no
+new installs. Measured on our own data: OOS direction accuracy 0.5004 vs 0.4923
+always-up (a coin flip; in-sample 0.5460), and the cost-aware long-only backtest returns
+**-10.27% at p>=0.52** while buy-and-hold of the SAME 10 test stocks returned **+18.66%**.
+At the authors' own 0.60 threshold the model emits NO trades at all. The authors'
+-64.3%/Sharpe -0.79 is NOT reproducible from this commit because their
+`walkforward_v3.py` imports `backtest_historical`, which is absent from the repo.
+Research only; not wired into anything. Tests: 11.
+
+**H5 DATA SOURCES — DONE.** 12 new adapters (18 providers total). Installed: jugaad-data,
+nselib, nsemine, pnsea, openchart, and NseIndiaApi under its real PyPI name **`nse`**.
+Correction: `indianstockmarketapi` and `nseindiaapi` do NOT exist on PyPI.
+`openchart` is a charting library, not a feed. KNOWN CONFLICT: pnsea -> stealthkit pins
+curl_cffi==0.10.0 while yfinance needs >=0.15; yfinance wins (see requirements-optional.txt).
+11 of 12 feeds verified against REAL HTTP.
+
+**H6 NSE ARCHIVES — DONE.** Real bhavcopy ingestion into `prices_daily`, idempotent
+(re-run skipped; --force rewrote the same rows, total unchanged). One live ingest:
+prices_daily 1,130,292 -> 1,131,371, max date 2026-08-26 -> 2026-08-27. NSE has RETIRED
+the legacy monthly file (404 on both hosts) — the CLI detects that and falls back to
+day-by-day. Tests: 48.
+
+**BONUS (found while verifying):** `ingest_prices.py` asked yahoo_finance ONLY, so one
+rate-limited source could stall the whole EOD update. It now has FOUR independent
+fallbacks — all five providers verified live returning identical frames.
+
+**STILL OPEN / OWNER DECISIONS**
+*   Whether to wire LSTM / HybridSwingNet into the terminal as informational-only fields
+    (both measured as having no skill — do not give either scoring weight).
+*   Band-universe fundamentals coverage (blocks the AW tier gate).
+*   `stocks.sector` coverage (blocks the AW sector gate).
+*   The yfinance cache guard (`data_sources/yf_cache.py`) is hardening, not a fix for the
+    VM: the VM's default cache works. It only matters where the default location cannot
+    host SQLite.

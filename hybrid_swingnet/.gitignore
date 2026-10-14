@@ -1,0 +1,12 @@
+# Isolated venv created by setup_env.ps1 -PathB (can be ~2 GB, never commit it)
+.venv/
+
+# Upstream release payloads / run outputs
+upstream/runs/
+upstream/data/
+upstream/**/__pycache__/
+__pycache__/
+*.pyc
+
+# Scratch
+.tmp/

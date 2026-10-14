@@ -1,0 +1,223 @@
+{
+  "upstream_commit": "901bcd223363a08eab371a8e4903d10201f88f55",
+  "dataset": {
+    "db_path": "C:\\Users\\Ankit\\Desktop\\nse_system\\data\\app.db",
+    "max_symbols": 80,
+    "symbols_used": 80,
+    "samples": 91635,
+    "horizons": [
+      1,
+      3,
+      5,
+      7,
+      10
+    ],
+    "feature_dims": {
+      "short": 8,
+      "mid": 12,
+      "long": 8,
+      "context": 24,
+      "sentiment": 9
+    }
+  },
+  "splits": {
+    "mode": "cross_sectional + purged temporal (upstream split code)",
+    "train_end": "2024-06-30",
+    "val_end": "2025-03-31",
+    "test_end": "2026-06-30",
+    "embargo_days": 10,
+    "counts": {
+      "train": 31868,
+      "val": 1790,
+      "test": 2960,
+      "blind_holdout": 4820
+    },
+    "train_stocks": 50,
+    "test_stocks": 10,
+    "train_used_after_stride": 5312
+  },
+  "accuracy": {
+    "train_in_sample": {
+      "n_samples": 5312,
+      "per_horizon": {
+        "H1": {
+          "accuracy": 0.5401,
+          "always_up_baseline": 0.5173,
+          "edge_vs_baseline": 0.0228,
+          "up_rate": 0.5173
+        },
+        "H3": {
+          "accuracy": 0.5269,
+          "always_up_baseline": 0.5264,
+          "edge_vs_baseline": 0.0006,
+          "up_rate": 0.5264
+        },
+        "H5": {
+          "accuracy": 0.5441,
+          "always_up_baseline": 0.5414,
+          "edge_vs_baseline": 0.0026,
+          "up_rate": 0.5414
+        },
+        "H7": {
+          "accuracy": 0.5555,
+          "always_up_baseline": 0.5555,
+          "edge_vs_baseline": 0.0,
+          "up_rate": 0.5555
+        },
+        "H10": {
+          "accuracy": 0.5633,
+          "always_up_baseline": 0.5633,
+          "edge_vs_baseline": 0.0,
+          "up_rate": 0.5633
+        }
+      },
+      "macro_accuracy": 0.546,
+      "macro_always_up_baseline": 0.5408,
+      "macro_edge_vs_baseline": 0.0052
+    },
+    "test_out_of_sample": {
+      "n_samples": 2960,
+      "per_horizon": {
+        "H1": {
+          "accuracy": 0.5294,
+          "always_up_baseline": 0.497,
+          "edge_vs_baseline": 0.0324,
+          "up_rate": 0.497
+        },
+        "H3": {
+          "accuracy": 0.499,
+          "always_up_baseline": 0.4993,
+          "edge_vs_baseline": -0.0003,
+          "up_rate": 0.4993
+        },
+        "H5": {
+          "accuracy": 0.4993,
+          "always_up_baseline": 0.4909,
+          "edge_vs_baseline": 0.0084,
+          "up_rate": 0.4909
+        },
+        "H7": {
+          "accuracy": 0.4899,
+          "always_up_baseline": 0.4899,
+          "edge_vs_baseline": 0.0,
+          "up_rate": 0.4899
+        },
+        "H10": {
+          "accuracy": 0.4845,
+          "always_up_baseline": 0.4845,
+          "edge_vs_baseline": 0.0,
+          "up_rate": 0.4845
+        }
+      },
+      "macro_accuracy": 0.5004,
+      "macro_always_up_baseline": 0.4923,
+      "macro_edge_vs_baseline": 0.0081
+    },
+    "test_ic_spearman": {
+      "H1": 0.2157,
+      "H3": 0.053,
+      "H5": 0.1143,
+      "H7": 0.1235,
+      "H10": 0.0435
+    }
+  },
+  "backtest": {
+    "primary": {
+      "horizon": 5,
+      "threshold": -Infinity,
+      "top_n": 3,
+      "round_trip_cost_pct": 0.2231,
+      "n_cohorts": 50,
+      "n_trades": 150,
+      "total_return_pct": 4.5812,
+      "sharpe_annualised": 0.2982,
+      "max_drawdown_pct": -26.0023,
+      "mean_trade_return_pct": 0.1572,
+      "win_rate": 0.4933,
+      "first_cohort": "2025-04-11",
+      "last_cohort": "2026-06-30",
+      "note": "requested threshold 0.6 produced no trades; primary shown is the unconditional top-N variant"
+    },
+    "by_threshold": {
+      "thr_0.50": {
+        "horizon": 5,
+        "threshold": 0.5,
+        "top_n": 3,
+        "round_trip_cost_pct": 0.2231,
+        "n_cohorts": 50,
+        "n_trades": 150,
+        "total_return_pct": 4.5812,
+        "sharpe_annualised": 0.2982,
+        "max_drawdown_pct": -26.0023,
+        "mean_trade_return_pct": 0.1572,
+        "win_rate": 0.4933,
+        "first_cohort": "2025-04-11",
+        "last_cohort": "2026-06-30"
+      },
+      "thr_0.52": {
+        "horizon": 5,
+        "threshold": 0.52,
+        "top_n": 3,
+        "round_trip_cost_pct": 0.2231,
+        "n_cohorts": 45,
+        "n_trades": 98,
+        "total_return_pct": -10.2714,
+        "sharpe_annualised": -0.2379,
+        "max_drawdown_pct": -31.9584,
+        "mean_trade_return_pct": 0.0117,
+        "win_rate": 0.4898,
+        "first_cohort": "2025-04-11",
+        "last_cohort": "2026-06-30"
+      },
+      "thr_0.55": {
+        "error": "no cohort triggered (threshold too high for this model/window)",
+        "threshold": 0.55,
+        "top_n": 3,
+        "horizon": 5,
+        "round_trip_cost_pct": 0.2231,
+        "n_cohorts": 0,
+        "n_trades": 0,
+        "n_candidate_samples": 2960
+      },
+      "thr_0.60": {
+        "error": "no cohort triggered (threshold too high for this model/window)",
+        "threshold": 0.6,
+        "top_n": 3,
+        "horizon": 5,
+        "round_trip_cost_pct": 0.2231,
+        "n_cohorts": 0,
+        "n_trades": 0,
+        "n_candidate_samples": 2960
+      },
+      "unconditional_top_n": {
+        "horizon": 5,
+        "threshold": -Infinity,
+        "top_n": 3,
+        "round_trip_cost_pct": 0.2231,
+        "n_cohorts": 50,
+        "n_trades": 150,
+        "total_return_pct": 4.5812,
+        "sharpe_annualised": 0.2982,
+        "max_drawdown_pct": -26.0023,
+        "mean_trade_return_pct": 0.1572,
+        "win_rate": 0.4933,
+        "first_cohort": "2025-04-11",
+        "last_cohort": "2026-06-30"
+      }
+    }
+  },
+  "benchmark": {
+    "universe": "equal-weight test stocks",
+    "start": "2025-03-31",
+    "end": "2026-06-30",
+    "n_symbols": 10,
+    "total_return_pct": 18.6639
+  },
+  "runtime_seconds": 496.09,
+  "warnings": [],
+  "authors_reference": {
+    "oos_return_pct": -64.3,
+    "oos_sharpe": -0.79,
+    "source": "upstream README.md / docs/CANONICAL_RESULTS_V2.md"
+  }
+}
