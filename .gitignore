@@ -58,6 +58,15 @@ graphflow-out/
 # yfinance sqlite cache (machine-local, regenerable; see data_sources/yf_cache.py)
 data/yf-cache/
 
+# Downloaded market-data archives (regenerable; see nse_archive_ingest.py)
+data/caches/
+
+# pip scratch directories. An in-repo `pip install` drops these in the working
+# tree; they are temporary and must never be committed.
+pip-metadata-*/
+pip-unpack-*/
+pip-download-*/
+
 # ui-audit run artifacts (screenshots + report.json; regenerable via tools/ui-audit)
 tools/ui-audit/out/
 

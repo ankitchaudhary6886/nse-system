@@ -118,7 +118,21 @@ ALL_WEATHER = {
     "BELOW_52W_MIN": 0.25,
     "NEAR_LOW_MAX": 0.15,
     "MAX_RISK_PCT": 0.05,
-    "TARGET_R": 3.0,
+    # v4 (2026-10-15): 3.0 -> 1.0. Two independent samples both put 3.0R at the
+    # BOTTOM of the 0.25-3.0R grid for this module:
+    #   live episode (71 graded ALL_WEATHER trades): 3.0R = -0.775R per idea,
+    #     1.0R = -0.718R, 0.25R = -0.296R
+    #   multi-year regeneration (173 traded): 3.0R = -0.052R, 0.75-1.0R = +0.012R
+    # Reason: no losing trade ever reached +2R. The best any loser printed was
+    # +1.98R and only ~9% reached +1R, so a 3R target sits outside the
+    # distribution of what these entries actually do.
+    # NOTE: with the gates above enabled this path emits no signals at all, so
+    # this value only bites if ALL_WEATHER is re-enabled. It is set to the
+    # best-evidenced value so that re-enabling cannot silently reintroduce the
+    # old mistake. (SETUP["TARGET_R_MULTIPLE"] is a DIFFERENT question and stays
+    # at 3.0 -- the Gabani swing setup has a right-skewed MFE distribution where
+    # a small target throws away the tail that pays for the loss rate.)
+    "TARGET_R": 1.0,
     "TICK": 0.05,
 
     # --- gate 1: trend (the decisive one) ------------------------------

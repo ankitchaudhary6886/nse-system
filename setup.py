@@ -3,12 +3,29 @@ Hiren Gabani Master Pullback — reads all thresholds from
 strategy_config.SETUP. Change values there, not here.
 
 v3.5 (2026-09-12): thresholds migrated to central config.
+v3.6 (2026-10-15): the exit side now comes from exit_policy.py, so the target
+                   multiple has ONE definition and one documented tie rule.
+                   Default behaviour is unchanged (3R), but the multiple is now
+                   read with a .get so the owner can flip it in one place, and
+                   a missing key can never crash the live scan.
+
+WHAT THIS FILE DEFINES (the live entry rule, unchanged)
+-------------------------------------------------------
+  entry = mother bar HIGH   (the bar the pullback is coiling inside)
+  stop  = signal bar LOW    (the most recent completed bar)
+  risk  = entry - stop, i.e. 1R
+  target= entry + TARGET_R_MULTIPLE x risk, default 3.0R
+
+The entry/stop pair is deliberately NOT touched by the exit work: re-scoring a
+different target changes only where we take profit, never where the idea comes
+from or where it is invalidated.
 """
 from dataclasses import dataclass, field
 from typing import List
 import numpy as np
 import pandas as pd
 
+import exit_policy
 from strategy_config import SETUP as CFG
 
 
@@ -51,7 +68,12 @@ class SetupDetector:
     TIGHT_MAX_RUN_BACK = CFG["TIGHT_MAX_RUN_BACK"]
     TIGHT_MIN = CFG["TIGHT_MIN"]
     MAX_STOP_PCT = CFG["MAX_STOP_PCT"]
-    TARGET_R_MULTIPLE = CFG["TARGET_R_MULTIPLE"]
+    # Exit multiple. .get with a fallback keeps today's live value (3.0) even if
+    # the key is ever removed, and lets the owner change behaviour by editing
+    # strategy_config.SETUP alone. resolve_target_r also refuses nonsense
+    # (zero/negative/None) and falls back rather than raising mid-scan.
+    TARGET_R_MULTIPLE = exit_policy.resolve_target_r(cfg=CFG)
+    HOLD_BARS = CFG.get("HOLD_BARS", exit_policy.DEFAULT_HOLD_BARS)
     MAX_SHIFT = CFG["MAX_SHIFT"]
 
     @classmethod
@@ -173,15 +195,20 @@ class SetupDetector:
         if risk_pct > cls.MAX_STOP_PCT:
             return None
 
-        risk = entry_price - stop_loss
+        # One exit plan, built from the two levels above. Its only job here is
+        # the target, but the plan also carries the tie rule (stop checked
+        # first, matching swing_live.update_outcomes) and the time stop, so the
+        # backtest and the live scorer can never disagree about the exit.
+        plan = exit_policy.plan_from(
+            entry_price, stop_loss, target_r=cls.TARGET_R_MULTIPLE,
+            hold_bars=cls.HOLD_BARS)
         return Setup(
             symbol=symbol, triggered=True,
             signal_date=str(df.index[-1].date()),
             entry_price=round(entry_price, 2),
             stop_loss=round(stop_loss, 2),
-            target_price=round(entry_price +
-                               cls.TARGET_R_MULTIPLE * risk, 2),
-            risk_reward=cls.TARGET_R_MULTIPLE,
+            target_price=round(plan.target, 2),
+            risk_reward=plan.target_r,
             pullback_depth=round(pb_depth, 3),
             pullback_days=int(pb_days),
             mother_bar_high=round(mother_bar_high, 2),
