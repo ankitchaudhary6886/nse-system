@@ -5,6 +5,7 @@ DB-first (prices_daily), Yahoo fallback for unknown symbols (single-symbol mode 
 Usage:
   python screener_engine.py RELIANCE   -> full check breakdown for one stock
   python screener_engine.py scan       -> run over top smallcap band (DB-only)
+  python screener_engine.py scan-all   -> run over the WHOLE band (~855 names)
 """
 import sys
 import json
@@ -262,20 +263,41 @@ def evaluate_stock(ticker, allow_yahoo=True):
     }
 
 
-def screen_universe(limit=60, show=True, allow_yahoo=False):
-    """Run the screener over the top smallcap band (DB-only = fast)."""
+def screen_universe(limit=60, show=True, allow_yahoo=False, progress=None):
+    """Run the screener over the smallcap/midcap band (DB-only = fast).
+
+    `limit=None` scans the WHOLE band instead of the top slice — ~855 names,
+    roughly 30 seconds on the laptop, which is why the API runs it in the
+    background rather than inside the request.
+
+    `progress(done, total, hits)` is called after every symbol if supplied.
+    It is wrapped so a broken progress callback can never abort a scan that is
+    already half finished.
+    """
     conn = db.get_conn()
-    syms = U.band_universe(conn, limit)
-    conn.close()
+    try:
+        syms = U.band_universe(conn, limit)
+    finally:
+        conn.close()
+    total = len(syms)
     hits = []
-    for sym in syms:
-        r = evaluate_stock(sym, allow_yahoo=allow_yahoo)
+    for done, sym in enumerate(syms, 1):
+        try:
+            r = evaluate_stock(sym, allow_yahoo=allow_yahoo)
+        except Exception as e:
+            # One bad symbol must never kill the whole band scan.
+            r = {"error": str(e)}
         if r.get("overall_signal"):
             hits.append(r)
             if show:
                 print(f"   ✅ {sym}: price {r['current_price']}  "
                       f"PB {r['pullback_depth']}  "
                       f"tight {r['tightness_pct']}")
+        if progress is not None:
+            try:
+                progress(done, total, len(hits))
+            except Exception:
+                pass
     if show:
         print(f"screener hits: {len(hits)} / {len(syms)}")
     return hits
@@ -284,6 +306,14 @@ def screen_universe(limit=60, show=True, allow_yahoo=False):
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "scan":
         screen_universe()
+    elif len(sys.argv) > 1 and sys.argv[1] == "scan-all":
+        # Whole band. Prints a progress line every 50 names so a long run
+        # never looks hung when it is run by hand.
+        screen_universe(
+            limit=None,
+            progress=lambda done, total, hits: (
+                print(f"  ... {done}/{total} scanned, {hits} hits")
+                if done % 50 == 0 or done == total else None))
     elif len(sys.argv) > 1:
         print(json.dumps(evaluate_stock(sys.argv[1].upper()), indent=1))
     else:

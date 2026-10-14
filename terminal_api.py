@@ -37,6 +37,17 @@ _SWING_SCAN_STATE = {
     "started_at": None, "finished_at": None,
 }
 
+# Whole-band screener scan (N1). ~855 symbols at ~35ms each is around 30
+# seconds, far too long to hold an HTTP request open from a phone, so it runs
+# as a background task and the UI polls the status endpoint — same shape as
+# the swing scan above.
+_BAND_SCAN_LOCK = threading.Lock()
+_BAND_SCAN_STATE = {
+    "running": False, "status": "idle", "message": "The whole band has not been scanned yet.",
+    "scanned": 0, "total": 0, "hits": [],
+    "started_at": None, "finished_at": None,
+}
+
 
 def safe_float(v, nd=2):
     try:
@@ -1036,6 +1047,17 @@ def ledger_trades(limit: int = 100):
     return {"trades": ledger.get_trades(limit)}
 
 
+@app.get("/api/ledger/monthly")
+def ledger_monthly(months: int = 24):
+    """Same figures as /api/ledger/stats, split month by month (N3)."""
+    import ledger
+    try:
+        return {"months": ledger.compute_monthly_stats(
+            limit_months=min(max(months, 1), 120))}
+    except Exception as e:
+        return {"months": [], "error": str(e)}
+
+
 @app.get("/api/validate/latest")
 def validate_latest():
     conn = get_conn()
@@ -1097,6 +1119,77 @@ def screener_check(symbol: str):
         return screener_engine.evaluate_stock(symbol.upper())
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.post("/api/screener/scan-universe")
+def screener_scan_universe(bg: BackgroundTasks):
+    """Start the whole-band screener scan in the background (N1).
+
+    Use /api/screener/scan for the quick top-of-band check; this one walks all
+    ~855 names, which takes around half a minute, so it never blocks a request.
+    """
+    with _BAND_SCAN_LOCK:
+        if _BAND_SCAN_STATE["running"]:
+            return {"started": False, "already_running": True}
+        _BAND_SCAN_STATE.update({
+            "running": True, "status": "running",
+            "message": "Scanning the whole smallcap/midcap band.",
+            "scanned": 0, "total": 0, "hits_count": 0, "hits": [],
+            "started_at": dt.datetime.now().isoformat(timespec="seconds"),
+            "finished_at": None,
+        })
+    bg.add_task(_run_band_scan_job)
+    return {"started": True}
+
+
+def _run_band_scan_job():
+    import logging
+    import screener_engine
+
+    def report(done, total, hits):
+        # Called once per symbol from the background thread; never let a status
+        # update take the scan down.
+        try:
+            with _BAND_SCAN_LOCK:
+                _BAND_SCAN_STATE.update({
+                    "scanned": done, "total": total, "hits_count": hits,
+                    "message": f"Scanned {done} of {total} companies, "
+                               f"{hits} matched so far.",
+                })
+        except Exception:
+            pass
+
+    try:
+        # limit=None means the WHOLE band, not the usual top slice.
+        results = screener_engine.screen_universe(
+            limit=None, show=False, progress=report)
+    except Exception as error:
+        logging.getLogger(__name__).exception("Whole-band screener scan failed")
+        with _BAND_SCAN_LOCK:
+            _BAND_SCAN_STATE.update({
+                "running": False, "status": "error", "message": str(error),
+                "finished_at": dt.datetime.now().isoformat(timespec="seconds"),
+            })
+        return
+
+    with _BAND_SCAN_LOCK:
+        scanned = _BAND_SCAN_STATE.get("total") or len(results)
+        _BAND_SCAN_STATE.update({
+            "running": False, "status": "complete",
+            "hits": results[:300],
+            "hits_count": len(results),
+            "message": f"Scanned {scanned} companies, "
+                       f"found {len(results)} matches.",
+            "finished_at": dt.datetime.now().isoformat(timespec="seconds"),
+        })
+
+
+@app.get("/api/screener/scan-universe/status")
+def screener_scan_universe_status():
+    with _BAND_SCAN_LOCK:
+        state = dict(_BAND_SCAN_STATE)
+    state["hits_count"] = state.get("hits_count") or len(state.get("hits") or [])
+    return state
 
 
 if __name__ == "__main__":

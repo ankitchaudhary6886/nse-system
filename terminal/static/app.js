@@ -512,6 +512,87 @@ async function startSwingScan() {
   }
 }
 
+// ============================================================
+// Screener - scan the whole band (N1)
+//
+// "Run Screener" checks the one symbol in the search box. This walks every
+// company in the small and mid cap band (~855 names, about half a minute), so
+// the server runs it in the background and we poll for progress rather than
+// holding one long request open. Same shape as the swing scan.
+// ============================================================
+async function startBandScan() {
+  const btn = $("runBandScanBtn");
+  const status = $("bandScanStatusText");
+  if (btn) { btn.disabled = true; btn.textContent = "Starting…"; }
+  if (status) status.textContent = "Requesting the band scan…";
+  try {
+    const started = await api("/api/screener/scan-universe", { method: "POST" });
+    if (started.already_running) {
+      if (status) status.textContent = "A band scan is already running; following it.";
+    } else if (!started.started) {
+      throw new Error("The band scan did not start.");
+    }
+    if (btn) btn.textContent = "Scanning…";
+    for (let attempt = 0; attempt < 120; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      const result = await api("/api/screener/scan-universe/status");
+      if (status) status.textContent = result.message || "Scanning the band…";
+      if (!result.running) {
+        if (result.status === "error") throw new Error(result.message);
+        renderBandHits(result.hits || []);
+        return;
+      }
+    }
+    if (status) status.textContent = "Still running; press Scan Whole Band again to follow it.";
+  } catch (error) {
+    if (status) status.textContent = `Band scan failed: ${error.message}`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Scan Whole Band"; }
+  }
+}
+
+function renderBandHits(hits) {
+  const box = $("bandScanResults");
+  if (!box) return;
+  box.replaceChildren();
+  if (!hits.length) {
+    const p = document.createElement("p");
+    p.textContent = "No company in the band passed every check today.";
+    box.appendChild(p);
+    return;
+  }
+  const heading = document.createElement("h3");
+  heading.textContent = hits.length === 1
+    ? "1 company passed every check"
+    : `${hits.length} companies passed every check`;
+  box.appendChild(heading);
+
+  const wrap = document.createElement("div");
+  wrap.className = "table-wrap";
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  thead.innerHTML = "<tr><th>Symbol</th><th>Price</th><th>1-month momentum</th>"
+    + "<th>Pullback</th><th>Recent range</th></tr>";
+  const tbody = document.createElement("tbody");
+  hits.forEach(h => {
+    const tr = document.createElement("tr");
+    tr.className = "click-row";
+    tr.tabIndex = 0;
+    tr.setAttribute("role", "button");
+    tr.setAttribute("aria-label", `Open research for ${h.ticker}`);
+    tr.innerHTML = `<td><strong>${h.ticker}</strong></td>
+      <td>${h.current_price}</td>
+      <td>${h.momentum_1m}</td>
+      <td>${h.pullback_depth}</td>
+      <td>${h.tightness_pct}</td>`;
+    tr.addEventListener("click", () => { setView("research"); loadSymbol(h.ticker); });
+    tbody.appendChild(tr);
+  });
+  table.append(thead, tbody);
+  wrap.appendChild(table);
+  box.appendChild(wrap);
+}
+
 async function runScreener() {
   const button = $("runScreenerBtn");
   const metrics = $("screenerMetrics");
@@ -649,6 +730,7 @@ async function runCompare() {
 // ============================================================
 async function loadLedger() {
   try {
+    await loadLedgerMonthly();
     const stats = await api("/api/ledger/stats");
     const trades = await api("/api/ledger/trades");
     const box = $("ledgerStats");
@@ -688,6 +770,51 @@ async function loadLedger() {
     }
     _renderLedgerCompanies(rows);
   } catch (e) { const box = $("ledgerStats"); if (box) box.innerHTML = `<p>Error loading ledger: ${e.message}</p>`; }
+}
+
+// Month by month (N3). The headline stats average every idea ever recorded,
+// which hides a bad month inside a good year. This is the same arithmetic
+// bucketed by signal month, so a rough patch is visible on its own.
+// A month with no graded idea simply does not appear.
+async function loadLedgerMonthly() {
+  const body = $("ledgerMonthlyTable");
+  const badge = $("ledgerMonthlyBadge");
+  if (!body) return;
+  try {
+    const data = await api("/api/ledger/monthly");
+    const months = (data && data.months) || [];
+    body.replaceChildren();
+    if (badge) badge.textContent = months.length ? `${months.length} months` : "—";
+    if (!months.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 7;
+      td.textContent = "No graded ideas yet. Month rows appear as signals are graded.";
+      tr.appendChild(td);
+      body.appendChild(tr);
+      return;
+    }
+    months.forEach(m => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${m.month}</td>
+        <td>${m.total_trades}</td>
+        <td>${m.wins} / ${m.losses}</td>
+        <td>${fmt(m.win_rate, "%")}</td>
+        <td>${fmt(m.expectancy_r)}R</td>
+        <td>${fmt(m.total_r)}R</td>
+        <td>${fmt(m.max_drawdown_r)}R</td>`;
+      body.appendChild(tr);
+    });
+  } catch (e) {
+    if (badge) badge.textContent = "error";
+    body.replaceChildren();
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 7;
+    td.textContent = `Could not load month by month: ${e.message}`;
+    tr.appendChild(td);
+    body.appendChild(tr);
+  }
 }
 
 // ============================================================
@@ -1935,6 +2062,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const screenerBtn = $("runScreenerBtn");
   if (screenerBtn) screenerBtn.addEventListener("click", runScreener);
   window.runScreener = runScreener;
+  const bandScanBtn = $("runBandScanBtn");
+  if (bandScanBtn) bandScanBtn.addEventListener("click", startBandScan);
   const rrb = $("runResearchBtn");
   if (rrb) rrb.addEventListener("click", () => {
     const titleEl = $("chartTitle");

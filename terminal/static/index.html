@@ -560,13 +560,18 @@
 
       <div class="panel" style="margin-top:18px">
         <div class="panel-header">
-          <div><h2 data-explain="veto" class="panel-title" title="Click to learn what this means">Find Companies By Numbers</h2><p>Baseline + VCP checks for the symbol in the search field above.</p></div>
-          <button class="fx-btn" id="runScreenerBtn" data-icon="sliders-horizontal">Run Screener</button>
+          <div><h2 data-explain="veto" class="panel-title" title="Click to learn what this means">Find Companies By Numbers</h2><p>Baseline + VCP checks for the symbol in the search field above, or scan the whole band at once.</p></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="fx-btn" id="runScreenerBtn" data-icon="sliders-horizontal">Run Screener</button>
+            <button class="fx-btn" id="runBandScanBtn" data-icon="layers">Scan Whole Band</button>
+          </div>
         </div>
+        <div class="fx-row" id="bandScanStatus"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Band scan</span><span class="fx-v is-mut" id="bandScanStatusText">Not scanned yet. Every company in the small and mid cap band, about half a minute.</span></div>
         <div class="terminal-grid" style="margin-top:10px;">
           <div class="setup-box" id="screenerMetrics"><p>Type a symbol above and press Run Screener.</p></div>
           <div class="setup-box" id="screenerChecks"><span class="badge muted" id="screenerBadge">—</span></div>
         </div>
+        <div id="bandScanResults" style="margin-top:14px"></div>
       </div>
     </section>
 
@@ -612,6 +617,18 @@
               <tbody id="ledgerTable"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-header">
+          <div><h2 data-explain="r_multiple" class="panel-title" title="Click to learn what this means">Month By Month</h2><p>The same numbers as above, split by the month each idea was recorded.</p></div>
+          <span class="badge muted" id="ledgerMonthlyBadge">—</span>
+        </div>
+        <div class="table-wrap" id="ledgerMonthlyBox">
+          <table>
+            <thead><tr><th>Month</th><th>Ideas</th><th>Wins / Losses</th><th>Win rate</th><th>Average result <span class="ledger-sight" data-explain="expectancy" tabindex="0" role="button" title="Click to learn what this means" aria-label="What does average result mean?">?</span></th><th>Total</th><th>Worst fall</th></tr></thead>
+            <tbody id="ledgerMonthlyTable"></tbody>
+          </table>
         </div>
       </div>
       <div class="panel" id="ledgerCompanies" style="margin-bottom:18px">
