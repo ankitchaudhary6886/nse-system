@@ -17,3 +17,27 @@ matplotlib
 
 # Google Sheets sync (sheets_sync.py)
 gspread
+
+# =====================================================================
+# NSE / India market data feeds
+# Lazily imported by data_sources/adapters/* — a missing package can never
+# break the app (see PROJECT_HANDOFF golden rule 7).
+# =====================================================================
+
+# BennyThadikaran/NseIndiaApi — the PyPI name is `nse`, NOT `nseindiaapi`
+nse>=5.1.0
+jugaad-data>=0.35.10
+nselib>=2.5.1
+nsemine>=2.2.1
+pnsea>=1.2.1
+
+# openchart (marketcalls) is a charting/preview library, not a data feed.
+openchart>=0.2.0
+
+# ---------------------------------------------------------------------
+# KNOWN CONFLICT (does not break the app, but read this)
+# `pnsea` depends on `stealthkit`, which hard-pins curl_cffi==0.10.0.
+# `yfinance` 1.6+ requires curl_cffi>=0.15. Both matter, so yfinance wins:
+#   pip install "curl_cffi>=0.15"
+# Consequence: pnsea may fail at runtime. It stays optional and guarded.
+# ---------------------------------------------------------------------

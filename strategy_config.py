@@ -95,6 +95,24 @@ REGIME = {
 
 # ============================================================
 # ALL_WEATHER — defensive-regime reversal detection (all_weather.py)
+#
+# v4 (2026-10-15): four quality gates added, because measurement showed this
+# was where the system bled. On the production (VM) ledger 149 of 155 signals
+# were ALL_WEATHER; 68 of the 71 graded trades were ALL_WEATHER at a 5.9% win
+# rate, contributing -52R of the -55R total. Its entries sat a median 35.5%
+# below the 52-week high and 4.3% above the 52-week low -- it was buying
+# falling knives in a defensive tape, with a 3R target.
+#
+# The SWING path requires the Stage-2 trend + liquidity screen and the sector
+# gate. This path required none of them. Now it does.
+#
+# NOTE ON THE DEFAULTS: with the values below, ALL_WEATHER effectively stops
+# emitting signals, because the trend gate rejects ~100% of the v3 population
+# by construction -- a stock 25% below its 52-week high cannot simultaneously
+# be above a rising EMA200. That is deliberate and evidence-backed, not an
+# accident. To bring the mode back to life the one measured setting that still
+# leaves signals is TREND_EMA=50 with TIER_ENABLED=False (~1.4% of candidates
+# survived the audit replay). TREND_ENABLED=False restores old behaviour.
 # ============================================================
 ALL_WEATHER = {
     "BELOW_52W_MIN": 0.25,
@@ -102,6 +120,32 @@ ALL_WEATHER = {
     "MAX_RISK_PCT": 0.05,
     "TARGET_R": 3.0,
     "TICK": 0.05,
+
+    # --- gate 1: trend (the decisive one) ------------------------------
+    "TREND_ENABLED": True,
+    "TREND_EMA": 200,              # close must be above this EMA
+    "TREND_REQUIRE_RISING": True,  # ...and that EMA must be rising
+    "TREND_SLOPE_DAYS": 20,        # lookback used to decide "rising"
+
+    # --- gate 2: liquidity --------------------------------------------
+    # None = inherit SCREENER.LIQ_DAYS / MIN_AVG_TURNOVER so those numbers
+    # live in exactly ONE place. Do not copy the literals here.
+    "LIQ_ENABLED": True,
+    "LIQ_DAYS": None,
+    "MIN_AVG_TURNOVER": None,
+
+    # --- gate 3: sector leadership ------------------------------------
+    "SECTOR_ENABLED": True,
+    "SECTOR_TOP_N": None,          # None = inherit sector_gate.TOP_N
+
+    # --- gate 4: fundamental tier -------------------------------------
+    # Uses all_weather._tier(), which until now was computed and then never
+    # read by anything. NOTE: in the audit this behaves as a DATA-AVAILABILITY
+    # gate rather than a quality gate -- band-universe fundamentals coverage is
+    # empty, so nearly everything rates UNK and is blocked. Fix that coverage
+    # before treating this gate as a measure of quality.
+    "TIER_ENABLED": True,
+    "MIN_TIER": "MED",             # HIGH passes, MED passes, UNK rejected
 }
 
 # ============================================================

@@ -65,9 +65,18 @@ def _scan_all_weather(conn, today):
         "DELETE FROM swing_signals WHERE signal_date=? "
         "AND mode='ALL_WEATHER'", (today,))
 
-    cands = all_weather.candidates(conn)
-    print(f"[AW] {len(cands)} candidates (>=25% below 52w high, "
-          f"within 15% of 52w low)")
+    # all_weather v4 applies the trend / liquidity / sector / fundamental-tier
+    # gates inside candidates(); `stats` reports why names were dropped so a
+    # quiet evening is explainable instead of mysterious.
+    stats = {}
+    cands = all_weather.candidates(conn, stats=stats)
+    print(f"[AW] {stats.get('raw', 0)} candidates passed the 52-week band "
+          f"(>=25% below 52w high, within 15% of 52w low); "
+          f"{stats.get('kept', 0)} also passed the quality gates")
+    print(f"[AW] gate rejections: trend {stats.get('trend', 0)}, "
+          f"liquidity {stats.get('liquidity', 0)}, "
+          f"sector {stats.get('sector', 0)}, "
+          f"tier {stats.get('tier', 0)}")
 
     n = 0
     for sym, df, fs, roce, tier in cands:
@@ -88,7 +97,8 @@ def _scan_all_weather(conn, today):
              dt.datetime.now().isoformat(), "ALL_WEATHER"))
         n += 1
         print(f"  [AW] {sym:<12} {st['pattern']:<18} entry {st['entry']} "
-              f"stop {st['stop']} target {st['target']} fund {fs}")
+              f"stop {st['stop']} target {st['target']} "
+              f"tier {tier} fund {fs} roce {roce}")
         try:
             from alerts import notify_all_weather
             notify_all_weather(sym, st)
