@@ -1,0 +1,85 @@
+
+/* ============================================================================
+   NARROW-SCREEN CORRECTIONS
+   ----------------------------------------------------------------------------
+   Written FROM REAL SCREENSHOTS of the live site at 414x900 (phone), not from
+   guesswork. Loaded last, so it wins. Section-scoped on purpose - it fixes the
+   phone without touching the desktop layout.
+
+   What the screenshot showed:
+     - the market context bar ran off the right edge and was cut off
+     - the metric cards were forced into three cramped columns ("COMPANIES YOU
+       CAN RESEARCH" wrapped onto two lines, cards clipped at the edge)
+     - the chart toolbar crowded together and pushed past the viewport
+   ============================================================================ */
+
+@media (max-width: 640px) {
+
+  /* --- never allow sideways scroll -------------------------------------- */
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  /* Grid and flex children default to min-width:auto, which lets long words and
+     wide tables push the page wider than the screen. This is the standard cure. */
+  * { min-width: 0; }
+
+  /* Tables may still scroll inside their own box rather than the page. */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* --- summary numbers: two per row, readable --------------------------- */
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px;
+  }
+  /* Clamp the big number and let the label wrap naturally instead of the
+     number being pushed out of its card. */
+  .metric-card strong {
+    font-size: 21px;
+    overflow-wrap: anywhere;
+  }
+  .metric-card {
+    padding: 12px;
+    min-width: 0;
+  }
+  .metric-card span {
+    font-size: 10px;
+    letter-spacing: 0.045em;
+  }
+  .metric-card small {
+    font-size: 11.5px;
+    line-height: 1.4;
+  }
+
+  /* --- market context bar: readable, no overflow ------------------------ */
+  .fx-mkt, .market-overview {
+    flex-wrap: wrap;
+    overflow: hidden;
+  }
+  .fx-mkt > * , .market-overview > * {
+    max-width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* --- chart toolbar: allow wrapping, drop the wide decorative chip ----- */
+  .fx-chart-tools {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    overflow: hidden;
+  }
+  /* The "Price / N of M averages" readout is the widest item and duplicates
+     information available in the legend, so on a phone it is the one to hide. */
+  .fx-chart-tools > .fx-chip.mono-sans { display: none; }
+
+  /* --- keep the pipe bars inside the screen ----------------------------- */
+  .panel, .view, main { max-width: 100%; }
+  .panel-header p { max-width: none; }
+}
+
+/* Between phone and desktop the current rules are fine; only very narrow
+   screens needed correcting. */
+@media (max-width: 420px) {
+  .metric-grid { gap: 6px; }
+  .metric-card strong { font-size: 19px; }
+}
