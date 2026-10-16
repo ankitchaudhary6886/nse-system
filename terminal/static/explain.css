@@ -30,8 +30,8 @@
 }
 .ledger-sight:hover,
 .ledger-sight:focus-visible {
-  color: var(--blue, #60a5fa);
-  border-color: var(--blue, #60a5fa);
+  color: var(--blue, #38bdf8);
+  border-color: var(--blue, #38bdf8);
 }
 
 /* ------------------------------------------------ Performance page panels -- */
@@ -47,8 +47,8 @@
   border-radius: 14px;
   padding: 12px 14px;
 }
-.ledger-company-col-good { border-left-color: #34d399; }
-.ledger-company-col-bad { border-left-color: #fb7185; }
+.ledger-company-col-good { border-left-color: var(--green, #22c55e); }
+.ledger-company-col-bad { border-left-color: var(--red, #ef4444); }
 
 .ledger-company-col h3 {
   margin: 0;
@@ -91,8 +91,8 @@
   font-weight: 640;
   font-variant-numeric: tabular-nums;
 }
-.ledger-r.good { color: #34d399; }
-.ledger-r.bad { color: #fb7185; }
+.ledger-r.good { color: var(--green, #22c55e); }
+.ledger-r.bad { color: var(--red, #ef4444); }
 .ledger-r.flat { color: var(--muted, #8b97ad); }
 .ledger-r-risk { color: var(--muted, #8b97ad); }
 
@@ -188,7 +188,7 @@
   background: rgba(251, 191, 36, 0.07);
   border: 1px solid rgba(251, 191, 36, 0.22);
 }
-#dataDetailDialog .ex-caution .ex-label { color: var(--yellow, #fbbf24); }
+#dataDetailDialog .ex-caution .ex-label { color: var(--yellow, #eab308); }
 #dataDetailDialog .ex-caution .ex-text {
   font-size: 13px;
   line-height: 1.55;
@@ -210,3 +210,208 @@
   #dataDetailDialog .ex-caution { grid-template-columns: 1fr; gap: 4px; }
   #dataDetailDialog .ex-headline { font-size: 17px; }
 }
+
+/* ==========================================================================
+   SLIDER BLOCK — appended for terminal/static/sliders.js and the research
+   panel's "what-if" box. Everything is scoped to .slider-panel / .slider-* /
+   #whatIf*, so style.css, polish.css and the explanation dialog are untouched.
+   Colours come from the existing custom properties.
+   ========================================================================== */
+
+.slider-panel {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--hairline, rgba(255, 255, 255, .12));
+  border-left: 3px solid var(--blue, #38bdf8);
+  border-radius: 14px;
+  background: var(--panel2, rgba(255, 255, 255, .03));
+}
+.slider-panel h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.slider-lead {
+  margin: 0 0 12px;
+  font-size: var(--fs-small, 12px);
+  line-height: 1.55;
+  color: var(--muted, #8b97ad);
+}
+
+/* Two price boxes on a wide screen, stacked on a phone. */
+.slider-price-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.slider-price {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: var(--fs-small, 12px);
+  color: var(--muted, #8b97ad);
+}
+.slider-price input {
+  width: 100%;
+  padding: 11px 12px;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #edf3ff);
+  background: var(--bg2, #0c1220);
+  border: 1px solid var(--hairline, rgba(255, 255, 255, .14));
+  border-radius: 10px;
+}
+.slider-price input:focus {
+  border-color: var(--blue, #38bdf8);
+  outline: none;
+}
+
+.slider-ghost {
+  margin-top: 10px;
+  padding: 9px 14px;
+  font-size: 12px;
+  color: var(--blue, #38bdf8);
+  background: transparent;
+  border: 1px solid var(--hairline, rgba(255, 255, 255, .18));
+  border-radius: 999px;
+  cursor: pointer;
+}
+.slider-ghost:hover { border-color: var(--blue, #38bdf8); }
+
+/* One slider: label + live readout on one line, the rail under it. */
+.slider-field {
+  display: block;
+  margin: 14px 0 2px;
+}
+.slider-label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text, #edf3ff);
+  cursor: default;
+}
+.slider-label-text { flex: 1 1 auto; min-width: 60%; }
+.slider-readout {
+  margin-left: auto;
+  padding: 2px 9px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--blue, #38bdf8);
+  background: rgba(96, 165, 250, .10);
+  border-radius: 8px;
+}
+.slider-help { cursor: help; }
+
+/* The rail: a real range input, sized so a thumb works on a phone. */
+.slider-range {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin: 2px 0 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.slider-range:focus { outline: none; }
+.slider-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--hairline, rgba(255, 255, 255, .18));
+}
+.slider-range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--hairline, rgba(255, 255, 255, .18));
+}
+.slider-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--blue, #38bdf8);
+}
+.slider-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--blue, #38bdf8);
+  border: 3px solid var(--bg, #0a0a0b);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+}
+.slider-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--blue, #38bdf8);
+  border: 3px solid var(--bg, #0a0a0b);
+}
+.slider-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, .35);
+}
+.slider-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, .35);
+}
+
+.slider-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -2px;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted, #8b97ad);
+}
+
+.slider-hint {
+  margin: 4px 0 0;
+  font-size: var(--fs-small, 12px);
+  line-height: 1.5;
+  color: var(--muted, #8b97ad);
+}
+
+/* The answers. The same .fx-row look the rest of the panel uses. */
+.slider-out {
+  margin-top: 14px;
+  padding-top: 6px;
+  border-top: 1px solid var(--hairline, rgba(255, 255, 255, .10));
+}
+.slider-out .fx-row { padding: 7px 0; }
+.wi-big {
+  font-size: 17px;
+  color: var(--green, #22c55e);
+  font-variant-numeric: tabular-nums;
+}
+.wi-bad {
+  color: var(--red, #ef4444);
+  font-variant-numeric: tabular-nums;
+}
+
+.slider-note {
+  margin: 10px 0 0;
+  font-size: var(--fs-small, 12px);
+  line-height: 1.55;
+  color: var(--muted, #8b97ad);
+}
+.slider-note.is-warn {
+  padding: 9px 11px;
+  color: #eab308;
+  background: rgba(251, 191, 36, .07);
+  border: 1px solid rgba(251, 191, 36, .22);
+  border-radius: 10px;
+}
+.slider-date-note { margin-top: 12px; }
+
+@media (max-width: 620px) {
+  .slider-label { font-size: 12.5px; }
+  .slider-readout { margin-left: 0; }
+  .slider-range { height: 32px; }
+  .slider-range::-webkit-slider-thumb { width: 28px; height: 28px; margin-top: -11px; }
+}
+

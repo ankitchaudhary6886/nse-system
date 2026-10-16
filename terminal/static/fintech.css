@@ -50,16 +50,16 @@
   --hairline-strong: var(--fx-hairline);
 
   /* semantic state: bullish / bearish / neutral */
-  --fx-bull: #34d399;
+  --fx-bull: #22c55e;
   --fx-bull-bg: rgba(16, 185, 129, 0.1);
   --fx-bull-line: rgba(16, 185, 129, 0.2);
-  --fx-bear: #fb7185;
+  --fx-bear: #ef4444;
   --fx-bear-bg: rgba(244, 63, 94, 0.1);
   --fx-bear-line: rgba(244, 63, 94, 0.2);
-  --fx-neut: #fbbf24;
+  --fx-neut: #eab308;
   --fx-neut-bg: rgba(245, 158, 11, 0.1);
   --fx-neut-line: rgba(245, 158, 11, 0.2);
-  --fx-info: #60a5fa;
+  --fx-info: #38bdf8;
   --fx-info-bg: rgba(96, 165, 250, 0.1);
   --fx-info-line: rgba(96, 165, 250, 0.22);
 
@@ -1012,7 +1012,7 @@ th.num,
 .fx-legend .lg-swatch { width: 12px; height: 2px; border-radius: 2px; flex: none; }
 .fx-legend .lg-swatch.c-candle { background: linear-gradient(90deg, var(--fx-bull) 50%, var(--fx-bear) 50%); }
 .fx-legend .lg-swatch.c-ema20 { background: var(--fx-neut); }
-.fx-legend .lg-swatch.c-ema50 { background: #a78bfa; }
+.fx-legend .lg-swatch.c-ema50 { background: #38bdf8; }
 .fx-legend .lg-swatch.c-ema200 { background: #94a3b8; }
 .fx-chart-wrap { position: relative; min-width: 0; }
 .fx-chart-wrap.is-patterns-hidden .tv-lightweight-charts table tr td div[style*="position: absolute"] { }
@@ -1292,12 +1292,12 @@ button[class*="btn"] {
 .fx-chart-readout .ro-rsi { color: #c084fc; }
 
 /* Legend swatches for the new series; an MA that is off is never shown as on. */
-.fx-legend .lg-swatch.c-ema10 { background: #60a5fa; }
+.fx-legend .lg-swatch.c-ema10 { background: #7dd3fc; }
 .fx-legend .lg-swatch.c-rsi { background: #c084fc; }
 .fx-legend .lg-off { color: var(--fx-zinc-500); font-size: 10px; letter-spacing: 0.02em; }
 .fx-legend .lg-item.is-off { opacity: 0.5; }
 .fx-legend .lg-item.is-off .lg-swatch.c-ema10 {
-  background: repeating-linear-gradient(90deg, #60a5fa 0 3px, transparent 3px 7px);
+  background: repeating-linear-gradient(90deg, #7dd3fc 0 3px, transparent 3px 7px);
 }
 
 /* ------------------------------- 21 average toggles (SMA/EMA) ------------- *

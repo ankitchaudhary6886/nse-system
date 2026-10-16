@@ -28,10 +28,10 @@
 
   --line-tight: 1.25; --line-body: 1.6;
 
-  --surface-1: rgba(255, 255, 255, 0.032);
-  --surface-2: rgba(255, 255, 255, 0.055);
-  --surface-3: rgba(255, 255, 255, 0.085);
-  --hairline: rgba(255, 255, 255, 0.075);
+  --surface-1: #0f1013;
+  --surface-2: #14161a;
+  --surface-3: #1a1d22;
+  --hairline: rgba(255, 255, 255, 0.07);
   --hairline-strong: rgba(255, 255, 255, 0.13);
 
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -83,7 +83,7 @@ h2[data-explain]::after {
   width: 15px; height: 15px; margin-left: 7px;
   font-size: 10px; font-weight: 700; line-height: 1;
   color: var(--blue);
-  border: 1px solid rgba(130, 183, 255, 0.42);
+  border: 1px solid var(--blue-line);
   border-radius: 50%;
   vertical-align: 1px;
   opacity: 0.75;
@@ -91,7 +91,7 @@ h2[data-explain]::after {
 }
 h2[data-explain]:hover::after {
   opacity: 1;
-  background: rgba(130, 183, 255, 0.16);
+  background: var(--blue-bg);
 }
 
 p, small, .nav-hint { color: var(--muted); }
@@ -243,7 +243,7 @@ input::placeholder { color: var(--muted); opacity: 0.75; }
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .nav-btn.active {
-  background: var(--surface-2);
+  background: var(--blue-bg);
   font-weight: 600;
 }
 .nav-group {
@@ -313,18 +313,18 @@ pre { overflow-x: auto; }
 }
 .ideal-good {
   color: var(--green);
-  border-color: rgba(83, 214, 160, 0.38);
-  background: rgba(83, 214, 160, 0.09);
+  border-color: var(--green-line);
+  background: var(--green-bg);
 }
 .ideal-ok {
   color: var(--yellow);
-  border-color: rgba(241, 199, 109, 0.38);
-  background: rgba(241, 199, 109, 0.09);
+  border-color: var(--yellow-line);
+  background: var(--yellow-bg);
 }
 .ideal-poor {
   color: var(--red);
-  border-color: rgba(255, 135, 145, 0.38);
-  background: rgba(255, 135, 145, 0.09);
+  border-color: var(--red-line);
+  background: var(--red-bg);
 }
 .ideal-unknown {
   color: var(--muted);
@@ -343,4 +343,163 @@ pre { overflow-x: auto; }
 }
 @media (max-width: 620px) {
   .ideal-chip { display: block; margin: 4px 0 0; width: fit-content; }
+}
+
+/* ============================================================================
+   COLOUR SYSTEM AUTHORITY
+   ----------------------------------------------------------------------------
+   Cascade facts this block exists to solve:
+     - load order is style.css -> polish.css -> explain.css -> fintech.css ->
+       tailwind.css, and index.html also carries an inline <style> block ahead
+       of all of them;
+     - fintech.css re-declares the legacy tokens and adds its own --fx-* palette
+       in :root, so an equal-specificity :root here would lose to it;
+     - explain.css hardcodes the ledger green/red.
+   :root:root outranks :root regardless of load order, so the palette below is
+   the one that renders, without editing any file outside this agent's scope.
+   Every declaration is a colour value - no layout, spacing, size or selector
+   structure is touched.
+   ============================================================================ */
+:root:root {
+  /* base: layered near-black */
+  --bg: #0a0a0b;
+  --bg2: #0d0e10;
+  --panel: #101114;
+  --panel2: #0c0d0f;
+  --surface-1: #0f1013;
+  --surface-2: #14161a;
+  --surface-3: #1a1d22;
+  --border: rgba(255, 255, 255, 0.075);
+  --hairline: rgba(255, 255, 255, 0.07);
+  --hairline-strong: rgba(255, 255, 255, 0.13);
+
+  /* text: 17:1 primary, 6.6:1 secondary, on --bg */
+  --text: #f4f6f9;
+  --text-2: #c9d3e0;
+  --muted: #8b95a7;
+
+  /* meaning: green = gain */
+  --green: #22c55e;
+  --green-strong: #16a34a;
+  --green-bg: rgba(34, 197, 94, 0.13);
+  --green-line: rgba(34, 197, 94, 0.38);
+
+  /* meaning: red = loss */
+  --red: #ef4444;
+  --red-strong: #dc2626;
+  --red-bg: rgba(239, 68, 68, 0.13);
+  --red-line: rgba(239, 68, 68, 0.38);
+
+  /* meaning: amber = attention */
+  --yellow: #eab308;
+  --yellow-strong: #facc15;
+  --yellow-bg: rgba(234, 179, 8, 0.13);
+  --yellow-line: rgba(234, 179, 8, 0.38);
+
+  /* meaning: cyan = information */
+  --blue: #38bdf8;
+  --blue-soft: #7dd3fc;
+  --blue-bg: rgba(56, 189, 248, 0.12);
+  --blue-line: rgba(56, 189, 248, 0.38);
+  --purple: #38bdf8;
+
+  /* fintech.css resolves most of its state colour from a parallel --fx-*
+     palette. Point that palette at the same tokens so the last-loaded sheet
+     cannot reintroduce an old hue. */
+  --fx-canvas: var(--bg);
+  --fx-canvas-soft: var(--bg2);
+  --fx-card: var(--panel);
+  --fx-card-solid: var(--surface-2);
+  --fx-hairline: var(--border);
+  --fx-hairline-soft: var(--hairline);
+  --fx-hairline-strong: var(--hairline-strong);
+  --fx-inset: rgba(255, 255, 255, 0.03);
+  --fx-zinc-950: #0a0a0b;
+  --fx-zinc-900: #14161a;
+  --fx-zinc-800: #23262c;
+  --fx-zinc-700: #34383f;
+  --fx-zinc-500: #6b7280;
+  --fx-zinc-400: var(--muted);
+  --fx-zinc-300: var(--text-2);
+  --fx-zinc-100: var(--text);
+  --fx-bull: var(--green);
+  --fx-bull-bg: var(--green-bg);
+  --fx-bull-line: var(--green-line);
+  --fx-bear: var(--red);
+  --fx-bear-bg: var(--red-bg);
+  --fx-bear-line: var(--red-line);
+  --fx-neut: var(--yellow);
+  --fx-neut-bg: var(--yellow-bg);
+  --fx-neut-line: var(--yellow-line);
+  --fx-info: var(--blue);
+  --fx-info-bg: var(--blue-bg);
+  --fx-info-line: var(--blue-line);
+}
+
+/* fintech.css paints the page background last, from two hardcoded navy stops.
+   html body outranks its plain body rule. The background-attachment line is
+   here only to preserve fintech.css's existing `fixed` behaviour, which the
+   background shorthand below would otherwise reset to its initial value. */
+html body {
+  background:
+    radial-gradient(1000px 520px at 82% -10%, rgba(56, 189, 248, 0.07), transparent 70%),
+    radial-gradient(760px 440px at 4% 104%, rgba(125, 211, 252, 0.05), transparent 70%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg2) 58%, var(--bg) 100%);
+  background-attachment: fixed;
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------- surfaces --
+   Selected text and scrollbars use the info accent, never green or red. */
+::selection { background: rgba(56, 189, 248, 0.30); color: #f4f6f9; }
+* { scrollbar-color: #34383f #0a0a0b; }
+::-webkit-scrollbar { background: #0a0a0b; }
+::-webkit-scrollbar-track { background: #0a0a0b; }
+::-webkit-scrollbar-thumb { background: #34383f; }
+::-webkit-scrollbar-thumb:hover { background: #4b5159; }
+
+/* ------------------------------------------------------------------ states --
+   State colours that live in index.html's inline <style> block. This sheet is
+   linked after that block, so equal-specificity rules here win. The text
+   labels and the check/cross glyphs are untouched - colour reinforces the
+   words, it never carries the meaning alone. */
+.rel-strong { background: var(--green-bg);  color: var(--green); }
+.rel-mod    { background: var(--yellow-bg); color: var(--yellow); }
+.rel-thin   { background: var(--surface-2); color: var(--text-2); }
+.rel-none   { background: var(--surface-1); color: var(--muted); }
+
+.chk-ok   { color: var(--green); }
+.chk-fail { color: var(--red); }
+
+.lg-pos { color: var(--green); }
+.lg-neg { color: var(--red); }
+
+.lg-ready    { background: var(--green-bg);  color: var(--green); }
+.lg-paper    { background: var(--yellow-bg); color: var(--yellow); }
+.lg-notready { background: var(--red-bg);    color: var(--red); }
+.lg-nodata   { background: var(--surface-2); color: var(--text-2); }
+
+.strategy-error { color: var(--red); }
+
+/* keyboard ring on strategy rows, matching the global info-accent ring */
+.strategy-row:focus-visible { outline-color: var(--blue); }
+
+/* ------------------------------------------------------------- exceptions ---
+   explain.css hardcodes the ledger green and red as raw literals (the pre-pass
+   teal-green and pink-red). It loads after this sheet and is outside this
+   agent's write scope, so `body` is used purely to outrank those two-class
+   selectors. Colour declarations only; safe to delete the moment the Lead
+   edits explain.css directly. */
+body .ledger-r.good { color: var(--green); }
+body .ledger-r.bad { color: var(--red); }
+body .ledger-r.flat { color: var(--muted); }
+body .ledger-company-col-good { border-left-color: var(--green); }
+body .ledger-company-col-bad { border-left-color: var(--red); }
+
+/* fintech.css maps PENDING to its amber token; a pending trade is neutral
+   here (not a result yet), so neither gain nor loss. */
+.outcome.outcome.PENDING {
+  color: var(--muted);
+  background: var(--surface-2);
+  border-color: var(--hairline-strong);
 }

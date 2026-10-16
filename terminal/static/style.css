@@ -1,18 +1,60 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* ============================================================
+   COLOUR SYSTEM - single source of truth.
+   One meaning per colour, everywhere:
+     green  = gain (positive R, wins, up candles, good verdicts)
+     red    = loss (negative R, losses, down candles, poor verdicts)
+     amber  = attention only (warnings, "ok but not ideal", pending/live)
+     cyan   = information only (links, selected nav, focus, "?" markers)
+   Green and red are NEVER decorative and never mean "neutral".
+   Surfaces are layered near-black, not flat grey, with hairline borders.
+   ============================================================ */
 :root {
-  --bg: #070b14;
-  --bg2: #0c1220;
-  --panel: rgba(255,255,255,0.055);
-  --panel2: rgba(255,255,255,0.035);
-  --border: rgba(255,255,255,0.09);
-  --text: #edf3ff;
-  --muted: #7f8da9;
-  --blue: #60a5fa;
-  --green: #34d399;
-  --red: #fb7185;
-  --yellow: #fbbf24;
-  --purple: #a78bfa;
+  /* ---- base: layered true near-black ---- */
+  --bg: #0a0a0b;
+  --bg2: #0d0e10;
+  --panel: #101114;
+  --panel2: #0c0d0f;
+  --surface-1: #0f1013;
+  --surface-2: #14161a;
+  --surface-3: #1a1d22;
+  --border: rgba(255,255,255,0.075);
+  --hairline: rgba(255,255,255,0.07);
+  --hairline-strong: rgba(255,255,255,0.13);
+
+  /* ---- text: 17:1 primary, 6.6:1 secondary on --bg ---- */
+  --text: #f4f6f9;
+  --text-2: #c9d3e0;
+  --muted: #8b95a7;
+
+  /* ---- meaning: green = gain ---- */
+  --green: #22c55e;
+  --green-strong: #16a34a;
+  --green-bg: rgba(34,197,94,0.13);
+  --green-line: rgba(34,197,94,0.38);
+
+  /* ---- meaning: red = loss ---- */
+  --red: #ef4444;
+  --red-strong: #dc2626;
+  --red-bg: rgba(239,68,68,0.13);
+  --red-line: rgba(239,68,68,0.38);
+
+  /* ---- meaning: amber = attention (never good, never bad) ---- */
+  --yellow: #eab308;
+  --yellow-strong: #facc15;
+  --yellow-bg: rgba(234,179,8,0.13);
+  --yellow-line: rgba(234,179,8,0.38);
+
+  /* ---- meaning: cyan = information ---- */
+  --blue: #38bdf8;
+  --blue-soft: #7dd3fc;
+  --blue-bg: rgba(56,189,248,0.12);
+  --blue-line: rgba(56,189,248,0.38);
+
+  /* Retired hue. Kept as a token so a stray var(--purple) can never
+     reintroduce an off-system colour; it now resolves to the info accent. */
+  --purple: #38bdf8;
 }
 
 * {
@@ -24,8 +66,8 @@ body {
   font-family: Inter, system-ui, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(900px 500px at 80% -10%, rgba(96,165,250,.18), transparent),
-    radial-gradient(700px 420px at 10% 105%, rgba(52,211,153,.14), transparent),
+    radial-gradient(900px 500px at 80% -10%, rgba(56,189,248,.10), transparent),
+    radial-gradient(700px 420px at 10% 105%, rgba(125,211,252,.06), transparent),
     var(--bg);
 }
 
@@ -40,7 +82,7 @@ body {
   top: 0;
   height: 100vh;
   padding: 22px;
-  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.02));
+  background: linear-gradient(180deg, var(--surface-2), var(--surface-1));
   border-right: 1px solid var(--border);
   backdrop-filter: blur(14px);
 }
@@ -69,8 +111,8 @@ body {
   display: grid;
   place-items: center;
   font-weight: 900;
-  background: linear-gradient(135deg, var(--blue), var(--green));
-  color: #06111f;
+  background: linear-gradient(135deg, var(--blue), var(--blue-soft));
+  color: #0a0a0b;
 }
 
 .brand-title {
@@ -97,7 +139,7 @@ body {
   border: 1px solid transparent;
   border-radius: 14px;
   padding: 12px 14px;
-  color: #cbd7ef;
+  color: var(--text-2);
   background: transparent;
   cursor: pointer;
   font-weight: 700;
@@ -105,9 +147,9 @@ body {
 
 .nav-btn:hover,
 .nav-btn.active {
-  background: rgba(96,165,250,.12);
-  border-color: rgba(96,165,250,.28);
-  color: white;
+  background: var(--blue-bg);
+  border-color: var(--blue-line);
+  color: var(--text);
 }
 
 .sidebar-footer {
@@ -118,15 +160,15 @@ body {
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 16px;
-  background: rgba(255,255,255,.035);
+  background: var(--surface-1);
   width: calc(100% - 44px);
   text-align: left;
   color: inherit;
 }
 
 .sidebar-footer:hover {
-  border-color: rgba(96,165,250,.35);
-  background: rgba(96,165,250,.08);
+  border-color: var(--blue-line);
+  background: var(--blue-bg);
 }
 
 .mini-label {
@@ -182,23 +224,23 @@ input {
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,.055);
+  background: var(--surface-2);
   color: var(--text);
   outline: none;
 }
 
 button {
   padding: 12px 14px;
-  border: 1px solid rgba(96,165,250,.3);
+  border: 1px solid var(--blue-line);
   border-radius: 14px;
-  background: rgba(96,165,250,.12);
+  background: var(--blue-bg);
   color: var(--text);
   cursor: pointer;
   font-weight: 800;
 }
 
 button:hover {
-  background: rgba(96,165,250,.22);
+  background: var(--blue-bg);
 }
 
 .regime-card {
@@ -217,7 +259,7 @@ button:hover {
 }
 
 .regime-card:hover {
-  border-color: rgba(96,165,250,.4);
+  border-color: var(--blue-line);
   filter: brightness(1.12);
 }
 
@@ -235,13 +277,13 @@ button:hover {
 }
 
 .regime-card.bull {
-  border-color: rgba(52,211,153,.35);
-  background: rgba(52,211,153,.09);
+  border-color: var(--green-line);
+  background: var(--green-bg);
 }
 
 .regime-card.defensive {
-  border-color: rgba(251,113,133,.35);
-  background: rgba(251,113,133,.09);
+  border-color: var(--red-line);
+  background: var(--red-bg);
 }
 
 .metric-grid {
@@ -264,8 +306,8 @@ button:hover {
 }
 
 .metric-card:hover {
-  border-color: rgba(96,165,250,.4);
-  background: rgba(96,165,250,.09);
+  border-color: var(--blue-line);
+  background: var(--blue-bg);
 }
 
 .metric-card span {
@@ -294,7 +336,7 @@ button:hover {
 .panel {
   border: 1px solid var(--border);
   border-radius: 22px;
-  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.025));
+  background: linear-gradient(160deg, var(--surface-2), var(--surface-1));
   backdrop-filter: blur(12px);
   padding: 18px;
   overflow: hidden;
@@ -339,19 +381,19 @@ button:hover {
 
 .badge.good {
   color: var(--green);
-  border-color: rgba(52,211,153,.4);
-  background: rgba(52,211,153,.1);
+  border-color: var(--green-line);
+  background: var(--green-bg);
 }
 
 .badge.muted {
   color: var(--muted);
-  background: rgba(255,255,255,.04);
+  background: var(--surface-2);
 }
 
 .setup-box {
   display: grid;
   gap: 10px;
-  color: #dbe7ff;
+  color: var(--text-2);
 }
 
 .level {
@@ -359,8 +401,8 @@ button:hover {
   justify-content: space-between;
   padding: 12px;
   border-radius: 14px;
-  background: rgba(255,255,255,.045);
-  border: 1px solid rgba(255,255,255,.06);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
 }
 
 .level span {
@@ -384,8 +426,8 @@ button:hover {
 .news-item {
   padding: 10px;
   border-radius: 12px;
-  background: rgba(255,255,255,.04);
-  color: #d8e2f5;
+  background: var(--surface-2);
+  color: var(--text-2);
   font-size: 13px;
 }
 
@@ -411,15 +453,15 @@ th {
 
 td {
   padding: 13px 10px;
-  border-bottom: 1px solid rgba(255,255,255,.055);
-  color: #dbe7ff;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--text-2);
   font-size: 13px;
 }
 
 .click-row { cursor:pointer; }
-.click-row:hover { background:rgba(96,165,250,.08); }
+.click-row:hover { background:var(--blue-bg); }
 .doc-link { color:inherit; text-decoration:none; }
-.doc-link:hover { background:rgba(96,165,250,.08); }
+.doc-link:hover { background:var(--blue-bg); }
 .doc-link strong { color:var(--blue); }
 .interactive-hint { color:var(--muted); font-size:11px; margin-top:8px; }
 .news-item[role="button"] { cursor:pointer; }
@@ -427,14 +469,14 @@ td {
   padding:4px 7px; border-radius:7px; background:transparent;
   border:1px solid transparent; color:var(--blue); font-weight:800;
 }
-.cmp-symbol-link:hover { border-color:rgba(96,165,250,.35); }
+.cmp-symbol-link:hover { border-color:var(--blue-line); }
 
 #dataDetailDialog {
   width:min(760px, calc(100vw - 32px));
   max-height:min(80vh, 720px);
   padding:0;
   color:var(--text);
-  background:#0c1220;
+  background:var(--panel);
   border:1px solid var(--border);
   border-radius:18px;
 }
@@ -442,13 +484,13 @@ td {
 .detail-dialog-head {
   position:sticky; top:0; display:flex; justify-content:space-between;
   align-items:center; gap:16px; padding:14px 18px;
-  background:#0c1220; border-bottom:1px solid var(--border);
+  background:var(--panel); border-bottom:1px solid var(--border);
 }
 .detail-dialog-head h2 { margin:0; font-size:17px; }
 .detail-dialog-body { padding:14px 18px; overflow:auto; }
 .detail-json {
   margin:0; white-space:pre-wrap; overflow-wrap:anywhere;
-  color:#dbe7ff; font:12px/1.55 ui-monospace,Consolas,monospace;
+  color:var(--text-2); font:12px/1.55 ui-monospace,Consolas,monospace;
 }
 
 .outcome {
@@ -459,25 +501,32 @@ td {
 }
 
 .outcome.WIN {
-  background: rgba(52,211,153,.14);
+  background: var(--green-bg);
   color: var(--green);
 }
 
 .outcome.LOSS {
-  background: rgba(251,113,133,.14);
+  background: var(--red-bg);
   color: var(--red);
 }
 
 .outcome.EXPIRED,
 .outcome.TIMEOUT {
-  background: rgba(251,191,36,.13);
+  background: var(--yellow-bg);
   color: var(--yellow);
 }
 
-.outcome.PENDING,
+/* PENDING is neutral: not a result yet, so neither gain nor loss. */
+.outcome.PENDING {
+  background: var(--surface-2);
+  color: var(--muted);
+  border-color: var(--hairline-strong);
+}
+
+/* OPEN is a live position: attention, never good or bad. */
 .outcome.OPEN {
-  background: rgba(96,165,250,.13);
-  color: var(--blue);
+  background: var(--yellow-bg);
+  color: var(--yellow);
 }
 
 .radar-layout {
@@ -494,15 +543,15 @@ td {
 
 .stock-card {
   padding: 12px;
-  border: 1px solid rgba(255,255,255,.07);
-  background: rgba(255,255,255,.04);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
   border-radius: 15px;
   cursor: pointer;
 }
 
 .stock-card:hover {
-  border-color: rgba(96,165,250,.35);
-  background: rgba(96,165,250,.08);
+  border-color: var(--blue-line);
+  background: var(--blue-bg);
 }
 
 .stock-card strong {
@@ -565,20 +614,41 @@ td {
 .view {display: none;}
 .view.active-view {display: block;}
 
-/* Quiet, high-contrast terminal surfaces; keep color for state and focus. */
+/* Quiet, high-contrast terminal surfaces; keep color for state and focus.
+   Final palette values for this sheet - declared again here so that within
+   style.css these are the values that win. Keep in sync with the :root at
+   the top of this file. */
 :root {
-  --bg: #0b1018;
-  --bg2: #111a26;
-  --panel: #111a26;
-  --panel2: #0e1621;
-  --border: rgba(196, 210, 229, .12);
-  --text: #edf2f8;
-  --muted: #a1afc1;
-  --blue: #82b7ff;
-  --green: #53d6a0;
-  --red: #ff8791;
-  --yellow: #f1c76d;
-  --purple: #b5a4ff;
+  --bg: #0a0a0b;
+  --bg2: #0d0e10;
+  --panel: #101114;
+  --panel2: #0c0d0f;
+  --surface-1: #0f1013;
+  --surface-2: #14161a;
+  --surface-3: #1a1d22;
+  --border: rgba(255,255,255,0.075);
+  --hairline: rgba(255,255,255,0.07);
+  --hairline-strong: rgba(255,255,255,0.13);
+  --text: #f4f6f9;
+  --text-2: #c9d3e0;
+  --muted: #8b95a7;
+  --green: #22c55e;
+  --green-strong: #16a34a;
+  --green-bg: rgba(34,197,94,0.13);
+  --green-line: rgba(34,197,94,0.38);
+  --red: #ef4444;
+  --red-strong: #dc2626;
+  --red-bg: rgba(239,68,68,0.13);
+  --red-line: rgba(239,68,68,0.38);
+  --yellow: #eab308;
+  --yellow-strong: #facc15;
+  --yellow-bg: rgba(234,179,8,0.13);
+  --yellow-line: rgba(234,179,8,0.38);
+  --blue: #38bdf8;
+  --blue-soft: #7dd3fc;
+  --blue-bg: rgba(56,189,248,0.12);
+  --blue-line: rgba(56,189,248,0.38);
+  --purple: #38bdf8;
 }
 
 body {
@@ -596,7 +666,7 @@ body {
   flex-direction: column;
   overflow-y: auto;
   padding: 24px 16px;
-  background: #0e151f;
+  background: var(--bg2);
   border-right-color: var(--border);
   backdrop-filter: none;
 }
@@ -610,8 +680,8 @@ body {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #d8e9ff;
-  color: #132338;
+  background: var(--blue-soft);
+  color: #0a0a0b;
 }
 
 .brand-title {
@@ -633,7 +703,7 @@ body {
 .nav-group {
   margin: 18px 0 5px;
   padding: 0 10px;
-  color: #8292a8;
+  color: var(--muted);
   font-size: 10px;
   letter-spacing: .13em;
 }
@@ -643,16 +713,16 @@ body {
   gap: 1px;
   padding: 9px 10px;
   border-radius: 9px;
-  color: #c8d2df;
+  color: var(--text-2);
   font-weight: 600;
   line-height: 1.35;
 }
 
 .nav-btn:hover,
 .nav-btn.active {
-  background: rgba(130, 183, 255, .09);
-  border-color: rgba(130, 183, 255, .2);
-  color: #f5f8fc;
+  background: var(--blue-bg);
+  border-color: var(--blue-line);
+  color: var(--text);
 }
 
 .nav-btn.active {
@@ -672,7 +742,7 @@ body {
   margin: auto 0 0;
   padding: 12px;
   border-radius: 11px;
-  background: #111a26;
+  background: var(--panel);
 }
 
 .mini-note {
@@ -715,7 +785,7 @@ input {
   padding: 10px 12px;
   border-radius: 9px;
   border-color: var(--border);
-  background: #101925;
+  background: var(--surface-1);
 }
 
 button {
@@ -736,7 +806,7 @@ input:focus-visible,
   margin-bottom: 12px;
   padding: 15px 17px;
   border-radius: 13px;
-  background: #111a26;
+  background: var(--panel);
 }
 
 .metric-grid {
@@ -750,7 +820,7 @@ input:focus-visible,
   padding: 14px 16px;
   border-radius: 13px;
   border-color: var(--border);
-  background: #111a26;
+  background: var(--panel);
 }
 
 .metric-card span {
@@ -780,7 +850,7 @@ input:focus-visible,
   padding: 17px;
   border-radius: 14px;
   border-color: var(--border);
-  background: #101823;
+  background: var(--panel);
   backdrop-filter: none;
 }
 
@@ -803,7 +873,7 @@ input:focus-visible,
   gap: 16px;
   padding: 10px 12px;
   border-radius: 9px;
-  background: #141e2b;
+  background: var(--surface-2);
   border-color: var(--border);
 }
 
@@ -836,9 +906,9 @@ td {
 .model-score {
   display: inline-block;
   padding: 2px 6px;
-  border: 1px solid rgba(130, 183, 255, .24);
+  border: 1px solid var(--blue-line);
   border-radius: 6px;
-  color: #b9d7ff;
+  color: var(--blue-soft);
   font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
@@ -848,7 +918,7 @@ td {
 .stock-card {
   border-color: var(--border);
   border-radius: 11px;
-  background: #121c29;
+  background: var(--surface-2);
 }
 
 .cmp-table {
@@ -873,16 +943,16 @@ td {
 }
 
 th {
-  color: #aab7c8;
+  color: var(--muted);
 }
 
 td {
-  color: #d9e2ed;
+  color: var(--text-2);
 }
 
 #dataDetailDialog,
 .detail-dialog-head {
-  background: #111a26;
+  background: var(--panel);
 }
 
 .refresh-status {
@@ -922,7 +992,7 @@ td {
   text-align: left;
   border: 1px solid var(--border);
   border-radius: 9px;
-  background: #141e2b;
+  background: var(--surface-2);
   color: var(--text);
   cursor: pointer;
 }
@@ -1030,7 +1100,7 @@ td {
    Understated on purpose so the screen stays calm. */
 [data-explain] { cursor: help; }
 [data-explain] > span:first-child {
-  text-decoration: underline dotted rgba(130, 183, 255, 0.45);
+  text-decoration: underline dotted var(--blue-line);
   text-underline-offset: 3px;
 }
 [data-explain]:hover > span:first-child { text-decoration-color: var(--blue); }
@@ -1053,10 +1123,10 @@ td {
 /* "How to spot it yourself" is the part that works with no tool at all - make
    it visually distinct. */
 #dataDetailDialog .ex-sight {
-  background: rgba(130, 183, 255, 0.07); border-radius: 10px;
+  background: var(--blue-bg); border-radius: 10px;
   padding: 13px 14px; margin-top: 10px; border-top: 1px solid var(--border);
 }
-#dataDetailDialog .ex-sight .ex-label { color: var(--green); }
+#dataDetailDialog .ex-sight .ex-label { color: var(--blue-soft); }
 
 #dataDetailDialog .ex-note,
 #dataDetailDialog .ex-foot {
@@ -1064,7 +1134,7 @@ td {
 }
 #dataDetailDialog code {
   font-size: 12px; padding: 1px 5px; border-radius: 4px;
-  background: rgba(255,255,255,0.07); color: var(--text);
+  background: var(--surface-2); color: var(--text);
 }
 
 /* Phone width (the owner's main screen): stack label above text. */
