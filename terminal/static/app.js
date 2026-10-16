@@ -1272,16 +1272,43 @@ function _paintReadout(bar, time, rsi) {
 }
 
 /* Show the recent, readable window instead of cramming all ~420 bars into the
-   pane; fitContent only when the stored history is already short. */
+   pane; fitContent only when the stored history is already short.
+
+   The owner asked for exactly two fixed views - Day and Week - so the pane
+   always opens on a deliberate window instead of "however much fits". */
+const FX_RANGES = {
+  "1D": { bars: 1, label: "1 day", note: "the most recent trading day on its own" },
+  "1W": { bars: 5, label: "1 week", note: "the last five trading days" },
+  ALL: { bars: null, label: "everything", note: "all stored history" },
+};
+const FX_RANGE_KEY = "fx_chart_range_v1";
+let _fxRange = (() => {
+  try {
+    const v = sessionStorage.getItem(FX_RANGE_KEY);
+    return FX_RANGES[v] ? v : "1W";
+  } catch (e) { return "1W"; }
+})();
+
 function _applyDefaultRange() {
   if (!chart) return;
   const n = _chartCandleByTime.size;
   if (!n) return;
-  const target = window.innerWidth < 620 ? 60 : window.innerWidth < 950 ? 100 : 140;
+  const spec = FX_RANGES[_fxRange] || FX_RANGES["1M"];
   try {
-    if (n > target + 8) chart.timeScale().setVisibleLogicalRange({ from: n - target, to: n + 3 });
-    else chart.timeScale().fitContent();
+    if (spec.bars && n > spec.bars + 2) {
+      chart.timeScale().setVisibleLogicalRange({ from: n - spec.bars, to: n + 1 });
+    } else {
+      chart.timeScale().fitContent();
+    }
   } catch (e) {}
+}
+
+function _setChartRange(key) {
+  if (!FX_RANGES[key]) return;
+  _fxRange = key;
+  try { sessionStorage.setItem(FX_RANGE_KEY, key); } catch (e) {}
+  _applyDefaultRange();
+  _renderChartChrome();
 }
 
 function _setChartData(data) {
@@ -1341,6 +1368,12 @@ function _renderChartChrome() {
   const available = MA_DEFS.filter((d) => _maData[d.key]);
   if (toolbar) {
     toolbar.innerHTML = `
+      <span class="fx-range" role="group" aria-label="How much history to show">
+        ${Object.keys(FX_RANGES).map((k) => `<button type="button"
+            class="fx-range-btn${k === _fxRange ? " is-on" : ""}" data-range="${k}"
+            aria-pressed="${k === _fxRange ? "true" : "false"}"
+            title="Show ${FX_RANGES[k].label} - ${FX_RANGES[k].note}">${k}</button>`).join("")}
+      </span>
       <span class="fx-chip mono-sans" style="color:var(--fx-zinc-500)">
         <span class="fx-dot" style="background:var(--fx-bull)"></span>Price
         <span style="opacity:.5">/</span>${drawn.length} of ${available.length} averages
@@ -1390,6 +1423,9 @@ function _renderChartChrome() {
         _renderChartChrome();
       });
     }
+    toolbar.querySelectorAll(".fx-range-btn").forEach((b) => {
+      b.addEventListener("click", () => _setChartRange(b.dataset.range));
+    });
   }
   const legend = $("chartLegend");
   if (legend) {
