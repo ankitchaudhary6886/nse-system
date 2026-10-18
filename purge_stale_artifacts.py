@@ -11,10 +11,12 @@ then removes them from the live table.
 
 RULE
 ----
-A row is invalid when its own date is strictly greater than
-`MAX(prices_daily.date)` — the system cannot have observed a market it never
-downloaded. Rows on or before that date are left alone (they may still be old,
-but nothing about them is impossible).
+A row is invalid when its own date is later than `MAX(prices_daily.date)` by
+more than LAG_DAYS (default 5). The lag exists because many artifact date
+columns are RUN dates, not data dates: a scan on Saturday legitimately writes
+`date = Saturday` while the last bar is Friday. On the laptop copy the gap was
+13-41 days (impossible); on a live system the gap is 0-2 days. Rows inside the
+lag are left alone.
 
 USAGE
 -----
@@ -34,6 +36,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DB = ROOT / "data" / "app.db"
+# Artifact date columns are often RUN dates, not data dates: a Saturday scan
+# legitimately writes date=Saturday while the last bar is Friday. Only a gap
+# larger than this many calendar days is impossible.
+LAG_DAYS = 5
 
 # (table, date column). Only tables whose rows are derived from price data.
 ARTIFACTS = [
@@ -62,8 +68,12 @@ def _row_to_payload(columns, row) -> str:
     return json.dumps(dict(zip(columns, row)), default=str)
 
 
-def plan(conn, artifacts=None):
+def plan(conn, artifacts=None, lag_days=LAG_DAYS):
     max_price = conn.execute("SELECT MAX(date) FROM prices_daily").fetchone()[0]
+    if not max_price:
+        return {"max_price_date": None, "cutoff": None, "artifacts": []}
+    cutoff = (dt.date.fromisoformat(str(max_price)[:10])
+              + dt.timedelta(days=int(lag_days))).isoformat()
     plan_rows = []
     for table, date_col in ARTIFACTS:
         if artifacts and table not in artifacts:
@@ -74,19 +84,20 @@ def plan(conn, artifacts=None):
                 continue
             count = conn.execute(
                 f'SELECT COUNT(*) FROM "{table}" WHERE "{date_col}" > ?',
-                (max_price,)).fetchone()[0]
+                (cutoff,)).fetchone()[0]
             if not count:
                 continue
             dates = [r[0] for r in conn.execute(
                 f'SELECT DISTINCT "{date_col}" FROM "{table}" '
                 f'WHERE "{date_col}" > ? ORDER BY "{date_col}"',
-                (max_price,))]
+                (cutoff,))]
             plan_rows.append({"artifact": table, "date_column": date_col,
                               "rows": count, "dates": dates[:10],
-                              "max_price_date": max_price})
+                              "cutoff": cutoff})
         except sqlite3.Error as exc:
             plan_rows.append({"artifact": table, "error": str(exc)})
-    return {"max_price_date": max_price, "artifacts": plan_rows}
+    return {"max_price_date": max_price, "lag_days": int(lag_days),
+            "cutoff": cutoff, "artifacts": plan_rows}
 
 
 def apply_plan(conn, report, reason_prefix="newer_than_price_data"):
@@ -101,17 +112,18 @@ def apply_plan(conn, report, reason_prefix="newer_than_price_data"):
             cols = [r[1] for r in conn.execute(f"PRAGMA table_info({table})")]
             rows = conn.execute(
                 f'SELECT * FROM "{table}" WHERE "{date_col}" > ?',
-                (entry["max_price_date"],)).fetchall()
+                (entry["cutoff"],)).fetchall()
             for row in rows:
                 conn.execute(
                     "INSERT INTO stale_artifact_quarantine "
                     "(artifact, run_at, payload, reason) VALUES (?,?,?,?)",
                     (table, run_at, _row_to_payload(cols, row),
-                     f"{reason_prefix}:{date_col} > "
-                     f"{entry['max_price_date']}"))
+                     f"{reason_prefix}:{date_col} > {entry['cutoff']} "
+                     f"(price max {report['max_price_date']} + "
+                     f"{report['lag_days']}d lag)"))
             conn.execute(
                 f'DELETE FROM "{table}" WHERE "{date_col}" > ?',
-                (entry["max_price_date"],))
+                (entry["cutoff"],))
             moved[table] = len(rows)
         except sqlite3.Error as exc:
             moved[table] = f"error: {exc}"
@@ -126,6 +138,9 @@ def main(argv=None) -> int:
                         help="limit to one artifact table (repeatable)")
     parser.add_argument("--apply", action="store_true",
                         help="move rows to quarantine and delete them")
+    parser.add_argument("--lag-days", type=int, default=LAG_DAYS,
+                        help="tolerated calendar gap between artifact date and "
+                             "last price bar (default 5)")
     args = parser.parse_args(argv)
     conn = sqlite3.connect(args.db)
     conn.execute("PRAGMA temp_store=MEMORY")
@@ -137,7 +152,8 @@ def main(argv=None) -> int:
     except Exception:
         pass
     try:
-        report = plan(conn, artifacts=args.artifact)
+        report = plan(conn, artifacts=args.artifact,
+                      lag_days=args.lag_days)
         print(json.dumps(report, indent=2, default=str))
         if args.apply:
             result = apply_plan(conn, report)

@@ -1,23 +1,20 @@
 """Corporate actions: the free book behind every adjusted-vs-raw price seam.
 
-WHY THIS MODULE EXISTS
-Stored history came from yfinance with ``auto_adjust=True`` (split/dividend
-adjusted); the Fyers feed is raw. The ingest paths guard that seam, but a guard
-with no corporate-action record can only block or flag -- it cannot say which
-split caused a 45% jump, nor repair the series. So we keep the book from free
-sources only: a manual CSV (the one authoritative source), yfinance's split and
-dividend LISTS (their prices are distrusted, the event list is still a useful
-candidate) and unexplained gaps in our own stored closes.
+WHY: stored history is yfinance ``auto_adjust=True`` (split/dividend adjusted)
+while the Fyers feed is raw. The ingest guards can only block or flag a seam;
+with a corporate-action record they can name the event and repair the series.
+So the book is built from free sources only: a manual CSV (the one source
+allowed to claim a fact), yfinance's split/dividend LISTS (its prices are
+distrusted, the event list is still a useful candidate) and unexplained gaps in
+our own stored closes.
 
-A gap is a CANDIDATE, never a fact: -25% may be a demerger, a fraud disclosure
-or a data error. That is why detection reports ``kind_guess='unknown_event'``
-when no common ratio fits, and why only the CSV path writes
-``status='confirmed_source'``.
+A gap is a CANDIDATE, never a fact: -25% may be a demerger, a disclosure or a
+data error, which is why an unmatched ratio becomes
+``kind_guess='unknown_event'`` and only the CSV path writes 'confirmed_source'.
 
-CONVENTIONS (must match db.SCHEMA's comment)
-``ratio`` is the multiplier applied to HISTORY prices: a 1:10 split stores 10.0,
-a 1:1 bonus stores 2.0, a 5:1 split stores 5.0. Dividends carry ratio NULL and
-``amount`` = rupees per share. Status: confirmed_source | unconfirmed | rejected.
+``ratio`` is the multiplier applied to HISTORY prices (1:10 split -> 10.0, 1:1
+bonus -> 2.0); dividends carry ratio NULL and ``amount`` = rupees per share.
+Status: confirmed_source | unconfirmed | rejected.
 """
 import argparse
 import csv
@@ -31,7 +28,6 @@ from typing import Any, Dict, List, Optional
 KINDS = ("split", "bonus", "dividend", "rights", "demerger")
 RATIO_KINDS = ("split", "bonus", "rights")   # history prices *= ratio
 COMMON_RATIOS = (1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 20.0)
-RATIO_TOLERANCE = 0.05        # "within 5%" of a common ratio
 DEFAULT_MIN_GAP = 0.15        # the same 15% the ingest guards call a seam
 CSV_COLUMNS = ("symbol", "ex_date", "kind", "ratio", "amount")
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
@@ -72,16 +68,13 @@ def _parse_date(value: Any) -> Optional[str]:
 
 def _to_float(value: Any) -> Optional[float]:
     """float or None; blanks, NaN, inf, rupee signs and junk all become None."""
-    if value is None:
-        return None
-    text = str(value).replace(",", "").replace("\u20b9", "").strip()
-    if not text:
-        return None
+    text = str(value).replace(",", "").replace("\u20b9", "").strip() \
+        if value is not None else ""
     try:
         number = float(text)
     except ValueError:
         return None
-    return number if math.isfinite(number) else None
+    return number if text and math.isfinite(number) else None
 
 
 def _nearest_ratio(value: float) -> Optional[float]:
@@ -89,31 +82,29 @@ def _nearest_ratio(value: float) -> Optional[float]:
     if not value or not math.isfinite(value):
         return None
     best = min(COMMON_RATIOS, key=lambda ratio: abs(value - ratio))
-    return best if abs(value - best) / best <= RATIO_TOLERANCE else None
+    return best if abs(value - best) / best <= 0.05 else None
 
 
 def _action_from_dict(action: Any) -> Optional[Dict[str, Any]]:
     """Normalise one action dict (from fetch, CSV or another script)."""
     if not isinstance(action, dict):
         return None
-    symbol = _clean_symbol(action.get("symbol"))
-    ex_date = _parse_date(action.get("ex_date"))
+    symbol, ex_date = _clean_symbol(action.get("symbol")), _parse_date(
+        action.get("ex_date"))
     kind = str(action.get("kind") or "").strip().lower()
-    ratio = _to_float(action.get("ratio"))
-    amount = _to_float(action.get("amount"))
+    ratio, amount = _to_float(action.get("ratio")), _to_float(action.get("amount"))
     if not symbol or ex_date is None or kind not in KINDS:
         return None
     if kind in RATIO_KINDS and (ratio is None or ratio <= 0):
-        return None          # a split/bonus/rights without a ratio is unusable
+        return None      # a split/bonus/rights without a ratio is unusable
     if kind == "dividend":
         if amount is None or amount <= 0:
-            return None      # a dividend without rupees-per-share is unusable
+            return None  # a dividend without rupees-per-share is unusable
         ratio = None
-    ratio = ratio if (ratio is not None and ratio > 0) else None
-    amount = amount if (amount is not None and amount > 0) else None
     raw = action.get("raw")
-    return {"symbol": symbol, "ex_date": ex_date, "kind": kind, "ratio": ratio,
-            "amount": amount,
+    return {"symbol": symbol, "ex_date": ex_date, "kind": kind,
+            "ratio": ratio if ratio is not None and ratio > 0 else None,
+            "amount": amount if amount is not None and amount > 0 else None,
             "source": str(action.get("source") or "manual").strip(),
             "status": (str(action.get("status") or "unconfirmed").strip()
                        or "unconfirmed"),
@@ -132,9 +123,8 @@ def import_csv(conn, path) -> dict:
     """Load a hand-maintained CSV; bad rows are skipped and counted.
 
     A missing header raises, because a file without the columns cannot be
-    interpreted at all. Everything imported here is 'confirmed_source' -- a
-    human read the ratio off the exchange filing, which is the one claim we
-    are willing to act on without an exchange confirmation step.
+    interpreted at all. Everything imported here is 'confirmed_source': a human
+    read the ratio off the exchange filing, which is the one claim we act on.
     """
     path = str(path)
     out = {"file": path, "rows_seen": 0, "imported": 0, "skipped": 0,
@@ -197,15 +187,13 @@ def fetch_yfinance_actions(symbols, sleep_seconds=0.4) -> List[dict]:
     ``Ticker.splits`` IS already the history multiplier. HDFCBANK.NS shows 5.0
     for its 5:1 split (2011-07-14) and WIPRO.NS 2.0 for a 1:1 bonus
     (2024-12-03); Yahoo divides pre-event prices by that value. So
-    ``ratio = float(value)`` -- storing its reciprocal would turn every split
-    into a reverse split.
-
-    yfinance is imported lazily: importing this module never touches the
-    network, and one bad symbol is skipped rather than fatal.
+    ``ratio = float(value)`` -- storing its reciprocal would invent reverse
+    splits. yfinance is imported lazily: importing this module never touches
+    the network, and one bad symbol is skipped rather than fatal.
     """
     try:
         from data_sources.yf_cache import ensure_yf_cache
-        ensure_yf_cache()      # best-effort: the tz-cache bug silently returns 0
+        ensure_yf_cache()    # best-effort: the tz-cache bug silently yields 0 rows
     except Exception:
         pass
     try:
@@ -241,6 +229,9 @@ def fetch_yfinance_actions(symbols, sleep_seconds=0.4) -> List[dict]:
                     "raw": json.dumps({"ticker": ticker, "series": attribute,
                                        "date": ex_date, "value": number})})
                 if action is not None:
+                    # The caller may hold these rows before merging; keep the
+                    # documented field set and let merge_actions stamp _when_.
+                    action.pop("recorded_at", None)
                     out.append(action)
         if sleep_seconds and position < len(wanted) - 1:
             time.sleep(float(sleep_seconds))
@@ -298,8 +289,7 @@ def detect_price_gaps(conn, symbols=None, min_gap=0.15,
     gives 10.0). A crash has no such ratio, hence 'unknown_event' -- the point
     is to never let a gap be silently read as a split.
     """
-    threshold = abs(float(min_gap or 0))
-    out: List[dict] = []
+    threshold, out = abs(float(min_gap or 0)), []
     for symbol in _scan_symbols(conn, symbols, limit):
         rows = conn.execute(
             "SELECT date, close FROM prices_daily WHERE symbol=? AND close IS "
@@ -340,7 +330,7 @@ def explain(conn, symbol, date, window_days=10) -> dict:
     window = max(0, int(window_days or 0))
     start = (day - dt.timedelta(days=window)).isoformat()
     end = (day + dt.timedelta(days=window)).isoformat()
-    best, action, days_apart = None, None, None
+    best, days_apart, action = None, None, None
     rows = conn.execute(
         _SELECT + " WHERE symbol=? AND ex_date BETWEEN ? AND ? AND "
         "COALESCE(status, '') <> 'rejected' ORDER BY ex_date",

@@ -23,7 +23,6 @@ import rebuild_raw_history as R
 
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
 HISTORY_URL = "https://api-t1.fyers.in/data/history"
-PROFILE_URL = "https://api-t1.fyers.in/api/v3/profile"
 
 
 def candle_epoch(date_str: str) -> int:
@@ -176,11 +175,15 @@ class PlanTests(BaseCase):
         self.assertEqual(out["by_basis"]["legacy_adjusted"], 1)
         self.assertEqual(out["by_basis"]["fyers_raw"], 1)
         self.assertEqual(out["by_basis"]["mixed"], 1)
-        self.assertEqual(out["to_rebuild"], 2)
+        # mixed is a pending human decision, not a blind retry: a 5-year
+        # rebuild cannot remove the pre-window rows that create the mix.
+        self.assertEqual(out["to_rebuild"], 1)
+        self.assertEqual(out["mixed_pending"], 1)
+        self.assertEqual(out["mixed_pending_sample"], ["CCC"])
         self.assertGreater(out["estimated_api_calls"], 0)
         self.assertEqual(out["estimated_api_calls"],
-                         2 * out["calls_per_symbol"])
-        self.assertEqual(out["symbols_sample"], ["AAA", "CCC"])
+                         1 * out["calls_per_symbol"])
+        self.assertEqual(out["symbols_sample"], ["AAA"])
 
     def test_plan_respects_limit_and_symbols(self):
         self.seed_one("AAA", basis=None)

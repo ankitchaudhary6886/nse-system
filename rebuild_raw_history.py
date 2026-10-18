@@ -131,8 +131,15 @@ def plan(conn, symbols: Optional[Iterable[str]] = None,
     tickers = resolution["resolved"]
     basis = _basis_map(conn, list(tickers))
     counts = _basis_counts(conn, list(tickers))
+    # A 5-year rebuild keeps rows older than the fetch window, so such a symbol
+    # ends up 'mixed_adjusted_then_raw' forever. Retrying it on every run would
+    # never converge (and would burn API calls), so 'mixed' is reported as a
+    # pending human decision instead of being queued blindly.
     to_rebuild = [s for s in sorted(tickers)
-                  if _normalise_basis(basis.get(s)) != "fyers_raw"]
+                  if _normalise_basis(basis.get(s))
+                  in ("legacy_adjusted", "other")]
+    mixed_pending = [s for s in sorted(tickers)
+                     if _normalise_basis(basis.get(s)) == "mixed"]
     calls = len(to_rebuild) * CALLS_PER_SYMBOL
     return {
         "read_only": True,
@@ -143,6 +150,8 @@ def plan(conn, symbols: Optional[Iterable[str]] = None,
         "by_method": resolution["by_method"],
         "by_basis": counts,
         "to_rebuild": len(to_rebuild),
+        "mixed_pending": len(mixed_pending),
+        "mixed_pending_sample": mixed_pending[:10],
         "calls_per_symbol": CALLS_PER_SYMBOL,
         "estimated_api_calls": calls,
         "estimated_minutes": round(calls / REQ_PER_MIN, 1),
