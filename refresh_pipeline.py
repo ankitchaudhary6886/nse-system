@@ -351,18 +351,25 @@ def health(conn=None) -> dict:
             out["fyers"] = {"error": f"{type(exc).__name__}: {exc}"}
         today = now_ist().date().isoformat()
         artifacts = {}
+        latest_dates = {}
         for table, column in (("technicals_daily", "date"),
                               ("scan_results", "scan_date"),
                               ("ml_predictions", "prediction_date"),
                               ("pattern_tags", "date"),
                               ("top_picks", "date")):
             try:
+                latest = conn.execute(
+                    f"SELECT MAX({column}) FROM {table}").fetchone()[0]
+                latest_dates[table] = latest
                 artifacts[table] = conn.execute(
                     f"SELECT COUNT(*) FROM {table} WHERE {column}=?",
-                    (today,)).fetchone()[0]
+                    (latest,)).fetchone()[0] if latest else 0
             except Exception:
                 artifacts[table] = None
+                latest_dates[table] = None
         out["artifacts_today"] = artifacts
+        out["artifacts_latest_dates"] = latest_dates
+        out["ist_date"] = today
         out["last_refresh"] = status(conn).get("latest_run")
         try:
             import scheduler_bg
