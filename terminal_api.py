@@ -20,7 +20,11 @@ API_HOST = os.getenv("API_HOST", "127.0.0.1")
 
 @asynccontextmanager
 async def lifespan(app):
-    scheduler_bg.start()
+    # One scheduler per system, not per machine: the VM owns the scheduled
+    # chain. A laptop/second instance must set DISABLE_SCHEDULER=1 or it would
+    # duplicate every job (and every Telegram alert).
+    if os.getenv("DISABLE_SCHEDULER", "").strip() not in ("1", "true", "yes"):
+        scheduler_bg.start()
     yield
     scheduler_bg.stop()
 

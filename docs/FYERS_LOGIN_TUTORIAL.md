@@ -203,6 +203,20 @@ The token lives in `data\fyers_token.json` (gitignored by the `data/*token*` rul
 
 Login is step zero of the data setup. On the first day only, continue in this order — `master` (import the NSE symbol list) → `verify --limit 20 --days 10` (cross-check the broker against stored bars) → `history --days 30` (backfill; expect 8–10 minutes) → `rebuild_raw_history.py run --limit 10` (the pilot). The exact commands, expected output and the rebuild guardrails are in [FYERS_INTEGRATION.md §4](FYERS_INTEGRATION.md) — use that section rather than retyping from memory. After day one, the only recurring job is the login in §3, then `python ingest_fyers.py sync`.
 
+## 7b. Make this rare: pin-based auto-renew (optional, free)
+
+Fyers can renew a token from a stored refresh token, with no browser, down to a
+single `pin` value. Add this line to `.env` (gitignored) once:
+
+```
+FYERS_PIN=<your 4-digit Fyers PIN>
+```
+
+Then the terminal's 08:10 job renews the access token every morning on its own
+for as long as the refresh token is valid (Fyers documents ~15 days). The ⚡
+Data panel also has an **Auto-renew token** button. If renewal ever fails you
+get one Telegram reminder; that is the only day you need the browser.
+
 ## 8. Cheat sheet — the whole day in four commands
 
 ```powershell
