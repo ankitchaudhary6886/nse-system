@@ -192,6 +192,34 @@ def _fundamentals_job():
         log.exception(f"fundamentals enrich failed: {e}")
 
 
+def _token_job():
+    """Keep the Fyers token alive without a browser (or nag once a day).
+
+    The pin-based refresh-token flow can renew the access token automatically
+    as long as FYERS_PIN is configured and a refresh token exists. If it cannot,
+    one Telegram message tells the owner that a manual login is due — never a
+    silent data gap.
+    """
+    try:
+        import fyers_client
+        client = fyers_client.FyersClient()
+        if client.token and not client.token_store.expired():
+            return
+        result = client.refresh_access_token()
+        log.info(f"[FYERS] access token auto-renewed until "
+                 f"{result.get('expires_at')}")
+    except Exception as e:
+        log.warning(f"[FYERS] automatic token renewal unavailable: {e}")
+        try:
+            import swing_alerts
+            swing_alerts.send(
+                "Fyers login due: automatic token renewal failed. Open the "
+                "terminal, press the '⚡ Data' button and follow 'Open Fyers "
+                "login' (2 minutes). Free price sources keep working until then.")
+        except Exception as notify_exc:
+            log.warning(f"[FYERS] login reminder not sent: {notify_exc}")
+
+
 def _governance_job():
     """Weekly free governance feed: exchange announcements + shareholding pledge.
 
@@ -405,6 +433,11 @@ def start():
                        CronTrigger(day_of_week="sat", hour=8, minute=30,
                                    timezone=IST),
                        id="governance_feed", replace_existing=True)
+    # Every morning before the market: renew the broker token from the stored
+    # refresh token (needs FYERS_PIN), or remind the owner once.
+    _scheduler.add_job(_token_job,
+                       CronTrigger(hour=8, minute=10, timezone=IST),
+                       id="fyers_token", replace_existing=True)
     _scheduler.add_job(_retrain_job,
                        CronTrigger(day_of_week="sat", hour=9, minute=0,
                                    timezone=IST),
@@ -438,6 +471,19 @@ def start():
              "poolRebuild@Sun06:00, fund@Sat08:00, retrain@Sat09:00, "
              "positional@Sat10:00, valueRadar@Sun09:00, "
              "mc@Mon08:00, wf@1st10:00 IST")
+
+
+def status():
+    """Small read-only scheduler status for the UI / data-health banner."""
+    if _scheduler is None:
+        return {"running": False, "jobs": []}
+    jobs = []
+    for job in _scheduler.get_jobs():
+        nxt = getattr(job, "next_run_time", None)
+        jobs.append({"id": job.id,
+                     "next_run": nxt.isoformat() if nxt else None})
+    jobs.sort(key=lambda item: item["next_run"] or "")
+    return {"running": bool(_scheduler.running), "jobs": jobs}
 
 
 def stop():

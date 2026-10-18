@@ -6,7 +6,8 @@ import datetime as dt
 import pandas as pd
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, status, BackgroundTasks, Header, Query
+from fastapi import (FastAPI, HTTPException, status, BackgroundTasks, Header,
+                     Query, Body)
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 import secrets
@@ -77,6 +78,59 @@ def health():
     conn.close()
     return {"ok": True, "prices_rows": n,
             "time": dt.datetime.now().isoformat()}
+
+
+@app.get("/api/data/health")
+def data_health():
+    """One-shot health for the ⚡ Data banner: prices, freshness gate, Fyers
+    token, today's artifact counts, scheduler and the last refresh run."""
+    import refresh_pipeline
+    return refresh_pipeline.health()
+
+
+@app.get("/api/refresh/status")
+def refresh_status():
+    import refresh_pipeline
+    return refresh_pipeline.status()
+
+
+@app.post("/api/refresh")
+def refresh_now():
+    """One-click refresh: start the daily chain in a background thread."""
+    import refresh_pipeline
+    return refresh_pipeline.start_background(trigger="ui")
+
+
+@app.get("/api/fyers/login-url")
+def fyers_login_url():
+    """Return the OAuth URL the ⚡ panel opens in a new tab."""
+    import fyers_client
+    try:
+        conf = fyers_client.credentials()
+        return {"ok": True, "url": fyers_client.build_auth_url(),
+                "app_configured": bool(conf["app_id"])}
+    except Exception as exc:
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+
+
+@app.post("/api/fyers/exchange")
+def fyers_exchange(payload: dict = Body(...)):
+    """Save a pasted auth_code. The response never contains the token."""
+    import fyers_client
+    code = str((payload or {}).get("code") or "").strip()
+    if not code:
+        return {"ok": False, "error": "missing auth code"}
+    return fyers_client.exchange_code(code)
+
+
+@app.post("/api/fyers/refresh")
+def fyers_refresh():
+    """Renew the access token from the stored refresh token + FYERS_PIN."""
+    import fyers_client
+    try:
+        return fyers_client.FyersClient().refresh_access_token()
+    except Exception as exc:
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
 
 
 @app.get("/api/sources")

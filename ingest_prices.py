@@ -61,12 +61,30 @@ def fetch_one(conn, symbol):
     conn.commit()
     return len(rows)
 
+def _stale_symbols(conn, universe):
+    """Symbols whose last stored bar is behind the market's latest bar.
+
+    Re-running the ingest used to walk all ~865 symbols even when everything was
+    already current (one network-free call + a sleep each = minutes wasted).
+    """
+    market_last = conn.execute("SELECT MAX(date) FROM prices_daily").fetchone()[0]
+    last = {row[0]: row[1] for row in conn.execute(
+        "SELECT symbol, last_date FROM price_meta")}
+    return [s for s in universe if (last.get(s) or "") < (market_last or "")]
+
+
 def run(show_every=1):
     conn = db.get_conn()
     # The tradable universe is band + core, NOT the 825-row stocks table: using
     # only stocks.active silently skipped ~40 band symbols every night (the VM's
     # 60-session coverage gap). universe_helper is the single source of truth.
-    symbols = U.combined_universe(conn)
+    universe = U.combined_universe(conn)
+    symbols = _stale_symbols(conn, universe)
+    if not symbols:
+        print(f"[PRICES] all {len(universe)} universe symbols already current")
+        conn.close()
+        return []
+    print(f"[PRICES] {len(symbols)} of {len(universe)} symbols need bars")
     total = len(symbols)
     failed = []
     for i, sym in enumerate(symbols, 1):

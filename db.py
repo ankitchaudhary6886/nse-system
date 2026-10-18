@@ -213,6 +213,17 @@ CREATE TABLE IF NOT EXISTS strategy_runs (
 );
 
 -- ============================================================
+-- One-click refresh (UI button / API) — audit of every manual or auto run
+-- ============================================================
+CREATE TABLE IF NOT EXISTS refresh_runs (
+  run_id TEXT PRIMARY KEY, started_at TEXT, finished_at TEXT,
+  status TEXT, trigger TEXT, steps_json TEXT, error TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_runs_started
+  ON refresh_runs(started_at);
+
+-- ============================================================
 -- Broker ingestion: Fyers (market data only; no order endpoints)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS fyers_symbol_master (

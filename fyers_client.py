@@ -61,6 +61,10 @@ ENV_FILE = ROOT / ".env"
 API_BASE = "https://api-t1.fyers.in/api/v3"
 DATA_BASE = "https://api-t1.fyers.in/data"
 SYMBOL_MASTER_URL = "https://public.fyers.in/sym_details/NSE_CM.csv"
+# Refresh-token flow: POST body {grant_type:"refresh_token", appIdHash,
+# refresh_token, pin}. It requires the Fyers PIN, which is why FYERS_PIN is an
+# optional .env value: without it the daily OAuth login stays manual.
+REFRESH_ENDPOINT = "/validate-refresh-token"
 
 DEFAULT_REDIRECT_URI = "https://fyers.in"
 DEFAULT_STATE = "nse_system"
@@ -289,6 +293,7 @@ class TokenStore:
         return {
             "token_file": str(self.path),
             "present": bool(data.get("access_token")),
+            "refresh_present": bool(data.get("refresh_token")),
             "issued_at": data.get("issued_at"),
             "expires_at": data.get("expires_at"),
             "expired": self.expired() if data else None,
@@ -490,6 +495,46 @@ class FyersClient:
             return profile.get("s") == "ok" and bool(profile.get("data"))
         except FyersError:
             return False
+
+    def refresh_access_token(self, pin: Optional[str] = None) -> dict:
+        """Renew the access token WITHOUT a browser, using the stored refresh
+        token + the Fyers PIN.
+
+        Fyers' documented refresh flow needs the account PIN, so FYERS_PIN must
+        be present in .env (gitignored) for this to work. When it succeeds the
+        daily browser login becomes unnecessary until the refresh token itself
+        expires (Fyers documents ~15 days), and the scheduler can renew it
+        automatically every morning.
+        """
+        stored = self.token_store.load() or {}
+        refresh_token = (stored.get("refresh_token") or "").strip()
+        if not refresh_token:
+            raise FyersAuthError(
+                "no refresh_token stored — do the browser login once first")
+        conf = credentials()
+        pin = (pin if pin is not None
+               else os.environ.get("FYERS_PIN", "")).strip()
+        if not pin:
+            raise FyersAuthError(
+                "FYERS_PIN is not configured — add it to .env to enable "
+                "automatic token refresh")
+        body = {
+            "grant_type": "refresh_token",
+            "appIdHash": app_id_hash(self.app_id or conf["app_id"],
+                                     conf["secret_id"]),
+            "refresh_token": refresh_token,
+            "pin": pin,
+        }
+        payload = self._request("POST", API_BASE + REFRESH_ENDPOINT,
+                                body=body, require_auth=False)
+        token = payload.get("access_token") or ""
+        if not token:
+            raise FyersAuthError("refresh endpoint returned no access_token")
+        saved = self.token_store.save(
+            token, payload.get("refresh_token") or refresh_token)
+        self.token = token
+        return {"ok": True, "refreshed": True,
+                "expires_at": saved.get("expires_at")}
 
     # -- market data -------------------------------------------------------
     def history_candles(self, symbol: str, resolution: str = "1D",
@@ -730,6 +775,45 @@ def _cmd_status(client: FyersClient) -> int:
     return 0
 
 
+def exchange_code(code: str, store: Optional[TokenStore] = None,
+                  client: Optional[FyersClient] = None) -> dict:
+    """Exchange an auth code for a token; API-safe (returns no token value).
+
+    Used by the terminal UI save-login button. Never raises: returns
+    {ok, expires_at, profile} or {ok: False, error, code}.
+    """
+    conf = credentials()
+    if not conf["app_id"] or not conf["secret_id"]:
+        return {"ok": False, "error": "FYERS_APP_ID/SECRET_ID not configured"}
+    try:
+        digest = app_id_hash(conf["app_id"], conf["secret_id"])
+    except FyersAuthError as exc:
+        return {"ok": False, "error": str(exc)}
+    client = client or FyersClient(app_id=conf["app_id"], access_token="")
+    try:
+        response = client._request(
+            "POST", f"{API_BASE}/validate-authcode",
+            body={"grant_type": "authorization_code", "appIdHash": digest,
+                  "code": extract_auth_code(code)},
+            require_auth=False)
+    except FyersError as exc:
+        return {"ok": False, "error": str(exc), "code": exc.code}
+    token = response.get("access_token") or ""
+    if not token:
+        return {"ok": False, "error": "no access_token in broker response"}
+    saved = (store or TokenStore()).save(
+        token, response.get("refresh_token") or "")
+    client.token = token
+    profile = ""
+    try:
+        data = (client.profile().get("data") or {})
+        profile = data.get("display_name") or data.get("name") or ""
+    except FyersError:
+        pass
+    return {"ok": True, "expires_at": saved.get("expires_at"),
+            "profile": profile}
+
+
 def _cmd_exchange(code: str, client: Optional[FyersClient] = None,
                   store: Optional[TokenStore] = None) -> int:
     conf = credentials()
@@ -827,6 +911,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         TokenStore().clear()
         print("token file removed")
         return 0
+    if cmd == "refresh":
+        try:
+            result = FyersClient().refresh_access_token()
+            print(json.dumps(result, indent=2))
+            return 0
+        except FyersError as exc:
+            print("token refresh FAILED:", exc, f"(code={exc.code})")
+            print("Refresh needs FYERS_PIN in .env plus a stored refresh_token "
+                  "from one browser login. Otherwise redo login-url/exchange.")
+            return 2
     client = FyersClient()
     if cmd == "status":
         if client.token_store.expired():
@@ -838,8 +932,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         symbol = argv[1] if len(argv) > 1 else "SBIN"
         return _cmd_probe(client, symbol)
     print(f"unknown command: {cmd}", file=sys.stderr)
-    print("commands: login-url | exchange [--code X] | status | probe [SYMBOL] "
-          "| screeners | clear", file=sys.stderr)
+    print("commands: login-url | exchange [--code X] | refresh | status | "
+          "probe [SYMBOL] | screeners | clear", file=sys.stderr)
     return 64
 
 
