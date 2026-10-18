@@ -91,6 +91,21 @@ def _step_official() -> dict:
         conn.close()
 
 
+def _step_fyers_gaps() -> dict:
+    """Fill holes the official files could not cover, using Fyers (optional).
+
+    Runs after official+free price ingest. With no token it returns a clean
+    skip, so the chain behaves exactly as before.
+    """
+    import backfill_gaps
+    import db as _db
+    conn = _db.get_conn()
+    try:
+        return backfill_gaps.fill_with_fyers(conn, days=10)
+    finally:
+        conn.close()
+
+
 def _step_technicals() -> dict:
     import technicals
     technicals.compute_all()
@@ -150,6 +165,7 @@ def default_steps(include_detectors: bool = True) -> List[Tuple[str, Callable[[]
         ("fyers", _step_fyers),
         ("official_nse", _step_official),
         ("prices", _step_prices),
+        ("fyers_gaps", _step_fyers_gaps),
         ("technicals", _step_technicals),
         ("breadth", _step_breadth),
         ("ml", _step_ml),

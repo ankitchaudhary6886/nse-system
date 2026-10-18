@@ -441,11 +441,20 @@ def catch_up(conn, days_back: int = 15, sleep: float = 0.25,
 
 def fetch_history(conn, start: str, end: str, apply: bool = False,
                   sleep: float = 0.15, session: Optional[requests.Session] = None,
-                  progress: bool = True) -> dict:
-    """Rebuild a date range from the RAW legacy bhavcopy archives.
+                  progress: bool = True,
+                  include_delivery: bool = False) -> dict:
+    """Rebuild a date range from the RAW official NSE bhavcopy archives.
 
-    With apply=False it only probes/reports; with apply=True it writes the raw
-    official bars (backing up the current prices table once per run).
+    Verified 18 Oct 2026: ``sec_bhavdata_full_DDMMYYYY.csv`` exists for every
+    year (2021, 2023, 2024, 2025, 2026 all returned 200), so ONE parser/format
+    covers the whole history and even carries delivery data. The legacy daily
+    ``cmDDMMMYYYYbhav.csv.zip`` is kept only as a fallback for a date whose full
+    file is missing (legacy files stop around mid-2024).
+
+    With apply=False it only probes/reports; with apply=True it replaces the
+    raw bars for the dates present and backs up the current prices table first.
+    A symbol is labelled ``nse_bhavdata_raw`` only if no older/later adjusted
+    rows remain outside the rebuilt range, otherwise ``mixed_adjusted_then_raw``.
     """
     session = session or _session()
     start_day = dt.date.fromisoformat(start)
@@ -461,59 +470,100 @@ def fetch_history(conn, start: str, end: str, apply: bool = False,
         conn.execute(f"INSERT INTO {backup} SELECT * FROM prices_daily")
         conn.commit()
     result = {"dates": len(days), "ok": 0, "holidays": [], "errors": [],
-              "rows": 0, "skipped": 0, "backup_table": backup}
+              "rows": 0, "skipped": 0, "backup_table": backup,
+              "sources": {"sec_bhavdata_full": 0, "legacy_bhavcopy": 0},
+              "delivery_rows": 0}
+    written: Dict[str, None] = {}
     for index, date in enumerate(days, 1):
         day = dt.date.fromisoformat(date)
-        url = legacy_bhav_url(day)
+        stamp = day.strftime("%d%m%Y")
+        parsed = None
+        source = "sec_bhavdata_full"
         try:
-            blob = _get(session, url)
+            parsed = parse_sec_bhav(_text(session, SEC_BHAV % stamp))
         except FileNotFoundError:
-            result["holidays"].append(date)
-            continue
+            source = "legacy_bhavcopy"
+            try:
+                blob = _get(session, legacy_bhav_url(day))
+                with zipfile.ZipFile(io.BytesIO(blob)) as archive:
+                    text = archive.read(archive.namelist()[0]).decode(
+                        "utf-8", "replace")
+                parsed = parse_legacy_bhav(text)
+            except FileNotFoundError:
+                result["holidays"].append(date)
+                continue
+            except Exception as exc:
+                result["errors"].append({"date": date, "error": f"zip: {exc}"})
+                continue
         except Exception as exc:
             result["errors"].append({"date": date, "error": str(exc)})
             continue
-        try:
-            with zipfile.ZipFile(io.BytesIO(blob)) as archive:
-                name = archive.namelist()[0]
-                text = archive.read(name).decode("utf-8", "replace")
-        except Exception as exc:
-            result["errors"].append({"date": date, "error": f"zip: {exc}"})
+        if parsed is None:
+            result["errors"].append({"date": date, "error": "unparsed"})
             continue
-        rows = []
-        for row in parse_legacy_bhav(text):
+        projects = []
+        rows_for_day = []
+        for row in parsed:
             project = mapping.get(_norm_symbol(row["symbol"]))
             if not project:
                 result["skipped"] += 1
                 continue
-            rows.append((project, date, row["open"], row["high"],
-                         row["low"], row["close"], row["volume"]))
-        if apply and rows:
+            projects.append(project)
+            rows_for_day.append(
+                (project, date, row["open"], row["high"], row["low"],
+                 row["close"], row["volume"]))
+            written[project] = None
+        if apply and rows_for_day:
+            # remove any adjusted rows for these symbols/date before writing raw
+            for chunk_start in range(0, len(rows_for_day), 400):
+                chunk = rows_for_day[chunk_start:chunk_start + 400]
+                marks = ",".join("?" for _ in chunk)
+                conn.execute(
+                    f"DELETE FROM prices_daily WHERE date=? AND symbol IN "
+                    f"({marks})", (date, *[r[0] for r in chunk]))
             conn.executemany(
                 "INSERT OR REPLACE INTO prices_daily "
                 "(symbol,date,open,high,low,close,volume) "
-                "VALUES (?,?,?,?,?,?,?)", rows)
+                "VALUES (?,?,?,?,?,?,?)", rows_for_day)
+            if include_delivery:
+                for row in parsed:
+                    project = mapping.get(_norm_symbol(row["symbol"]))
+                    if project and row.get("delivery_pct") is not None:
+                        conn.execute(
+                            "INSERT OR REPLACE INTO delivery_daily "
+                            "(date,symbol,traded_qty,deliverable_qty,"
+                            "delivery_pct,close,created_at) "
+                            "VALUES (?,?,?,?,?,?,?)",
+                            (date, project, row.get("volume"),
+                             row.get("delivery_qty"), row.get("delivery_pct"),
+                             row.get("close"),
+                             dt.datetime.now().isoformat(timespec="seconds")))
+                        result["delivery_rows"] += 1
             conn.commit()
-        result["rows"] += len(rows)
+        result["rows"] += len(rows_for_day)
         result["ok"] += 1
+        result["sources"][source] = result["sources"].get(source, 0) + 1
         if progress and (index % 50 == 0 or index == len(days)):
             print(f"  history {index}/{len(days)} {date}: "
-                  f"{len(rows)} rows, errors={len(result['errors'])}",
+                  f"{len(rows_for_day)} rows, errors={len(result['errors'])}",
                   flush=True)
         if sleep:
             time.sleep(float(sleep))
     if apply:
-        for (project,) in conn.execute(
-                "SELECT DISTINCT symbol FROM prices_daily"):
+        for project in written:
             agg = conn.execute(
                 "SELECT MAX(date), COUNT(*) FROM prices_daily WHERE symbol=?",
                 (project,)).fetchone()
+            outside = conn.execute(
+                "SELECT COUNT(*) FROM prices_daily WHERE symbol=? "
+                "AND (date<? OR date>?)", (project, start, end)).fetchone()[0]
+            basis = ("nse_bhavdata_raw" if not outside
+                     else "mixed_adjusted_then_raw")
             conn.execute(
                 "INSERT OR REPLACE INTO price_meta "
                 "(symbol,last_date,rows,updated_at,basis) VALUES (?,?,?,?,?)",
                 (project, agg[0], agg[1],
-                 dt.datetime.now().isoformat(timespec="seconds"),
-                 "nse_bhavdata_raw"))
+                 dt.datetime.now().isoformat(timespec="seconds"), basis))
         conn.commit()
     return result
 

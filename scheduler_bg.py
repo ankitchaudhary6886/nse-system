@@ -240,6 +240,18 @@ def _official_eod_job():
         log.info(f"official NSE EOD complete: attempted={result.get('attempted')} "
                  f"ok={result.get('ok')} holidays={len(result.get('holidays') or [])} "
                  f"errors={len(result.get('errors') or [])}")
+        # Optional Fyers gap-fill for holes the official files could not cover.
+        try:
+            import backfill_gaps
+            conn = db.get_conn()
+            try:
+                gaps = backfill_gaps.fill_with_fyers(conn, days=7,
+                                                     progress=False)
+            finally:
+                conn.close()
+            log.info(f"fyers gap-fill: {gaps}")
+        except Exception as exc:
+            log.warning(f"fyers gap-fill skipped: {exc}")
     except Exception as e:
         log.exception(f"official NSE EOD failed: {e}")
 
