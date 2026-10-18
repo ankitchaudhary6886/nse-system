@@ -68,6 +68,21 @@ It backs up the current table first, writes raw OHLCV, and relabels
 (technicals → ML → scan → PWin → patterns → Top Picks) because every indicator
 now sits on the raw basis.
 
+### Rebuild result (executed 18 Oct 2026, live VM)
+
+| Metric | Value |
+|---|---|
+| Official dates rebuilt (2021-08-17 → 2026-10-16) | **1,336** sessions |
+| Rows written | **825,558** |
+| Holidays (no archive file, correctly skipped) | 12 |
+| Malformed archive file | **1** date (2022-08-08) kept on the old bar |
+| Backup table | `prices_daily_adj_backup_20261018_184231` |
+| Symbols on raw basis after rebuild | **859** (3 symbols had no official rows and keep their old bars) |
+| Total price rows / distinct symbols | 868,883 / 862 |
+| Chain recomputed after rebuild | ✓ technicals, breadth, ML, scan, PWin, events, institutional, Top Picks, patterns, templates (all OK) |
+
+The laptop copy was replaced with the rebuilt database and is live again.
+
 **Fyers' role after this:** it is NOT the daily source. It fills what the free
 archives cannot: a symbol missing from a day's bhavcopy, a date whose archive
 file is unavailable, odd series/renamed tickers the archives do not map, and
