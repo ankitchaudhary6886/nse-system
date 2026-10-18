@@ -1,6 +1,6 @@
 # Fyers Integration — Market Data Only
 
-Status: built, reviewed, hardened and **deployed to the live VM (18 Oct, commit e7a1ff1)**; the whole project suite is 120 tests green. **No Fyers token yet, so no live bars have been fetched** — every price in the DB is still the adjusted yfinance legacy basis. App type: **Non-trading**. App ID: `2DA83NVOJU-100`.
+Status: built, reviewed, hardened and **deployed to the live VM (18 Oct, commit 8308f41)**; the whole project suite is 197 tests green. **No Fyers token yet, so no live bars have been fetched** — every price in the DB is still the adjusted yfinance legacy basis. App type: **Non-trading**. App ID: `2DA83NVOJU-100`.
 
 | File | Job |
 |---|---|

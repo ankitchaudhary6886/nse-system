@@ -550,6 +550,19 @@ weight). E defer.**
 | PIT safety | Snapshot data is explicitly live-veto-only; `trader_league` already sets `HOME_USE_FUND_VETO=False` in replay, so no backtest lookahead is introduced |
 | Still missing for a real elimination engine | pledge %, auditor/going-concern flags, promoter pledging events, quarterly cash conversion — all need filing/announcement ingestion (free NSE/BSE sources), not another snapshot |
 
+## 6.6 Option B continuation delivered (18 Oct, live on laptop and VM)
+
+| B continuation item | Result |
+|---|---|
+| **Exchange announcements** (`announcements.py`) | Free NSE JSON feed; laptop (home IP) fetched **15,904 announcements in 30 days**, stored **15,798** (high 123 / medium 221 / low 545; 94% routine). Dated `announced_at` = PIT-safe. Live on both machines (VM loaded from the home-IP bundle because NSE blocks cloud IPs) |
+| **Auditor / fraud / default red flags** | 19 keyword rules: auditor resignation/qualification/going concern, fraud, payment default, insolvency/NCLT/CIRP, promoter pledge, SEBI action, trading suspension. `fund_veto` now vetoes on high/medium announcements in a 365-day window even when the fundamentals row is missing |
+| **Pledge extraction from free XBRL** (`pledge_ingest.py`) | NSE shareholding master has no pledge field, so the module parses each filing's XBRL with promoter-context ranking. Live proof: JPPOWER **pledge 72.99%** of promoter holding (1,200,509,465 / 1,644,830,118 shares); 49 symbols fetched on the laptop, **9 pledge values + 67 promoter holdings** applied |
+| **Veto impact (VM, measured)** | **331 → 372 of 800** band symbols vetoed after governance data (announcements + pledge + promoter). Top Picks skips **274** vetoed candidates (was 241 before governance) |
+| **Weekly governance job** | New Saturday 08:30 job: 30-day announcements fetch + band pledge fetch (XBRL first, JSON second) + apply; every step independently guarded because NSE blocks cloud IPs |
+| **Price coverage (VM)** | Diagnosed 40 gaps (24 no price, 16 behind max): 28 are SME/InvIT/REIT (not swing instruments), 7 cash-equity ingest gaps, 2 alias, 2 other series, 1 unresolved. Fixed the root cause (ingest walked only 825 `stocks.active` instead of the 865-symbol band∪core universe) and re-fetched the gap list; **coverage 95.4% → 96.2%** (825 → 832 of 865), remaining gaps are excluded/non-tradable |
+| **CA harvest chunking** | `fetch --all` is now resumable (`corporate_actions_fetch_state`), bounded per symbol (default 20 s timeout), merges per symbol, and resumes after a kill. The hung full harvest is replaced by a background run on the VM |
+| **Laptop is live** | VM database synced to the laptop (823,386 rows), models synced; full chain ran: technicals 736, ML 727, scan 823, PWin 714, pattern tags 873, templates 72, institutional 294, Top Picks 50, breadth 1; local terminal API serving `http://127.0.0.1:8000/api/health` |
+
 ## 7. Appendix
 
 ### A. Reproduce everything
@@ -603,6 +616,6 @@ cd C:\Users\Ankit\Desktop\nse_system
 | ScanX rows × cols / dated period-ends | 750 × 72 / **0** |
 | Fyers symbol master rows / broker date | 10,116 / 2026-10-16 |
 | Universe resolved to broker tickers | 1,347 / 1,349 |
-| Offline tests | **120 / 120 pass** (freshness 18, signal guard 5, Fyers 40, corporate actions 20, rebuild 14, enrichment 18, veto 5) |
+| Offline tests | **197 / 197 pass** (freshness 18, guard 5, Fyers 40, CA 20+4, rebuild 14, enrichment 18, veto 5, announcements 32, pledge 36, coverage 4) |
 | Reclaimable backups | 326 MB |
 | League verdict (from handoff) | NOT READY — −6.2% vs Nifty +5.5%, PF 0.93, 0 live trades |
