@@ -4,12 +4,16 @@ Owner: Ankit · System: NSE Intelligence Terminal (Stage-2/VCP swing, daily bars
 Audit scope: this laptop's database (`data/app.db`, 117 MB) + the code that reads it.
 Reproduce: `python data_audit.py --json docs/data_audit_2026-10-18.json`
 
-> **Read this first.** The laptop database is frozen at **2026-08-27** (52 days old).
-> The VM at 140.238.226.249 is the live machine and may be fresher. Every number
-> below is true for *this* database. Run `python data_audit.py` on the VM before
-> quoting these figures to yourself. The structural findings (dead columns, empty
-> tables, missing corporate actions, no point-in-time fundamentals, no freshness
-> gate) will not change.
+> **Read this first (updated 18 Oct, after probing the VM).** There are two
+> databases. **The live VM (140.238.226.249) is current:** prices 823,386 rows /
+> 843 symbols / last bar **2026-10-16**, 51 tables (31 active, 7 empty, 4 stale),
+> 0 invalid OHLC, fundamentals 1,268 rows, 97 automated tests green, and the new
+> hard freshness gate is live and passing. **The laptop copy is a stale snapshot**
+> frozen at 2026-08-27 (52 days) — Sections 3 and 7 numbers describe that stale
+> copy and are kept as the audit trail that motivated Option A. The structural
+> findings (adjusted-vs-raw price basis, no corporate-action book, PIT-invalid
+> snapshots, empty features, no freshness gate before today) applied to *both*.
+> The laptop's impossible artifacts have been quarantined (3,422 rows).
 
 ---
 
@@ -192,6 +196,23 @@ Usefulness proxy — how many modules read each table (from `data_audit.py`):
 `macro_flow` 1 · `value_radar` 1 · `positional_picks` 1 · `strategy_runs` 3.
 **21 module references point at tables that are empty in this DB** — features are
 coded and wired, but dark.
+
+### 3.1b Live VM vs this laptop (18 Oct)
+| | VM (live) | Laptop (audited above) |
+|---|---|---|
+| Last price bar | **2026-10-16** (2 days = weekend) | 2026-08-27 (52 days) |
+| Price rows / symbols | 823,386 / 843 | 1,131,371 / 1,086 |
+| History buckets (≥500 / 210–499 / 60–209 / <60) | 659 / 80 / 38 / 54 | 925 / 89 / 37 / 28 |
+| Last-60-session bar coverage | **75.2%** (watch this) | 97.0% (before freeze) |
+| Invalid OHLC rows | 0 | 0 |
+| Tables (active / empty / stale / thin) | 51 (31 / 7 / 4 / 9) | 51 (after today; 17 empty before) |
+| Fundamentals rows / dead columns | 1,268 / 4 (promoter, pledge, FII, net-debt) | 503 / 10 |
+| Pattern tags rows | 149,923 (dated 18 Oct) | 0 (quarantined) |
+| Freshness gate | **live, passes** (0 missing sessions) | correctly **blocks** (36 missing) |
+
+The VM's 75.2% recent-bar coverage and 54 symbols with <60 bars are the next
+data-coverage problem to fix (likely delisted/renamed tickers plus stale
+universe rows), not a freshness problem.
 
 ### 3.2 Prices — the spine
 
@@ -447,11 +468,11 @@ Safety properties that matter more than the happy path:
 | Gate | Purpose | Current state | Fix |
 |---|---|---|---|
 | G1 Ingestion validation | no bad bar enters | partial (`data_quality.py` checks; new Fyers bar rules) | make validation part of every writer, not a nightly report |
-| G2 Adjustment/seam integrity | no fake gaps | **absent** before today | Fyers seam + first-bar gap checks, single guarded writer, `price_meta.basis` ✅; still add a corporate-action table + explicit adjustment policy |
+| G2 Adjustment/seam integrity | no fake gaps | **absent** before today | Fyers seam + first-bar gap checks, single guarded writer, `price_meta.basis`, **corporate_actions book + module deployed** ✅ (book populating from free yfinance/CSV); explicit adjustment policy still a decision |
 | G3 Cross-source attestation | prove a bar outside the store | partial (KITE/ScanX field promotion pattern) | `ingest_fyers.py verify` ✅; record verdicts in a table |
 | G4 Point-in-time discipline | no future data in backtests | documented policy, no enforcement | reject undated rows at import (ScanX already quarantine-only); add `published_at` requirement to fundamentals history |
 | G5 Field provenance | know who said what | `fundamentals_store` supports it; legacy rows empty | backfill provenance; keep `field_sources` for every new writer (derivation does ✅) |
-| G6 Freshness gate | **no derived artifact newer than its input** | **missing — caused the 7 Oct failure** | global check: if `max(prices_daily.date)` < last trading session, block signal writers (`patterns`, `templates`, `institutional`, `top_picks`, `swing`) and log/alert |
+| G6 Freshness gate | **no derived artifact newer than its input** | **LIVE since 18 Oct**: `freshness_gate.py` + `signal_guard.py` hard-block 8 writers (patterns, templates, top_picks, swing, scan, ML, PWin, institutional); verified blocking on the stale laptop and passing on the fresh VM; decision logged in `freshness_gate_log` |  |
 | G7 Monitoring + audit | detect drift weekly | `data_quality.py` (6 checks, Telegram) + new `data_audit.py` | run both daily/weekly; audit report to Telegram; add table-count/column-fill trend |
 | G8 Ops/secrets | token and keys don't leak or silently expire | token file gitignored; expiry known | pre-market check: token valid? warn at 15:00 if not; never print secrets in logs |
 
@@ -508,6 +529,17 @@ weight). E defer.**
 
 ---
 
+## 6.4 Option A delivery status (18 Oct, deployed to VM)
+
+| A item | Status |
+|---|---|
+| Hard freshness gate + writer wiring | **LIVE on VM**; blocks on stale data (laptop proof: 36 missing sessions refused), passes on fresh VM (0 missing). Decisions audited in `freshness_gate_log` |
+| Stale-artifact quarantine | **APPLIED on laptop** (3,422 rows moved: pattern_tags 2,542, trend_candidates 467, institutional 290, templates 120, validation 3); VM dry-run clean (5-day lag rule prevents false positives on weekend-run artifacts) |
+| Corporate-action book | **DEPLOYED**: `corporate_actions.py` (CSV import, free yfinance splits/dividends, gap candidate detection); full harvest running on VM; pilot: 30 symbols -> 361 events |
+| Raw-price rebuild from Fyers | **TOOLING READY**: `rebuild_raw_history.py` plan = 864 symbols, ~6,912 API calls, ~38 min at 180 req/min, dry-run by default, reuses guarded per-symbol rebuild. **Execution blocked on the one-time Fyers login** |
+| One price truth | `price_meta.basis` recorded per symbol (all 864 VM symbols currently `legacy_adjusted`; will become `fyers_raw` after rebuild) |
+| Recompute downstream after rebuild | Planned: after rebuild, run technicals -> scan -> ML -> PWin -> patterns -> templates -> top picks; the gate prevents recompute on stale data |
+
 ## 7. Appendix
 
 ### A. Reproduce everything
@@ -561,6 +593,6 @@ cd C:\Users\Ankit\Desktop\nse_system
 | ScanX rows × cols / dated period-ends | 750 × 72 / **0** |
 | Fyers symbol master rows / broker date | 10,116 / 2026-10-16 |
 | Universe resolved to broker tickers | 1,347 / 1,349 |
-| Offline tests | 40 / 40 pass |
+| Offline tests | 97 / 97 pass (freshness 18, signal guard 5, Fyers 40, corporate actions 20, rebuild 14) |
 | Reclaimable backups | 326 MB |
 | League verdict (from handoff) | NOT READY — −6.2% vs Nifty +5.5%, PF 0.93, 0 live trades |

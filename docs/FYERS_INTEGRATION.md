@@ -1,6 +1,6 @@
 # Fyers Integration — Market Data Only
 
-Status: built and tested on the laptop (40 offline tests pass), **no token yet so no live bars fetched**, **not yet deployed to the VM**. App type: **Non-trading**. App ID: `2DA83NVOJU-100`.
+Status: built, reviewed, hardened and **deployed to the live VM (18 Oct, commit 50f2f3f)**; the whole project suite is 97 tests green. **No Fyers token yet, so no live bars have been fetched** — every price in the DB is still the adjusted yfinance legacy basis. App type: **Non-trading**. App ID: `2DA83NVOJU-100`.
 
 | File | Job |
 |---|---|
@@ -133,9 +133,22 @@ python ingest_fyers.py verify --limit 20 --days 10
 
 1. **`master`** — imports the NSE cash master. Measured on the real 2026-10-16 master: **10,116 rows**. Output `{"parsed": 10116, "new": ..., "updated": ..., "source_updated": "2026-10-16"}`.
 2. **`verify --limit 20`** — cross-source proof *before* writing: fetch 20 symbols from the broker and compare against stored bars on overlapping dates. Verdicts: `match`, `mostly_match`, `mismatch`, `adjustment_mismatch`, `no_overlap`, `error`. You want `match`/`mostly_match`.
-3. **`history --days 30`** — append-only backfill. Budget ~8–10 minutes: the client caps itself at 180 requests/minute, and that cap (not 8/second) is the binding limit for ~1,347 symbols.
+3. **`history --days 30`** — append-only backfill. On the laptop the universe is 1,347 symbols (~8–10 min); on the live VM it is 864 symbols. The binding limit is the client's 180 requests/minute cap, not 8/second.
+
+   After the append, `python rebuild_raw_history.py plan` prints the honest raw-migration budget. On the VM (18 Oct): **864 symbols, ~6,912 API calls, ~38 minutes** at 180 req/min, with every symbol on the legacy adjusted basis.
 4. **`history --mode rebuild --symbols ...`** — only the symbols the previous command listed under `SEAM MISMATCH` / `SEAM_GAP_SUSPECT` / `NO_OVERLAP`.
 5. **`verify --limit 20` again** — after rebuilds the same 20 symbols should read `match`.
+
+   For the full raw migration use the orchestrator instead of a loop by hand:
+
+   ```powershell
+   python rebuild_raw_history.py plan                 # read-only budget
+   python rebuild_raw_history.py run --limit 10       # dry run pilot
+   python rebuild_raw_history.py run --apply --limit 10
+   python rebuild_raw_history.py verify --limit 20
+   ```
+
+   `run` is dry by default and refuses without a token; `--apply` warns that every downstream artifact (technicals, scans, ML, patterns, Top Picks, backtests) must be recomputed because the price basis changes. `plan` also reports `mixed_pending`: symbols whose pre-5-year rows survive a rebuild end up `mixed_adjusted_then_raw` and are a human decision, not a blind retry.
 
 ### What "SEAM MISMATCH" means (plain English)
 
