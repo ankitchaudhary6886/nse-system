@@ -119,6 +119,18 @@ class IngestTests(unittest.TestCase):
             "SELECT basis FROM price_meta WHERE symbol='SBIN'").fetchone()[0]
         self.assertEqual(basis, "nse_bhavdata_raw")
 
+    def test_ingest_date_records_mixed_basis_when_older_history_exists(self):
+        conn = memory_db()
+        conn.execute("INSERT INTO prices_daily VALUES "
+                     "('SBIN','2026-10-15',100,100,100,100,1000)")
+        conn.commit()
+        session = FakeSession({"sec_bhavdata_full": SEC_BHAV_CSV,
+                               "ind_close_all": INDEX_CSV})
+        ne.ingest_date(conn, "2026-10-16", session=session)
+        basis = conn.execute(
+            "SELECT basis FROM price_meta WHERE symbol='SBIN'").fetchone()[0]
+        self.assertEqual(basis, "mixed_adjusted_then_raw")
+
     def test_ingest_date_records_holiday_on_404(self):
         conn = memory_db()
         session = FakeSession({})  # everything 404s

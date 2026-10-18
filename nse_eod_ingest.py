@@ -308,16 +308,24 @@ def ingest_prices(conn, rows: List[dict], replace: bool = False) -> dict:
             [(project, row["date"], row["open"], row["high"], row["low"],
               row["close"], row["volume"]) for project, row in adopted
              if row["date"] == date])
-    # provenance: raw official basis (mixed if the symbol already had a basis)
+    # provenance: official bars are RAW. If the symbol already had older rows
+    # (adjusted yfinance history), the series becomes mixed until a full raw
+    # rebuild; only a symbol with no earlier history is purely official.
     symbols = {project for project, _ in adopted}
+    first_date = min(row["date"] for _, row in adopted)
     for project in symbols:
+        older = conn.execute(
+            "SELECT COUNT(*) FROM prices_daily WHERE symbol=? AND date<?",
+            (project, first_date)).fetchone()[0]
         existing = conn.execute(
             "SELECT basis FROM price_meta WHERE symbol=?", (project,)).fetchone()
         prior = existing[0] if existing else None
-        basis = ("nse_bhavdata_raw"
-                 if prior in (None, "", "nse_bhavdata_raw")
-                 else (prior if str(prior).startswith("mixed")
-                       else "mixed_adjusted_then_raw"))
+        if prior == "nse_bhavdata_raw" and not older:
+            basis = "nse_bhavdata_raw"
+        elif older:
+            basis = "mixed_adjusted_then_raw"
+        else:
+            basis = "nse_bhavdata_raw"
         agg = conn.execute(
             "SELECT MAX(date), COUNT(*) FROM prices_daily WHERE symbol=?",
             (project,)).fetchone()
@@ -510,6 +518,41 @@ def fetch_history(conn, start: str, end: str, apply: bool = False,
     return result
 
 
+def repair_basis(conn, apply: bool = False) -> dict:
+    """Correct basis labels after adopting official raw bars.
+
+    A symbol labelled 'nse_bhavdata_raw' but holding more rows than the number
+    of official dates is actually mixed (older adjusted history + new raw
+    bars). This is a one-time provenance repair; it never changes prices.
+    """
+    official_dates = [row[0] for row in conn.execute(
+        "SELECT date FROM nse_eod_sync WHERE status='ok'")]
+    official_set = set(official_dates)
+    candidates = conn.execute(
+        "SELECT symbol, rows, basis FROM price_meta "
+        "WHERE basis='nse_bhavdata_raw'").fetchall()
+    to_fix = []
+    for symbol, rows, basis in candidates:
+        if not official_set:
+            continue
+        counted = conn.execute(
+            "SELECT COUNT(*) FROM prices_daily WHERE symbol=? AND date IN "
+            f"({','.join('?' for _ in official_set)})",
+            (symbol, *official_set)).fetchone()[0]
+        if (rows or 0) > counted:
+            to_fix.append((symbol, counted, rows))
+    if apply:
+        for symbol, _counted, _rows in to_fix:
+            conn.execute(
+                "UPDATE price_meta SET basis='mixed_adjusted_then_raw' "
+                "WHERE symbol=?", (symbol,))
+        conn.commit()
+    return {"official_dates": len(official_set),
+            "candidates": len(candidates), "would_fix": len(to_fix),
+            "fixed": len(to_fix) if apply else 0,
+            "sample": [row[0] for row in to_fix[:10]], "applied": apply}
+
+
 def report(conn) -> dict:
     sync = [dict(zip(("date", "status", "rows", "delivery_rows", "source",
                       "fetched_at", "error"), row))
@@ -548,6 +591,8 @@ def main(argv=None) -> int:
     child.add_argument("--apply", action="store_true")
     child.add_argument("--sleep", type=float, default=0.15)
     sub.add_parser("report")
+    child = sub.add_parser("repair-basis")
+    child.add_argument("--apply", action="store_true")
     args = parser.parse_args(argv)
     conn = sqlite3.connect(args.db)
     conn.execute("PRAGMA temp_store=MEMORY")
@@ -581,6 +626,10 @@ def main(argv=None) -> int:
                                            apply=args.apply,
                                            sleep=args.sleep),
                              indent=2, default=str))
+            return 0
+        if args.cmd == "repair-basis":
+            print(json.dumps(repair_basis(conn, apply=args.apply), indent=2,
+                             default=str))
             return 0
         print(json.dumps(report(conn), indent=2, default=str))
         return 0
