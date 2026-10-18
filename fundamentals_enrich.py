@@ -52,8 +52,7 @@ def _number(value: Any) -> Optional[float]:
     """Finite float, or None. Bools and unparsable text are rejected."""
     if value is None or isinstance(value, bool):
         return None
-    text = value.strip().replace(",", "").rstrip("%") \
-        if isinstance(value, str) else value
+    text = value.strip().replace(",", "").rstrip("%") if isinstance(value, str) else value
     try:
         number = float(text)
     except (TypeError, ValueError):
@@ -63,13 +62,6 @@ def _number(value: Any) -> Optional[float]:
 
 def _blank(value: Any) -> bool:
     return value is None or (isinstance(value, str) and not value.strip())
-
-
-def _age_days(value: Any) -> Optional[int]:
-    try:
-        return (dt.date.today() - dt.date.fromisoformat(str(value)[:10])).days
-    except ValueError:
-        return None
 
 
 def _coverage(conn: sqlite3.Connection, fields: Sequence[str]) -> Dict[str, int]:
@@ -113,10 +105,14 @@ def latest_snapshot(conn: sqlite3.Connection) -> Dict[str, Any]:
     counts = conn.execute("SELECT {} FROM {} WHERE {}=?".format(
         ",".join("COUNT({})".format(field) for field in fields), SNAPSHOT_TABLE,
         column), (as_of,)).fetchone()
+    try:  # freshness only; a date string that is not ISO keeps age unknown
+        age = (dt.date.today() - dt.date.fromisoformat(str(as_of)[:10])).days
+    except ValueError:
+        age = None
     out.update(available=True, as_of_date=as_of, rows=len(out["symbols"]),
                available_fields=fields, field_rows=dict(zip(fields, counts)),
                missing_fields=[f for f in DESIRED_FIELDS if f not in cols],
-               age_days=_age_days(as_of))
+               age_days=age)
     return out
 
 
@@ -141,14 +137,14 @@ def enrich(conn: sqlite3.Connection, dry_run: bool = True, overwrite: bool = Fal
     result.update(
         mapped_fields=mapped, snapshot_as_of=as_of,
         snapshot_source="{}:{}".format(SOURCE_PREFIX, as_of),
-        unavailable_fields={field: ("no snapshot column" if field not in snap
-                                    else "no fundamentals column")
-                            for field in DESIRED_FIELDS if field not in mapped},
+        unavailable_fields={f: ("no snapshot column" if f not in snap
+                                else "no fundamentals column")
+                            for f in DESIRED_FIELDS if f not in mapped},
         fields_filled={field: 0 for field in mapped})
     if not fund or not mapped:
+        result["coverage_after"] = _coverage(conn, DESIRED_FIELDS)
         result["reason"] = ("fundamentals table is absent" if not fund
                             else "no ownership field exists in both tables")
-        result["coverage_after"] = _coverage(conn, DESIRED_FIELDS)
         return result
 
     wanted = {str(s or "").strip().upper() for s in (symbols or [])} - {""}
@@ -215,8 +211,7 @@ def report(conn: sqlite3.Connection) -> Dict[str, Any]:
     """Read-only: snapshot freshness plus the coverage the veto gate really has."""
     snapshot = latest_snapshot(conn)
     fields = set(_columns(conn, "fundamentals"))
-    total = conn.execute("SELECT COUNT(*) FROM fundamentals").fetchone()[0] \
-        if fields else 0
+    total = conn.execute("SELECT COUNT(*) FROM fundamentals").fetchone()[0] if fields else 0
     try:
         import universe_helper
         band = set(universe_helper.band_universe(conn, None))
@@ -230,8 +225,7 @@ def report(conn: sqlite3.Connection) -> Dict[str, Any]:
             coverage[field] = {"available": False, "non_null": 0, "pct": 0.0}
             band_coverage[field] = {"covered": 0, "pct": 0.0}
             continue
-        non_null = conn.execute(
-            "SELECT COUNT({}) FROM fundamentals".format(field)).fetchone()[0]
+        non_null = conn.execute("SELECT COUNT({}) FROM fundamentals".format(field)).fetchone()[0]
         coverage[field] = {"available": True, "non_null": non_null, "pct":
                            round(100.0 * non_null / total, 1) if total else 0.0}
         covered = len(band & {str(row[0] or "").strip().upper() for row in conn.execute(

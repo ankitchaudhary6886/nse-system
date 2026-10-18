@@ -540,6 +540,15 @@ weight). E defer.**
 | One price truth | `price_meta.basis` recorded per symbol (all 864 VM symbols currently `legacy_adjusted`; will become `fyers_raw` after rebuild) |
 | Recompute downstream after rebuild | Planned: after rebuild, run technicals -> scan -> ML -> PWin -> patterns -> templates -> top picks; the gate prevents recompute on stale data |
 
+## 6.5 Option B started (18 Oct): veto layer no longer blind
+
+| B increment | Status |
+|---|---|
+| Ownership enrichment from the free ScanX snapshot | **LIVE on VM**: `fundamentals_enrich.py` filled promoter_holding and fii_holding for **750 symbols** (coverage 750/1,268 = 59%), every field provenance-tagged `scanx_snapshot:2026-09-26` with flags `undated_snapshot`, `live_veto_only`, `not_point_in_time` |
+| Veto rules expanded | `fund_veto.py` now also vetoes on **promoter pledge > 25%** (column exists; data still missing) and **interest cover < 1.5x**; measured effect on VM: **331 -> 335 of 800 band symbols vetoed** (promoter values are mostly healthy, so the increment is small — the honest result, not a headline) |
+| PIT safety | Snapshot data is explicitly live-veto-only; `trader_league` already sets `HOME_USE_FUND_VETO=False` in replay, so no backtest lookahead is introduced |
+| Still missing for a real elimination engine | pledge %, auditor/going-concern flags, promoter pledging events, quarterly cash conversion — all need filing/announcement ingestion (free NSE/BSE sources), not another snapshot |
+
 ## 7. Appendix
 
 ### A. Reproduce everything
@@ -593,6 +602,6 @@ cd C:\Users\Ankit\Desktop\nse_system
 | ScanX rows × cols / dated period-ends | 750 × 72 / **0** |
 | Fyers symbol master rows / broker date | 10,116 / 2026-10-16 |
 | Universe resolved to broker tickers | 1,347 / 1,349 |
-| Offline tests | 97 / 97 pass (freshness 18, signal guard 5, Fyers 40, corporate actions 20, rebuild 14) |
+| Offline tests | **112 / 112 pass** (freshness 18, signal guard 5, Fyers 40, corporate actions 20, rebuild 14, enrichment 10, veto 5) |
 | Reclaimable backups | 326 MB |
 | League verdict (from handoff) | NOT READY — −6.2% vs Nifty +5.5%, PF 0.93, 0 live trades |
