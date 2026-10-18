@@ -49,6 +49,21 @@ class VetoTests(unittest.TestCase):
         self.assertTrue(fund_veto.vetoed("AAA", conn=conn)[0])
         self.assertTrue(fund_veto.vetoed("BBB", conn=conn)[0])
 
+    def test_announcement_red_flag_vetoes_even_without_fundamentals(self):
+        import announcements
+        conn = memory_db()
+        announcements.ensure_tables(conn)
+        conn.execute(
+            "INSERT INTO corporate_announcements "
+            "(symbol, announced_at, subject, category, severity, flags, "
+            "url, source, fetched_at) VALUES "
+            "('AAA', datetime('now','-2 days'), 'Resignation of Statutory "
+            "Auditor', '', 'high', '[\"auditor_resignation\"]', '', 'nse', '')")
+        conn.commit()
+        vetoed, why = fund_veto.vetoed("AAA", conn=conn)
+        self.assertTrue(vetoed)
+        self.assertIn("announcement", why)
+
     def test_healthy_and_missing_rows_pass(self):
         conn = memory_db()
         seed(conn, "AAA", debt_to_equity=0.5, roce=22.0,

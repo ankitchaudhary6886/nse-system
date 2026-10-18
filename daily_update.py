@@ -35,6 +35,13 @@ def _toppicks():
     top_picks.compute(force=True)
 
 
+def _breadth():
+    import breadth
+    result = breadth.compute(force=True)
+    log.info(f"BREADTH: {result}")
+    return result
+
+
 def _fyers():
     """Append fresh daily bars from the Fyers broker feed when a token exists.
 
@@ -62,10 +69,16 @@ def run():
         "prices", lambda: __import__("ingest_prices").run(show_every=0))
     results["technicals"] = _safe(
         "technicals", lambda: __import__("technicals").compute_all())
-    results["scan"] = _safe(
-        "scan", lambda: __import__("scan").run())
+    # Breadth must be computed after bars exist: it is the second half of the
+    # regime gate and was previously only computed lazily inside swing, leaving
+    # breadth_daily empty for every other consumer.
+    results["breadth"] = _safe("breadth", _breadth)
+    # ORDER MATTERS: the scan consumes today's ML scores. Running scan before
+    # ml (the old order) silently used yesterday's predictions.
     results["ml"] = _safe(
         "ml", lambda: __import__("ml_predict").predict_all())
+    results["scan"] = _safe(
+        "scan", lambda: __import__("scan").run())
     results["pwin"] = _safe("pwin", _pwin)
     results["toppicks"] = _safe("toppicks", _toppicks)
     results["events"] = _safe(

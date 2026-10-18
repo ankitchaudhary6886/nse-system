@@ -36,6 +36,22 @@ def run():
         "WHERE kind='RESULTS' AND event_date>=date('now') "
         "AND event_date<=date('now','+7 days')")}
 
+    # Fundamentals are now a first-class gate here, not just a score input:
+    # the same veto that patterns/Top Picks/swing use must also exclude a scan
+    # candidate, otherwise the funnel disagrees with itself.
+    veto = {}
+    try:
+        import fund_veto
+        for sym in stocks:
+            try:
+                bad, why = fund_veto.vetoed(sym, conn=conn)
+            except Exception:
+                bad, why = False, None
+            if bad:
+                veto[sym] = why
+    except Exception:
+        veto = {}
+
     allres = []
     for sym in stocks:
         r = scoring.score_stock(conn, sym, medians)
@@ -46,6 +62,8 @@ def run():
     eligible = []
     for r in allres:
         sym = r["symbol"]
+        if sym in veto:
+            continue
         if not all(g[1] for g in r["gates"]):
             continue
         if r["incomplete"] or r["above200"] is not True:
@@ -67,7 +85,7 @@ def run():
     results = []
     for r in allres:
         sym = r["symbol"]
-        passed_all = all(g[1] for g in r["gates"])
+        passed_all = all(g[1] for g in r["gates"]) and sym not in veto
         recommend = sym in rec_set
         passed += passed_all
 
@@ -78,6 +96,8 @@ def run():
             flags.append("below 200DMA")
         if sym in pending:
             flags.append("results pending")
+        if sym in veto:
+            flags.append(f"fund veto: {veto[sym]}")
         conn.execute(
             "INSERT OR REPLACE INTO scan_results "
             "VALUES (?,?,?,?,?,?,?)",

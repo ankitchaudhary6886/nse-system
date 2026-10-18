@@ -62,14 +62,40 @@ def _fund_row(conn, sym):
     return dict(zip(pick.keys(), row))
 
 
+def _announcement_red_flag(sym, conn, days=365):
+    """Highest-severity exchange announcement red flag in the window, if any.
+
+    Dated announcements are PIT-safe (public time is known), unlike the undated
+    ScanX snapshot, so this check is also usable in a replay that respects the
+    announcement timestamp. Missing table = no flag (absence never vetoes).
+    """
+    try:
+        row = conn.execute(
+            "SELECT severity, flags, announced_at FROM corporate_announcements "
+            "WHERE symbol=? AND severity IN ('high','medium') "
+            "AND announced_at >= datetime('now', ?) "
+            "ORDER BY announced_at DESC LIMIT 1",
+            (sym, f"-{int(days)} days")).fetchone()
+    except Exception:
+        return None
+    if not row:
+        return None
+    return f"{row[0]} announcement {str(row[2])[:10]}: {row[1]}"
+
+
 def vetoed(sym, conn=None):
     """Returns (True, reason) if vetoed, else (False, None)."""
     own = conn is None
     if own:
         conn = db.get_conn()
     f = _fund_row(conn, sym)
+    flag = _announcement_red_flag(sym, conn)
     if own:
         conn.close()
+    # A dated announcement (auditor resignation, fraud, pledge, default) is a
+    # veto even when the fundamentals row itself is missing or stale.
+    if flag:
+        return True, flag
     if f is None:
         return False, None
 

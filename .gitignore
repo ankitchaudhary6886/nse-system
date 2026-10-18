@@ -79,3 +79,7 @@ trading-agents-swarm/
 
 # Fyers rebuild backups (CSV snapshots written before any history replacement)
 data/backups/
+
+# DB snapshots and local audit dumps (machine-local, never commit)
+data/app.db.*
+data/quarantine_laptop.json

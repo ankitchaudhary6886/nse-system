@@ -169,6 +169,80 @@ def _fundamentals_job():
         log.info("weekly fundamentals refresh complete")
     except Exception as e:
         log.exception(f"fundamentals refresh failed: {e}")
+    # After any fundamentals refresh, re-derive the algebraically implied fields
+    # and (only when a new snapshot exists) fill the veto-only ownership fields.
+    try:
+        import db
+        import fundamentals_derive
+        derived = fundamentals_derive.run(apply=True)
+        log.info(f"fundamentals derive: {derived.get('applied')} rows")
+    except Exception as e:
+        log.exception(f"fundamentals derive failed: {e}")
+    try:
+        import db
+        import fundamentals_enrich
+        conn = db.get_conn()
+        try:
+            enriched = fundamentals_enrich.enrich(conn=conn, dry_run=False)
+        finally:
+            conn.close()
+        log.info(f"fundamentals enrich: touched {enriched.get('rows_touched')} "
+                 f"rows (PIT-invalid snapshot, live veto only)")
+    except Exception as e:
+        log.exception(f"fundamentals enrich failed: {e}")
+
+
+def _governance_job():
+    """Weekly free governance feed: exchange announcements + shareholding pledge.
+
+    Both sources are free but may be blocked from cloud IPs; every step is
+    independently guarded so one block does not lose the rest. Announcements
+    are DATED (announced_at is public time, so replay-safe); pledge rows carry
+    the filing period end.
+    """
+    log.info("weekly governance feed started")
+    try:
+        import datetime as _dt
+        import announcements
+        end = _dt.date.today()
+        start = end - _dt.timedelta(days=30)
+        items = announcements.fetch_nse(start.isoformat(), end.isoformat())
+        conn = db.get_conn()
+        try:
+            announcements.ensure_tables(conn)
+            stored = announcements.store(conn, items)
+        finally:
+            conn.close()
+        log.info(f"[GOV] announcements stored: {stored}")
+    except Exception as e:
+        log.warning(f"[GOV] announcements unavailable (NSE blocks cloud IPs): {e}")
+    try:
+        import pledge_ingest
+        import universe_helper as U
+        conn = db.get_conn()
+        try:
+            pledge_ingest.ensure_tables(conn)
+            symbols = U.band_universe(conn, 200)
+            rows = []
+            # XBRL first: it is the only free source that actually states the
+            # promoter pledge percentage (the JSON master has no pledge field).
+            try:
+                rows += pledge_ingest.fetch_nse_pledge_xbrl(symbols)
+            except Exception as e:
+                log.warning(f"[GOV] pledge XBRL unavailable: {e}")
+            try:
+                rows += pledge_ingest.fetch_nse_shareholding(symbols)
+            except Exception as e:
+                log.warning(f"[GOV] shareholding JSON unavailable: {e}")
+            if rows:
+                # The module exposes no public store; _store is its row writer.
+                pledge_ingest._store(conn, rows)
+            applied = pledge_ingest.apply_to_fundamentals(conn, dry_run=False)
+        finally:
+            conn.close()
+        log.info(f"[GOV] pledge rows fetched={len(rows)} applied={applied}")
+    except Exception as e:
+        log.warning(f"[GOV] pledge feed unavailable (CSV fallback remains): {e}")
 
 
 def _retrain_job():
@@ -324,6 +398,13 @@ def start():
                        CronTrigger(day_of_week="sat", hour=8, minute=0,
                                    timezone=IST),
                        id="fundamentals_refresh", replace_existing=True)
+    # Free governance feed (vendor-free): NSE corporate announcements + dated
+    # shareholding/pledge. Runs after the fundamentals refresh so the merged
+    # ownership/pledge values are present for the week's veto checks.
+    _scheduler.add_job(_governance_job,
+                       CronTrigger(day_of_week="sat", hour=8, minute=30,
+                                   timezone=IST),
+                       id="governance_feed", replace_existing=True)
     _scheduler.add_job(_retrain_job,
                        CronTrigger(day_of_week="sat", hour=9, minute=0,
                                    timezone=IST),

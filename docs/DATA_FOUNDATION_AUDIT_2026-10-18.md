@@ -523,9 +523,10 @@ weight). E defer.**
    rows, provenance-tagged). Keep, or revert to empty?
 6. **Run on VM first?** Should I apply the same audit + Fyers setup on the VM
    (the live machine) before touching this laptop DB further?
-7. **Confirm the secret:** the screenshot can be read as `HDITOO853C` (letter O) or
-   `HDITO0853C` (zero). I used the first. If the token exchange fails with an
-   app-hash error, this is the first thing to check.
+7. **Confirm the secret:** the screenshot's third/fourth characters after `HDIT` can
+   be read as two letters **O** or as letter **O + digit 0**. I used the two-letter
+   reading. If the token exchange fails with an app-hash error, this is the first
+   thing to check. (Exact value deliberately not written in the repo.)
 
 ---
 

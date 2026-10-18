@@ -238,6 +238,87 @@ def fetch_yfinance_actions(symbols, sleep_seconds=0.4) -> List[dict]:
     return out
 
 
+# --- 2b. chunked, resumable harvest (2026-10-18) ---------------------------
+# The first full-universe harvest hung indefinitely on one symbol inside
+# yfinance, which has no timeout of its own. A hung harvest is worse than a
+# partial one: it silently blocks progress and leaves no record. This runner
+# bounds every symbol with a wall-clock timeout, records per-symbol state in
+# corporate_actions_fetch_state, merges each chunk as it goes, and resumes from
+# the last recorded success instead of starting over.
+FETCH_STATE_TABLE = "corporate_actions_fetch_state"
+
+
+def ensure_fetch_state(conn) -> None:
+    conn.execute(
+        f"CREATE TABLE IF NOT EXISTS {FETCH_STATE_TABLE} ("
+        "symbol TEXT PRIMARY KEY, fetched_at TEXT, status TEXT, "
+        "actions INTEGER, error TEXT)")
+    conn.commit()
+
+
+def _fetch_one_with_timeout(symbol: str, timeout_seconds: float):
+    """Return (actions, error). Executor is not joined, so a hung thread cannot
+    stall the batch; the thread dies with the process."""
+    from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures import TimeoutError as FutureTimeout
+
+    executor = ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(fetch_yfinance_actions, [symbol], 0.0)
+    try:
+        return future.result(timeout=max(1.0, float(timeout_seconds))), None
+    except FutureTimeout:
+        return [], "timeout"
+    except Exception as exc:  # one bad ticker must not stop the harvest
+        return [], f"{type(exc).__name__}: {exc}"
+    finally:
+        executor.shutdown(wait=False)
+
+
+def fetch_all_resumable(conn, symbols, sleep_seconds: float = 0.2,
+                        per_symbol_timeout: float = 20.0,
+                        chunk_size: int = 50, force: bool = False,
+                        progress: bool = True) -> dict:
+    """Chunked, resumable yfinance corporate-action harvest.
+
+    ``force`` re-fetches symbols already marked ok. Progress is persisted after
+    every symbol, so a killed run resumes where it stopped. Returns counts by
+    status, total merged actions and the chunk size actually used.
+    """
+    ensure_fetch_state(conn)
+    done = set()
+    if not force:
+        done = {row[0] for row in conn.execute(
+            f"SELECT symbol FROM {FETCH_STATE_TABLE} WHERE status='ok'")}
+    todo = [s for s in symbols if s not in done]
+    counts = {"symbols": len(symbols), "already_done": len(symbols) - len(todo),
+              "fetched_symbols": 0, "inserted": 0, "updated": 0, "actions": 0,
+              "timeouts": [], "errors": [], "chunk_size": int(chunk_size)}
+    for position, symbol in enumerate(todo, 1):
+        actions, error = _fetch_one_with_timeout(symbol, per_symbol_timeout)
+        status = "error" if error else "ok"
+        if error:
+            counts["timeouts" if error == "timeout" else "errors"].append(symbol)
+        else:
+            merged = merge_actions(conn, actions)
+            counts["inserted"] += merged["inserted"]
+            counts["updated"] += merged["updated"]
+            counts["actions"] += len(actions)
+            counts["fetched_symbols"] += 1
+        conn.execute(
+            f"INSERT OR REPLACE INTO {FETCH_STATE_TABLE} "
+            "(symbol, fetched_at, status, actions, error) VALUES (?,?,?,?,?)",
+            (symbol, now_ist(), status, len(actions), error))
+        conn.commit()
+        if progress and (position % max(1, int(chunk_size)) == 0
+                         or position == len(todo)):
+            print(f"  [{position}/{len(todo)}] {symbol}: {status}, "
+                  f"actions={counts['actions']}, "
+                  f"timeouts={len(counts['timeouts'])}", flush=True)
+        if sleep_seconds and position < len(todo):
+            time.sleep(float(sleep_seconds))
+    return counts
+
+
 # --- 3. merge: provenance is the caller's decision -------------------------
 
 def merge_actions(conn, actions) -> dict:
@@ -427,8 +508,14 @@ def main(argv=None) -> int:
     child = sub.add_parser("fetch", help="harvest yfinance split/dividends")
     child.add_argument("--symbols", default=None)
     child.add_argument("--all", dest="all_symbols", action="store_true")
-    child.add_argument("--limit", type=int, default=50)
-    child.add_argument("--sleep", type=float, default=0.4)
+    child.add_argument("--limit", type=int, default=0,
+                       help="symbol cap for --all (0 = whole universe)")
+    child.add_argument("--sleep", type=float, default=0.2)
+    child.add_argument("--timeout", type=float, default=20.0,
+                       help="per-symbol wall-clock timeout in seconds")
+    child.add_argument("--chunk-size", dest="chunk_size", type=int, default=50)
+    child.add_argument("--force", action="store_true",
+                       help="re-fetch symbols already marked ok")
     child = sub.add_parser("import", help="load a manual CSV")
     child.add_argument("--file", required=True)
     child = sub.add_parser("list", help="print recorded actions")
@@ -451,10 +538,18 @@ def main(argv=None) -> int:
             if not args.symbols and not args.all_symbols:
                 parser.error("fetch needs --symbols A,B or --all")
             symbols = (_split_symbols(args.symbols) if args.symbols
-                       else _scan_symbols(conn, None, args.limit))
-            actions = fetch_yfinance_actions(symbols, args.sleep)
-            payload = {"symbols": len(symbols), "fetched": len(actions),
-                       **merge_actions(conn, actions)}
+                       else _scan_symbols(conn, None,
+                                          args.limit if args.limit else None))
+            if args.all_symbols:
+                payload = fetch_all_resumable(
+                    conn, symbols, sleep_seconds=args.sleep,
+                    per_symbol_timeout=args.timeout,
+                    chunk_size=args.chunk_size, force=args.force,
+                    progress=True)
+            else:
+                actions = fetch_yfinance_actions(symbols, args.sleep)
+                payload = {"symbols": len(symbols), "fetched": len(actions),
+                           **merge_actions(conn, actions)}
         elif args.cmd == "import":
             payload = import_csv(conn, args.file)
         elif args.cmd == "list":

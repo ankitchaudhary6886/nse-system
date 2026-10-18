@@ -30,6 +30,12 @@ def accumulation_score(symbol, conn=None):
     for i in range(1, len(rows)):
         pc, pv = rows[i - 1]
         c, v = rows[i]
+        # Synced/legacy data can contain NULL closes or volumes; a comparison
+        # against None used to crash the whole nightly institutional refresh.
+        if pc is None or c is None:
+            continue
+        pv = 0.0 if pv is None else float(pv)
+        v = 0.0 if v is None else float(v)
         if c > pc:
             up += v
         elif c < pc:
@@ -67,27 +73,32 @@ def fetch_delivery_nse(symbol):
 
 def refresh(limit=300, use_nse=False):
     conn = db.get_conn()
-    _ensure(conn)
-    import signal_guard
-    if signal_guard.check(conn, "institutional"):
+    try:
+        _ensure(conn)
+        import signal_guard
+        if signal_guard.check(conn, "institutional"):
+            return 0
+        syms = U.band_universe(conn, limit)
+        today = dt.date.today().isoformat()
+        n = 0
+        for sym in syms:
+            acc = accumulation_score(sym, conn)
+            if acc is None:
+                continue
+            deliv = fetch_delivery_nse(sym) if use_nse else None
+            conn.execute(
+                "INSERT OR REPLACE INTO institutional(symbol,date,accum,"
+                "delivery_pct) VALUES(?,?,?,?)", (sym, today, acc, deliv))
+            n += 1
+        conn.commit()
+        print(f"[INST] refreshed {n} symbols")
+        return n
+    finally:
+        # A crash mid-refresh must not leave an open transaction: the next
+        # writer would block on the SQLite write lock (it happened during the
+        # laptop populate: institutional crashed, then the gate could not even
+        # write its audit row and failed safe).
         conn.close()
-        return 0
-    syms = U.band_universe(conn, limit)
-    today = dt.date.today().isoformat()
-    n = 0
-    for sym in syms:
-        acc = accumulation_score(sym, conn)
-        if acc is None:
-            continue
-        deliv = fetch_delivery_nse(sym) if use_nse else None
-        conn.execute(
-            "INSERT OR REPLACE INTO institutional(symbol,date,accum,"
-            "delivery_pct) VALUES(?,?,?,?)", (sym, today, acc, deliv))
-        n += 1
-    conn.commit()
-    conn.close()
-    print(f"[INST] refreshed {n} symbols")
-    return n
 
 def top_accumulation(n=10, min_accum=0.6):
     conn = db.get_conn()

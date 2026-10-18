@@ -2,8 +2,33 @@ import sys
 import time
 import datetime as dt
 import db
+import universe_helper as U
 from data_sources import get_registry
 from config import HISTORY_YEARS, SLEEP_SECONDS
+
+
+def _fetch_frame(symbol, start):
+    """Provider chain for one symbol, retrying a punctuation-normalized ticker.
+
+    Some project symbols come from exchange masters with an underscore
+    (``BOSCH_HCIL``) while Yahoo/other feeds expect ``BOSCH-HCIL``. The rows are
+    still stored under the project symbol, so downstream joins are unchanged.
+    """
+    candidates = [symbol]
+    if "_" in symbol:
+        candidates.append(symbol.replace("_", "-"))
+    last_error = None
+    for candidate in candidates:
+        try:
+            return get_registry().fetch(
+                "prices.daily_history",
+                ("yahoo_finance", "nse_india_api", "jugaad_data",
+                 "nsemine_history", "pnsea"),
+                symbol=candidate, start=start)
+        except Exception as exc:
+            last_error = exc
+    raise last_error or RuntimeError(f"no provider returned data for {symbol}")
+
 
 def fetch_one(conn, symbol):
     meta = conn.execute(
@@ -16,16 +41,7 @@ def fetch_one(conn, symbol):
     if start > dt.date.today().isoformat():
         return 0
 
-    # Fallback chain. Until 2026-10-15 this asked yahoo_finance ONLY, so a
-    # single rate-limited or broken source could stall the whole EOD price
-    # update. The four added providers return the SAME frame shape
-    # (DatetimeIndex + Open/High/Low/Close/Volume), so nothing downstream
-    # changes. All five were verified against live HTTP on 2026-10-15.
-    result = get_registry().fetch(
-        "prices.daily_history",
-        ("yahoo_finance", "nse_india_api", "jugaad_data",
-         "nsemine_history", "pnsea"),
-        symbol=symbol, start=start)
+    result = _fetch_frame(symbol, start)
     df = result.data
     if df.empty:
         return 0
@@ -38,15 +54,19 @@ def fetch_one(conn, symbol):
     last_row = conn.execute(
         "SELECT MAX(date), COUNT(*) FROM prices_daily WHERE symbol=?",
         (symbol,)).fetchone()
-    conn.execute("INSERT OR REPLACE INTO price_meta VALUES (?,?,?,?)",
-                 (symbol, last_row[0], last_row[1], dt.datetime.now().isoformat()))
+    conn.execute(
+        "INSERT OR REPLACE INTO price_meta "
+        "(symbol,last_date,rows,updated_at) VALUES (?,?,?,?)",
+        (symbol, last_row[0], last_row[1], dt.datetime.now().isoformat()))
     conn.commit()
     return len(rows)
 
 def run(show_every=1):
     conn = db.get_conn()
-    symbols = [r[0] for r in conn.execute(
-        "SELECT symbol FROM stocks WHERE active=1 ORDER BY symbol")]
+    # The tradable universe is band + core, NOT the 825-row stocks table: using
+    # only stocks.active silently skipped ~40 band symbols every night (the VM's
+    # 60-session coverage gap). universe_helper is the single source of truth.
+    symbols = U.combined_universe(conn)
     total = len(symbols)
     failed = []
     for i, sym in enumerate(symbols, 1):
