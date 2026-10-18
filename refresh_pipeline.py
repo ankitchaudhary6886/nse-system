@@ -75,6 +75,22 @@ def _step_prices() -> dict:
     return {"failed": len(failed or []), "failed_sample": (failed or [])[:10]}
 
 
+def _step_official() -> dict:
+    """FREE official NSE archives: raw prices + delivery + index closes.
+
+    Runs before the per-symbol free providers: one archive file is faster and
+    more authoritative than ~865 provider calls, and it carries delivery% and
+    every index close as a bonus. Missing files are holidays, not failures.
+    """
+    import nse_eod_ingest
+    import db as _db
+    conn = _db.get_conn()
+    try:
+        return nse_eod_ingest.catch_up(conn, days_back=5)
+    finally:
+        conn.close()
+
+
 def _step_technicals() -> dict:
     import technicals
     technicals.compute_all()
@@ -132,6 +148,7 @@ def _step_templates() -> dict:
 def default_steps(include_detectors: bool = True) -> List[Tuple[str, Callable[[], Any]]]:
     steps: List[Tuple[str, Callable[[], Any]]] = [
         ("fyers", _step_fyers),
+        ("official_nse", _step_official),
         ("prices", _step_prices),
         ("technicals", _step_technicals),
         ("breadth", _step_breadth),

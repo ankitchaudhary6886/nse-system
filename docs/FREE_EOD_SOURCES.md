@@ -1,0 +1,78 @@
+# FREE, EFFORTLESS DAILY DATA — SOURCE OPTIONS AND THE CHOSEN STACK
+
+Owner constraint: **zero cost, no daily intervention, one-time build.** Fyers is
+optional, not required. This note lists every realistic free option, what each
+is good for, and the stack the system now uses automatically.
+
+## 1. Options compared
+
+| Source | Cost / auth | What it gives | Reachable from the Oracle VM? | Verdict |
+|---|---|---|---|---|
+| **NSE official archives** (`nsearchives.nseindia.com`) | Free, **no auth/API key** | Raw daily OHLCV for every NSE equity (`sec_bhavdata_full_DDMMYYYY.csv`), delivery qty/%, every index close (`ind_close_all_DDMMYYYY.csv`), official security master (`EQUITY_L.csv`), **historical daily bhavcopy zips** back to old years (`.../YYYY/MMM/cmDDMMMYYYYbhav.csv.zip`) | **YES** — verified 18 Oct 2026 from the VM: files returned 200 (`sec_bhavdata_full` 397 KB, `ind_close_all` 17.5 KB, `EQUITY_L` 184 KB, a 2021 legacy zip 77 KB) | **CHOSEN — primary** |
+| Fyers API v3 | Free with a Fyers account; daily OAuth unless a PIN-based refresh token is configured | Exchange-grade history/quotes/depth, index tickers; raw prices | Yes, after login | **Optional upgrade** (system works without it) |
+| Yahoo / yfinance | Free, no auth | Adjusted OHLCV, some fundamentals, splits/dividends | Mostly; rate-limits/crumb issues, currently the 15:45 fallback | **Fallback + corporate-action candidates** |
+| NSE website JSON APIs (announcements, shareholding) | Free, no key | Announcements, shareholding | **NO** — blocks cloud IPs; works from the home laptop | Used weekly via the laptop/bundle; never a daily dependency |
+| BSE bhavcopy | Free, no auth | BSE equity EOD | usually yes | Possible second mirror (not wired yet; NSE archive is sufficient) |
+| jugaad-data / nseindiaapi / nsemine / pnsea / nsetools | Free scrapers/unofficial mirrors | OHLCV | partly | Kept as per-symbol price fallbacks only |
+| Alpha Vantage / TwelveData / EODHD free tiers | Free tiers but API keys, limited calls, incomplete NSE coverage | — | — | Rejected: keys + quotas + gaps |
+| TrueData / ScanX / Screener paid feeds | Paid | Point-in-time fundamentals etc. | — | Out of scope (owner: no spend) |
+
+## 2. What is now automatic (one-time build, no intervention)
+
+| IST time | Job | Source |
+|---|---|---|
+| 08:15 daily | Official EOD morning retry/catch-up | NSE archives |
+| 08:10 daily | Fyers token auto-renew (only if configured) | Fyers (optional) |
+| 15:30 | Data-quality checks | local DB |
+| **15:45** | Yahoo-based early chain: prices → technicals → breadth → ML → scan → PWin → Top Picks → events → swing → Telegram | Yahoo/NSE mirrors |
+| **19:30 Mon–Fri** | **Official NSE EOD: raw prices + delivery% + all index closes** (catch-up up to 7 days) | NSE archives |
+| 18:05 / 18:35 | Patterns / templates | local DB |
+| Sat 08:00 / 08:30 | Fundamentals refresh → derive/enrich · governance (announcements + pledge) | free sources |
+
+Plus the ⚡ **Refresh now** button runs the same chain on demand, official
+source first, and reloads the page.
+
+A missing archive file is treated as an **exchange holiday** (recorded as
+`holiday`), never as stale data, and catch-up is idempotent — a missed evening
+is repaired automatically the next morning.
+
+## 3. What this fixes that Fyers was needed for
+
+- **Raw price basis without a login.** Official bhavcopy prices are unadjusted;
+  every adopted symbol gets `price_meta.basis='nse_bhavdata_raw'`. A full raw
+  history rebuild is now possible entirely from free archives:
+  `python nse_eod_ingest.py history --from 2021-08-17 --to 2026-10-16 --apply`
+  (probe first without `--apply`; it writes a one-time backup table).
+- **Delivery %** fills `delivery_daily` — the 15% delivery weight in Top Picks is
+  no longer dead.
+- **Index series** fill `index_daily` (NIFTY50/500/BANK + sectors) — the basis
+  for breadth denominators / RS / beta is now stored locally (wiring those
+  consumers to `index_daily` is the next improvement; current regime still uses
+  a live Yahoo index call).
+- **Historical verification** for free: the legacy archive zips let us
+  cross-check or replace any old date range.
+
+## 4. Honest limitations
+
+1. Archives publish in the evening; the 15:45 chain is an early estimate and the
+   19:30 official pull is the authority. The UI shows price dates, so this is
+   visible, not silent.
+2. Official prices are **raw**; corporate actions are not applied. A symbol that
+   already has adjusted history becomes `mixed_adjusted_then_raw` until the raw
+   history rebuild is run. Corporate-action candidates still come from the free
+   yfinance split/dividend lists (and the manual CSV), so the repair factor is
+   known when a gap appears.
+3. Interactive NSE endpoints (announcements/shareholding) block the VM's cloud
+   IP. The weekly governance job degrades gracefully; the home laptop can fetch
+   and the data is transferable.
+4. No intraday/tick data — deliberately, the system is daily-bar.
+
+## 5. One-time setup (already done)
+
+- Code: `nse_eod_ingest.py` (fetchers/parsers/writers/CLI), scheduled jobs,
+  ⚡ refresh integration, 12 offline tests.
+- Tables: `nse_eod_sync` (per-date audit), `index_daily`, `nse_security_master`
+  (+ existing `delivery_daily`/`prices_daily`/`price_meta.basis`).
+- Commands if you ever want to run manually:
+  `python nse_eod_ingest.py master` · `catchup --days 15` · `report` ·
+  `history --from … --to … [--apply]`.

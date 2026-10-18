@@ -220,6 +220,46 @@ def _token_job():
             log.warning(f"[FYERS] login reminder not sent: {notify_exc}")
 
 
+def _official_eod_job():
+    """FREE official NSE end-of-day ingestion (no login, no key).
+
+    NSE archive files (sec_bhavdata_full + ind_close_all) are the raw official
+    source: prices, volume, delivery% and every index close. They publish in the
+    evening, so this runs after the Yahoo-based 15:45 chain and corrects it with
+    the exchange's own files.
+    """
+    log.info("official NSE EOD ingestion started")
+    try:
+        import db
+        import nse_eod_ingest
+        conn = db.get_conn()
+        try:
+            result = nse_eod_ingest.catch_up(conn, days_back=7)
+        finally:
+            conn.close()
+        log.info(f"official NSE EOD complete: attempted={result.get('attempted')} "
+                 f"ok={result.get('ok')} holidays={len(result.get('holidays') or [])} "
+                 f"errors={len(result.get('errors') or [])}")
+    except Exception as e:
+        log.exception(f"official NSE EOD failed: {e}")
+
+
+def _official_retry_job():
+    """Morning retry/catch-up in case the evening archive fetch was delayed."""
+    try:
+        import db
+        import nse_eod_ingest
+        conn = db.get_conn()
+        try:
+            result = nse_eod_ingest.catch_up(conn, days_back=7)
+        finally:
+            conn.close()
+        log.info(f"official NSE EOD morning retry: ok={result.get('ok')} "
+                 f"attempted={result.get('attempted')}")
+    except Exception as e:
+        log.warning(f"official NSE EOD morning retry failed: {e}")
+
+
 def _governance_job():
     """Weekly free governance feed: exchange announcements + shareholding pledge.
 
@@ -413,6 +453,14 @@ def start():
     _scheduler.add_job(_template_job,
                        CronTrigger(hour=18, minute=35, timezone=IST),
                        id="template_scan", replace_existing=True)
+    # Official raw NSE archives (free, no login): evening pull + morning retry.
+    _scheduler.add_job(_official_eod_job,
+                       CronTrigger(day_of_week="mon-fri", hour=19, minute=30,
+                                   timezone=IST),
+                       id="official_eod", replace_existing=True)
+    _scheduler.add_job(_official_retry_job,
+                       CronTrigger(hour=8, minute=15, timezone=IST),
+                       id="official_eod_retry", replace_existing=True)
     _scheduler.add_job(_league_job,
                        CronTrigger(day_of_week="mon-fri", hour=19,
                                    minute=0, timezone=IST),

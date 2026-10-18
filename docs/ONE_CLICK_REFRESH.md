@@ -14,7 +14,9 @@ There are now two layers:
 |---|---|
 | 08:10 daily | Fyers token auto-renewal (pin-based) or a single Telegram "login due" note |
 | 15:30 | Data-quality checks |
-| 15:45 | **Daily update: prices → technicals → breadth → ML → scan → PWin → Top Picks → events → swing → Telegram** |
+| 15:45 | Early chain (Yahoo-based): prices → technicals → breadth → ML → scan → PWin → Top Picks → events → swing → Telegram |
+| 19:30 (Mon–Fri) | **Official NSE EOD**: raw prices + delivery % + every index close from NSE archives (free, no login) |
+| 08:15 daily | Official EOD morning retry (repairs any missed evening download) |
 | 16:00 | Delivery %
 | 16:15 | Swing scan + grading |
 | 16:45 | Institutional accumulation |
@@ -34,8 +36,9 @@ VM reboot does not stop it. 21 jobs were verified live.
 Press **⚡ Data** (bottom-right, every page) → **Refresh data now**. The server
 runs the same chain, in dependency order:
 
-`fyers (if token) → prices (free fallbacks) → technicals → breadth → ML → scan →
-PWin → events → institutional → Top Picks → patterns → templates`
+`fyers (if token) → official NSE archives (raw prices + delivery + indices) →
+free per-symbol fallbacks → technicals → breadth → ML → scan → PWin → events →
+institutional → Top Picks → patterns → templates`
 
 - Measured live on the VM: **12/12 steps OK in 67 seconds** (patterns 19 s,
   templates 6.6 s, prices 30 s when any symbol is behind).
@@ -68,7 +71,8 @@ Or the CLI equivalent: `python refresh_pipeline.py run` / `status` / `health`.
 
 ## Is Fyers required?
 
-**No.** Prices refresh automatically from free sources (Yahoo/NSE/jugaad) on the
+**No.** Prices refresh automatically from the official NSE archives (plus free
+per-symbol fallbacks) (Yahoo/NSE/jugaad) on the
 schedule and through the button. Fyers is the *quality upgrade*: an
 authenticated exchange feed used for the raw-price rebuild. Without a Fyers
 login the system is still live; the only consequence is that the price basis

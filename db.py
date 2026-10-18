@@ -224,6 +224,30 @@ CREATE INDEX IF NOT EXISTS idx_refresh_runs_started
   ON refresh_runs(started_at);
 
 -- ============================================================
+-- FREE OFFICIAL EOD SOURCES (NSE archives; no login, no API key)
+-- ============================================================
+-- Official raw equity bhavcopy + delivery (sec_bhavdata_full_DDMMYYYY.csv).
+CREATE TABLE IF NOT EXISTS nse_eod_sync (
+  date TEXT PRIMARY KEY, status TEXT, rows INTEGER, delivery_rows INTEGER,
+  source TEXT, fetched_at TEXT, error TEXT
+);
+
+-- Official index close series (ind_close_all_DDMMYYYY.csv): NIFTY50/500/sectors.
+CREATE TABLE IF NOT EXISTS index_daily (
+  symbol TEXT, date TEXT, name TEXT, open REAL, high REAL, low REAL,
+  close REAL, prev_close REAL, change_pct REAL, volume REAL, source TEXT,
+  PRIMARY KEY (symbol, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_index_daily_symbol ON index_daily(symbol, date);
+
+-- Official NSE security master (EQUITY_L.csv): symbol/ISIN/series/name.
+CREATE TABLE IF NOT EXISTS nse_security_master (
+  symbol TEXT PRIMARY KEY, name TEXT, series TEXT, listing_date TEXT,
+  isin TEXT, market_lot REAL, face_value REAL, updated_at TEXT, source TEXT
+);
+
+-- ============================================================
 -- Broker ingestion: Fyers (market data only; no order endpoints)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS fyers_symbol_master (
