@@ -76,3 +76,6 @@ tools/ui-audit/out/
 
 # unrelated third-party clone (own git repo, GPL v3) - see .agents/cache/FINDINGS.md F-23
 trading-agents-swarm/
+
+# Fyers rebuild backups (CSV snapshots written before any history replacement)
+data/backups/

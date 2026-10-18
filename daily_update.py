@@ -35,10 +35,29 @@ def _toppicks():
     top_picks.compute(force=True)
 
 
+def _fyers():
+    """Append fresh daily bars from the Fyers broker feed when a token exists.
+
+    Runs BEFORE the generic price ingest so the authenticated exchange feed is
+    tried first; ingest_prices then fills anything Fyers could not serve. A
+    missing/expired token is not an outage: it is logged and the pipeline
+    continues on the free fallback sources.
+    """
+    import ingest_fyers
+    result = ingest_fyers.sync_recent(days=15)
+    if not result.get("ok"):
+        log.info(f"FYERS SKIPPED: {result}")
+    else:
+        log.info(f"FYERS SYNC: {result.get('written')} bars, "
+                 f"{result.get('by_status')}")
+    return result
+
+
 def run():
     log.info("=" * 50)
     log.info("DAILY UPDATE START")
     results = {}
+    results["fyers"] = _safe("fyers", _fyers)
     results["prices"] = _safe(
         "prices", lambda: __import__("ingest_prices").run(show_every=0))
     results["technicals"] = _safe(

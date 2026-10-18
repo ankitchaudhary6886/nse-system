@@ -694,6 +694,10 @@ def _save(conn, date, rows):
 
 def run(limit=DEFAULT_SYMBOL_LIMIT):
     conn = db.get_conn()
+    import signal_guard
+    if signal_guard.check(conn, "patterns"):
+        conn.close()
+        return {"date": dt.date.today().isoformat(), "blocked": True}
     _ensure(conn)
     try:
         import pattern_grader

@@ -68,6 +68,10 @@ def fetch_delivery_nse(symbol):
 def refresh(limit=300, use_nse=False):
     conn = db.get_conn()
     _ensure(conn)
+    import signal_guard
+    if signal_guard.check(conn, "institutional"):
+        conn.close()
+        return 0
     syms = U.band_universe(conn, limit)
     today = dt.date.today().isoformat()
     n = 0

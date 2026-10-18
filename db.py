@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS prices_daily (
 );
 
 CREATE TABLE IF NOT EXISTS price_meta (
-  symbol TEXT PRIMARY KEY, last_date TEXT, rows INTEGER, updated_at TEXT
+  symbol TEXT PRIMARY KEY, last_date TEXT, rows INTEGER, updated_at TEXT,
+  basis TEXT
 );
 
 CREATE TABLE IF NOT EXISTS technicals_daily (
@@ -210,6 +211,62 @@ CREATE TABLE IF NOT EXISTS strategy_runs (
   pf REAL, total_return REAL, max_dd REAL,
   holding_days REAL, verdict TEXT, payload TEXT
 );
+
+-- ============================================================
+-- Broker ingestion: Fyers (market data only; no order endpoints)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS fyers_symbol_master (
+  symbol TEXT PRIMARY KEY, ticker TEXT, name TEXT, isin TEXT,
+  fy_token INTEGER, lot_size REAL, tick_size REAL, exchange TEXT,
+  segment TEXT, source_updated TEXT, imported_at TEXT, raw TEXT
+);
+
+CREATE TABLE IF NOT EXISTS fyers_quotes (
+  symbol TEXT, ts TEXT, ltp REAL, prev_close REAL, open REAL, high REAL,
+  low REAL, close REAL, volume REAL, chg REAL, chg_pct REAL, bid REAL,
+  ask REAL, spread REAL, source TEXT, raw_json TEXT,
+  PRIMARY KEY (symbol, ts)
+);
+
+CREATE TABLE IF NOT EXISTS fyers_sync_log (
+  run_at TEXT, kind TEXT, status TEXT, symbols INTEGER, rows INTEGER,
+  error TEXT, detail TEXT
+);
+
+-- Reporting/lookup indexes (the quote table's PK already covers symbol+ts).
+CREATE INDEX IF NOT EXISTS idx_fyers_sync_log_run_at
+  ON fyers_sync_log(run_at);
+
+-- ============================================================
+-- Data integrity: freshness gate, corporate actions, quarantine
+-- ============================================================
+-- Hard gate: a signal writer must not write when the price spine is stale.
+CREATE TABLE IF NOT EXISTS freshness_gate_log (
+  run_at TEXT, artifact TEXT, status TEXT,
+  max_price_date TEXT, expected_date TEXT, stale_sessions INTEGER,
+  action TEXT, detail TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_freshness_gate_log_run_at
+  ON freshness_gate_log(run_at);
+
+-- Corporate actions with provenance. ratio = multiplier applied to HISTORY
+-- prices (1:10 split -> ratio 10.0; 1:1 bonus -> 2.0); dividends carry amount.
+CREATE TABLE IF NOT EXISTS corporate_actions (
+  symbol TEXT, ex_date TEXT, kind TEXT, ratio REAL, amount REAL,
+  source TEXT, status TEXT DEFAULT 'unconfirmed',
+  recorded_at TEXT, raw TEXT,
+  PRIMARY KEY (symbol, ex_date, kind)
+);
+
+CREATE INDEX IF NOT EXISTS idx_corporate_actions_symbol
+  ON corporate_actions(symbol, ex_date);
+
+-- Rows removed from derived tables because they were newer than the price
+-- data they were computed from. Kept for audit; never silently deleted.
+CREATE TABLE IF NOT EXISTS stale_artifact_quarantine (
+  artifact TEXT, run_at TEXT, payload TEXT, reason TEXT
+);
 """
 
 
@@ -232,6 +289,15 @@ MIGRATIONS = [
     ("fundamentals", "field_updated_at", "TEXT"),
     ("fundamentals", "data_quality_flags", "TEXT"),
     ("fundamentals", "source_metadata", "TEXT"),
+    # Algebraically derivable from price + P/E and price + P/B already owned.
+    # They get their own columns (never silently written into eps_fy) so a
+    # derived value can never be mistaken for a reported fiscal-year figure.
+    ("fundamentals", "eps_ttm", "REAL"),
+    ("fundamentals", "shares_outstanding", "REAL"),
+    # Provenance of the price basis. NULL = legacy yfinance adjusted history
+    # (auto_adjust=True); 'fyers_raw' = raw exchange bars; 'mixed_*' = a seam
+    # was crossed and the series now mixes bases (must be rebuilt eventually).
+    ("price_meta", "basis", "TEXT"),
     ("pwin_daily", "model_version", "TEXT"),
 ]
 

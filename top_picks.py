@@ -108,6 +108,10 @@ def _universe(conn, limit=600):
 
 def compute(force=False):
     conn = db.get_conn()
+    import signal_guard
+    if signal_guard.check(conn, "top_picks"):
+        conn.close()
+        return None
     _ensure(conn)
     today = dt.date.today().isoformat()
     if not force:

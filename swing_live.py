@@ -111,6 +111,10 @@ def _scan_all_weather(conn, today):
 def scan():
     conn = db.get_conn()
     ensure(conn)
+    import signal_guard
+    if signal_guard.check(conn, "swing_live"):
+        conn.close()
+        return None
     reg = MarketRegime.compute()
     today = dt.date.today().isoformat()
     print(f"regime: {reg.level} ({reg.symbol}) "

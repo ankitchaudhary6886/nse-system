@@ -24,6 +24,10 @@ def predict_all():
         return 0
 
     conn = db.get_conn()
+    import signal_guard
+    if signal_guard.check(conn, "ml_predict"):
+        conn.close()
+        return 0
     bundle = joblib.load(MODEL_PATH)
     if not _compatible(bundle):
         print("[ml] refusing incompatible/unversioned model; retrain required")

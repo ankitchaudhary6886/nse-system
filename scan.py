@@ -9,6 +9,10 @@ MAX_RECOMMEND = 10
 
 def run():
     conn = db.get_conn()
+    import signal_guard
+    if signal_guard.check(conn, "scan"):
+        conn.close()
+        return 0
     today = dt.date.today().isoformat()
     conn.execute("DELETE FROM scan_results WHERE scan_date=?", (today,))
     conn.execute("DELETE FROM scan_reasons WHERE scan_date=?", (today,))

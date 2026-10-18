@@ -54,6 +54,10 @@ def refresh_all(limit=600):
     """Score smallcap band + core once; skip already-cached symbols."""
     conn = db.get_conn()
     _ensure(conn)
+    import signal_guard
+    if signal_guard.check(conn, "pwin"):
+        conn.close()
+        return 0
     d = dt.date.today().isoformat()
     done = {r[0] for r in conn.execute(
         "SELECT symbol FROM pwin_daily WHERE date=? AND model_version=?",

@@ -116,6 +116,10 @@ def scan_symbol(symbol, conn=None, lookback=LOOKBACK):
 
 def run(limit=600, min_sim=MIN_SIM_TO_STORE):
     conn = db.get_conn()
+    import signal_guard
+    if signal_guard.check(conn, "template_match"):
+        conn.close()
+        return 0
     _ensure(conn)
     syms = _symbols(conn, limit)
     today = dt.date.today().isoformat()
