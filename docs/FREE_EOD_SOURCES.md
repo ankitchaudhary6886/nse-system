@@ -74,5 +74,6 @@ is repaired automatically the next morning.
 - Tables: `nse_eod_sync` (per-date audit), `index_daily`, `nse_security_master`
   (+ existing `delivery_daily`/`prices_daily`/`price_meta.basis`).
 - Commands if you ever want to run manually:
-  `python nse_eod_ingest.py master` · `catchup --days 15` · `report` ·
+  `python nse_eod_ingest.py master` (also `repair-basis [--apply]` to relabel
+  mixed provenance) · `catchup --days 15` · `report` ·
   `history --from … --to … [--apply]`.

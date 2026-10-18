@@ -616,6 +616,6 @@ cd C:\Users\Ankit\Desktop\nse_system
 | ScanX rows × cols / dated period-ends | 750 × 72 / **0** |
 | Fyers symbol master rows / broker date | 10,116 / 2026-10-16 |
 | Universe resolved to broker tickers | 1,347 / 1,349 |
-| Offline tests | **210 / 210 pass** (freshness 18, guard 5, Fyers 40, CA 20+4, rebuild 14, enrichment 18, veto 5, announcements 32, pledge 36, coverage 4) |
+| Offline tests | **223 / 223 pass** (freshness 18, guard 5, Fyers 40, CA 20+4, rebuild 14, enrichment 18, veto 5, announcements 32, pledge 36, coverage 4) |
 | Reclaimable backups | 326 MB |
 | League verdict (from handoff) | NOT READY — −6.2% vs Nifty +5.5%, PF 0.93, 0 live trades |
