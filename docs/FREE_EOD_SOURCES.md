@@ -52,6 +52,31 @@ is repaired automatically the next morning.
 - **Historical verification** for free: the legacy archive zips let us
   cross-check or replace any old date range.
 
+## 3b. "Old history is still adjusted" — what that means and how it was fixed
+
+`yfinance` returns **back-adjusted** prices: when a stock splits 1:10 or pays a
+big dividend, yfinance rewrites every older price so the series has no jump. The
+exchange's official file, by contrast, is **raw** — it prints what actually
+traded that day. Mixing the two silently creates fake gaps at the join.
+
+The one-time rebuild replaces the whole 2021-08 → 2026-10 range with the official
+raw `sec_bhavdata_full` files (verified available for every year):
+`python nse_eod_ingest.py history --from 2021-08-17 --to 2026-10-16 --apply`
+It backs up the current table first, writes raw OHLCV, and relabels
+`price_meta.basis` (`nse_bhavdata_raw` when the symbol's history is fully raw,
+`mixed_adjusted_then_raw` when older rows remain). Re-run the chain afterwards
+(technicals → ML → scan → PWin → patterns → Top Picks) because every indicator
+now sits on the raw basis.
+
+**Fyers' role after this:** it is NOT the daily source. It fills what the free
+archives cannot: a symbol missing from a day's bhavcopy, a date whose archive
+file is unavailable, odd series/renamed tickers the archives do not map, and
+historical stretches you explicitly ask for. `backfill_gaps.py` only writes
+dates that are missing, never overwrites official bars, and labels such symbols
+`mixed_raw_sources`. Commands:
+`python backfill_gaps.py report` · `fill [--days N] [--apply]` ·
+`history --from … --to … [--symbols …] [--apply]`.
+
 ## 4. Honest limitations
 
 1. Archives publish in the evening; the 15:45 chain is an early estimate and the

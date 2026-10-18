@@ -37,8 +37,9 @@ Press **⚡ Data** (bottom-right, every page) → **Refresh data now**. The serv
 runs the same chain, in dependency order:
 
 `fyers (if token) → official NSE archives (raw prices + delivery + indices) →
-free per-symbol fallbacks → technicals → breadth → ML → scan → PWin → events →
-institutional → Top Picks → patterns → templates`
+free per-symbol fallbacks → Fyers gap-fill (missing dates only, if a token
+  exists) → technicals → breadth → ML → scan → PWin → events → institutional →
+Top Picks → patterns → templates`
 
 - Measured live on the VM: **12/12 steps OK in 67 seconds** (patterns 19 s,
   templates 6.6 s, prices 30 s when any symbol is behind).
