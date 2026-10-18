@@ -269,6 +269,28 @@ def _overlap_factor(conn, symbol: str, rows: List[dict]) -> dict:
             "mismatches": mismatches}
 
 
+def _attach_corporate_action(conn, symbol: str, date: str,
+                             result: dict) -> None:
+    """Best-effort: attach the recorded corporate action behind a seam block.
+
+    Turns "refusing to append" into "probable 1:10 split on 2026-10-09" when the
+    corporate-action book (corporate_actions.py) knows the event. Never raises;
+    a lookup failure must not change the guard decision.
+    """
+    try:
+        import corporate_actions
+        explanation = corporate_actions.explain(conn, symbol, date)
+    except Exception:
+        return
+    action = explanation.get("action") if isinstance(explanation, dict) else None
+    if action:
+        result["corporate_action"] = action
+        result["note"] = (
+            f"{result.get('note', '')} (probable {action.get('kind')} on "
+            f"{action.get('ex_date')} from {action.get('source')}; "
+            f"status={action.get('status')})").strip()
+
+
 def _stored_basis(conn, symbol: str) -> Optional[str]:
     try:
         row = conn.execute(
@@ -357,6 +379,7 @@ def ingest_symbol_history(conn, client: FyersClient, symbol: str,
             result["note"] = ("store history looks split/dividend-adjusted and "
                               "broker history is raw; rebuild the symbol "
                               "(--mode rebuild) instead of appending")
+            _attach_corporate_action(conn, symbol, rows[0]["date"], result)
             record_sync(conn, "history", "seam_mismatch", 1, 0,
                         error=json.dumps(result), dry_run=dry_run)
             return result
@@ -377,6 +400,7 @@ def ingest_symbol_history(conn, client: FyersClient, symbol: str,
                                   "stored close — probable split/bonus/dividend "
                                   "after the last stored bar; rebuild instead of "
                                   "appending")
+                _attach_corporate_action(conn, symbol, rows[0]["date"], result)
                 record_sync(conn, "history", "seam_gap_suspect", 1, 0,
                             error=json.dumps(result), dry_run=dry_run)
                 return result

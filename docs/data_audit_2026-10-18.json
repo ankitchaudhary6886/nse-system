@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-18T21:10:27",
+  "generated_at": "2026-10-18T21:36:01",
   "db": "C:\\Users\\Ankit\\Desktop\\nse_system\\data\\app.db",
-  "db_mb": 120.8,
+  "db_mb": 123.3,
   "inventory": [
     {
       "table": "breadth_daily",
@@ -21,6 +21,16 @@
       "latest": null,
       "age_days": null,
       "modules_using": 3,
+      "core": false
+    },
+    {
+      "table": "corporate_actions",
+      "rows": 0,
+      "cols": 9,
+      "status": "EMPTY",
+      "latest": null,
+      "age_days": null,
+      "modules_using": 2,
       "core": false
     },
     {
@@ -54,13 +64,23 @@
       "core": false
     },
     {
+      "table": "freshness_gate_log",
+      "rows": 8,
+      "cols": 8,
+      "status": "THIN",
+      "latest": "2026-10-18",
+      "age_days": 0,
+      "modules_using": 2,
+      "core": false
+    },
+    {
       "table": "fundamentals",
       "rows": 503,
       "cols": 35,
       "status": "ACTIVE",
       "latest": "2026-10-18",
       "age_days": 0,
-      "modules_using": 32,
+      "modules_using": 34,
       "core": true
     },
     {
@@ -80,7 +100,7 @@
       "status": "ACTIVE",
       "latest": "2026-10-18",
       "age_days": 0,
-      "modules_using": 2,
+      "modules_using": 3,
       "core": false
     },
     {
@@ -90,16 +110,16 @@
       "status": "THIN",
       "latest": null,
       "age_days": null,
-      "modules_using": 2,
+      "modules_using": 3,
       "core": false
     },
     {
       "table": "institutional",
-      "rows": 290,
+      "rows": 0,
       "cols": 4,
-      "status": "STALE",
-      "latest": "2026-10-07",
-      "age_days": 11,
+      "status": "EMPTY",
+      "latest": null,
+      "age_days": null,
       "modules_using": 2,
       "core": false
     },
@@ -215,12 +235,12 @@
     },
     {
       "table": "pattern_tags",
-      "rows": 2542,
+      "rows": 0,
       "cols": 12,
-      "status": "STALE",
-      "latest": "2026-10-07",
-      "age_days": 11,
-      "modules_using": 4,
+      "status": "EMPTY",
+      "latest": null,
+      "age_days": null,
+      "modules_using": 5,
       "core": false
     },
     {
@@ -250,7 +270,7 @@
       "status": "STALE",
       "latest": "2026-08-27",
       "age_days": 52,
-      "modules_using": 6,
+      "modules_using": 8,
       "core": true
     },
     {
@@ -260,7 +280,7 @@
       "status": "STALE",
       "latest": "2026-08-27",
       "age_days": 52,
-      "modules_using": 64,
+      "modules_using": 72,
       "core": true
     },
     {
@@ -344,13 +364,23 @@
       "core": false
     },
     {
+      "table": "stale_artifact_quarantine",
+      "rows": 3422,
+      "cols": 4,
+      "status": "ACTIVE",
+      "latest": "2026-10-18",
+      "age_days": 0,
+      "modules_using": 1,
+      "core": false
+    },
+    {
       "table": "stocks",
       "rows": 500,
       "cols": 5,
       "status": "ACTIVE",
       "latest": null,
       "age_days": null,
-      "modules_using": 40,
+      "modules_using": 41,
       "core": true
     },
     {
@@ -385,11 +415,11 @@
     },
     {
       "table": "template_scores",
-      "rows": 120,
+      "rows": 0,
       "cols": 5,
-      "status": "STALE",
-      "latest": "2026-10-07",
-      "age_days": 11,
+      "status": "EMPTY",
+      "latest": null,
+      "age_days": null,
       "modules_using": 3,
       "core": false
     },
@@ -405,9 +435,9 @@
     },
     {
       "table": "trend_candidates",
-      "rows": 467,
+      "rows": 0,
       "cols": 9,
-      "status": "ACTIVE",
+      "status": "EMPTY",
       "latest": null,
       "age_days": null,
       "modules_using": 5,
@@ -425,9 +455,9 @@
     },
     {
       "table": "validation_log",
-      "rows": 3,
+      "rows": 0,
       "cols": 3,
-      "status": "THIN",
+      "status": "EMPTY",
       "latest": null,
       "age_days": null,
       "modules_using": 2,
@@ -576,17 +606,19 @@
     "kite_market_snapshots": "table absent"
   },
   "summary": {
-    "tables": 45,
+    "tables": 48,
     "by_status": {
-      "EMPTY": 18,
+      "EMPTY": 24,
       "THIN": 8,
-      "STALE": 13,
+      "STALE": 10,
       "ACTIVE": 6
     },
     "empty_tables": [
       "breadth_daily",
+      "corporate_actions",
       "delivery_daily",
       "fyers_quotes",
+      "institutional",
       "league_equity",
       "league_index",
       "league_open",
@@ -596,18 +628,20 @@
       "league_trades",
       "macro_flow",
       "pattern_grades",
+      "pattern_tags",
       "positional_picks",
       "pwin_daily",
       "strategy_runs",
+      "template_scores",
       "top_picks",
+      "trend_candidates",
+      "validation_log",
       "value_radar",
       "webhook_events"
     ],
     "stale_tables": [
       "events",
-      "institutional",
       "ml_predictions",
-      "pattern_tags",
       "price_meta",
       "prices_daily",
       "scan_reasons",
@@ -615,7 +649,6 @@
       "sentiment_results",
       "swing_signals",
       "technicals_daily",
-      "template_scores",
       "universe_broad"
     ],
     "dead_fundamental_columns": [

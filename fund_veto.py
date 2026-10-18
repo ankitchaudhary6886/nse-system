@@ -2,10 +2,17 @@
 Fundamental Veto Gate — the 'partial fundamentals' identity.
 Hard-excludes symbols with weak fundamentals from NEW swing alerts,
 stored signals, patterns and Top Picks:
-  debt_eq  > 3    -> over-leveraged
-  roce     < 8    -> poor capital efficiency
-  promoter < 20   -> low promoter skin in the game
-Missing fundamentals row = NOT vetoed (absence passes, logged).
+  debt_eq          > 3     -> over-leveraged
+  interest_cover   < 1.5   -> cannot comfortably service interest
+  pledge_pct       > 25    -> too much of the promoter stake is pledged
+  roce             < 8     -> poor capital efficiency
+  promoter         < 20    -> low promoter skin in the game
+Missing fundamentals row or field = NOT vetoed (absence passes, logged).
+
+DUAL PROVENANCE (Option B, 2026-10-18): ownership fields may come from the
+undated ScanX snapshot via fundamentals_enrich.py. That is valid for LIVE
+vetoing but must never be used for historical replay; trader_league already
+disables this gate for backtests (HOME_USE_FUND_VETO=False).
 
 Usage:
   python fund_veto.py SYMBOL     -> verdict for one symbol
@@ -16,6 +23,8 @@ import db
 import universe_helper as U
 
 DEBT_EQ_MAX = 3.0
+INTEREST_COVER_MIN = 1.5
+PLEDGE_MAX = 25.0
 ROCE_MIN = 8.0
 PROMOTER_MIN = 20.0
 
@@ -33,6 +42,10 @@ def _fund_row(conn, sym):
                      "de_ratio", "de"]),
         ("promoter", ["promoter_holding", "promoter_pct",
                       "promoter"]),
+        ("pledge", ["pledge_pct", "promoter_pledge",
+                    "pledged_pct"]),
+        ("interest_cover", ["interest_coverage", "int_cover",
+                            "interest_cover"]),
     ]:
         for a in aliases:
             if a in cols:
@@ -69,8 +82,15 @@ def vetoed(sym, conn=None):
     de = num(f.get("debt_eq"))
     ro = num(f.get("roce"))
     pr = num(f.get("promoter"))
+    pledge = num(f.get("pledge"))
+    ic = num(f.get("interest_cover"))
     if de is not None and de > DEBT_EQ_MAX:
         return True, f"debt/equity {de:.1f} > {DEBT_EQ_MAX}"
+    if pledge is not None and pledge > PLEDGE_MAX:
+        return True, f"promoter pledge {pledge:.1f}% > {PLEDGE_MAX}%"
+    if ic is not None and ic < INTEREST_COVER_MIN:
+        return True, (f"interest cover {ic:.1f}x < "
+                      f"{INTEREST_COVER_MIN}x")
     if ro is not None and ro < ROCE_MIN:
         return True, f"ROCE {ro:.1f} < {ROCE_MIN}"
     if pr is not None and pr < PROMOTER_MIN:
