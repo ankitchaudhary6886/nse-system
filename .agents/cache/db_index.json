@@ -1,12 +1,12 @@
 {
  "db_path": "data/app.db",
  "exists": true,
- "size_mb": 109.7,
- "mtime": "2026-10-03T00:01:56",
- "table_count": 32,
+ "size_mb": 418.9,
+ "mtime": "2026-10-19T01:17:46",
+ "table_count": 59,
  "tables": {
   "breadth_daily": {
-   "rows": 0,
+   "rows": 39,
    "columns": [
     {
      "name": "date",
@@ -28,10 +28,14 @@
      "type": "REAL",
      "pk": false
     }
-   ]
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-18"
+   }
   },
   "corp_calendar": {
-   "rows": 66,
+   "rows": 0,
    "columns": [
     {
      "name": "symbol",
@@ -50,6 +54,141 @@
     },
     {
      "name": "detail",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "corporate_actions": {
+   "rows": 8795,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "ex_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "kind",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "ratio",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "amount",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "source",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "recorded_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "raw",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "corporate_actions_fetch_state": {
+   "rows": 846,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "fetched_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "actions",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "error",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "corporate_announcements": {
+   "rows": 15798,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "announced_at",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "subject",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "category",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "severity",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "flags",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "url",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "fetched_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "raw",
      "type": "TEXT",
      "pk": false
     }
@@ -86,11 +225,11 @@
    ],
    "latest": {
     "column": "run_at",
-    "value": "2026-09-05T15:30:03"
+    "value": "2026-10-19T00:26:56"
    }
   },
   "delivery_daily": {
-   "rows": 0,
+   "rows": 456517,
    "columns": [
     {
      "name": "date",
@@ -127,10 +266,14 @@
      "type": "TEXT",
      "pk": false
     }
-   ]
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-18"
+   }
   },
   "events": {
-   "rows": 153,
+   "rows": 10727,
    "columns": [
     {
      "name": "date",
@@ -155,11 +298,60 @@
    ],
    "latest": {
     "column": "date",
-    "value": "2026-08-24"
+    "value": "2026-10-18"
+   }
+  },
+  "freshness_gate_log": {
+   "rows": 34,
+   "columns": [
+    {
+     "name": "run_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "artifact",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "max_price_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "expected_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "stale_sessions",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "action",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "detail",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "run_at",
+    "value": "2026-10-19T01:17:43+05:30"
    }
   },
   "fundamentals": {
-   "rows": 503,
+   "rows": 1467,
    "columns": [
     {
      "name": "symbol",
@@ -297,13 +489,13 @@
      "pk": false
     },
     {
-     "name": "roic",
-     "type": "REAL",
+     "name": "data_source",
+     "type": "TEXT",
      "pk": false
     },
     {
-     "name": "data_source",
-     "type": "TEXT",
+     "name": "roic",
+     "type": "REAL",
      "pk": false
     },
     {
@@ -325,15 +517,283 @@
      "name": "source_metadata",
      "type": "TEXT",
      "pk": false
+    },
+    {
+     "name": "eps_ttm",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "shares_outstanding",
+     "type": "REAL",
+     "pk": false
     }
    ],
    "latest": {
     "column": "uploaded_at",
-    "value": "calc:2026-08-27T17:26:40.835339"
+    "value": "2026-10-18T17:50:23.102207"
+   }
+  },
+  "fyers_quotes": {
+   "rows": 0,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "ts",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "ltp",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "prev_close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "open",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "high",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "low",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "volume",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "chg",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "chg_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "bid",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "ask",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "spread",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "source",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "raw_json",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "fyers_symbol_master": {
+   "rows": 10116,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "ticker",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "isin",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "fy_token",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "lot_size",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "tick_size",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "exchange",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "segment",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source_updated",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "imported_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "raw",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "fyers_sync_log": {
+   "rows": 1,
+   "columns": [
+    {
+     "name": "run_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "kind",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "symbols",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "rows",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "error",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "detail",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "run_at",
+    "value": "2026-10-18T21:30:01+05:30"
+   }
+  },
+  "index_daily": {
+   "rows": 1169,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "open",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "high",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "low",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "prev_close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "change_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "volume",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "source",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-16"
    }
   },
   "institutional": {
-   "rows": 0,
+   "rows": 12663,
    "columns": [
     {
      "name": "symbol",
@@ -355,10 +815,624 @@
      "type": "REAL",
      "pk": false
     }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-18"
+   }
+  },
+  "kite_market_snapshots": {
+   "rows": 500,
+   "columns": [
+    {
+     "name": "as_of_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "instrument_key",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "instrument",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "isin",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "company_name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "sector",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "financial_period_end",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "published_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "average_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "buy_quantity",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "change_value",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "change_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "previous_close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "debt_to_equity",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "dividend_yield",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "free_cash_flow",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "day_high",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "last_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "day_low",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "lower_circuit_limit",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "market_cap_cr",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "open_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "profit_growth_yoy",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "revenue_growth_yoy",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "roe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "sell_quantity",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "trade_value_cr",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "upper_circuit_limit",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "volume",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "week_52_high",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "week_52_low",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "mapping_method",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "duplicate_row_count",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "data_quality_flags",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "raw_json",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source_file",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source_modified_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "imported_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source_sha256",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "security_master_file",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "security_master_sha256",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "league_equity": {
+   "rows": 16876,
+   "columns": [
+    {
+     "name": "run_id",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "player",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "equity",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "cash",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "n_pos",
+     "type": "INTEGER",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-16"
+   }
+  },
+  "league_index": {
+   "rows": 1406,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-16"
+   }
+  },
+  "league_open": {
+   "rows": 317,
+   "columns": [
+    {
+     "name": "run_id",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "player",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "method",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "entry_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "entry_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "shares",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "stop",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "last_close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "mtm_pnl",
+     "type": "REAL",
+     "pk": false
+    }
+   ]
+  },
+  "league_progress": {
+   "rows": 3863,
+   "columns": [
+    {
+     "name": "player",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "first_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "last_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "n_signals",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "code_hash",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "updated_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "updated_at",
+    "value": "2026-09-25T20:25:33"
+   }
+  },
+  "league_runs": {
+   "rows": 56,
+   "columns": [
+    {
+     "name": "run_id",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "player",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "mode",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "exit_mode",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "start",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "end",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "created_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "stats",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "created_at",
+    "value": "2026-10-16T13:30:54"
+   }
+  },
+  "league_signals": {
+   "rows": 541974,
+   "columns": [
+    {
+     "name": "source",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "player",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "method",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "kind",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "entry",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "stop",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "target",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "confidence",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "time_exit",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "valid_bars",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "atr",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "turnover",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "size_mult",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "created_at",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-16"
+   }
+  },
+  "league_trades": {
+   "rows": 18225,
+   "columns": [
+    {
+     "name": "run_id",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "player",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "method",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "entry_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "entry_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "exit_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "exit_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "shares",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "pnl",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pnl_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "r_mult",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "costs",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "reason",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "bars",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "regime",
+     "type": "TEXT",
+     "pk": false
+    }
    ]
   },
   "macro_flow": {
-   "rows": 0,
+   "rows": 1,
    "columns": [
     {
      "name": "date",
@@ -375,10 +1449,89 @@
      "type": "REAL",
      "pk": false
     }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-09-04"
+   }
+  },
+  "market_data_attestations": {
+   "rows": 2337,
+   "columns": [
+    {
+     "name": "as_of_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "field",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "kite_value",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "scanx_value",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "agreed",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "acceptance_rule",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "live_before",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "live_after",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "universe_before",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "universe_after",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "action",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "attested_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "latest_daily_price_date",
+     "type": "TEXT",
+     "pk": false
+    }
    ]
   },
   "ml_predictions": {
-   "rows": 1456,
+   "rows": 25173,
    "columns": [
     {
      "name": "symbol",
@@ -418,11 +1571,11 @@
    ],
    "latest": {
     "column": "prediction_date",
-    "value": "2026-08-26"
+    "value": "2026-10-18"
    }
   },
   "model_runs": {
-   "rows": 1,
+   "rows": 14,
    "columns": [
     {
      "name": "run_date",
@@ -482,11 +1635,109 @@
    ],
    "latest": {
     "column": "run_date",
-    "value": "2026-09-09"
+    "value": "2026-10-17"
+   }
+  },
+  "nse_eod_sync": {
+   "rows": 7,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "rows",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "delivery_rows",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "source",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "fetched_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "error",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-16"
+   }
+  },
+  "nse_security_master": {
+   "rows": 2605,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "name",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "series",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "listing_date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "isin",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "market_lot",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "face_value",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "updated_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "updated_at",
+    "value": "2026-10-18T18:27:31"
    }
   },
   "pattern_grades": {
-   "rows": 0,
+   "rows": 59697,
    "columns": [
     {
      "name": "tag_date",
@@ -523,10 +1774,14 @@
      "type": "TEXT",
      "pk": false
     }
-   ]
+   ],
+   "latest": {
+    "column": "tag_date",
+    "value": "2026-10-12"
+   }
   },
   "pattern_tags": {
-   "rows": 1154,
+   "rows": 149996,
    "columns": [
     {
      "name": "date",
@@ -591,11 +1846,11 @@
    ],
    "latest": {
     "column": "date",
-    "value": "2026-09-09"
+    "value": "2026-10-18"
    }
   },
   "pipeline": {
-   "rows": 440,
+   "rows": 360,
    "columns": [
     {
      "name": "symbol",
@@ -634,8 +1889,67 @@
     }
    ]
   },
+  "positional_picks": {
+   "rows": 300,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "sector",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "last_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "quality_score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "trend_score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "value_score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "composite",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "tier",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "notes",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-17"
+   }
+  },
   "price_meta": {
-   "rows": 500,
+   "rows": 862,
    "columns": [
     {
      "name": "symbol",
@@ -656,15 +1970,20 @@
      "name": "updated_at",
      "type": "TEXT",
      "pk": false
+    },
+    {
+     "name": "basis",
+     "type": "TEXT",
+     "pk": false
     }
    ],
    "latest": {
     "column": "updated_at",
-    "value": "2026-08-24T14:22:33.051788"
+    "value": "2026-10-18T18:51:57"
    }
   },
   "prices_daily": {
-   "rows": 1130292,
+   "rows": 868883,
    "columns": [
     {
      "name": "symbol",
@@ -704,11 +2023,55 @@
    ],
    "latest": {
     "column": "date",
-    "value": "2026-08-26"
+    "value": "2026-10-16"
+   }
+  },
+  "prices_daily_adj_backup_20261018_184231": {
+   "rows": 826575,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "open",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "high",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "low",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "volume",
+     "type": "REAL",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-16"
    }
   },
   "pwin_daily": {
-   "rows": 0,
+   "rows": 28310,
    "columns": [
     {
      "name": "symbol",
@@ -735,10 +2098,54 @@
      "type": "TEXT",
      "pk": false
     }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-18"
+   }
+  },
+  "refresh_runs": {
+   "rows": 4,
+   "columns": [
+    {
+     "name": "run_id",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "started_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "finished_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "status",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "trigger",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "steps_json",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "error",
+     "type": "TEXT",
+     "pk": false
+    }
    ]
   },
   "research_cache": {
-   "rows": 0,
+   "rows": 259,
    "columns": [
     {
      "name": "symbol",
@@ -755,10 +2162,14 @@
      "type": "TEXT",
      "pk": false
     }
-   ]
+   ],
+   "latest": {
+    "column": "computed_at",
+    "value": "2026-10-17"
+   }
   },
   "scan_reasons": {
-   "rows": 14000,
+   "rows": 212450,
    "columns": [
     {
      "name": "scan_date",
@@ -798,11 +2209,11 @@
    ],
    "latest": {
     "column": "scan_date",
-    "value": "2026-08-26"
+    "value": "2026-10-18"
    }
   },
   "scan_results": {
-   "rows": 2000,
+   "rows": 30350,
    "columns": [
     {
      "name": "scan_date",
@@ -842,7 +2253,7 @@
    ],
    "latest": {
     "column": "scan_date",
-    "value": "2026-08-26"
+    "value": "2026-10-18"
    }
   },
   "scanx_fundamentals_snapshots": {
@@ -1207,11 +2618,31 @@
      "name": "data_quality_flags",
      "type": "TEXT",
      "pk": false
+    },
+    {
+     "name": "source_sha256",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "source_modified_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "security_master_file",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "security_master_sha256",
+     "type": "TEXT",
+     "pk": false
     }
    ]
   },
   "sentiment_headlines": {
-   "rows": 8,
+   "rows": 0,
    "columns": [
     {
      "name": "symbol",
@@ -1243,14 +2674,10 @@
      "type": "REAL",
      "pk": false
     }
-   ],
-   "latest": {
-    "column": "created_at",
-    "value": "2026-08-26T01:12:27.384668"
-   }
+   ]
   },
   "sentiment_results": {
-   "rows": 9,
+   "rows": 0,
    "columns": [
     {
      "name": "symbol",
@@ -1292,14 +2719,10 @@
      "type": "TEXT",
      "pk": false
     }
-   ],
-   "latest": {
-    "column": "created_at",
-    "value": "2026-08-26T01:12:27.384668"
-   }
+   ]
   },
   "settings": {
-   "rows": 2,
+   "rows": 1,
    "columns": [
     {
      "name": "key",
@@ -1313,8 +2736,186 @@
     }
    ]
   },
+  "setup_pool": {
+   "rows": 4571,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "signal_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "impulse_pct_60d",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "days_since_impulse_peak",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "consolidation_range_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "vol_ratio_20",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "atr_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "mom_20d",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "mom_60d",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "distance_from_52w_high",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "rsi",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "sector",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "sector_rs",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "mfe_r",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "mae_r",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "hit_1r",
+     "type": "INT",
+     "pk": false
+    },
+    {
+     "name": "hit_2r",
+     "type": "INT",
+     "pk": false
+    },
+    {
+     "name": "hit_3r",
+     "type": "INT",
+     "pk": false
+    },
+    {
+     "name": "outcome",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "signal_date",
+    "value": "2026-10-08"
+   }
+  },
+  "shareholding_pledge": {
+   "rows": 86,
+   "columns": [
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "as_of_date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "promoter_pledge_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "promoter_holding_pct",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "source",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "imported_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "raw",
+     "type": "TEXT",
+     "pk": false
+    }
+   ]
+  },
+  "stale_artifact_quarantine": {
+   "rows": 3422,
+   "columns": [
+    {
+     "name": "artifact",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "run_at",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "payload",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "reason",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "run_at",
+    "value": "2026-10-18T21:27:14"
+   }
+  },
   "stocks": {
-   "rows": 500,
+   "rows": 825,
    "columns": [
     {
      "name": "symbol",
@@ -1341,14 +2942,10 @@
      "type": "TEXT",
      "pk": false
     }
-   ],
-   "latest": {
-    "column": "updated_at",
-    "value": "2026-08-17T00:46:23.746511"
-   }
+   ]
   },
   "strategy_runs": {
-   "rows": 0,
+   "rows": 4,
    "columns": [
     {
      "name": "run_at",
@@ -1440,10 +3037,14 @@
      "type": "TEXT",
      "pk": false
     }
-   ]
+   ],
+   "latest": {
+    "column": "run_at",
+    "value": "2026-09-12T09:29:25"
+   }
   },
   "swing_signals": {
-   "rows": 9,
+   "rows": 155,
    "columns": [
     {
      "name": "signal_date",
@@ -1499,15 +3100,20 @@
      "name": "updated_at",
      "type": "TEXT",
      "pk": false
+    },
+    {
+     "name": "mode",
+     "type": "TEXT",
+     "pk": false
     }
    ],
    "latest": {
     "column": "signal_date",
-    "value": "2026-06-09"
+    "value": "2026-10-07"
    }
   },
   "technicals_daily": {
-   "rows": 980,
+   "rows": 31485,
    "columns": [
     {
      "name": "symbol",
@@ -1572,11 +3178,11 @@
    ],
    "latest": {
     "column": "date",
-    "value": "2026-08-24"
+    "value": "2026-10-18"
    }
   },
   "template_scores": {
-   "rows": 0,
+   "rows": 8273,
    "columns": [
     {
      "name": "date",
@@ -1603,10 +3209,14 @@
      "type": "TEXT",
      "pk": false
     }
-   ]
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-18"
+   }
   },
   "top_picks": {
-   "rows": 0,
+   "rows": 2150,
    "columns": [
     {
      "name": "date",
@@ -1647,11 +3257,74 @@
      "name": "composite",
      "type": "REAL",
      "pk": false
+    },
+    {
+     "name": "delivery",
+     "type": "REAL",
+     "pk": false
     }
-   ]
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-19"
+   }
+  },
+  "trend_candidates": {
+   "rows": 9556,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "close",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "ema50",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "ema200",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "above_50",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "above_200",
+     "type": "INTEGER",
+     "pk": false
+    },
+    {
+     "name": "score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "notes",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-10-18"
+   }
   },
   "universe_broad": {
-   "rows": 1522,
+   "rows": 1535,
    "columns": [
     {
      "name": "symbol",
@@ -1701,11 +3374,11 @@
    ],
    "latest": {
     "column": "updated_at",
-    "value": "2026-08-26T02:22:57.663828"
+    "value": "2026-08-29T20:03:16.475965"
    }
   },
   "validation_log": {
-   "rows": 3,
+   "rows": 10,
    "columns": [
     {
      "name": "run_date",
@@ -1725,11 +3398,80 @@
    ],
    "latest": {
     "column": "run_date",
-    "value": "2026-09-08"
+    "value": "2026-10-12"
+   }
+  },
+  "value_radar": {
+   "rows": 125,
+   "columns": [
+    {
+     "name": "date",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "symbol",
+     "type": "TEXT",
+     "pk": true
+    },
+    {
+     "name": "sector",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "last_price",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "below_52w",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "pe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "sector_pe",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "quality_score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "value_score",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "composite",
+     "type": "REAL",
+     "pk": false
+    },
+    {
+     "name": "tier",
+     "type": "TEXT",
+     "pk": false
+    },
+    {
+     "name": "notes",
+     "type": "TEXT",
+     "pk": false
+    }
+   ],
+   "latest": {
+    "column": "date",
+    "value": "2026-09-12"
    }
   },
   "webhook_events": {
-   "rows": 0,
+   "rows": 1,
    "columns": [
     {
      "name": "created_at",
@@ -1761,33 +3503,47 @@
      "type": "TEXT",
      "pk": false
     }
-   ]
+   ],
+   "latest": {
+    "column": "created_at",
+    "value": "2026-09-11T07:40:54"
+   }
   }
  },
  "schema": {
   "declared_in_db_py": [
    "breadth_daily",
    "corp_calendar",
+   "corporate_actions",
    "data_quality_log",
    "delivery_daily",
    "events",
+   "freshness_gate_log",
    "fundamentals",
+   "fyers_quotes",
+   "fyers_symbol_master",
+   "fyers_sync_log",
+   "index_daily",
    "institutional",
    "macro_flow",
    "ml_predictions",
    "model_runs",
+   "nse_eod_sync",
+   "nse_security_master",
    "pattern_grades",
    "pattern_tags",
    "pipeline",
    "price_meta",
    "prices_daily",
    "pwin_daily",
+   "refresh_runs",
    "research_cache",
    "scan_reasons",
    "scan_results",
    "sentiment_headlines",
    "sentiment_results",
    "settings",
+   "stale_artifact_quarantine",
    "stocks",
    "strategy_runs",
    "swing_signals",
@@ -1799,11 +3555,14 @@
    "webhook_events"
   ],
   "created_at_runtime_by": {
+   "and": "nse_archive_ingest.py",
    "breadth_daily": "breadth.py",
    "corp_calendar": "corporate.py",
+   "corporate_announcements": "announcements.py",
    "data_quality_log": "data_quality.py",
    "delivery_daily": "delivery.py",
    "events": "app.py",
+   "fundamentals": "test_pledge_ingest.py",
    "institutional": "institutional.py",
    "kite_market_snapshots": "kite_import.py",
    "league_equity": "trader_league.py",
@@ -1819,6 +3578,9 @@
    "pattern_grades": "pattern_grader.py",
    "pattern_tags": "patterns.py",
    "positional_picks": "positional_scanner.py",
+   "price_meta": "nse_archive_ingest.py",
+   "prices_daily": "nse_archive_ingest.py",
+   "probe": "data_sources/yf_cache.py",
    "pwin_daily": "pwin_cache.py",
    "research_cache": "research_cockpit.py",
    "scanx_fundamentals_snapshots": "scanx_import.py",
@@ -1835,21 +3597,14 @@
    "value_radar": "value_radar.py",
    "webhook_events": "terminal_api.py"
   },
-  "present_but_undeclared": [],
+  "present_but_undeclared": [
+   "corporate_actions_fetch_state",
+   "prices_daily_adj_backup_20261018_184231",
+   "shareholding_pledge"
+  ],
   "absent_here_created_at_runtime": [
-   "kite_market_snapshots",
-   "league_equity",
-   "league_index",
-   "league_open",
-   "league_progress",
-   "league_runs",
-   "league_signals",
-   "league_trades",
-   "market_data_attestations",
-   "positional_picks",
-   "setup_pool",
-   "trend_candidates",
-   "value_radar"
+   "and",
+   "probe"
   ],
   "note": "Tables under 'absent_here_created_at_runtime' do not exist in the LOCAL data/app.db because the module that creates them has not run on this machine. They exist on the VM. Absence locally is a stale-data signal, not a code defect."
  }

@@ -10,6 +10,75 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #105 - Register truth pass, three code fixes (F-10/F-11/F-13), new defect F-26 - DEPLOYED · VERIFIED
+- **Why:** the session began by loading the mandated bootstrap
+  (MEMORY → JOIN_HERE → FINDINGS) and every one of them disagreed with the
+  code. The registers were verified 2026-10-05 @ `f483e68`; HEAD was `fe0f09d`
+  ~15 commits later. Re-verified all 25 entries against on-disk source **and**
+  against production over SSH rather than trusting any of it.
+- **Cleared (were already fixed, still advertised as broken):** F-01 laptop DB
+  (synced by the 2026-10-18 rebuild → `prices_daily` 2026-10-16), F-04 pattern
+  gate (`settings.pattern_gate` populated 2026-10-18 with real win rates,
+  `pattern_grades` = 59,697 vs the register's 0), F-08 (`deployment.js` no
+  longer exists), F-09 (`daily_update` already runs `ml` **before** `scan`;
+  chain is now 12 stages — `fyers` and `breadth` added).
+- **RETRACTED F-07 as a false positive.** The entry assumed
+  `research_sector.js` was an ES module. It is loaded as a **classic script**
+  with no IIFE, so its top-level `function loadResearchSectors` already lands on
+  `window`. Proved in the production browser instead of by reasoning:
+  `typeof window.loadResearchSectors === "function"`, research scripts all
+  `type: "classic"`, console **zero** errors. No fix applied — recording this
+  stopped a one-line "fix" that was solving a non-problem.
+- **SUPERSEDED F-05.** `Depends(verify_user)` now matches **0 times** — the
+  gate was removed wholesale on 2026-10-07 (owner decision). The register still
+  described opt-in-per-route auth and recommended re-adding a global dependency,
+  which would have contradicted MEMORY §10. Rewrote it as "no auth anywhere, by
+  design"; residual password/Telegram-token exposure in **git history** noted as
+  rotation-gated (bot token already untracked in `3fd912f`).
+- **FIX F-11 (real, live in production):** `data_quality.py` ran
+  `DELETE FROM data_quality_log` on every run — production held **6 rows from a
+  single run** (`2026-10-18T18:53`), so the audit trail was erased daily. Now
+  appends, then prunes to `HISTORY_RUNS = 60` distinct runs. Verified: a seeded
+  420-row / 70-run table prunes to 119 rows / 60 runs — retained and bounded.
+  Nothing reads the table for display, so no UI impact.
+- **FIX F-13:** `swing_live` vetoes **before** its INSERT, then
+  `alerts.notify_setup()` re-ran the same veto on a **second connection**; a
+  disagreement would Telegram "setup suppressed" for a row already committed as
+  `PENDING`. Alert functions now take the caller's verdict
+  (`notify_setup(st, veto=None)`, `notify_all_weather(sym, st, veto=None)`).
+  **Gate order in `swing_live.scan()` untouched** — this forwards step 9's
+  result, it does not add or resequence a gate. Verified with a call-counting
+  `fund_veto` stub: verdict passed in → 0 calls; bare call → 1 call.
+- **FIX F-10:** `fundamentals_tv._universe` truncated an alphabetical list, so
+  `run 100` meant first-100 A–Z. Now ranks by `mcap_cr DESC` (unknown caps
+  last, name breaks ties) before truncating. Severity downgraded: the scheduler
+  calls `run()` with **no** limit, so production was never affected.
+- **NEW F-26 (the important one):** the agent bootstrap layer itself was stale
+  and actively wrong — MEMORY §14 still listed **two CRITICAL** outages cleared
+  two weeks earlier, so a fresh session was primed to "fix" a healthy system.
+  Stale-*healthy* registers are more dangerous than missing ones because they
+  carry the appearance of evidence. Added the standing rule: check
+  `MANIFEST.json.generated_at` against `git log -1`; if the cache is older than
+  the code, every severity label is provisional.
+- **Docs corrected:** `MEMORY.md` §14 (+ date), `JOIN_HERE.md` (12-stage table,
+  defect table, auth trap #8, last-verified, F-13 note), `FINDINGS.md` (STATUS
+  REFRESH precedence block, 10 entry statuses, F-25 route count 62→76, new F-26,
+  restored the `Verified-healthy` header), `nse-terminal-pipeline-ops/SKILL.md`
+  (stage table, F-09/F-11/F-13 notes, diagnosis table), `nse-terminal-data-provenance/SKILL.md`.
+- **Verification:** `unittest discover` → **363 tests OK, EXIT=0** (identical to
+  the pre-change baseline); `py_compile` clean on all four; a purpose-built
+  harness asserted each fix; `git push` → `fe0f09d..8eae8f8`; VM `git pull`
+  fast-forward + `COMPILE_OK`; `sudo systemctl restart nse-terminal` →
+  `Active: active (running)`; `journalctl --since` → **0 tracebacks**;
+  `GET /api/health` → `200 {"ok":true}`.
+- **Noted, not acted on (owner-gated):** F-12 sizing has no Kelly maths;
+  F-17 agent-layer git tracking; credential rotation (password + Telegram token
+  readable in git history); F-15 duplication changes numeric behaviour.
+- **New minor observation:** `scheduler_bg.py` registers **23** jobs but the
+  startup banner only prints **19** — `official_eod`, `official_eod_retry`,
+  `governance_feed` and `fyers_token` never appear in the operator's at-a-glance
+  list. The jobs do run; the banner string is simply behind.
+
 ### #104 - Ideal values, explainable model terms, per-book methods, winner/loser names - VERIFIED
 - **Six owner-reported gaps fixed**, each verified on the live VM.
 - **FIXED 500:** `/api/traders/matches/{symbol}` returned 500 because trader

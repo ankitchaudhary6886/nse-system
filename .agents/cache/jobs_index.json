@@ -1,6 +1,6 @@
 {
  "scheduler_file": "scheduler_bg.py",
- "job_count": 19,
+ "job_count": 23,
  "jobs": [
   {
    "id": "pool_rebuild",
@@ -28,6 +28,33 @@
    "day_of_month": null,
    "trigger": "CronTrigger(day_of_week=\"mon\", hour=8, minute=0, timezone=IST)",
    "doc": ""
+  },
+  {
+   "id": "fyers_token",
+   "function": "_token_job",
+   "ist_time": "08:10",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=8, minute=10, timezone=IST)",
+   "doc": "Keep the Fyers token alive without a browser (or nag once a day). The pin-based refresh-token flow can renew the access token automatically as long as FYERS_PIN is configured and a refresh token exists. If it cannot, one Telegram message tells the owner that a manual login is due \u2014 never a silent data gap."
+  },
+  {
+   "id": "official_eod_retry",
+   "function": "_official_retry_job",
+   "ist_time": "08:15",
+   "day_of_week": null,
+   "day_of_month": null,
+   "trigger": "CronTrigger(hour=8, minute=15, timezone=IST)",
+   "doc": "Morning retry/catch-up in case the evening archive fetch was delayed."
+  },
+  {
+   "id": "governance_feed",
+   "function": "_governance_job",
+   "ist_time": "08:30",
+   "day_of_week": "sat",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"sat\", hour=8, minute=30, timezone=IST)",
+   "doc": "Weekly free governance feed: exchange announcements + shareholding pledge. Both sources are free but may be blocked from cloud IPs; every step is independently guarded so one block does not lose the rest. Announcements are DATED (announced_at is public time, so replay-safe); pledge rows carry the filing period end."
   },
   {
    "id": "meta_retrain",
@@ -172,65 +199,86 @@
    "day_of_month": null,
    "trigger": "CronTrigger(day_of_week=\"mon-fri\", hour=19, minute=0, timezone=IST)",
    "doc": "Trader League (#087): store today's signals from the 14 books + our Swing Desk, then re-simulate the live Rs 10 lakh paper league."
+  },
+  {
+   "id": "official_eod",
+   "function": "_official_eod_job",
+   "ist_time": "19:30",
+   "day_of_week": "mon-fri",
+   "day_of_month": null,
+   "trigger": "CronTrigger(day_of_week=\"mon-fri\", hour=19, minute=30, timezone=IST)",
+   "doc": "FREE official NSE end-of-day ingestion (no login, no key). NSE archive files (sec_bhavdata_full + ind_close_all) are the raw official source: prices, volume, delivery% and every index close. They publish in the evening, so this runs after the Yahoo-based 15:45 chain and corrects it with the exchange's own files."
   }
  ],
  "daily_update_trace": [
   {
    "order": 1,
+   "stage": "fyers",
+   "module": null,
+   "entry": ""
+  },
+  {
+   "order": 2,
    "stage": "prices",
    "module": "ingest_prices",
    "entry": "run"
   },
   {
-   "order": 2,
+   "order": 3,
    "stage": "technicals",
    "module": "technicals",
    "entry": "compute_all"
   },
   {
-   "order": 3,
-   "stage": "scan",
-   "module": "scan",
-   "entry": "run"
+   "order": 4,
+   "stage": "breadth",
+   "module": "breadth",
+   "entry": ""
   },
   {
-   "order": 4,
+   "order": 5,
    "stage": "ml",
    "module": "ml_predict",
    "entry": "predict_all"
   },
   {
-   "order": 5,
+   "order": 6,
+   "stage": "scan",
+   "module": "scan",
+   "entry": "run"
+  },
+  {
+   "order": 7,
    "stage": "pwin",
    "module": "pwin_cache",
    "entry": "refresh_all"
   },
   {
-   "order": 6,
+   "order": 8,
    "stage": "toppicks",
    "module": "top_picks",
    "entry": ""
   },
   {
-   "order": 7,
+   "order": 9,
    "stage": "events",
    "module": "events",
    "entry": "detect"
   },
   {
-   "order": 8,
+   "order": 10,
    "stage": "swing",
    "module": "swing_live",
    "entry": "update_outcomes, scan"
   },
   {
-   "order": 9,
+   "order": 11,
    "stage": "telegram",
    "module": "telegram_alerts",
    "entry": "report"
   },
   {
-   "order": 10,
+   "order": 12,
    "stage": "sheets",
    "module": "sheets_sync",
    "entry": "sync"

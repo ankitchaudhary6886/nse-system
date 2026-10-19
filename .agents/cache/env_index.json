@@ -22,29 +22,44 @@
   "transformers",
   "torch",
   "matplotlib",
-  "gspread"
+  "gspread",
+  "nse>=5.1.0",
+  "jugaad-data>=0.35.10",
+  "nselib>=2.5.1",
+  "nsemine>=2.2.1",
+  "pnsea>=1.2.1",
+  "openchart>=0.2.0"
  ],
- "installed_package_count": 100,
+ "installed_package_count": 126,
  "installed_packages": {
+  "aiohappyeyeballs": "2.7.1",
+  "aiohttp": "3.14.5",
+  "aiosignal": "1.4.0",
   "altair": "6.2.2",
   "annotated-doc": "0.0.5",
   "annotated-types": "0.8.0",
   "anyio": "4.14.2",
+  "appdirs": "1.4.4",
   "APScheduler": "3.11.3",
+  "asyncio": "4.0.0",
   "attrs": "26.1.0",
   "beautifulsoup4": "4.15.0",
   "blinker": "1.9.0",
+  "brotli": "1.2.0",
   "certifi": "2026.7.22",
   "cffi": "2.1.1",
   "charset-normalizer": "3.5.1",
   "click": "8.4.2",
   "colorama": "0.4.6",
   "cryptography": "50.0.0",
-  "curl_cffi": "0.16.0",
+  "curl_cffi": "0.16.3",
+  "exchange_calendars": "4.13.2",
+  "fake-useragent": "2.0.3",
   "fastapi": "0.141.1",
   "feedparser": "6.0.14",
   "feedparser-sgmllib": "2.1.0",
   "filelock": "3.32.3",
+  "frozenlist": "1.8.0",
   "fsspec": "2026.7.0",
   "google-auth": "2.56.3",
   "google-auth-oauthlib": "1.4.0",
@@ -61,24 +76,35 @@
   "joblib": "1.5.3",
   "jsonschema": "4.26.0",
   "jsonschema-specifications": "2025.9.1",
+  "jugaad-data": "0.35.10",
+  "korean_lunar_calendar": "0.4.0",
   "lightgbm": "4.7.0",
   "lxml": "6.1.1",
   "markdown-it-py": "4.2.0",
   "MarkupSafe": "3.0.3",
   "mdurl": "0.1.2",
   "mpmath": "1.3.0",
+  "multidict": "7.1.0",
   "multitasking": "0.0.13",
   "narwhals": "2.24.0",
+  "nest-asyncio": "1.6.0",
   "networkx": "3.6.1",
+  "nse": "5.1.0",
+  "nselib": "2.5.1",
+  "nsemine": "2.2.1",
   "numpy": "2.5.2",
   "oauthlib": "3.3.1",
+  "openchart": "0.2.0",
   "packaging": "26.3",
   "pandas": "3.0.5",
+  "pandas_market_calendars": "5.5.0",
   "peewee": "4.3.0",
   "pillow": "12.3.0",
   "pip": "26.2.1",
   "platformdirs": "4.11.3",
   "plotly": "6.9.0",
+  "pnsea": "1.2.1",
+  "propcache": "0.5.4",
   "protobuf": "7.35.1",
   "pyarrow": "24.0.0",
   "pyasn1": "0.6.4",
@@ -88,6 +114,9 @@
   "pydantic_core": "2.46.5",
   "pydeck": "0.9.3",
   "Pygments": "2.20.0",
+  "pyluach": "2.3.0",
+  "pypdf": "6.20.1",
+  "pyrate-limiter": "4.5.0",
   "python-dateutil": "2.9.0.post0",
   "python-dotenv": "1.2.3",
   "python-multipart": "0.0.32",
@@ -107,12 +136,14 @@
   "six": "1.17.0",
   "soupsieve": "2.9.2",
   "starlette": "1.3.1",
+  "stealthkit": "1.1.1",
   "streamlit": "1.61.1",
   "sympy": "1.14.0",
   "tenacity": "9.1.4",
   "threadpoolctl": "3.6.0",
   "tokenizers": "0.22.2",
   "toml": "0.10.2",
+  "toolz": "1.2.0",
   "torch": "2.13.0+cpu",
   "tqdm": "4.70.0",
   "transformers": "5.15.0",
@@ -125,26 +156,59 @@
   "uvicorn": "0.52.3",
   "watchdog": "6.0.0",
   "websockets": "16.1.1",
+  "yarl": "1.25.1",
   "yfinance": "1.6.0"
  },
  "external_hosts": {
   "127.0.0.1": [
    "verify_deployment.py"
   ],
+  "api-t1.fyers.in": [
+   "fyers_client.py",
+   "test_rebuild_raw_history.py"
+  ],
+  "api.gdeltproject.org": [
+   "hybrid_swingnet/upstream/src/stockxpert/mdata/gdelt.py"
+  ],
   "api.telegram.org": [
    "alerts.py"
   ],
   "archives.nseindia.com": [
+   "data_sources/adapters/nse_archives.py",
    "delivery.py",
    "institutional.py",
    "macro.py",
    "universe.py"
   ],
+  "arxiv.org": [
+   "hybrid_swingnet/upstream/src/stockxpert/models/time2vec.py"
+  ],
+  "cdn.nseindia.com": [
+   "test_announcements.py"
+  ],
+  "example.test": [
+   "test_fyers_integration.py"
+  ],
   "fonts.googleapis.com": [
    "app.py"
   ],
+  "fyers.in": [
+   "fyers_client.py",
+   "test_fyers_integration.py"
+  ],
+  "github.com": [
+   "hybrid_swingnet/__init__.py"
+  ],
   "news.google.com": [
    "sentiment.py"
+  ],
+  "nsearchives.nseindia.com": [
+   "data_sources/adapters/nse_archives.py",
+   "nse_eod_ingest.py",
+   "test_pledge_ingest.py"
+  ],
+  "public.fyers.in": [
+   "fyers_client.py"
   ],
   "scanner.tradingview.com": [
    "broad_scan.py",
@@ -153,10 +217,30 @@
    "tv_probe.py",
    "tv_probe2.py"
   ],
+  "theice.com": [
+   "ice_fetcher.py"
+  ],
+  "www.bseindia.com": [
+   "test_pledge_ingest.py"
+  ],
   "www.nseindia.com": [
+   "announcements.py",
+   "data_sources/adapters/nse_archives.py",
    "delivery.py",
    "macro.py",
+   "pledge_ingest.py",
+   "test_announcements.py",
+   "test_pledge_ingest.py",
    "universe.py"
+  ],
+  "www.xbrl.org": [
+   "test_pledge_ingest.py"
+  ],
+  "x": [
+   "test_announcements.py"
+  ],
+  "xbrl.org": [
+   "test_pledge_ingest.py"
   ]
  },
  "secret_reads": [
@@ -176,9 +260,34 @@
    "code": "token = os.getenv(\"TELEGRAM_TOKEN\")"
   },
   {
+   "file": "fyers_client.py",
+   "line": 137,
+   "code": "\"\"\"Broker app credentials from the environment (after .env load).\"\"\""
+  },
+  {
+   "file": "fyers_client.py",
+   "line": 140,
+   "code": "\"secret_id\": os.environ.get(\"FYERS_SECRET_ID\", \"\").strip(),"
+  },
+  {
+   "file": "fyers_client.py",
+   "line": 379,
+   "code": "or os.environ.get(\"FYERS_ACCESS_TOKEN\", \"\").strip()"
+  },
+  {
    "file": "terminal_api.py",
-   "line": 815,
+   "line": 947,
    "code": "token = os.getenv(\"WEBHOOK_TOKEN\")"
+  },
+  {
+   "file": "test_fyers_integration.py",
+   "line": 238,
+   "code": "with mock.patch.dict(os.environ, {\"FYERS_ACCESS_TOKEN\": \"\"}):"
+  },
+  {
+   "file": "test_fyers_integration.py",
+   "line": 608,
+   "code": "with mock.patch.dict(os.environ, {\"FYERS_ACCESS_TOKEN\": \"\"}):"
   }
  ]
 }

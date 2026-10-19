@@ -1,6 +1,6 @@
 {
  "root": "C:\\Users\\Ankit\\Desktop\\nse_system",
- "module_count": 130,
+ "module_count": 314,
  "modules": {
   ".agents/build_cache.py": {
    "lines": 450,
@@ -52,8 +52,8 @@
    "imported_by": []
   },
   "alerts.py": {
-   "lines": 189,
-   "bytes": 6577,
+   "lines": 204,
+   "bytes": 7370,
    "doc": "Unified alerts \u2014 Telegram text, photo, daily report, swing setup, all-weather setup. Canonical module (ID7 consolidation, 2026-09-12). Replaces the split between telegram_alerts.py and swing_alerts.py. Both of those remain as thin re-export shims for backwards compatibility. Credentials resolution: ",
    "functions": [
     "_creds",
@@ -87,21 +87,38 @@
    ]
   },
   "all_weather.py": {
-   "lines": 163,
-   "bytes": 4954,
-   "doc": "All-Weather Swing Mode \u2014 high-conviction setups during DEFENSIVE regime. Reads from strategy_config.ALL_WEATHER. v3 (2026-09-12): migrated to central config.",
+   "lines": 594,
+   "bytes": 22708,
+   "doc": "All-Weather Swing Mode \u2014 high-conviction setups during DEFENSIVE regime. Reads from strategy_config.ALL_WEATHER. v3 (2026-09-12): migrated to central config. v4 (2026-10-15) \u2014 add the quality gates the SWING path always had ----------------------------------------------------------------- WHY these ",
    "functions": [
+    "_gcfg",
     "_quality_maps",
     "_tier",
     "_candle_pattern",
+    "_entry",
+    "_trend_ok_closes",
+    "trend_ok",
+    "_liquidity_ok_values",
+    "liquidity_ok",
+    "sector_ok",
+    "tier_ok",
+    "gate",
+    "_sector_context",
+    "_bars_df",
+    "_count_reasons",
     "candidates",
     "detect",
-    "scan"
+    "scan",
+    "_setup_at",
+    "audit_stored",
+    "audit_replay",
+    "_print_audit"
    ],
    "classes": [],
    "has_cli": true,
    "imports_local": [
     "db",
+    "sector_gate",
     "strategy_config",
     "universe_helper"
    ],
@@ -110,7 +127,47 @@
     "pandas"
    ],
    "imported_by": [
-    "swing_live.py"
+    "exit_policy.py",
+    "swing_live.py",
+    "test_all_weather_gate.py"
+   ]
+  },
+  "announcements.py": {
+   "lines": 375,
+   "bytes": 20097,
+   "doc": "Corporate-announcement red-flag feed for the fundamental veto (Option B). WHY: fund_veto.py approximates risk with ratios (pledge_pct, debt/equity); the hard evidence they proxy for -- \"Resignation of Statutory Auditor\", \"qualified opinion / going concern\", \"pledge of promoter shares\", \"default on N",
+   "functions": [
+    "_text",
+    "_parse_dt",
+    "_to_date",
+    "_cutoff",
+    "_flag_list",
+    "ensure_tables",
+    "classify",
+    "_normalize_row",
+    "fetch_nse",
+    "store",
+    "import_csv",
+    "_rows",
+    "red_flags",
+    "report",
+    "_parser",
+    "main"
+   ],
+   "classes": [
+    "AnnouncementFetchError"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": [
+    "scheduler_bg.py",
+    "test_announcements.py",
+    "test_fund_veto.py"
    ]
   },
   "app.py": {
@@ -149,6 +206,34 @@
     "streamlit"
    ],
    "imported_by": []
+  },
+  "backfill_gaps.py": {
+   "lines": 239,
+   "bytes": 10048,
+   "doc": "Fyers gap-filler: historicals and holes the free official files cannot cover. ROLE (owner decision, 18 Oct 2026): - NSE official archives are the DAILY OHLCV source (free, no login). - Fyers is used ONLY to fill what those archives miss: a symbol absent from a day's bhavcopy, a day whose archive fil",
+   "functions": [
+    "_client",
+    "_calendar",
+    "missing_report",
+    "_write_rows",
+    "fill_with_fyers",
+    "historical_fill",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fyers_client",
+    "ingest_fyers",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "refresh_pipeline.py",
+    "scheduler_bg.py",
+    "test_backfill_gaps.py"
+   ]
   },
   "backtest.py": {
    "lines": 403,
@@ -201,6 +286,8 @@
     "pandas"
    ],
    "imported_by": [
+    "daily_update.py",
+    "refresh_pipeline.py",
     "swing_live.py",
     "trader_league.py"
    ]
@@ -344,10 +431,13 @@
    "imports_third_party": [],
    "imported_by": [
     "db.py",
+    "exit_policy.py",
+    "ingest_fyers.py",
     "ingest_prices.py",
     "kite_import.py",
     "kite_reconcile.py",
-    "kite_snapshot_report.py"
+    "kite_snapshot_report.py",
+    "rebuild_raw_history.py"
    ]
   },
   "corporate.py": {
@@ -374,9 +464,72 @@
     "app.py"
    ]
   },
+  "corporate_actions.py": {
+   "lines": 576,
+   "bytes": 25751,
+   "doc": "Corporate actions: the free book behind every adjusted-vs-raw price seam. WHY: stored history is yfinance ``auto_adjust=True`` (split/dividend adjusted) while the Fyers feed is raw. The ingest guards can only block or flag a seam; with a corporate-action record they can name the event and repair the",
+   "functions": [
+    "now_ist",
+    "_clean_symbol",
+    "_parse_date",
+    "_to_float",
+    "_nearest_ratio",
+    "_action_from_dict",
+    "_insert",
+    "import_csv",
+    "_series_items",
+    "_index_date",
+    "fetch_yfinance_actions",
+    "ensure_fetch_state",
+    "_fetch_one_with_timeout",
+    "fetch_all_resumable",
+    "merge_actions",
+    "_scan_symbols",
+    "detect_price_gaps",
+    "explain",
+    "_gap_scan",
+    "summary",
+    "_split_symbols",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": [
+    "ingest_fyers.py",
+    "test_ca_chunking.py",
+    "test_corporate_actions.py"
+   ]
+  },
+  "coverage_report.py": {
+   "lines": 172,
+   "bytes": 6470,
+   "doc": "Price-coverage diagnosis for the tradable universe (18 Oct 2026). WHY THIS EXISTS --------------- The live VM's last-60-session bar coverage was 75.2% while the freshness gate was green. A fresh max date says nothing about *how many symbols* have bars: 40 universe symbols had no recent history at al",
+   "functions": [
+    "_series_of",
+    "_classify_ticker",
+    "diagnose",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "ingest_fyers",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "test_coverage_report.py"
+   ]
+  },
   "daily_update.py": {
-   "lines": 71,
-   "bytes": 1777,
+   "lines": 103,
+   "bytes": 3050,
    "doc": "",
    "functions": [
     "_safe",
@@ -384,11 +537,15 @@
     "_sheets",
     "_pwin",
     "_toppicks",
+    "_breadth",
+    "_fyers",
     "run"
    ],
    "classes": [],
    "has_cli": false,
    "imports_local": [
+    "breadth",
+    "ingest_fyers",
     "log_utils",
     "pwin_cache",
     "sheets_sync",
@@ -413,9 +570,32 @@
    "imports_third_party": [],
    "imported_by": []
   },
+  "data_audit.py": {
+   "lines": 356,
+   "bytes": 14501,
+   "doc": "Data inventory + usefulness + freshness audit for data/app.db. Why this exists --------------- data_quality.py answers \"is today's pipeline healthy?\" (6 checks, alerting). It does NOT answer the questions that decide what to build next: * which tables are actually populated, which are empty shells? ",
+   "functions": [
+    "_iso",
+    "_table_refs",
+    "inventory",
+    "_trading_days",
+    "price_audit",
+    "fundamentals_audit",
+    "universe_audit",
+    "snapshot_audit",
+    "run",
+    "print_report",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
   "data_quality.py": {
-   "lines": 242,
-   "bytes": 8999,
+   "lines": 254,
+   "bytes": 9727,
    "doc": "Data Quality Monitor for NSE Intelligence. Checks core tables, staleness, duplicates, OHLC integrity, tracked-universe coverage, suspicious jumps. Logs + Telegram alert.",
    "functions": [
     "_today",
@@ -485,6 +665,26 @@
    ],
    "imported_by": []
   },
+  "data_sources/adapters/jugaad.py": {
+   "lines": 160,
+   "bytes": 5731,
+   "doc": "Adapter for the PyPI package ``jugaad-data`` (import ``jugaad_data``). WHY THIS MODULE EXISTS ---------------------- ``jugaad-data`` is a long-lived, widely used NSE/BSE downloader. Its NSE history helper returns one tidy DataFrame per symbol, and its archives helper already knows how to walk NSE's ",
+   "functions": [
+    "_as_date",
+    "use_local_cache_dir",
+    "fetch_symbol_history",
+    "fetch_bhavcopy_text",
+    "register_adapters"
+   ],
+   "classes": [
+    "JugaadPriceHistoryAdapter",
+    "JugaadBhavcopyAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
   "data_sources/adapters/nse.py": {
    "lines": 37,
    "bytes": 1086,
@@ -501,6 +701,133 @@
    "imports_local": [
     "universe"
    ],
+   "imports_third_party": [],
+   "imported_by": [
+    "data_sources/adapters/nseindiaapi.py"
+   ]
+  },
+  "data_sources/adapters/nse_archives.py": {
+   "lines": 708,
+   "bytes": 28720,
+   "doc": "NSE historical-report archive adapter -- the authoritative bhavcopy feed. WHY THIS MODULE EXISTS ---------------------- Every price in this system comes from somebody else. Yahoo (the existing ``yahoo_finance`` adapter) is convenient, but it is a third party that can change its mind, rate-limit us, ",
+   "functions": [
+    "_is_writable",
+    "cache_directory",
+    "_key",
+    "_field",
+    "_trading_date_from_instant",
+    "_parse_datetime_text",
+    "parse_nse_date",
+    "_to_float",
+    "_clean_symbol",
+    "_as_records",
+    "normalize_price_records",
+    "records_to_yahoo_frame",
+    "parse_bhavcopy_text",
+    "decode_archive",
+    "_require_requests",
+    "download",
+    "_as_date",
+    "daily_bhavcopy_urls",
+    "monthly_bhavcopy_urls",
+    "_first_working_rows",
+    "fetch_bhavcopy_day",
+    "fetch_bhavcopy_month",
+    "probe_day",
+    "register_adapters"
+   ],
+   "classes": [
+    "NseArchiveBhavcopyAdapter",
+    "NseArchiveMonthlyBhavcopyAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas",
+    "requests"
+   ],
+   "imported_by": []
+  },
+  "data_sources/adapters/nseindiaapi.py": {
+   "lines": 163,
+   "bytes": 5793,
+   "doc": "Adapter for the PyPI package ``nse`` (import name ``nse``, class ``NSE``). WHY THIS MODULE EXISTS ---------------------- ``nse`` is the maintained home of the old \"NseIndiaApi\" project. It speaks NSE's own JSON endpoints with the cookie dance and throttling already handled, which makes it a good sec",
+   "functions": [
+    "_as_date",
+    "cache_dir",
+    "fetch_symbol_history",
+    "fetch_bhavcopy_text",
+    "register_adapters"
+   ],
+   "classes": [
+    "NseApiPriceHistoryAdapter",
+    "NseApiBhavcopyAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "nse"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "data_sources/adapters/nselib_src.py": {
+   "lines": 133,
+   "bytes": 4750,
+   "doc": "Adapter for the PyPI package ``nselib`` (import ``nselib``). WHY THIS MODULE EXISTS ---------------------- ``nselib`` is a pure-downloader library (no fancy objects) whose ``capital_market`` module can hand back the current NSE bhavcopy and the official security-wise price + volume + DELIVERABLE-pos",
+   "functions": [
+    "_as_date",
+    "_nse_date",
+    "fetch_bhavcopy",
+    "fetch_symbol_delivery",
+    "register_adapters"
+   ],
+   "classes": [
+    "NselibBhavcopyAdapter",
+    "NselibDeliveryAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "data_sources/adapters/nsemine_src.py": {
+   "lines": 136,
+   "bytes": 4705,
+   "doc": "Adapter for the PyPI package ``nsemine`` (import ``nsemine``). WHY THIS MODULE EXISTS ---------------------- ``nsemine`` scrapes NSE both ways: it can read the official daily bhavcopy (including the delivery columns) AND it can pull a symbol's daily candles from NSE's charting feed. Two properties m",
+   "functions": [
+    "_as_date",
+    "_as_datetime",
+    "fetch_bhavcopy",
+    "fetch_symbol_history",
+    "register_adapters"
+   ],
+   "classes": [
+    "NsemineBhavcopyAdapter",
+    "NseminePriceHistoryAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "data_sources/adapters/pnsea_src.py": {
+   "lines": 130,
+   "bytes": 4501,
+   "doc": "Adapter for the PyPI package ``pnsea`` (import ``pnsea``). WHY THIS MODULE EXISTS ---------------------- ``pnsea`` is a small \"nsepy-style\" wrapper: one object tree (``NSE().equity``) over NSE's website endpoints, with a stealth HTTP session that fetches the cookies NSE demands. It reaches NSE's ``g",
+   "functions": [
+    "_as_date",
+    "_nse_date",
+    "_client",
+    "fetch_symbol_history",
+    "fetch_symbol_delivery",
+    "register_adapters"
+   ],
+   "classes": [
+    "PnseaPriceHistoryAdapter",
+    "PnseaDeliveryAdapter"
+   ],
+   "has_cli": false,
+   "imports_local": [],
    "imports_third_party": [],
    "imported_by": []
   },
@@ -522,8 +849,8 @@
    "imported_by": []
   },
   "data_sources/adapters/yahoo.py": {
-   "lines": 24,
-   "bytes": 703,
+   "lines": 31,
+   "bytes": 1026,
    "doc": "Yahoo Finance adapter for incremental NSE price-history ingestion.",
    "functions": [
     "register_adapters"
@@ -572,9 +899,29 @@
    "imports_third_party": [],
    "imported_by": []
   },
+  "data_sources/yf_cache.py": {
+   "lines": 136,
+   "bytes": 4706,
+   "doc": "Make yfinance's cache location provably writable before using it. WHY THIS EXISTS (2026-10-15) yfinance keeps a small SQLite cache (``tkr-tz.db``) holding timezone data. It resolves that location through platformdirs. If the resolved folder cannot actually host a SQLite database, yfinance does NOT d",
+   "functions": [
+    "_project_cache_dir",
+    "_default_cache_dir",
+    "_candidate_dirs",
+    "sqlite_writable",
+    "ensure_yf_cache",
+    "cache_status"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": []
+  },
   "db.py": {
-   "lines": 262,
-   "bytes": 9224,
+   "lines": 363,
+   "bytes": 13787,
    "doc": "",
    "functions": [
     "_migrate",
@@ -589,7 +936,9 @@
    "imported_by": [
     "alerts.py",
     "all_weather.py",
+    "announcements.py",
     "app.py",
+    "backfill_gaps.py",
     "backtest.py",
     "breadth.py",
     "broad_scan.py",
@@ -599,6 +948,7 @@
     "check_stock.py",
     "compare_tool.py",
     "corporate.py",
+    "corporate_actions.py",
     "data_quality.py",
     "db_check.py",
     "deepdive.py",
@@ -607,11 +957,15 @@
     "diagnose.py",
     "events.py",
     "fast_wf.py",
+    "freshness_gate.py",
     "fund_veto.py",
     "fundamentals_compute.py",
+    "fundamentals_derive.py",
+    "fundamentals_enrich.py",
     "fundamentals_refresh.py",
     "fundamentals_tv.py",
     "ingest_fundamentals.py",
+    "ingest_fyers.py",
     "ingest_missing.py",
     "ingest_prices.py",
     "ingest_smallcaps.py",
@@ -623,12 +977,18 @@
     "ml_predict.py",
     "ml_train.py",
     "model_report.py",
+    "nse_archive_ingest.py",
+    "nse_eod_ingest.py",
     "pattern_grader.py",
     "patterns.py",
+    "pledge_ingest.py",
     "positional_scanner.py",
+    "purge_stale_artifacts.py",
     "pwin_cache.py",
     "quick_funnel.py",
     "quick_setup_diag.py",
+    "rebuild_raw_history.py",
+    "refresh_pipeline.py",
     "research_cockpit.py",
     "rule_engine.py",
     "scan.py",
@@ -649,7 +1009,21 @@
     "technicals.py",
     "template_match.py",
     "terminal_api.py",
+    "test_all_weather_gate.py",
+    "test_backfill_gaps.py",
+    "test_ca_chunking.py",
+    "test_corporate_actions.py",
+    "test_coverage_report.py",
+    "test_freshness_gate.py",
+    "test_fund_veto.py",
+    "test_fundamentals_enrich.py",
     "test_fundamentals_integrity.py",
+    "test_fyers_integration.py",
+    "test_n1_n3.py",
+    "test_nse_eod_ingest.py",
+    "test_rebuild_raw_history.py",
+    "test_refresh_pipeline.py",
+    "test_signal_guard.py",
     "top_picks.py",
     "trader_league.py",
     "traders/apurva_parikh.py",
@@ -793,7 +1167,78 @@
    ],
    "imports_third_party": [],
    "imported_by": [
+    "refresh_pipeline.py",
     "verify_deployment.py"
+   ]
+  },
+  "exit_policy.py": {
+   "lines": 1246,
+   "bytes": 55377,
+   "doc": "exit_policy.py \u2014 the ONE place that decides where a swing idea gets out, and what that idea would actually have earned. WHY THIS FILE EXISTS -------------------- \"Where do we exit?\" was answered in three places with three slightly different answers: * setup.py hard-codes a 3R target (entry + 3 x ris",
+   "functions": [
+    "risk_per_share",
+    "resolve_target_r",
+    "plan_from",
+    "_normalise_bars",
+    "_ema",
+    "score_path",
+    "score_idea",
+    "apply_plan",
+    "_path_facts",
+    "result_at_level",
+    "default_db_path",
+    "load_stored_signals",
+    "_dist",
+    "measure_ideas",
+    "summarise",
+    "symbol_concentration",
+    "_profit_factor",
+    "split_walk_forward",
+    "best_level",
+    "instrument_report",
+    "format_report",
+    "history_signals",
+    "_parse_levels",
+    "main"
+   ],
+   "classes": [
+    "ExitPlan",
+    "PathScore",
+    "PriceStore",
+    "Idea"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "all_weather",
+    "config",
+    "setup",
+    "strategy_config"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": [
+    "setup.py",
+    "test_swing_exits.py"
+   ]
+  },
+  "explain.py": {
+   "lines": 946,
+   "bytes": 54093,
+   "doc": "Plain-language explanations (the 5W1H layer). WHY THIS FILE EXISTS The owner is not a finance person. Every number the terminal shows must be explainable in ordinary words, on demand, without jargon. Keeping the wording in ONE place means the UI, the API and the Telegram alerts can never drift apart",
+   "functions": [
+    "get",
+    "all_keys",
+    "popup",
+    "catalog"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "glossary_ui.py",
+    "terminal_api.py"
    ]
   },
   "fast_wf.py": {
@@ -818,12 +1263,43 @@
    ],
    "imported_by": []
   },
+  "freshness_gate.py": {
+   "lines": 295,
+   "bytes": 11591,
+   "doc": "Hard freshness gate: signal writers must not publish on a stale price spine. Why this exists --------------- The price ingest stopped advancing ``prices_daily`` on 2026-08-27. Nothing failed loudly: ``data_quality.py`` only *alerts*, so the pattern, template and institutional writers kept reading th",
+   "functions": [
+    "now_ist",
+    "_as_ist",
+    "_parse_date",
+    "_previous_weekday",
+    "expected_session",
+    "_weekday_count",
+    "_int_env",
+    "_max_price_date",
+    "assess",
+    "require_fresh",
+    "status",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "refresh_pipeline.py",
+    "signal_guard.py",
+    "test_freshness_gate.py"
+   ]
+  },
   "fund_veto.py": {
-   "lines": 105,
-   "bytes": 3035,
-   "doc": "Fundamental Veto Gate \u2014 the 'partial fundamentals' identity. Hard-excludes symbols with weak fundamentals from NEW swing alerts, stored signals, patterns and Top Picks: debt_eq > 3 -> over-leveraged roce < 8 -> poor capital efficiency promoter < 20 -> low promoter skin in the game Missing fundamenta",
+   "lines": 151,
+   "bytes": 5216,
+   "doc": "Fundamental Veto Gate \u2014 the 'partial fundamentals' identity. Hard-excludes symbols with weak fundamentals from NEW swing alerts, stored signals, patterns and Top Picks: debt_eq > 3 -> over-leveraged interest_cover < 1.5 -> cannot comfortably service interest pledge_pct > 25 -> too much of the promot",
    "functions": [
     "_fund_row",
+    "_announcement_red_flag",
     "vetoed",
     "count_universe"
    ],
@@ -837,8 +1313,11 @@
    "imported_by": [
     "alerts.py",
     "patterns.py",
+    "scan.py",
     "scheduler_bg.py",
     "swing_live.py",
+    "test_fund_veto.py",
+    "test_fundamentals_enrich.py",
     "top_picks.py"
    ]
   },
@@ -864,6 +1343,55 @@
    ],
    "imported_by": [
     "deepdive.py"
+   ]
+  },
+  "fundamentals_derive.py": {
+   "lines": 155,
+   "bytes": 5626,
+   "doc": "Derive fundamentals that are algebraically implied by data we already own. WHAT THIS ADDS (and why these three, not more) ---------------------------------------------- With ``current_price``, ``pe``, ``pb`` and ``market_cap_cr`` already in the ``fundamentals`` table, three reported figures are exac",
+   "functions": [
+    "_num",
+    "derive_row",
+    "_sane",
+    "run",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fundamentals_store"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "scheduler_bg.py"
+   ]
+  },
+  "fundamentals_enrich.py": {
+   "lines": 280,
+   "bytes": 13531,
+   "doc": "Fill fund_veto's ownership inputs from the free ScanX snapshot table. WHY: ``fund_veto`` vetoes on ``promoter_holding < 20``, but the ownership fields in ``fundamentals`` are 0% populated here (partly on the VM), so the rule never fires and the gate runs blind. ``scanx_fundamentals_snapshots`` -- th",
+   "functions": [
+    "_columns",
+    "_number",
+    "_blank",
+    "_coverage",
+    "latest_snapshot",
+    "enrich",
+    "report",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fundamentals_store",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "scheduler_bg.py",
+    "test_fundamentals_enrich.py"
    ]
   },
   "fundamentals_refresh.py": {
@@ -914,15 +1442,18 @@
    "imports_third_party": [],
    "imported_by": [
     "fundamentals_compute.py",
+    "fundamentals_derive.py",
+    "fundamentals_enrich.py",
     "fundamentals_refresh.py",
     "fundamentals_tv.py",
     "ingest_fundamentals.py",
+    "pledge_ingest.py",
     "test_fundamentals_integrity.py"
    ]
   },
   "fundamentals_tv.py": {
-   "lines": 215,
-   "bytes": 7693,
+   "lines": 227,
+   "bytes": 8312,
    "doc": "Fundamentals fetcher (canonical) \u2014 TradingView India scanner. v5 (2026-09-12): rewritten after TV column probe. Uses only columns that actually return values for NSE stocks. Available on TV India (validated by tv_column_probe.py, 30 symbols): close, market_cap_basic, price_earnings_ttm, return_on_eq",
    "functions": [
     "_fetch_batch",
@@ -946,6 +1477,72 @@
     "test_fundamentals_integrity.py"
    ]
   },
+  "fyers_client.py": {
+   "lines": 942,
+   "bytes": 37941,
+   "doc": "Fyers API v3 client for NSE market data (dependency-free). WHY A HAND-WRITTEN CLIENT ------------------------- The official SDK (``fyers-apiv3``) pulls ``aiohttp``; installing it on this laptop fails to build a wheel, and this project only needs three read-only endpoints (history / quotes / depth) p",
+   "functions": [
+    "load_env_file",
+    "credentials",
+    "app_id_hash",
+    "build_auth_url",
+    "extract_auth_code",
+    "to_fyers_symbol",
+    "from_fyers_symbol",
+    "next_token_expiry",
+    "_candle_rows",
+    "_normalize_quote",
+    "parse_symbol_master",
+    "_fmt_candles",
+    "_cmd_status",
+    "exchange_code",
+    "_cmd_exchange",
+    "_cmd_screeners",
+    "_cmd_probe",
+    "main"
+   ],
+   "classes": [
+    "FyersError",
+    "FyersAuthError",
+    "FyersRateLimitError",
+    "TokenStore",
+    "RateLimiter",
+    "FyersClient"
+   ],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": [
+    "backfill_gaps.py",
+    "ingest_fyers.py",
+    "rebuild_raw_history.py",
+    "refresh_pipeline.py",
+    "scheduler_bg.py",
+    "terminal_api.py",
+    "test_backfill_gaps.py",
+    "test_fyers_integration.py",
+    "test_fyers_refresh.py"
+   ]
+  },
+  "glossary_ui.py": {
+   "lines": 96,
+   "bytes": 3730,
+   "doc": "glossary_ui.py - a small, self-contained \"explain this\" index page. WHY: every explanation lives in explain.py, but a term is only discoverable if the owner can see it somewhere. The panels cover the terms they display; this page covers all of them, including ones no panel currently shows (breadth, ",
+   "functions": [
+    "render"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "explain"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "terminal_api.py"
+   ]
+  },
   "guide.py": {
    "lines": 88,
    "bytes": 3377,
@@ -961,6 +1558,2609 @@
    "imports_third_party": [],
    "imported_by": [
     "app.py"
+   ]
+  },
+  "hybrid_swingnet/__init__.py": {
+   "lines": 153,
+   "bytes": 5805,
+   "doc": "HybridSwingNet (imports as ``stockxpert``) - vendored research integration. WHAT THIS IS ------------ A *research-only* vendor of https://github.com/Onkarj012/HybridSwingNet pinned at commit ``UPSTREAM_COMMIT`` below. The upstream authors' own README reports that their pre-registered walk-forward ou",
+   "functions": [
+    "ensure_upstream_path",
+    "ensure_scripts_path",
+    "probe_dependencies",
+    "import_stockxpert",
+    "import_stockxpert_v3"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/appdb_dataset.py": {
+   "lines": 448,
+   "bytes": 17241,
+   "doc": "Dataset adapter: our SQLite ``data/app.db`` -> HybridSwingNet V3 samples. Why this exists --------------- Upstream loads prices with yfinance (``stockxpert.mdata.prices.download_prices``) and news sentiment from GDELT/FinBERT or a CSV. Neither is reachable/useful for an offline measurement on our ow",
+   "functions": [
+    "connect_readonly",
+    "load_sector_map",
+    "select_symbols",
+    "load_price_frames",
+    "load_feature_groups",
+    "add_market_context",
+    "add_sentiment_placeholders",
+    "add_static_stock_traits",
+    "build_feature_data",
+    "build_samples",
+    "build_dataset"
+   ],
+   "classes": [
+    "DatasetSpec",
+    "DatasetBundle"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/fast_builder.py": {
+   "lines": 148,
+   "bytes": 5911,
+   "doc": "A drop-in, value-identical fast replacement for upstream's ``SampleBuilder``. WHY --- Upstream ``stockxpert.dataset.make_samples.SampleBuilder._build_single_sample`` materialises a full ``pandas`` row (``df.iloc[t]``) about ten times per sample. On our data (pandas 3.0, ~130 feature columns, ~1150 s",
+   "functions": [],
+   "classes": [
+    "FastSampleBuilder"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/oos.py": {
+   "lines": 665,
+   "bytes": 25418,
+   "doc": "Honest out-of-sample measurement of the vendored HybridSwingNet V3 model. READ THIS FIRST --------------- The upstream authors report that their own pre-registered walk-forward OOS protocol (2018-2026) returned **-64.3% with Sharpe -0.79**, and that this is the honest finding rather than a bug. This",
+   "functions": [
+    "round_trip_cost_pct",
+    "split_samples",
+    "transform_preserving_traits",
+    "load_canonical_config",
+    "build_model",
+    "build_criterion",
+    "make_loader",
+    "collect_predictions",
+    "direction_accuracy",
+    "information_coefficient",
+    "_forward_returns",
+    "cohort_backtest",
+    "backtest_threshold_sweep",
+    "buy_and_hold_benchmark",
+    "run_oos",
+    "result_to_json"
+   ],
+   "classes": [
+    "SplitSpec",
+    "TrainSpec",
+    "BacktestSpec",
+    "OOSResult"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/run_oos.py": {
+   "lines": 169,
+   "bytes": 7163,
+   "doc": "CLI: run HybridSwingNet V3 out-of-sample measurement on our own ``app.db``. Examples -------- Small, fast smoke run (~2 minutes):: .\\env\\Scripts\\python.exe -m hybrid_swingnet.run_oos --max-symbols 20 --epochs 2 The real measurement:: .\\env\\Scripts\\python.exe -m hybrid_swingnet.run_oos --max-symbols ",
+   "functions": [
+    "parse_args",
+    "summarise",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/analyze_strategy_development_2024_2026.py": {
+   "lines": 674,
+   "bytes": 28596,
+   "doc": "Develop and stress-test candidate hold-to-horizon strategies. This script intentionally writes to a separate analysis folder and does not modify the H10 benchmark replay/validation files. It uses saved predictions, causal daily price filters, and hold-to-horizon execution to answer: 1. Can a rule se",
+   "functions": [
+    "parse_args",
+    "load_predictions",
+    "load_daily",
+    "daily_lookup",
+    "compute_market_stats",
+    "symbol_return",
+    "passes_filters",
+    "close_position",
+    "replay_strategy",
+    "summarize",
+    "top_symbols",
+    "monthly_metrics",
+    "candidate_grid",
+    "baseline_configs",
+    "selection_score",
+    "write_report",
+    "markdown_table",
+    "main"
+   ],
+   "classes": [
+    "StrategyConfig",
+    "Position"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "historical_data_loader"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/backtest_v3.py": {
+   "lines": 1041,
+   "bytes": 42926,
+   "doc": "StockXpert V3 \u2014 capital-aware portfolio backtest. Uses a trained V3 checkpoint to generate daily predictions, then simulates entries/exits with configured capital, position limits, ATR targets/stops, and brokerage \u2014 same engine as ``backtest_historical.py``. Usage: PYTHONPATH=src python scripts/back",
+   "functions": [
+    "build_v3_feature_data",
+    "print_portfolio_table",
+    "build_rolling_ranks",
+    "get_top_stocks",
+    "compute_regime_bullish",
+    "compute_regime_scores",
+    "compute_robust_regime_states",
+    "classify_regime",
+    "graded_profile",
+    "process_day_with_entry_profile",
+    "simulate_portfolio",
+    "main"
+   ],
+   "classes": [
+    "V3ModelInference"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "historical_data_loader",
+    "stockxpert",
+    "train_v3"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "torch"
+   ],
+   "imported_by": [
+    "hybrid_swingnet/upstream/scripts/replay_v3_policy_configs.py",
+    "hybrid_swingnet/upstream/scripts/replay_v3_regime_policy.py",
+    "hybrid_swingnet/upstream/scripts/sweep_v3_policy.py",
+    "hybrid_swingnet/upstream/scripts/walkforward_benchmarks.py",
+    "hybrid_swingnet/upstream/scripts/walkforward_v3.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/scripts/compute_stats.py": {
+   "lines": 467,
+   "bytes": 18021,
+   "doc": "Compute all statistical test results from existing predictions.csv. Fills in TBD values for the paper revision document. Includes: - Table 8: Binomial test for directional accuracy - Table 9: Bootstrap Sharpe ratio CI - Table 10: Precision/Recall for direction - Table 11: Information Coefficient (Sp",
+   "functions": [
+    "count_configurations",
+    "deflated_sharpe",
+    "bootstrap_ci_metrics",
+    "binomial_test_directional",
+    "precision_recall_direction",
+    "bootstrap_sharpe",
+    "information_coefficient_per_horizon",
+    "calibration_analysis",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "hybrid_swingnet/upstream/scripts/recompute_canonical_stats.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/scripts/evaluate_v3.py": {
+   "lines": 23,
+   "bytes": 539,
+   "doc": "Standalone V3 evaluation entry point.",
+   "functions": [
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/evaluate_v3_confidence.py": {
+   "lines": 119,
+   "bytes": 4776,
+   "doc": "Generate V3 confidence-threshold metrics for an existing checkpoint.",
+   "functions": [
+    "build_loaders",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "stockxpert",
+    "train_v3"
+   ],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/generate_architecture_diagram.py": {
+   "lines": 443,
+   "bytes": 9275,
+   "doc": "Generate System Architecture Diagram for IJATEE Paper Figure 1: Proposed System Architecture",
+   "functions": [
+    "draw_box",
+    "draw_arrow"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "matplotlib",
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/generate_methodology_figures.py": {
+   "lines": 330,
+   "bytes": 16810,
+   "doc": "Generate 5 clean methodology figures for the StockXpert paper.",
+   "functions": [
+    "draw_box",
+    "draw_arrow",
+    "draw_label",
+    "fig_overall_framework",
+    "fig_graduated_routing",
+    "fig_dynamic_fusion",
+    "fig_multihorizon",
+    "fig_trading_workflow"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [
+    "matplotlib",
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/generate_paper_figures.py": {
+   "lines": 1259,
+   "bytes": 58291,
+   "doc": "Generate publication-quality figures for the StockXpert paper revision. Reads from existing run data \u2014 no training required. Usage: python scripts/generate_paper_figures.py Output: docs/Paper/figures/fig_*.png (20+ figures at 300 DPI)",
+   "functions": [
+    "save",
+    "load_predictions",
+    "load_metrics",
+    "load_training_history",
+    "load_ablation",
+    "load_baselines",
+    "load_backtest_profiles",
+    "load_equity_curves",
+    "load_trade_logs",
+    "bootstrap_accuracy",
+    "cohens_h",
+    "fig_accuracy_overview",
+    "fig_accuracy_progression",
+    "fig_ablation_study",
+    "fig_learning_curves",
+    "fig_generalization_gap",
+    "fig_multiregime_performance",
+    "fig_calibration",
+    "fig_bootstrap_significance",
+    "fig_tradecount_vs_confidence",
+    "fig_strategy_comparison",
+    "fig_cumulative_equity",
+    "fig_down_up_asymmetry",
+    "fig_residual_analysis",
+    "fig_baseline_comparison",
+    "fig_returns_distribution",
+    "fig_encoder_contribution",
+    "fig_attention_heatmap_enhanced",
+    "fig_sharpe_by_regime",
+    "fig_rolling_sharpe",
+    "fig_radar_comparison",
+    "fig_price_prediction_3stocks",
+    "fig_confidence_vs_accuracy"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [
+    "matplotlib",
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/generate_strategy_figures.py": {
+   "lines": 679,
+   "bytes": 36430,
+   "doc": "Generate publication-quality figures for the regime-filtered production backtesting strategy. All data sourced from the comprehensive backtest record (runs/comparison_report.md, PAPER_REVISION_GUIDE.md). Output: docs/Paper/figures/fig_strategy_*.png (7 figures, 300 DPI)",
+   "functions": [
+    "load_profile_metrics",
+    "save",
+    "fig_regime_filter_impact",
+    "fig_position_quality_decay",
+    "fig_lever_impact_ranking",
+    "fig_cumulative_equity_strategy",
+    "fig_capital_scaling",
+    "fig_subuniverse_comparison",
+    "fig_production_summary",
+    "fig_down_up_regime_asymmetry",
+    "fig_magnitude_correlation",
+    "fig_exit_breakdown"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [
+    "matplotlib",
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/historical_data_loader.py": {
+   "lines": 250,
+   "bytes": 8808,
+   "doc": "Historical Data Loader for StockXpert Backtesting Loads minute-bar CSV files from data/nifty500/ and resamples to daily OHLCV for use with the StockXpert model pipeline. Also provides minute-level data access for precise exit evaluation. Usage: from historical_data_loader import HistoricalDataLoader",
+   "functions": [],
+   "classes": [
+    "HistoricalDataLoader"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "hybrid_swingnet/upstream/scripts/analyze_strategy_development_2024_2026.py",
+    "hybrid_swingnet/upstream/scripts/backtest_v3.py",
+    "hybrid_swingnet/upstream/scripts/replay_v3_policy_configs.py",
+    "hybrid_swingnet/upstream/scripts/replay_v3_regime_policy.py",
+    "hybrid_swingnet/upstream/scripts/sweep_v3_policy.py",
+    "hybrid_swingnet/upstream/scripts/train_v3.py",
+    "hybrid_swingnet/upstream/scripts/walkforward_benchmarks.py",
+    "hybrid_swingnet/upstream/scripts/walkforward_v3.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/scripts/optimize_v3.py": {
+   "lines": 285,
+   "bytes": 11837,
+   "doc": "Strategy Optimizer v3 \u2014 Dynamic rolling stock selection (no look-ahead).",
+   "functions": [
+    "load_preds",
+    "build_rolling_ranks",
+    "get_top_stocks",
+    "run_backtest",
+    "run_period"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/paper_trade_v3.py": {
+   "lines": 30,
+   "bytes": 785,
+   "doc": "V3 paper-trading runner skeleton.",
+   "functions": [
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/recompute_canonical_stats.py": {
+   "lines": 62,
+   "bytes": 2234,
+   "doc": "Recompute bootstrap Sharpe CI + deflated Sharpe for the canonical 2025 run. Per docs/CANONICAL_RESULTS.md \u00a712 item 10 (still needed before submission) and docs/PREREGISTERED_STRATEGY_PROTOCOL.md Phase 4. Independent of the walk-forward pipeline; uses the existing canonical run artifact directly.",
+   "functions": [
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "compute_stats"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/replay_v3_policy_configs.py": {
+   "lines": 214,
+   "bytes": 8285,
+   "doc": "Replay selected V3 policy rows from a sweep CSV on another prediction window.",
+   "functions": [
+    "parse_args",
+    "atr_lookup",
+    "load_predictions",
+    "parse_horizons",
+    "bool_value",
+    "selected_configs",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "backtest_v3",
+    "historical_data_loader",
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/replay_v3_regime_policy.py": {
+   "lines": 182,
+   "bytes": 7343,
+   "doc": "Replay cached V3 predictions through regime-policy portfolio simulation.",
+   "functions": [
+    "infer_window",
+    "add_atr14",
+    "load_predictions",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "backtest_v3",
+    "historical_data_loader"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/run_baselines.py": {
+   "lines": 460,
+   "bytes": 18568,
+   "doc": "Baseline comparison script for StockXpert. Runs several baseline models on the same test data to provide a fair comparison against the full StockXpert model. Baselines: 1. Random Direction (50/50 random predictions) 2. SMA Crossover (10/50 day moving average crossover) 3. Single LSTM (standard LSTM ",
+   "functions": [
+    "evaluate_direction_accuracy",
+    "run_random_baseline",
+    "run_sma_baseline",
+    "main"
+   ],
+   "classes": [
+    "RandomBaseline",
+    "SMABaseline",
+    "SingleLSTMBaseline",
+    "SingleGRUBaseline",
+    "ARIMABaseline",
+    "RandomForestBaseline"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "sklearn",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/sweep_v3_policy.py": {
+   "lines": 292,
+   "bytes": 12442,
+   "doc": "Sweep V3 portfolio policies from saved prediction CSVs.",
+   "functions": [
+    "parse_args",
+    "atr_lookup",
+    "load_predictions",
+    "config_grid",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "backtest_v3",
+    "historical_data_loader",
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/sync_yfinance_data.py": {
+   "lines": 83,
+   "bytes": 3004,
+   "doc": "Download yfinance daily data for Nifty100 symbols and save as pseudo-minute CSVs.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/train_v3.py": {
+   "lines": 690,
+   "bytes": 28887,
+   "doc": "End-to-end V3 training pipeline for StockXpert.",
+   "functions": [
+    "load_price_data",
+    "normalize_price_frames",
+    "add_market_context",
+    "fetch_yfinance_macro_context",
+    "add_yfinance_macro_context",
+    "load_sector_map",
+    "add_static_stock_traits",
+    "attach_sentiment",
+    "split_samples",
+    "collect_predictions",
+    "collect_horizon_predictions",
+    "fit_calibrators",
+    "apply_calibrators",
+    "confidence_threshold_metrics",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "historical_data_loader",
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "torch",
+    "yfinance"
+   ],
+   "imported_by": [
+    "hybrid_swingnet/upstream/scripts/backtest_v3.py",
+    "hybrid_swingnet/upstream/scripts/evaluate_v3_confidence.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/scripts/walkforward_benchmarks.py": {
+   "lines": 260,
+   "bytes": 10416,
+   "doc": "Benchmark rows for the walk-forward OOS window, at the same full-cost engine. Computes, over the same concatenated OOS window as the walk-forward strategy (2021-01-01 -> 2026-06-25, full India delivery costs throughout): 1. Equal-weight buy-and-hold (Nifty 100 working universe) 2. SMA(10/50) crossov",
+   "functions": [
+    "atr_lookup",
+    "buy_and_hold",
+    "sma_crossover_predictions",
+    "random_entry_predictions",
+    "run_engine_strategy",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "backtest_v3",
+    "historical_data_loader",
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/walkforward_stats.py": {
+   "lines": 96,
+   "bytes": 3813,
+   "doc": "Block-bootstrap Sharpe CI + deflated Sharpe for the walk-forward OOS curve. Per docs/PREREGISTERED_STRATEGY_PROTOCOL.md Phase 4. Uses a moving-block bootstrap (not i.i.d.) because the concatenated daily-return series has within-fold autocorrelation from ATR-horizon holding periods.",
+   "functions": [
+    "moving_block_bootstrap_sharpe",
+    "deflated_sharpe",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/scripts/walkforward_v3.py": {
+   "lines": 372,
+   "bytes": 15059,
+   "doc": "Pre-registered walk-forward strategy selection + OOS trading. Implements docs/PREREGISTERED_STRATEGY_PROTOCOL.md exactly: 144-config grid, worst-selection-year net-return selection rule (min 30 trades/fold, Sharpe tie-break), 6-fold rolling 3y-select -> 1y-trade schedule, full India delivery cost mo",
+   "functions": [
+    "selection_years",
+    "build_grid",
+    "make_profile",
+    "atr_lookup",
+    "load_predictions",
+    "run_config",
+    "evaluate_fold_grid",
+    "select_winner",
+    "cfg_row_from_series",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "backtest_v3",
+    "historical_data_loader",
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/__init__.py": {
+   "lines": 12,
+   "bytes": 309,
+   "doc": "StockXpert - Stock Prediction System with Multi-Scale Neural Networks A complete pipeline for stock price prediction using: - yfinance for OHLCV data - GDELT + FinBERT for sentiment analysis - Multi-scale temporal encoders (ResNet, BiGRU, BiLSTM) - Multi-head attention fusion",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/config.py": {
+   "lines": 242,
+   "bytes": 7131,
+   "doc": "Configuration loading and validation for StockXpert.",
+   "functions": [
+    "load_config"
+   ],
+   "classes": [
+    "RunConfig",
+    "DataConfig",
+    "SplitsConfig",
+    "GDELTConfig",
+    "SentimentConfig",
+    "WindowsConfig",
+    "FeaturesConfig",
+    "ModelConfig",
+    "LossWeightsConfig",
+    "DirectionLossConfig",
+    "OversamplingConfig",
+    "LRSchedulerConfig",
+    "TrainConfig",
+    "StrategyConfig",
+    "ReportingConfig",
+    "Config"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "db.py",
+    "exit_policy.py",
+    "ingest_fyers.py",
+    "ingest_prices.py",
+    "kite_import.py",
+    "kite_reconcile.py",
+    "kite_snapshot_report.py",
+    "rebuild_raw_history.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/dataset/__init__.py": {
+   "lines": 2,
+   "bytes": 36,
+   "doc": "Dataset construction modules.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/dataset/dataloaders.py": {
+   "lines": 145,
+   "bytes": 4287,
+   "doc": "PyTorch DataLoaders for StockXpert samples.",
+   "functions": [
+    "compute_sample_weights",
+    "create_dataloaders"
+   ],
+   "classes": [
+    "StockXpertDataset"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/dataset/make_samples.py": {
+   "lines": 253,
+   "bytes": 8710,
+   "doc": "Sample construction for multi-scale tensors.",
+   "functions": [],
+   "classes": [
+    "Sample",
+    "SampleBuilder"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/dataset/scaling.py": {
+   "lines": 398,
+   "bytes": 13749,
+   "doc": "Scaling/normalization for multi-scale inputs. Includes: - ScalerGroup: Standard scaling for all input types - VolatilityAdjustedScaler: Scale targets by rolling volatility - TargetScaler: Scale magnitude targets with optional volatility adjustment",
+   "functions": [],
+   "classes": [
+    "VolatilityAdjustedScaler",
+    "TargetScaler",
+    "ScalerGroup"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "sklearn"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/dataset/splits.py": {
+   "lines": 56,
+   "bytes": 1717,
+   "doc": "Time-based data splitting.",
+   "functions": [
+    "time_split"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/features/__init__.py": {
+   "lines": 2,
+   "bytes": 35,
+   "doc": "Feature engineering modules.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/features/builder.py": {
+   "lines": 226,
+   "bytes": 9787,
+   "doc": "Feature builder that computes indicators and targets.",
+   "functions": [],
+   "classes": [
+    "FeatureBuilder"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/features/event_calendar.py": {
+   "lines": 45,
+   "bytes": 1534,
+   "doc": "",
+   "functions": [
+    "add_event_flags"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/features/fibonacci.py": {
+   "lines": 99,
+   "bytes": 3741,
+   "doc": "Fibonacci Retracement Calculator. Auto-detects swing highs and lows to compute key levels.",
+   "functions": [
+    "compute_fibonacci_levels"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/features/gap_predictor.py": {
+   "lines": 434,
+   "bytes": 16546,
+   "doc": "Gap Up/Gap Down Predictor for StockXpert. Predicts next-day opening gaps using: 1. Historical gap patterns (magnitude, frequency, volatility) 2. Overnight news sentiment (via YFinanceNewsClient + TextBlob) 3. Technical context (ATR, trend, volatility regime) Usage: predictor = GapPredictor() result ",
+   "functions": [
+    "compute_gap_features"
+   ],
+   "classes": [
+    "GapPrediction",
+    "GapPredictor"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/features/indicators.py": {
+   "lines": 897,
+   "bytes": 32078,
+   "doc": "Technical indicators for feature engineering. All indicators follow consistent formulas locked in the spec.",
+   "functions": [
+    "compute_cross_asset_features",
+    "compute_macro_proxy",
+    "compute_atr_change",
+    "compute_sma_cross",
+    "compute_price_vs_high",
+    "compute_relative_volume",
+    "compute_log_return",
+    "compute_volume_change",
+    "compute_rsi",
+    "compute_macd",
+    "compute_bollinger_bands",
+    "compute_volatility",
+    "compute_sma_zscore",
+    "compute_atr",
+    "compute_adx",
+    "compute_trend_persistence",
+    "compute_on_balance_volume",
+    "compute_vwap",
+    "compute_keltner_channels",
+    "compute_chaikin_oscillator",
+    "compute_money_flow_index",
+    "compute_microstructure_features",
+    "compute_stochastic_oscillator",
+    "compute_williams_r",
+    "compute_commodity_channel_index",
+    "compute_parabolic_sar",
+    "compute_all_indicators",
+    "compute_cross_sectional_features",
+    "add_cross_sectional_to_panel"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/features/intraday.py": {
+   "lines": 214,
+   "bytes": 7896,
+   "doc": "Intraday feature engineering from minute-bar data (VECTORIZED). Computes daily aggregated features from minute-bar data that capture institutional activity and market microstructure patterns invisible in daily OHLCV data. This version uses vectorized pandas groupby operations instead of per-date Pyt",
+   "functions": [
+    "compute_intraday_features",
+    "_empty_features",
+    "add_intraday_features_batch"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/features/schemas.py": {
+   "lines": 47,
+   "bytes": 1611,
+   "doc": "Feature schemas and validation.",
+   "functions": [],
+   "classes": [
+    "FeatureSchema"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/fundamental/scorer.py": {
+   "lines": 170,
+   "bytes": 6342,
+   "doc": "Fundamental scoring module for StockXpert.",
+   "functions": [],
+   "classes": [
+    "StockFundamentalScore",
+    "FundamentalScorer"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/intraday/signals.py": {
+   "lines": 130,
+   "bytes": 4641,
+   "doc": "Intraday signal generation engine. Implements rule-based strategies for intraday trading: 1. VWAP Pullback / Rejection 2. Opening Range Breakout (ORB) 3. Momentum Continuation",
+   "functions": [],
+   "classes": [
+    "IntradaySignalGenerator"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/logging_utils.py": {
+   "lines": 56,
+   "bytes": 1416,
+   "doc": "Logging utilities for StockXpert.",
+   "functions": [
+    "setup_logging"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/__init__.py": {
+   "lines": 2,
+   "bytes": 29,
+   "doc": "Data pipeline modules.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/csv_sentiment.py": {
+   "lines": 177,
+   "bytes": 6669,
+   "doc": "CSV Sentiment Client - loads and aggregates sentiment from CSV file.",
+   "functions": [],
+   "classes": [
+    "CSVSentimentClient"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/finbert.py": {
+   "lines": 103,
+   "bytes": 3139,
+   "doc": "FinBERT sentiment scoring using HuggingFace Transformers.",
+   "functions": [],
+   "classes": [
+    "FinBERTScorer"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas",
+    "torch",
+    "transformers"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/fundamentals.py": {
+   "lines": 106,
+   "bytes": 3915,
+   "doc": "Fundamental data extraction using yfinance.",
+   "functions": [],
+   "classes": [
+    "FundamentalDownloader"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/gdelt.py": {
+   "lines": 177,
+   "bytes": 5963,
+   "doc": "GDELT 2.1 API client for news fetching.",
+   "functions": [],
+   "classes": [
+    "GDELTClient"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas",
+    "requests"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/prices.py": {
+   "lines": 86,
+   "bytes": 2727,
+   "doc": "Price data download using yfinance.",
+   "functions": [
+    "download_prices"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/sentiment.py": {
+   "lines": 163,
+   "bytes": 5453,
+   "doc": "Sentiment aggregation and alignment with trading days.",
+   "functions": [
+    "build_daily_sentiment",
+    "merge_sentiment_with_prices"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas",
+    "pytz"
+   ],
+   "imported_by": [
+    "app.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/target_scraper.py": {
+   "lines": 213,
+   "bytes": 7582,
+   "doc": "Analyst Target Price Scraper for StockXpert. Fetches consensus analyst target prices from: 1. yfinance (primary) \u2014 via Ticker.info fields 2. Fallback to cached data if fetching fails Caches results per stock with 24-hour TTL. Usage: scraper = TargetScraper(cache_dir=\"cache/targets\") targets = scrape",
+   "functions": [
+    "format_analyst_table"
+   ],
+   "classes": [
+    "AnalystTarget",
+    "TargetScraper"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/trading_calendar.py": {
+   "lines": 75,
+   "bytes": 2433,
+   "doc": "Trading calendar utilities derived from actual price data.",
+   "functions": [],
+   "classes": [
+    "TradingCalendar"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/yf_news.py": {
+   "lines": 130,
+   "bytes": 4420,
+   "doc": "yfinance news provider for fetching stock headlines.",
+   "functions": [],
+   "classes": [
+    "YFinanceNewsClient"
+   ],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/mdata/yfinance_news.py": {
+   "lines": 77,
+   "bytes": 2578,
+   "doc": "YFinance News Fetcher Module.",
+   "functions": [],
+   "classes": [
+    "YFinanceNewsClient"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas",
+    "yfinance"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/__init__.py": {
+   "lines": 14,
+   "bytes": 336,
+   "doc": "Model architecture modules.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/context_model.py": {
+   "lines": 28,
+   "bytes": 751,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "ContextEncoder"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/encoders.py": {
+   "lines": 260,
+   "bytes": 7698,
+   "doc": "Multi-scale encoders: ResNet1D, BiGRU, BiLSTM, Context MLP.",
+   "functions": [],
+   "classes": [
+    "ResNet1DEncoder",
+    "ResNLSEncoder",
+    "BiGRUEncoder",
+    "BiLSTMEncoder",
+    "ContextEncoder"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/fusion.py": {
+   "lines": 196,
+   "bytes": 6988,
+   "doc": "Multi-head attention fusion for combining encoded tokens.",
+   "functions": [],
+   "classes": [
+    "AttentionFusion",
+    "HorizonMixer"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/fusion_layers.py": {
+   "lines": 62,
+   "bytes": 1957,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "CrossAttentionFusion"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/fusion_model.py": {
+   "lines": 156,
+   "bytes": 5801,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "MultiEncoderFusionModel"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/horizon_models.py": {
+   "lines": 222,
+   "bytes": 9933,
+   "doc": "Horizon-specialized models for the ensemble architecture. Each model focuses on a specific time scale using the optimal encoder type.",
+   "functions": [],
+   "classes": [
+    "ThreeWayFusion",
+    "specialized_head_block",
+    "BaseHorizonModel",
+    "ShortTermModel",
+    "MediumTermModel",
+    "LongTermModel"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/losses.py": {
+   "lines": 541,
+   "bytes": 20375,
+   "doc": "Loss functions for StockXpert. Includes: - StockXpertLoss: Original combined loss - DirectionAwareLoss: Asymmetric focal loss for direction prediction - QuantileLoss: Pinball loss for quantile regression - DirectionConsistencyLoss: Penalize inconsistent direction across horizons",
+   "functions": [],
+   "classes": [
+    "DirectionAwareLoss",
+    "QuantileLoss",
+    "DirectionConsistencyLoss",
+    "CumulativeReturnConsistencyLoss",
+    "StockXpertLoss",
+    "ProbabilisticLoss"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/sentiment_encoder.py": {
+   "lines": 43,
+   "bytes": 1121,
+   "doc": "Sentiment Encoder - Dedicated MLP for processing sentiment features.",
+   "functions": [],
+   "classes": [
+    "SentimentEncoder"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/stockxpert.py": {
+   "lines": 593,
+   "bytes": 21596,
+   "doc": "Main StockXpert model combining all components. Includes: - StockXpertModel: Original model - StockXpertModelV2: Enhanced model with regime detection, probabilistic output, quantile regression - RegimeDetector: Market regime classification head - ProbabilisticMagnitudeHead: Predict mean + variance -",
+   "functions": [],
+   "classes": [
+    "ResidualBlock",
+    "RegimeDetector",
+    "ProbabilisticMagnitudeHead",
+    "QuantileMagnitudeHead",
+    "StockXpertModel",
+    "StockXpertModelV2"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": [
+    "hybrid_swingnet/fast_builder.py",
+    "hybrid_swingnet/upstream/scripts/backtest_v3.py",
+    "hybrid_swingnet/upstream/scripts/evaluate_v3.py",
+    "hybrid_swingnet/upstream/scripts/evaluate_v3_confidence.py",
+    "hybrid_swingnet/upstream/scripts/optimize_v3.py",
+    "hybrid_swingnet/upstream/scripts/paper_trade_v3.py",
+    "hybrid_swingnet/upstream/scripts/replay_v3_policy_configs.py",
+    "hybrid_swingnet/upstream/scripts/run_baselines.py",
+    "hybrid_swingnet/upstream/scripts/sweep_v3_policy.py",
+    "hybrid_swingnet/upstream/scripts/sync_yfinance_data.py",
+    "hybrid_swingnet/upstream/scripts/train_v3.py",
+    "hybrid_swingnet/upstream/scripts/walkforward_benchmarks.py",
+    "hybrid_swingnet/upstream/scripts/walkforward_v3.py",
+    "hybrid_swingnet/upstream/src/stockxpert/models/fusion_model.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/config.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/dataloaders.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/make_samples.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/splits.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/live/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/live/drift_monitor.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/models/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/models/fusion_model.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/models/horizon_models.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/models/losses.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/reporting/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/reporting/v3_evaluator.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/training/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/training/train_loop.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/config.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/dataloaders.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/make_samples.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/splits.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/models/calibration.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/policy/walk_forward.py",
+    "hybrid_swingnet/upstream/tests/test_inference_pipeline.py",
+    "hybrid_swingnet/upstream/tests/test_loss_balance.py",
+    "hybrid_swingnet/upstream/tests/test_no_leakage.py",
+    "hybrid_swingnet/upstream/tests/test_shapes.py",
+    "hybrid_swingnet/upstream/tests/test_targets_alignment.py",
+    "hybrid_swingnet/upstream/tests/test_v3_calibration.py",
+    "hybrid_swingnet/upstream/tests/test_v3_model.py",
+    "hybrid_swingnet/upstream/tests/test_v3_splits.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/models/time2vec.py": {
+   "lines": 140,
+   "bytes": 5535,
+   "doc": "Time2Vec: Learnable Positional Encoding. Paper: https://arxiv.org/abs/1907.05321",
+   "functions": [],
+   "classes": [
+    "Time2Vec",
+    "Time2VecLayer"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/recommender/calibration.py": {
+   "lines": 112,
+   "bytes": 4092,
+   "doc": "Calibration module for StockXpert predictions. Uses Isotonic Regression to map raw model outputs to calibrated probabilities and returns.",
+   "functions": [],
+   "classes": [
+    "PredictionCalibrator"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "joblib",
+    "numpy",
+    "sklearn"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/recommender/engine.py": {
+   "lines": 121,
+   "bytes": 4435,
+   "doc": "Unified recommendation engine for StockXpert.",
+   "functions": [],
+   "classes": [
+    "Recommendation",
+    "RecommendationEngine"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/recommender/portfolio.py": {
+   "lines": 63,
+   "bytes": 2031,
+   "doc": "Portfolio Optimization Module. Handles allocation across a basket of recommendations.",
+   "functions": [],
+   "classes": [
+    "PortfolioOptimizer"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/recommender/strategy.py": {
+   "lines": 169,
+   "bytes": 5661,
+   "doc": "Trading Strategy Module. Handles position sizing, risk management, and execution logic.",
+   "functions": [],
+   "classes": [
+    "TradeSetup",
+    "TradingStrategy"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/reporting/__init__.py": {
+   "lines": 2,
+   "bytes": 25,
+   "doc": "Reporting modules.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/reporting/metrics.py": {
+   "lines": 64,
+   "bytes": 1852,
+   "doc": "Metrics computation and export.",
+   "functions": [
+    "compute_and_save_metrics"
+   ],
+   "classes": [
+    "NumpyEncoder"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/reporting/plots.py": {
+   "lines": 326,
+   "bytes": 11206,
+   "doc": "Visualization plots for training results and predictions.",
+   "functions": [
+    "plot_loss_curves",
+    "plot_scatter_pred_vs_actual",
+    "plot_residual_histograms",
+    "plot_confusion_matrices",
+    "plot_price_predictions",
+    "create_all_plots"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "sklearn"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/reporting/predictions.py": {
+   "lines": 166,
+   "bytes": 6683,
+   "doc": "Prediction generation and export.",
+   "functions": [
+    "generate_predictions"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/training/__init__.py": {
+   "lines": 2,
+   "bytes": 33,
+   "doc": "Training pipeline modules.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/training/checkpointing.py": {
+   "lines": 77,
+   "bytes": 1803,
+   "doc": "Checkpoint management for saving/loading models.",
+   "functions": [
+    "save_checkpoint",
+    "load_checkpoint"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/training/eval_loop.py": {
+   "lines": 125,
+   "bytes": 4317,
+   "doc": "",
+   "functions": [
+    "evaluate"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/training/scso_holdout.py": {
+   "lines": 188,
+   "bytes": 6494,
+   "doc": "Fixed SCSO optimization with proper nested holdout validation. This wrapper adds a held-out test set that is NEVER used during SCSO optimization, preventing overfitting to the validation set.",
+   "functions": [
+    "run_scso_with_holdout",
+    "_initialize_population",
+    "_train_and_evaluate",
+    "_update_population"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/training/train_loop.py": {
+   "lines": 560,
+   "bytes": 22983,
+   "doc": "Training loop with early stopping. Includes: - Standard loss-based early stopping - Financial early stopping (based on direction accuracy, simulated returns) - Comprehensive validation metrics (IC, hit rate, calibration)",
+   "functions": [
+    "compute_comprehensive_metrics"
+   ],
+   "classes": [
+    "FinancialMetrics",
+    "FinancialEarlyStopping",
+    "Trainer"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "sklearn",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/utils/stat_tests.py": {
+   "lines": 214,
+   "bytes": 6472,
+   "doc": "Statistical significance testing utilities for StockXpert. Provides: - Bootstrap confidence intervals for Sharpe ratio - Paired return t-test (model vs benchmark) - Binomial test for directional accuracy vs 50% - Diebold-Mariano test for forecast comparison",
+   "functions": [
+    "bootstrap_sharpe_ci",
+    "paired_return_test",
+    "direction_accuracy_test",
+    "diebold_mariano_test",
+    "information_coefficient",
+    "compute_precision_recall_direction"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/utils.py": {
+   "lines": 265,
+   "bytes": 8010,
+   "doc": "General utility functions for StockXpert.",
+   "functions": [
+    "set_seed",
+    "_mps_available",
+    "get_device",
+    "ensure_dir",
+    "adaptive_threshold",
+    "adaptive_threshold_vectorized",
+    "should_trade"
+   ],
+   "classes": [
+    "Timer",
+    "AdaptiveThresholdState"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/__init__.py": {
+   "lines": 3,
+   "bytes": 47,
+   "doc": "StockXpert V3 implementation namespace.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/config.py": {
+   "lines": 178,
+   "bytes": 5642,
+   "doc": "Configuration for the V3 implementation.",
+   "functions": [
+    "_sentiment_config",
+    "_features_config",
+    "load_v3_config"
+   ],
+   "classes": [
+    "V3SplitsConfig",
+    "V3ModelConfig",
+    "V3LossWeightsConfig",
+    "V3TrainConfig",
+    "CalibrationConfig",
+    "BacktestConfig",
+    "LiveConfig",
+    "V3Config"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "db.py",
+    "exit_policy.py",
+    "ingest_fyers.py",
+    "ingest_prices.py",
+    "kite_import.py",
+    "kite_reconcile.py",
+    "kite_snapshot_report.py",
+    "rebuild_raw_history.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/__init__.py": {
+   "lines": 20,
+   "bytes": 594,
+   "doc": "V3 dataset exports.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/dataloaders.py": {
+   "lines": 95,
+   "bytes": 3706,
+   "doc": "V3 dataloaders that pass static stock traits instead of stock indices.",
+   "functions": [
+    "stock_traits_from_sample",
+    "create_dataloaders"
+   ],
+   "classes": [
+    "StockXpertV3Dataset"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/make_samples.py": {
+   "lines": 54,
+   "bytes": 1802,
+   "doc": "V3 sample helpers for attaching static stock traits.",
+   "functions": [
+    "compute_stock_traits"
+   ],
+   "classes": [
+    "SampleBuilder"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/splits.py": {
+   "lines": 136,
+   "bytes": 4773,
+   "doc": "V3 split utilities with embargo and cross-sectional holdouts.",
+   "functions": [
+    "_sample_date",
+    "time_split",
+    "cross_sectional_split",
+    "assert_no_leakage"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/live/__init__.py": {
+   "lines": 18,
+   "bytes": 546,
+   "doc": "V3 live trading and monitoring exports.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/live/drift_monitor.py": {
+   "lines": 63,
+   "bytes": 2485,
+   "doc": "V3 paper-trading drift checks.",
+   "functions": [
+    "population_stability_index"
+   ],
+   "classes": [
+    "DriftMonitor"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/live/model_registry.py": {
+   "lines": 54,
+   "bytes": 1692,
+   "doc": "Simple file-backed V3 model registry.",
+   "functions": [
+    "sha256_json",
+    "current_git_commit"
+   ],
+   "classes": [
+    "ModelRegistryRecord",
+    "ModelRegistry"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/live/paper_trading.py": {
+   "lines": 68,
+   "bytes": 2583,
+   "doc": "V3 paper-trading pipeline primitives.",
+   "functions": [],
+   "classes": [
+    "PaperTradeConfig",
+    "PaperTradingPipeline"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/models/__init__.py": {
+   "lines": 19,
+   "bytes": 574,
+   "doc": "V3 model exports.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/models/calibration.py": {
+   "lines": 117,
+   "bytes": 4271,
+   "doc": "Post-hoc calibration utilities for V3.",
+   "functions": [],
+   "classes": [
+    "IsotonicCalibrator",
+    "TemperatureScaling",
+    "CalibrationEvaluator"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "sklearn",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/models/fusion_model.py": {
+   "lines": 70,
+   "bytes": 3501,
+   "doc": "V3 multi-encoder fusion model variant.",
+   "functions": [],
+   "classes": [
+    "MultiEncoderFusionModel"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/models/horizon_models.py": {
+   "lines": 17,
+   "bytes": 531,
+   "doc": "V3 horizon-specialized model exports. For V3, the main supported architecture is ``StockXpertModelV3``. These names are kept as aliases to make migration from V1 explicit without retaining stock ID embeddings in the V3 namespace.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/models/losses.py": {
+   "lines": 136,
+   "bytes": 5850,
+   "doc": "V3 loss functions.",
+   "functions": [],
+   "classes": [
+    "StockXpertV3Loss"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/models/stockxpert.py": {
+   "lines": 152,
+   "bytes": 6047,
+   "doc": "V3 StockXpert model with static stock traits instead of stock ID embeddings.",
+   "functions": [],
+   "classes": [
+    "StockXpertModelV3"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": [
+    "hybrid_swingnet/fast_builder.py",
+    "hybrid_swingnet/upstream/scripts/backtest_v3.py",
+    "hybrid_swingnet/upstream/scripts/evaluate_v3.py",
+    "hybrid_swingnet/upstream/scripts/evaluate_v3_confidence.py",
+    "hybrid_swingnet/upstream/scripts/optimize_v3.py",
+    "hybrid_swingnet/upstream/scripts/paper_trade_v3.py",
+    "hybrid_swingnet/upstream/scripts/replay_v3_policy_configs.py",
+    "hybrid_swingnet/upstream/scripts/run_baselines.py",
+    "hybrid_swingnet/upstream/scripts/sweep_v3_policy.py",
+    "hybrid_swingnet/upstream/scripts/sync_yfinance_data.py",
+    "hybrid_swingnet/upstream/scripts/train_v3.py",
+    "hybrid_swingnet/upstream/scripts/walkforward_benchmarks.py",
+    "hybrid_swingnet/upstream/scripts/walkforward_v3.py",
+    "hybrid_swingnet/upstream/src/stockxpert/models/fusion_model.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/config.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/dataloaders.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/make_samples.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/dataset/splits.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/live/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/live/drift_monitor.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/models/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/models/fusion_model.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/models/horizon_models.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/models/losses.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/reporting/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/reporting/v3_evaluator.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/training/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v3/training/train_loop.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/__init__.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/config.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/dataloaders.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/make_samples.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/splits.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/models/calibration.py",
+    "hybrid_swingnet/upstream/src/stockxpert/v4/policy/walk_forward.py",
+    "hybrid_swingnet/upstream/tests/test_inference_pipeline.py",
+    "hybrid_swingnet/upstream/tests/test_loss_balance.py",
+    "hybrid_swingnet/upstream/tests/test_no_leakage.py",
+    "hybrid_swingnet/upstream/tests/test_shapes.py",
+    "hybrid_swingnet/upstream/tests/test_targets_alignment.py",
+    "hybrid_swingnet/upstream/tests/test_v3_calibration.py",
+    "hybrid_swingnet/upstream/tests/test_v3_model.py",
+    "hybrid_swingnet/upstream/tests/test_v3_splits.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/reporting/__init__.py": {
+   "lines": 7,
+   "bytes": 184,
+   "doc": "V3 reporting exports.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/reporting/v3_evaluator.py": {
+   "lines": 131,
+   "bytes": 4680,
+   "doc": "V3 statistical evaluator and cross-sectional breakdowns.",
+   "functions": [],
+   "classes": [
+    "EvalResults",
+    "BreakdownResults",
+    "V3Evaluator"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/training/__init__.py": {
+   "lines": 7,
+   "bytes": 106,
+   "doc": "V3 training exports.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/training/eval_loop.py": {
+   "lines": 65,
+   "bytes": 2212,
+   "doc": "V3 evaluation loop.",
+   "functions": [
+    "evaluate"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v3/training/train_loop.py": {
+   "lines": 179,
+   "bytes": 6969,
+   "doc": "V3 trainer with AMP and stock_traits inputs.",
+   "functions": [],
+   "classes": [
+    "Trainer"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "pandas",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/__init__.py": {
+   "lines": 6,
+   "bytes": 153,
+   "doc": "HybridSwingNet V4 experimental trading stack.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/config.py": {
+   "lines": 198,
+   "bytes": 6474,
+   "doc": "Configuration for the isolated V4 trading stack.",
+   "functions": [
+    "_sentiment_config",
+    "_features_config",
+    "load_v4_config"
+   ],
+   "classes": [
+    "V4ExecutionProfileConfig",
+    "V4TargetConfig",
+    "V4DataConfig",
+    "V4FeaturesConfig",
+    "V4ModelConfig",
+    "V4LossWeightsConfig",
+    "V4TrainConfig",
+    "V4CalibrationConfig",
+    "V4PolicyConfig",
+    "V4SplitsConfig",
+    "V4Config"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "db.py",
+    "exit_policy.py",
+    "ingest_fyers.py",
+    "ingest_prices.py",
+    "kite_import.py",
+    "kite_reconcile.py",
+    "kite_snapshot_report.py",
+    "rebuild_raw_history.py"
+   ]
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/__init__.py": {
+   "lines": 2,
+   "bytes": 28,
+   "doc": "V4 dataset utilities.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/dataloaders.py": {
+   "lines": 55,
+   "bytes": 2260,
+   "doc": "V4 torch datasets.",
+   "functions": [
+    "create_dataloaders"
+   ],
+   "classes": [
+    "StockXpertV4Dataset"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/make_samples.py": {
+   "lines": 91,
+   "bytes": 3292,
+   "doc": "V4 sample construction. This module wraps the legacy tensor sample with trading-target metadata needed by the V4 losses and policy replay.",
+   "functions": [],
+   "classes": [
+    "V4Sample",
+    "SampleBuilder"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/splits.py": {
+   "lines": 6,
+   "bytes": 191,
+   "doc": "V4 split helpers.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/dataset/targets.py": {
+   "lines": 228,
+   "bytes": 7209,
+   "doc": "Cost-adjusted triple-barrier targets for V4.",
+   "functions": [
+    "_require_ohlc",
+    "_atr_at",
+    "cost_adjusted_triple_barrier",
+    "attach_v4_targets"
+   ],
+   "classes": [
+    "TradeAction",
+    "IndiaDeliveryCosts",
+    "TripleBarrierTarget"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/models/__init__.py": {
+   "lines": 2,
+   "bytes": 26,
+   "doc": "V4 model utilities.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/models/calibration.py": {
+   "lines": 82,
+   "bytes": 3174,
+   "doc": "Horizon/regime calibration with minimum-sample fallbacks.",
+   "functions": [],
+   "classes": [
+    "CalibrationRecord",
+    "HorizonRegimeCalibrator"
+   ],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/models/losses.py": {
+   "lines": 84,
+   "bytes": 3434,
+   "doc": "V4 multi-head trading losses.",
+   "functions": [],
+   "classes": [
+    "StockXpertV4Loss"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/policy/__init__.py": {
+   "lines": 2,
+   "bytes": 27,
+   "doc": "V4 policy utilities.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/policy/selection.py": {
+   "lines": 58,
+   "bytes": 2245,
+   "doc": "V4 after-cost utility trade selection.",
+   "functions": [
+    "score_candidates",
+    "select_trades"
+   ],
+   "classes": [
+    "PolicySettings"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/policy/walk_forward.py": {
+   "lines": 79,
+   "bytes": 3386,
+   "doc": "Nested walk-forward policy selection and replay.",
+   "functions": [
+    "evaluate_trades",
+    "reject_unstable_winner",
+    "choose_policy",
+    "replay_policy"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/reporting/__init__.py": {
+   "lines": 2,
+   "bytes": 30,
+   "doc": "V4 reporting utilities.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/reporting/scorecard.py": {
+   "lines": 52,
+   "bytes": 1768,
+   "doc": "V4 reproducible reporting artifacts.",
+   "functions": [
+    "config_hash",
+    "git_state",
+    "write_v4_reports",
+    "load_yaml_dict"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/training/__init__.py": {
+   "lines": 2,
+   "bytes": 29,
+   "doc": "V4 training utilities.",
+   "functions": [],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/training/eval_loop.py": {
+   "lines": 77,
+   "bytes": 3476,
+   "doc": "V4 evaluation helpers.",
+   "functions": [
+    "predict_frame",
+    "evaluate_v4"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/src/stockxpert/v4/training/train_loop.py": {
+   "lines": 104,
+   "bytes": 4312,
+   "doc": "V4 stock-traits-aware training loop.",
+   "functions": [],
+   "classes": [
+    "Trainer"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_backend_contract.py": {
+   "lines": 30,
+   "bytes": 877,
+   "doc": "",
+   "functions": [
+    "test_backend_openapi_contains_expected_paths",
+    "test_backend_openapi_exposes_recommendation_schema"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_backend_self_contained.py": {
+   "lines": 38,
+   "bytes": 1337,
+   "doc": "",
+   "functions": [
+    "test_backend_has_no_runtime_repo_imports",
+    "test_backend_health_payload_starts_from_local_bundle"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_inference_pipeline.py": {
+   "lines": 269,
+   "bytes": 10222,
+   "doc": "Tests for Phase 1 inference pipeline bug fixes. Verifies sentiment scaling, vol_ref validation, stock embedding handling, dynamic accuracy loading, and horizon-specific thresholds.",
+   "functions": [],
+   "classes": [
+    "TestSentimentScaling",
+    "TestVolRefValidation",
+    "TestStockEmbeddingValidation",
+    "TestDynamicAccuracy",
+    "TestSignalThresholds",
+    "TestATRStopLoss"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "sklearn"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_loss_balance.py": {
+   "lines": 108,
+   "bytes": 3772,
+   "doc": "Tests for Phase 2 loss function fixes. Verifies that DirectionAwareLoss with balanced parameters produces symmetric loss, and that horizon-specific weights are applied correctly.",
+   "functions": [],
+   "classes": [
+    "TestSymmetricDirectionLoss",
+    "TestHorizonWeights"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_no_leakage.py": {
+   "lines": 92,
+   "bytes": 2920,
+   "doc": "Test to ensure no data leakage in the pipeline.",
+   "functions": [
+    "test_target_dates_are_future",
+    "test_scaler_fit_on_train_only"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_shapes.py": {
+   "lines": 95,
+   "bytes": 3345,
+   "doc": "Test tensor shapes throughout the pipeline.",
+   "functions": [
+    "test_sample_shapes",
+    "test_model_output_shapes"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_targets_alignment.py": {
+   "lines": 85,
+   "bytes": 2727,
+   "doc": "Test that targets are correctly aligned with future dates.",
+   "functions": [
+    "test_target_calculation"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_v3_calibration.py": {
+   "lines": 35,
+   "bytes": 1082,
+   "doc": "",
+   "functions": [
+    "test_isotonic_calibrator_roundtrip",
+    "test_temperature_scaling_transforms_logits",
+    "test_calibration_evaluator_known_values"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_v3_model.py": {
+   "lines": 38,
+   "bytes": 1018,
+   "doc": "",
+   "functions": [
+    "test_v3_model_uses_stock_traits_without_embedding"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "torch"
+   ],
+   "imported_by": []
+  },
+  "hybrid_swingnet/upstream/tests/test_v3_splits.py": {
+   "lines": 68,
+   "bytes": 2026,
+   "doc": "",
+   "functions": [
+    "_sample",
+    "test_time_split_enforces_embargo",
+    "test_cross_sectional_split_has_disjoint_symbols",
+    "test_no_leakage_assertion_fails_for_overlap"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "stockxpert"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "ice_fetcher.py": {
+   "lines": 30,
+   "bytes": 1109,
+   "doc": "",
+   "functions": [],
+   "classes": [
+    "ICERedditClient"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "pandas",
+    "requests"
+   ],
+   "imported_by": []
+  },
+  "ideal.py": {
+   "lines": 386,
+   "bytes": 15126,
+   "doc": "Ideal value bands (\"actual vs ideal\") for every number the portal shows. WHY A number alone is meaningless to someone who is not a finance person. \"ROCE 8.1\" says nothing; \"ROCE 8.1% - below the 15% we look for\" says everything. WHERE THE BANDS COME FROM (this matters - they are not invented) 1. Thi",
+   "functions": [
+    "_fmt",
+    "assess",
+    "assess_many",
+    "catalog"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": [
+    "terminal_api.py"
    ]
   },
   "ingest_fundamentals.py": {
@@ -983,6 +4183,63 @@
     "app.py"
    ]
   },
+  "ingest_fyers.py": {
+   "lines": 917,
+   "bytes": 40604,
+   "doc": "Ingest Fyers NSE market data into data/app.db. WHAT THIS WRITES ---------------- * ``prices_daily`` / ``price_meta`` \u2014 daily OHLCV (append-only by default) * ``fyers_symbol_master`` \u2014 official NSE cash-segment symbol master * ``fyers_quotes`` \u2014 point-in-time quote snapshots (audit trail) * ``fyers_s",
+   "functions": [
+    "now_ist",
+    "today_ist",
+    "market_closed_today",
+    "_latest_price",
+    "_bar_is_valid",
+    "_dedupe_sorted",
+    "refresh_symbol_master",
+    "master_symbols",
+    "_symbol_candidates",
+    "resolve_symbols",
+    "master_status",
+    "_overlap_factor",
+    "_attach_corporate_action",
+    "_stored_basis",
+    "_last_stored_close",
+    "ingest_symbol_history",
+    "_backup_symbol",
+    "stale_symbols",
+    "sync_history",
+    "snapshot_quotes",
+    "verify_symbol",
+    "_verify_verdict",
+    "verify",
+    "record_sync",
+    "status",
+    "_resolve_symbols",
+    "_cmd_history",
+    "_cmd_verify",
+    "main",
+    "_cmd_sync",
+    "sync_recent"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "config",
+    "corporate_actions",
+    "db",
+    "fyers_client",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "backfill_gaps.py",
+    "coverage_report.py",
+    "daily_update.py",
+    "rebuild_raw_history.py",
+    "refresh_pipeline.py",
+    "test_fyers_integration.py",
+    "test_rebuild_raw_history.py"
+   ]
+  },
   "ingest_missing.py": {
    "lines": 50,
    "bytes": 1731,
@@ -1002,21 +4259,25 @@
    "imported_by": []
   },
   "ingest_prices.py": {
-   "lines": 68,
-   "bytes": 2468,
+   "lines": 113,
+   "bytes": 4381,
    "doc": "",
    "functions": [
+    "_fetch_frame",
     "fetch_one",
+    "_stale_symbols",
     "run"
    ],
    "classes": [],
    "has_cli": false,
    "imports_local": [
     "config",
-    "db"
+    "db",
+    "universe_helper"
    ],
    "imports_third_party": [],
    "imported_by": [
+    "refresh_pipeline.py",
     "verify_deployment.py"
    ]
   },
@@ -1038,8 +4299,8 @@
    "imported_by": []
   },
   "institutional.py": {
-   "lines": 105,
-   "bytes": 3530,
+   "lines": 120,
+   "bytes": 4320,
    "doc": "A2 \u2014 Institutional footprint. - accumulation_score: up-volume share over last 20d (reliable proxy). - fetch_delivery_nse: best-effort NSE delivery % (skips if blocked). Stored in institutional(symbol,date,accum,delivery_pct).",
    "functions": [
     "_ensure",
@@ -1052,12 +4313,14 @@
    "has_cli": true,
    "imports_local": [
     "db",
+    "signal_guard",
     "universe_helper"
    ],
    "imports_third_party": [
     "requests"
    ],
    "imported_by": [
+    "refresh_pipeline.py",
     "scheduler_bg.py",
     "top_picks.py"
    ]
@@ -1125,11 +4388,17 @@
    "imported_by": []
   },
   "ledger.py": {
-   "lines": 98,
-   "bytes": 2921,
-   "doc": "Paper-Trade Ledger & System Stats (N3). Reads graded swing_signals and computes system-level performance: Win Rate, Profit Factor, Expectancy (R), Max Drawdown.",
+   "lines": 184,
+   "bytes": 6119,
+   "doc": "Paper-Trade Ledger & System Stats (N3). Reads graded swing_signals and computes system-level performance: Win Rate, Profit Factor, Expectancy (R), Max Drawdown. Also splits those same numbers month by month (N3), so a bad month is visible instead of being averaged away by a good one.",
    "functions": [
+    "_month_of",
+    "_graded_rows",
+    "_r_of",
+    "_stats_from_rs",
     "compute_stats",
+    "compute_monthly_stats",
+    "trade_r_multiple",
     "get_trades"
    ],
    "classes": [],
@@ -1139,7 +4408,9 @@
    ],
    "imports_third_party": [],
    "imported_by": [
-    "terminal_api.py"
+    "terminal_api.py",
+    "test_n1_n3.py",
+    "test_swing_exits.py"
    ]
   },
   "log_utils.py": {
@@ -1177,6 +4448,76 @@
     "traders/value_investing_made_easy.py",
     "traders/way_of_the_turtle.py",
     "trend_scanner.py"
+   ]
+  },
+  "lstm_model.py": {
+   "lines": 954,
+   "bytes": 43305,
+   "doc": "LSTM forward-return forecaster for NSE daily bars (CPU-only). WHY THIS FILE EXISTS -------------------- The existing production models (`ml_train.py` -> LightGBM on hand-made features) predict 6/12 month forward returns from a *single* feature row per stock. The academic equity-forecasting literatur",
+   "functions": [
+    "default_db_path",
+    "seed_everything",
+    "set_threads",
+    "device",
+    "load_price_panel",
+    "build_price_features",
+    "build_sequences",
+    "walk_forward_folds",
+    "check_fold_embargo",
+    "purge_inner_split",
+    "build_model",
+    "count_parameters",
+    "train_model",
+    "predict",
+    "build_latest_windows",
+    "score_latest",
+    "save_bundle",
+    "load_saved_model"
+   ],
+   "classes": [
+    "LeakageError",
+    "SequenceDataset",
+    "Fold",
+    "Standardizer"
+   ],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "torch"
+   ],
+   "imported_by": [
+    "lstm_train.py",
+    "test_lstm.py"
+   ]
+  },
+  "lstm_train.py": {
+   "lines": 440,
+   "bytes": 20278,
+   "doc": "Walk-forward, leakage-audited evaluation of the LSTM forward-return model. WHY THIS FILE EXISTS -------------------- `lstm_model.py` builds the windows and the net. This file is the honest scoreboard: it trains the net the way the literature does (expanding-window walk-forward) and reports ONLY out-",
+   "functions": [
+    "_ranks",
+    "_pearson",
+    "spearman_ic",
+    "rank_ic_by_date",
+    "auc_score",
+    "direction_metrics",
+    "run_walk_forward",
+    "parse_args",
+    "main",
+    "_final_bundle"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "lstm_model"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": [
+    "test_lstm.py"
    ]
   },
   "macro.py": {
@@ -1304,8 +4645,8 @@
    ]
   },
   "ml_predict.py": {
-   "lines": 79,
-   "bytes": 2591,
+   "lines": 83,
+   "bytes": 2725,
    "doc": "",
    "functions": [
     "_compatible",
@@ -1315,13 +4656,15 @@
    "has_cli": true,
    "imports_local": [
     "db",
-    "ml_features"
+    "ml_features",
+    "signal_guard"
    ],
    "imports_third_party": [
     "joblib",
     "numpy"
    ],
    "imported_by": [
+    "refresh_pipeline.py",
     "verify_deployment.py"
    ]
   },
@@ -1376,6 +4719,95 @@
     "terminal_api.py"
    ]
   },
+  "nse_archive_ingest.py": {
+   "lines": 604,
+   "bytes": 24870,
+   "doc": "Ingest NSE's own historical price archives (bhavcopy) into prices_daily. WHY THIS EXISTS --------------- Until now every price row in this system arrived through Yahoo. Yahoo is a third party with its own adjustment rules, its own outages and its own idea of when a symbol exists. NSE publishes the s",
+   "functions": [
+    "prepare_connection",
+    "ensure_tables",
+    "existing_symbols",
+    "tracked_stock_symbols",
+    "resolve_symbols",
+    "rows_on_date",
+    "upsert_ohlcv",
+    "refresh_price_meta",
+    "fetch_bhavcopy",
+    "_fetch_with_retry",
+    "ingest_day",
+    "_print_report",
+    "_is_loaded",
+    "_weekdays",
+    "_run_dates",
+    "command_date",
+    "command_range",
+    "command_backfill",
+    "command_month",
+    "command_probe",
+    "command_status",
+    "_weekday_ok",
+    "normalise_limit",
+    "_summarise",
+    "add_common_options",
+    "build_parser",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "test_nse_archives.py"
+   ]
+  },
+  "nse_eod_ingest.py": {
+   "lines": 692,
+   "bytes": 29163,
+   "doc": "FREE official NSE end-of-day ingestion \u2014 no Fyers, no login, no API key. WHY THIS EXISTS --------------- The owner wants daily data updates that are free and require no intervention. NSE publishes the whole cash market as public archive files, and (verified 2026-10-18 from the live VM, which is a cl",
+   "functions": [
+    "_session",
+    "_get",
+    "_text",
+    "_norm_symbol",
+    "universe_map",
+    "_parse_date",
+    "_float",
+    "legacy_bhav_url",
+    "trading_days",
+    "parse_sec_bhav",
+    "parse_index_close",
+    "parse_equity_master",
+    "parse_legacy_bhav",
+    "_sync",
+    "ingest_prices",
+    "ingest_indices",
+    "ingest_master",
+    "ingest_date",
+    "catch_up",
+    "fetch_history",
+    "repair_basis",
+    "report",
+    "main"
+   ],
+   "classes": [
+    "OfficialDataError"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": [
+    "refresh_pipeline.py",
+    "scheduler_bg.py",
+    "test_nse_eod_ingest.py"
+   ]
+  },
   "pattern_grader.py": {
    "lines": 291,
    "bytes": 9179,
@@ -1402,8 +4834,8 @@
    ]
   },
   "patterns.py": {
-   "lines": 931,
-   "bytes": 31164,
+   "lines": 935,
+   "bytes": 31328,
    "doc": "Rule-Based Pattern Scanner v6. v6 (2026-09-13): every detector now records a per-condition checklist (checks list) which is stored in the pattern_tags.params JSON. Enables transparency UI \u2014 user sees exactly which conditions passed or failed. BULL_FLAG KILLED 2026-09-17 by evidence (rescue experimen",
    "functions": [
     "_ensure",
@@ -1437,6 +4869,7 @@
     "db",
     "fund_veto",
     "pattern_grader",
+    "signal_guard",
     "universe_helper"
    ],
    "imports_third_party": [
@@ -1445,8 +4878,76 @@
    ],
    "imported_by": [
     "bullflag_rescue.py",
+    "refresh_pipeline.py",
     "scheduler_bg.py",
     "terminal_api.py"
+   ]
+  },
+  "pledge_ingest.py": {
+   "lines": 996,
+   "bytes": 49415,
+   "doc": "Fill ``fundamentals.pledge_pct`` from free, DATED exchange shareholding filings. WHY THIS FIELD: a promoter pledging their stake is the single best free governance red flag -- the family borrows against the company's own shares, so a price fall triggers margin calls and forced selling exactly when t",
+   "functions": [
+    "ensure_tables",
+    "_columns",
+    "_clean_symbol",
+    "_number",
+    "_as_of",
+    "_pct",
+    "_walk",
+    "_pick",
+    "_scan",
+    "_master_records",
+    "_row_from_payload",
+    "_new_session",
+    "_fetch_one",
+    "fetch_nse_shareholding",
+    "_local",
+    "_norm",
+    "_xml_bytes",
+    "_response_bytes",
+    "_promoter_rank",
+    "_xbrl_contexts",
+    "_xbrl_facts",
+    "_best_pledge",
+    "_context_total_shares",
+    "_xbrl_pct",
+    "_pledge_percentage",
+    "_promoter_holding",
+    "parse_shareholding_xbrl",
+    "_xbrl_url",
+    "_master_xbrl_record",
+    "_master_xbrl_for",
+    "_download_xbrl",
+    "_xbrl_row",
+    "_clean_symbols",
+    "fetch_nse_pledge_xbrl",
+    "_raw_json",
+    "_merge_rows",
+    "fetch_shareholding",
+    "_csv_record",
+    "import_csv",
+    "_coverage",
+    "apply_to_fundamentals",
+    "report",
+    "_store",
+    "main"
+   ],
+   "classes": [
+    "PledgeFetchError"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fundamentals_store",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "requests"
+   ],
+   "imported_by": [
+    "scheduler_bg.py",
+    "test_pledge_ingest.py"
    ]
   },
   "positional_scanner.py": {
@@ -1478,9 +4979,27 @@
     "terminal_api.py"
    ]
   },
+  "purge_stale_artifacts.py": {
+   "lines": 170,
+   "bytes": 6763,
+   "doc": "Quarantine derived rows that are NEWER than the price data behind them. WHY THIS EXISTS --------------- The price store froze on 2026-08-27, but pattern/template/institutional writers kept running (2026-09-09 and 2026-10-07) and wrote artifacts computed from stale bars. Those rows look current to ev",
+   "functions": [
+    "_row_to_payload",
+    "plan",
+    "apply_plan",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
   "pwin_cache.py": {
-   "lines": 90,
-   "bytes": 2891,
+   "lines": 94,
+   "bytes": 2998,
    "doc": "Daily P(WIN) cache \u2014 one scoring pass per symbol per day. Makes /api/toppicks, /api/radar, /api/swing/signals instant.",
    "functions": [
     "_ensure",
@@ -1493,11 +5012,13 @@
    "imports_local": [
     "db",
     "meta_model",
+    "signal_guard",
     "universe_helper"
    ],
    "imports_third_party": [],
    "imported_by": [
     "daily_update.py",
+    "refresh_pipeline.py",
     "terminal_api.py",
     "top_picks.py",
     "verify_deployment.py"
@@ -1546,9 +5067,95 @@
    ],
    "imported_by": []
   },
+  "rebuild_raw_history.py": {
+   "lines": 354,
+   "bytes": 16106,
+   "doc": "Replace adjusted (yfinance) price history with raw Fyers exchange prices. WHY: the store's history came from yfinance with ``auto_adjust=True`` (split- and dividend-adjusted) while Fyers equity history is raw. Mixing the two bases creates fake gaps around corporate actions, so the universe must move",
+   "functions": [
+    "_universe",
+    "_normalise_basis",
+    "_basis_map",
+    "_basis_counts",
+    "plan",
+    "run",
+    "verify_after",
+    "report",
+    "_build_parser",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "config",
+    "db",
+    "fyers_client",
+    "ingest_fyers",
+    "universe_helper"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "test_rebuild_raw_history.py"
+   ]
+  },
+  "refresh_pipeline.py": {
+   "lines": 415,
+   "bytes": 15484,
+   "doc": "One-click data refresh: the button behind the terminal UI. WHY THIS EXISTS --------------- The owner cannot spend daily time running commands. Everything is already scheduled on the VM, but an on-demand refresh must be one press that (a) fetches new bars from the free providers (and Fyers when a tok",
+   "functions": [
+    "now_ist",
+    "_step_fyers",
+    "_step_prices",
+    "_step_official",
+    "_step_fyers_gaps",
+    "_step_technicals",
+    "_step_breadth",
+    "_step_ml",
+    "_step_scan",
+    "_step_pwin",
+    "_step_events",
+    "_step_institutional",
+    "_step_toppicks",
+    "_step_patterns",
+    "_step_templates",
+    "default_steps",
+    "_record",
+    "run",
+    "start_background",
+    "status",
+    "health",
+    "main"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "backfill_gaps",
+    "breadth",
+    "db",
+    "events",
+    "freshness_gate",
+    "fyers_client",
+    "ingest_fyers",
+    "ingest_prices",
+    "institutional",
+    "ml_predict",
+    "nse_eod_ingest",
+    "patterns",
+    "pwin_cache",
+    "scan",
+    "scheduler_bg",
+    "technicals",
+    "template_match",
+    "top_picks"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "terminal_api.py",
+    "test_refresh_pipeline.py"
+   ]
+  },
   "regime.py": {
-   "lines": 90,
-   "bytes": 3221,
+   "lines": 99,
+   "bytes": 3649,
    "doc": "Market Regime Filter \u2014 Top-down gatekeeper. v2 (2026-09-12): 5-level spectrum via regime_spectrum.py. RegimeState remains backwards-compatible \u2014 is_bullish still present.",
    "functions": [],
    "classes": [
@@ -1689,8 +5296,8 @@
    ]
   },
   "scan.py": {
-   "lines": 141,
-   "bytes": 5526,
+   "lines": 165,
+   "bytes": 6324,
    "doc": "",
    "functions": [
     "run"
@@ -1699,11 +5306,14 @@
    "has_cli": false,
    "imports_local": [
     "db",
-    "scoring"
+    "fund_veto",
+    "scoring",
+    "signal_guard"
    ],
    "imports_third_party": [],
    "imported_by": [
     "app.py",
+    "refresh_pipeline.py",
     "verify_deployment.py"
    ]
   },
@@ -1776,8 +5386,8 @@
    "imported_by": []
   },
   "scheduler_bg.py": {
-   "lines": 367,
-   "bytes": 12936,
+   "lines": 554,
+   "bytes": 21187,
    "doc": "Background scheduler \u2014 daily chain + swing + research cache + pool rebuild + patterns + fundamentals + value radar + positional + trend + validation.",
    "functions": [
     "_data_quality_job",
@@ -1793,6 +5403,10 @@
     "_pattern_job",
     "_template_job",
     "_fundamentals_job",
+    "_token_job",
+    "_official_eod_job",
+    "_official_retry_job",
+    "_governance_job",
     "_retrain_job",
     "_value_radar_job",
     "_positional_job",
@@ -1802,30 +5416,40 @@
     "_league_job",
     "_league_scorecard_job",
     "start",
+    "status",
     "stop"
    ],
    "classes": [],
    "has_cli": false,
    "imports_local": [
     "alerts",
+    "announcements",
+    "backfill_gaps",
     "build_setup_pool",
     "daily_update",
     "data_quality",
     "db",
     "delivery",
     "fund_veto",
+    "fundamentals_derive",
+    "fundamentals_enrich",
     "fundamentals_tv",
+    "fyers_client",
     "institutional",
     "log_utils",
     "macro",
     "meta_model",
+    "nse_eod_ingest",
     "patterns",
+    "pledge_ingest",
     "positional_scanner",
     "research_cockpit",
+    "swing_alerts",
     "swing_live",
     "template_match",
     "trader_league",
     "trend_scanner",
+    "universe_helper",
     "validate",
     "value_radar"
    ],
@@ -1834,7 +5458,9 @@
     "pytz"
    ],
    "imported_by": [
-    "terminal_api.py"
+    "refresh_pipeline.py",
+    "terminal_api.py",
+    "test_n1_n3.py"
    ]
   },
   "scoring.py": {
@@ -1864,8 +5490,8 @@
    ]
   },
   "screener_engine.py": {
-   "lines": 291,
-   "bytes": 12209,
+   "lines": 334,
+   "bytes": 14035,
    "doc": "On-Demand Screener \u2014 baseline (Stage-2 + momentum + volume) + VCP/pullback checks. DB-first (prices_daily), Yahoo fallback for unknown symbols (single-symbol mode only). Usage: python screener_engine.py RELIANCE -> full check breakdown for one stock python screener_engine.py scan -> run over top sma",
    "functions": [
     "_from_db",
@@ -1890,6 +5516,7 @@
    ],
    "imported_by": [
     "terminal_api.py",
+    "test_n1_n3.py",
     "verify_batch_b.py"
    ]
   },
@@ -1912,6 +5539,7 @@
     "pandas"
    ],
    "imported_by": [
+    "all_weather.py",
     "build_setup_pool.py",
     "meta_model.py",
     "rule_engine.py",
@@ -1982,9 +5610,9 @@
    ]
   },
   "setup.py": {
-   "lines": 192,
-   "bytes": 7239,
-   "doc": "Hiren Gabani Master Pullback \u2014 reads all thresholds from strategy_config.SETUP. Change values there, not here. v3.5 (2026-09-12): thresholds migrated to central config.",
+   "lines": 219,
+   "bytes": 8913,
+   "doc": "Hiren Gabani Master Pullback \u2014 reads all thresholds from strategy_config.SETUP. Change values there, not here. v3.5 (2026-09-12): thresholds migrated to central config. v3.6 (2026-10-15): the exit side now comes from exit_policy.py, so the target multiple has ONE definition and one documented tie ru",
    "functions": [],
    "classes": [
     "Setup",
@@ -1992,6 +5620,7 @@
    ],
    "has_cli": false,
    "imports_local": [
+    "exit_policy",
     "strategy_config"
    ],
    "imports_third_party": [
@@ -2002,12 +5631,14 @@
     "backtest.py",
     "build_setup_pool.py",
     "diagnose.py",
+    "exit_policy.py",
     "main.py",
     "quick_funnel.py",
     "quick_setup_diag.py",
     "research_cockpit.py",
     "swing_live.py",
     "terminal_api.py",
+    "test_swing_exits.py",
     "top_picks.py",
     "trader_league.py"
    ]
@@ -2050,6 +5681,31 @@
    "imported_by": [
     "daily_update.py",
     "verify_deployment.py"
+   ]
+  },
+  "signal_guard.py": {
+   "lines": 50,
+   "bytes": 2045,
+   "doc": "Hard freshness gate adapter for signal writers (Option A, 2026-10-18). WHY THIS EXISTS --------------- The price store was frozen on 2026-08-27 while pattern/template/institutional writers still produced artifacts dated 2026-10-07. `data_quality.py` only alerts; it never stopped a writer. The owner ",
+   "functions": [
+    "check"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "freshness_gate"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "institutional.py",
+    "ml_predict.py",
+    "patterns.py",
+    "pwin_cache.py",
+    "scan.py",
+    "swing_live.py",
+    "template_match.py",
+    "test_signal_guard.py",
+    "top_picks.py"
    ]
   },
   "sizing.py": {
@@ -2112,8 +5768,8 @@
    ]
   },
   "strategy_config.py": {
-   "lines": 182,
-   "bytes": 6496,
+   "lines": 240,
+   "bytes": 9987,
    "doc": "Central strategy configuration. EVERY tunable parameter for the swing strategy lives here. To change behavior: edit ONE value in this file, restart the service. No other file needs to be touched. Sections: SETUP \u2014 Gabani pullback detection thresholds SCREENER \u2014 Stage-2 baseline + liquidity filters B",
    "functions": [
     "dump"
@@ -2125,10 +5781,12 @@
    "imported_by": [
     "all_weather.py",
     "backtest.py",
+    "exit_policy.py",
     "scanner.py",
     "screener_engine.py",
     "setup.py",
     "sizing.py",
+    "test_swing_exits.py",
     "trader_league.py",
     "verify_deployment.py"
    ]
@@ -2186,12 +5844,13 @@
    ],
    "imports_third_party": [],
    "imported_by": [
-    "data_quality.py"
+    "data_quality.py",
+    "scheduler_bg.py"
    ]
   },
   "swing_live.py": {
-   "lines": 312,
-   "bytes": 10870,
+   "lines": 329,
+   "bytes": 11849,
    "doc": "Swing Desk engine (live, no execution). EOD: regime gate + breadth gate + sector gate + fund veto -> signals -> Telegram. When regime is DEFENSIVE, falls back to ALL-WEATHER mode. Daily: grade pending signals WIN / LOSS / EXPIRED / TIMEOUT.",
    "functions": [
     "universe",
@@ -2215,6 +5874,7 @@
     "scanner",
     "sector_gate",
     "setup",
+    "signal_guard",
     "universe_helper"
    ],
    "imports_third_party": [
@@ -2243,6 +5903,7 @@
    ],
    "imports_third_party": [],
    "imported_by": [
+    "refresh_pipeline.py",
     "verify_deployment.py"
    ]
   },
@@ -2263,8 +5924,8 @@
    ]
   },
   "template_match.py": {
-   "lines": 231,
-   "bytes": 7773,
+   "lines": 235,
+   "bytes": 7890,
    "doc": "Template Sequence Matching (DTW) v2 \u2014 adds historical backfill. Compares the live price shape against ideal pattern templates using Dynamic Time Warping. Pure numpy, no extra dependencies. Templates: VCP, HIGH_TIGHT_FLAG, BULL_FLAG, DOUBLE_BOTTOM. Score: similarity 0-100 (higher = closer shape match",
    "functions": [
     "_from_points",
@@ -2282,27 +5943,39 @@
    "has_cli": true,
    "imports_local": [
     "db",
+    "signal_guard",
     "universe_helper"
    ],
    "imports_third_party": [
     "numpy"
    ],
    "imported_by": [
+    "refresh_pipeline.py",
     "scheduler_bg.py"
    ]
   },
   "terminal_api.py": {
-   "lines": 1041,
-   "bytes": 36992,
+   "lines": 1255,
+   "bytes": 43068,
    "doc": "",
    "functions": [
     "lifespan",
-    "verify_user",
     "safe_float",
     "get_conn",
     "root",
     "health",
+    "data_health",
+    "refresh_status",
+    "refresh_now",
+    "fyers_login_url",
+    "fyers_exchange",
+    "fyers_refresh",
     "source_health",
+    "ideals_index",
+    "ideal_one",
+    "glossary_page",
+    "explain_index",
+    "explain_term",
     "deployment_check",
     "regime",
     "macro_flow",
@@ -2310,6 +5983,7 @@
     "get_trader_api",
     "scan_trader_api",
     "trader_matches_api",
+    "_jsonable",
     "_league_mode",
     "league_overview",
     "league_player",
@@ -2359,11 +6033,15 @@
     "model_runs",
     "ledger_stats",
     "ledger_trades",
+    "ledger_monthly",
     "validate_latest",
     "sizing",
     "sizing_capital",
     "screener_scan",
-    "screener_check"
+    "screener_check",
+    "screener_scan_universe",
+    "_run_band_scan_job",
+    "screener_scan_universe_status"
    ],
    "classes": [],
    "has_cli": true,
@@ -2372,6 +6050,10 @@
     "compare_tool",
     "db",
     "delivery",
+    "explain",
+    "fyers_client",
+    "glossary_ui",
+    "ideal",
     "ledger",
     "macro",
     "meta_model",
@@ -2380,6 +6062,7 @@
     "patterns",
     "positional_scanner",
     "pwin_cache",
+    "refresh_pipeline",
     "regime",
     "research_cockpit",
     "rule_engine",
@@ -2399,9 +6082,90 @@
    "imports_third_party": [
     "dotenv",
     "fastapi",
+    "numpy",
     "pandas",
     "uvicorn"
    ],
+   "imported_by": [
+    "test_n1_n3.py"
+   ]
+  },
+  "test_all_weather_gate.py": {
+   "lines": 358,
+   "bytes": 15752,
+   "doc": "Standalone tests for the ALL_WEATHER quality gates (all_weather.py v4). WHY: all_weather used to buy anything >=25% below its 52-week high and within 15% of its 52-week low, with no trend, liquidity, sector or fundamental test \u2014 68 of the 71 graded ledger trades came from that path at a 5.9% win rat",
+   "functions": [
+    "_rows",
+    "falling_knife_bars",
+    "clean_bars",
+    "knife_df",
+    "clean_df",
+    "only",
+    "memory_db"
+   ],
+   "classes": [
+    "AllWeatherGateTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "all_weather",
+    "db"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "test_announcements.py": {
+   "lines": 426,
+   "bytes": 20041,
+   "doc": "Offline tests for announcements.py: no network, no data/app.db, in-memory SQLite.",
+   "functions": [
+    "mem",
+    "ago",
+    "item"
+   ],
+   "classes": [
+    "ClassifyTests",
+    "StoreTests",
+    "ImportCsvTests",
+    "RedFlagTests",
+    "ReportTests",
+    "FakeResponse",
+    "FakeSession",
+    "FetchTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "announcements"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_backfill_gaps.py": {
+   "lines": 153,
+   "bytes": 5774,
+   "doc": "Offline tests for the Fyers gap-filler (18 Oct 2026).",
+   "functions": [
+    "candle_epoch",
+    "candle",
+    "memory_db",
+    "seed_universe",
+    "seed_day"
+   ],
+   "classes": [
+    "FakeClient",
+    "MissingReportTests",
+    "FillTests",
+    "HistoricalFillTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "backfill_gaps",
+    "db",
+    "fyers_client"
+   ],
+   "imports_third_party": [],
    "imported_by": []
   },
   "test_backtest_integrity.py": {
@@ -2422,6 +6186,71 @@
    ],
    "imported_by": []
   },
+  "test_ca_chunking.py": {
+   "lines": 95,
+   "bytes": 3522,
+   "doc": "Tests for the chunked/resumable corporate-action harvest (18 Oct 2026). The full-universe harvest hung on one symbol inside yfinance (no timeout of its own). These tests lock the fix: per-symbol timeout, resumable state, and chunk merging that persists progress.",
+   "functions": [
+    "memory_db",
+    "action"
+   ],
+   "classes": [
+    "ChunkedHarvestTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "corporate_actions",
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_corporate_actions.py": {
+   "lines": 325,
+   "bytes": 13723,
+   "doc": "Offline tests for the corporate-action book (corporate_actions.py). WHY: every number this module writes is either money-adjacent or a candidate someone will act on, so the three behaviours that must never drift are pinned here: (1) gap detection grades a split but refuses to invent one for a crash,",
+   "functions": [
+    "memory_db",
+    "add_prices",
+    "write_csv"
+   ],
+   "classes": [
+    "Base",
+    "DetectTest",
+    "ImportCsvTest",
+    "MergeTest",
+    "ExplainTest",
+    "SummaryTest",
+    "OfflineTest"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "corporate_actions",
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_coverage_report.py": {
+   "lines": 82,
+   "bytes": 2940,
+   "doc": "Tests for the price-coverage diagnosis (18 Oct 2026).",
+   "functions": [
+    "memory_db",
+    "seed",
+    "master"
+   ],
+   "classes": [
+    "CoverageTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "coverage_report",
+    "db"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
   "test_data_sources.py": {
    "lines": 97,
    "bytes": 3546,
@@ -2433,6 +6262,70 @@
    ],
    "has_cli": true,
    "imports_local": [],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_freshness_gate.py": {
+   "lines": 250,
+   "bytes": 10668,
+   "doc": "Offline tests for freshness_gate: in-memory schema, fixed IST clocks.",
+   "functions": [
+    "ist"
+   ],
+   "classes": [
+    "FreshnessGateTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "freshness_gate"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_fund_veto.py": {
+   "lines": 79,
+   "bytes": 2728,
+   "doc": "Tests for the expanded fundamental veto gate (Option B, 2026-10-18).",
+   "functions": [
+    "memory_db",
+    "seed"
+   ],
+   "classes": [
+    "VetoTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "announcements",
+    "db",
+    "fund_veto"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_fundamentals_enrich.py": {
+   "lines": 347,
+   "bytes": 15249,
+   "doc": "Offline tests for the veto-only ScanX enrichment (Option B, 18 Oct 2026). Everything here runs on ``sqlite3.connect(\":memory:\")`` built from ``db.SCHEMA`` + ``db._migrate`` (the migration is what adds ``field_sources``, ``field_updated_at`` and ``data_quality_flags``). ``db.SCHEMA`` deliberately doe",
+   "functions": [
+    "memory_db",
+    "seed_snapshot",
+    "seed_fundamentals",
+    "read_ownership",
+    "provenance",
+    "fundamental_count"
+   ],
+   "classes": [
+    "BaseCase",
+    "EnrichTests",
+    "ModuleHygieneTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fund_veto",
+    "fundamentals_enrich"
+   ],
    "imports_third_party": [],
    "imported_by": []
   },
@@ -2452,6 +6345,97 @@
     "fundamentals_tv"
    ],
    "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_fyers_integration.py": {
+   "lines": 739,
+   "bytes": 31251,
+   "doc": "Offline tests for the Fyers data integration. Everything here runs without network access or a broker token: HTTP is faked at the session boundary, and the database is an in-memory copy of the real schema. Run with: python -m unittest test_fyers_integration -v",
+   "functions": [
+    "make_client",
+    "candle_epoch",
+    "sm",
+    "memory_db",
+    "seed_prices"
+   ],
+   "classes": [
+    "FakeResponse",
+    "FakeSession",
+    "AuthTests",
+    "SymbolTests",
+    "HistoryTests",
+    "ErrorTests",
+    "QuoteTests",
+    "ResolutionTests",
+    "IngestTests",
+    "FakeClock",
+    "RateLimitTests",
+    "RetryTests",
+    "ExchangeTests",
+    "SyncEntrypointTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "fyers_client",
+    "ingest_fyers"
+   ],
+   "imports_third_party": [],
+   "imported_by": [
+    "test_fyers_refresh.py"
+   ]
+  },
+  "test_fyers_refresh.py": {
+   "lines": 116,
+   "bytes": 4804,
+   "doc": "Offline tests for the pin-based Fyers token renewal + UI exchange helper.",
+   "functions": [
+    "make_client"
+   ],
+   "classes": [
+    "RefreshTokenTests",
+    "ExchangeHelperTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "fyers_client",
+    "test_fyers_integration"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_hybrid_swingnet.py": {
+   "lines": 558,
+   "bytes": 23315,
+   "doc": "Standalone test for the vendored HybridSwingNet (``stockxpert``) integration. Run it exactly like this, from the repository root:: .\\env\\Scripts\\python.exe test_hybrid_swingnet.py Design rules ------------ * STANDALONE: no pytest, no fixtures, no config. Exits 0 on pass **or** skip. * SKIPS GRACEFUL",
+   "functions": [
+    "record",
+    "run",
+    "test_package_import_is_safe",
+    "test_import_guard_returns_reason_not_exception",
+    "test_import_stockxpert_success_or_skip",
+    "test_v3_model_forward_shapes",
+    "test_v3_loss_runs",
+    "_require_dataset",
+    "_tiny_spec",
+    "test_adapter_window_shapes",
+    "test_windows_are_leakage_free",
+    "test_targets_align_to_horizons",
+    "test_split_is_disjoint_and_embargoed",
+    "test_fast_builder_matches_upstream",
+    "test_scaling_preserves_stock_traits",
+    "main"
+   ],
+   "classes": [
+    "Unavailable"
+   ],
+   "has_cli": true,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas",
+    "torch"
+   ],
    "imported_by": []
   },
   "test_kite_import.py": {
@@ -2484,6 +6468,35 @@
    "imports_third_party": [],
    "imported_by": []
   },
+  "test_lstm.py": {
+   "lines": 551,
+   "bytes": 27396,
+   "doc": "Standalone tests for the LSTM forecaster (run: .\\env\\Scripts\\python.exe test_lstm.py). WHAT THIS FILE IS FOR --------------------- `lstm_model.py` makes three claims that are easy to get wrong and impossible to see by eye: 1. the feature builder never looks at a future bar, 2. the sequence builder p",
+   "functions": [
+    "synthetic_panel",
+    "fake_sequences"
+   ],
+   "classes": [
+    "ImportGuardTests",
+    "FeatureCausalityTests",
+    "SequenceBuilderTests",
+    "EmbargoTests",
+    "NormalisationTests",
+    "MetricTests",
+    "TinyTrainingTests",
+    "RealDataSmokeTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "lstm_model",
+    "lstm_train"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
   "test_ml_integrity.py": {
    "lines": 48,
    "bytes": 1726,
@@ -2502,6 +6515,166 @@
     "numpy",
     "pandas"
    ],
+   "imported_by": []
+  },
+  "test_n1_n3.py": {
+   "lines": 168,
+   "bytes": 7284,
+   "doc": "Regression tests for N1 (scan the whole band) and N3 (month-by-month ledger). Runs on the laptop and on the VM: every assertion is about internal consistency, never about hardcoded counts, because the two machines hold different data (see PROJECT_HANDOFF \u00a74.9). Run it with the project venv: .\\env\\Sc",
+   "functions": [
+    "check",
+    "_fresh_db",
+    "test_ledger_math",
+    "test_band_scan_engine",
+    "test_endpoints"
+   ],
+   "classes": [],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "ledger",
+    "scheduler_bg",
+    "screener_engine",
+    "terminal_api",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "fastapi"
+   ],
+   "imported_by": []
+  },
+  "test_nse_archives.py": {
+   "lines": 792,
+   "bytes": 35493,
+   "doc": "Offline tests for the NSE archive feed and its ingestion into prices_daily. Run it exactly like the other repo tests: cd C:\\Users\\Ankit\\Desktop\\nse_system .\\env\\Scripts\\python.exe test_nse_archives.py NO NETWORK IS USED. NSE is blocked, throttled or simply having a bad day often enough that a test w",
+   "functions": [
+    "_rows_csv",
+    "udiff_fixture",
+    "legacy_fixture",
+    "secbhav_fixture",
+    "monthly_fixture",
+    "canonical"
+   ],
+   "classes": [
+    "BhavcopyParsingTests",
+    "DateAndUrlTests",
+    "CacheDirectoryTests",
+    "DownloadBehaviourTests",
+    "FailureHonestyTests",
+    "VendorRecordTests",
+    "RegistrationTests",
+    "IngestDatabaseTests",
+    "CliDefaultsTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "nse_archive_ingest"
+   ],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "test_nse_eod_ingest.py": {
+   "lines": 230,
+   "bytes": 9931,
+   "doc": "Offline tests for the free official NSE EOD ingestion (18 Oct 2026).",
+   "functions": [
+    "memory_db"
+   ],
+   "classes": [
+    "FakeResponse",
+    "FakeSession",
+    "ParseTests",
+    "IngestTests",
+    "HistoryTests",
+    "ReportTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "nse_eod_ingest"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_pledge_ingest.py": {
+   "lines": 616,
+   "bytes": 30449,
+   "doc": "Offline tests for pledge_ingest: in-memory SQLite only, never data/app.db. No network is used anywhere here: the NSE fetcher is exercised through a fake session that returns HTML, which is exactly what NSE serves to a blocked IP.",
+   "functions": [
+    "seed_fundamentals",
+    "seed_universe",
+    "shp_xbrl",
+    "jppower_xbrl",
+    "master_record"
+   ],
+   "classes": [
+    "FakeResponse",
+    "FakeSession",
+    "XmlResponse",
+    "FakeNseSession",
+    "TableTests",
+    "CsvImportTests",
+    "ApplyTests",
+    "ReportTests",
+    "FetchTests",
+    "PercentHeuristicTests",
+    "XbrlParseTests",
+    "XbrlFetchTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "pledge_ingest"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_rebuild_raw_history.py": {
+   "lines": 344,
+   "bytes": 14758,
+   "doc": "Offline tests for rebuild_raw_history.py. No network, no ``data/app.db``: every test runs against ``sqlite3`` in-memory built from ``db.SCHEMA`` and a fake client that answers the two GETs ``FyersClient`` would make (``/data/history`` and ``/profile``). The fake is local on purpose \u2014 importing anoth",
+   "functions": [
+    "candle_epoch",
+    "day",
+    "bar"
+   ],
+   "classes": [
+    "FakeResponse",
+    "FakeSession",
+    "FakeClient",
+    "BaseCase",
+    "PlanTests",
+    "RunTests",
+    "ReportTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "ingest_fyers",
+    "rebuild_raw_history"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
+  "test_refresh_pipeline.py": {
+   "lines": 100,
+   "bytes": 3325,
+   "doc": "Offline tests for the one-click refresh orchestrator (18 Oct 2026).",
+   "functions": [
+    "memory_db"
+   ],
+   "classes": [
+    "RunTests",
+    "HealthTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "refresh_pipeline"
+   ],
+   "imports_third_party": [],
    "imported_by": []
   },
   "test_research_cockpit.py": {
@@ -2534,6 +6707,24 @@
    "imports_third_party": [],
    "imported_by": []
   },
+  "test_signal_guard.py": {
+   "lines": 76,
+   "bytes": 2881,
+   "doc": "Tests for the hard freshness gate wiring (signal_guard.py). These lock the owner-approved behaviour: when the price spine is stale, every signal writer refuses to write. The gate module itself is tested separately in test_freshness_gate.py; here we test the adapter contract and failure modes.",
+   "functions": [
+    "memory_db"
+   ],
+   "classes": [
+    "SignalGuardTests"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "db",
+    "signal_guard"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
   "test_sizing_safety.py": {
    "lines": 37,
    "bytes": 1490,
@@ -2549,9 +6740,63 @@
    "imports_third_party": [],
    "imported_by": []
   },
+  "test_swing_exits.py": {
+   "lines": 637,
+   "bytes": 29517,
+   "doc": "Standalone tests for exit_policy.py \u2014 the swing exit rules and the R scorer. WHY THESE TESTS LOOK LIKE THIS ------------------------------ The expensive mistake in exit code is a silent convention change: a bar that touches both the stop and the target is a LOSS in production (swing_live.update_outc",
+   "functions": [
+    "check",
+    "skip",
+    "near",
+    "test_plan_math",
+    "test_resolve_target_r",
+    "_live_setup",
+    "test_setup_survives_missing_config_key",
+    "test_outcomes",
+    "test_intrabar_tie",
+    "test_mfe_mae",
+    "test_breakeven_rule",
+    "test_trail_rule",
+    "test_trigger_and_gap",
+    "test_measure_and_summarise",
+    "test_live_db_read_only_and_report",
+    "test_ledger_agreement",
+    "test_setup_entry_stop_unchanged_target_configurable",
+    "main"
+   ],
+   "classes": [
+    "FakeStore"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "exit_policy",
+    "ledger",
+    "setup",
+    "strategy_config"
+   ],
+   "imports_third_party": [
+    "pandas"
+   ],
+   "imported_by": []
+  },
+  "test_yf_cache.py": {
+   "lines": 80,
+   "bytes": 3086,
+   "doc": "Tests for the yfinance cache guard (data_sources/yf_cache.py). The important invariant is testable WITHOUT the network: whatever directory we hand to yfinance must provably be able to host a SQLite database. yfinance returns zero rows instead of raising when that is not true, which is impossible to ",
+   "functions": [
+    "check"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "yfinance"
+   ],
+   "imported_by": []
+  },
   "top_picks.py": {
-   "lines": 194,
-   "bytes": 6603,
+   "lines": 198,
+   "bytes": 6718,
    "doc": "Top Picks \u2014 daily shortlist (fast: reads pwin_daily cache). Composite = 45% ML P(WIN) + 25% accumulation + 15% sector RS + 15% delivery conviction (+10% live-setup bonus). v4: fundamentally vetoed symbols are skipped entirely.",
    "functions": [
     "_ensure",
@@ -2572,6 +6817,7 @@
     "pwin_cache",
     "sector_gate",
     "setup",
+    "signal_guard",
     "universe_helper"
    ],
    "imports_third_party": [
@@ -2579,6 +6825,7 @@
    ],
    "imported_by": [
     "daily_update.py",
+    "refresh_pipeline.py",
     "terminal_api.py",
     "verify_deployment.py"
    ]
@@ -3433,25 +7680,35 @@
    "imports_third_party": [],
    "imported_by": [
     "all_weather.py",
+    "backfill_gaps.py",
     "breadth.py",
     "build_setup_pool.py",
+    "coverage_report.py",
     "data_quality.py",
     "fast_wf.py",
     "fund_veto.py",
+    "fundamentals_enrich.py",
     "fundamentals_tv.py",
+    "ingest_fyers.py",
+    "ingest_prices.py",
     "institutional.py",
     "meta_model.py",
+    "nse_eod_ingest.py",
     "patterns.py",
+    "pledge_ingest.py",
     "positional_scanner.py",
     "pwin_cache.py",
     "quick_funnel.py",
     "quick_setup_diag.py",
+    "rebuild_raw_history.py",
     "rule_engine.py",
+    "scheduler_bg.py",
     "screener_engine.py",
     "sectors_refresh.py",
     "swing_live.py",
     "template_match.py",
     "terminal_api.py",
+    "test_n1_n3.py",
     "top_picks.py",
     "trader_league.py",
     "traders/apurva_parikh.py",
@@ -3551,7 +7808,7 @@
   },
   "verify_deployment.py": {
    "lines": 271,
-   "bytes": 8906,
+   "bytes": 8909,
    "doc": "Deployment verification \u2014 fast checks first, pipeline optional. Usage: python verify_deployment.py # checks only (~5s) python verify_deployment.py --fast # checks + pipeline (skip prices) python verify_deployment.py --full # checks + full pipeline python verify_deployment.py --sweep # add 2y/3y/4y w",
    "functions": [
     "_check",
