@@ -10,6 +10,94 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #106 - Kelly and machine-chosen sizing removed, scheduler banner derived, Phase 1 portal reorg - READY · AWAITING DEPLOY
+
+- **Why:** the 2026-10-19 survey left three items owner-gated (F-12 sizing,
+  F-15 duplication, scheduler banner) and the owner approved them together
+  with a full Phase 1 portal overhaul — "clutter-free, minimal, dynamic,
+  lively, easy to understand". Credential work was explicitly excluded and
+  was not touched.
+
+- **Item 1 — the machine no longer sizes (F-12 → RESOLVED by owner call).**
+  `sizing.suggest()` no longer returns `kelly_pct`, `half_kelly_pct`,
+  `p_win` or `payoff_b`, and it no longer proposes a quantity at all:
+  `shares`, `suggested_value`, `risk_amount`, `actual_alloc_pct`,
+  `actual_planned_risk_pct`, `value_by_risk_cap`, `binding_cap` and
+  `actionable` went with them. What is left is capital, the two caps, the
+  regime/shape multipliers, and `risk_pct` — the stop distance, a property
+  of the prices rather than a size. The panel is now **"Position limits
+  (you choose the size)"**: capital and risk cap by default, allocation cap
+  and stop distance one tap away. The research page's *Try your own numbers*
+  calculator is **kept on purpose** — it is the instrument the owner uses to
+  pick a size, and it only turns the owner's own price, stop and capital
+  into consequences.
+  **Overlap audit (asked for explicitly):** exactly three Python consumers
+  exist (`/api/sizing/{symbol}` is a pass-through, `/api/sizing/capital`,
+  and the test); only `app.js` read the quantity fields; `p_win` had no
+  sizing consumer anywhere; and `research.js` never receives `sizing_response`
+  (that key is populated nowhere in the repo), so the mirror runs on its own
+  fallbacks and could not break. Corrected the false "half-Kelly" claims in
+  PROJECT_HANDOFF §5 and its 2026-09-07c entry, F-12, MEMORY, JOIN_HERE,
+  SUBAGENTS and PORTAL_REDESIGN Idea 8. Left `MARKET_WISDOM` §2.7 and
+  `traders/wisdom.py` untouched: they are sourced market knowledge, not
+  claims about this codebase, and editing `traders/*.py` changes the League
+  `code_hash` and would force a replay.
+
+- **Item 4 — the scheduler banner can no longer drift.** The hand-written
+  startup line listed 19 of the 23 jobs, silently omitting `official_eod`,
+  `official_eod_retry`, `governance_feed` and `fyers_token`. It is now
+  derived from `_scheduler.get_jobs()` with a new `_when()` trigger
+  renderer, so the banner *is* the registered schedule by construction.
+
+- **Items 5+6 — Phase 1 as written.** The top nav is now exactly the five
+  named destinations **Funda / Swing / Research / Ledger / System**, in both
+  the sidebar and the header pill rail (was 8 destinations and 21
+  affordances). `Trading methods` and `Paper league` were **not** deleted:
+  they are reached through segmented in-view tabs under Research and Ledger,
+  so every existing loader and `league.js`'s replay poll keep working
+  untouched, and `NAV_HOME` in `setView()` keeps the parent nav item lit
+  while you are inside them. The glossary moved out of `<nav>` into a
+  labelled Reference group.
+  - **Biggest cuts:** Chart Patterns now shows the strongest 10 of 60 by
+    default with **Show all 60** (that one panel was measured at 17,366px —
+    78% of the research page); DTW Shape Matches folded behind a toggle; the
+    only always-visible disclaimer subtitle became a tooltip, so it is still
+    one tap away and still permanent in the methodology block.
+  - **Correctness:** the "Graded win rate" tile was showing
+    `swing_signals` data while linking to the **Ledger** — it is now
+    **Swing win rate** and links to Swing, so label, value and destination
+    agree. The "Companies you can research" tile was showing
+    `universe_broad`'s row count while opening the research-universe panel —
+    it is now written *by that panel* (`_setUniverseTile`) and
+    `loadRadar()` no longer touches it.
+  - **Understandability:** three rows all captioned "Status" are now
+    "Universe freshness" / "Sector freshness" / "Pattern freshness".
+    `setStatusRow` keeps the caption a row was given instead of overwriting
+    it, and the three pattern status branches now use the same renderer.
+  - **Rejected one audit recommendation:** clutter-audit item 7 says to
+    merge the Funda and Swing strategy panels. They are filtered separately
+    (`loadStrategyListFor("fundamental")` vs `("swing")`) and merging them
+    would break the owner's 2026-09-26 decision that Funda and Swing keep
+    their own universes. Both were kept; Swing's byte-identical subtitle was
+    replaced and its missing help affordance added.
+  - **Lively:** a new motion layer in `fintech.css` — view entrance,
+    staggered panel rise, hover lift on nav / tabs / tiles / panels, an
+    accent bar on the active destination, and focus-visible outlines. Only
+    transform and opacity animate, so layout (and ui-audit geometry) never
+    moves, and every rule collapses to the finished state under
+    `prefers-reduced-motion`.
+
+- **Verification:** `unittest discover` → **365 tests, OK, exit 0**
+  (363 + the two rewritten sizing tests); `py_compile` clean;
+  `node --check` clean on `app.js`, `research.js`, `research_universe.js`,
+  `league.js`; a banner probe asserted 23 registered jobs and that every id
+  appears in the banner (`RESULT: PASS`, exit 0). `?v=` bumped for
+  `fintech.css` (5), `app.js` (22), `research.js` (19),
+  `research_universe.js` (19).
+- **Split out:** item 3 (F-15 duplication) is being handled separately — it
+  changes numeric behaviour and needs its own before/after equivalence
+  evidence and its own deploy.
+
 ### #105 - Register truth pass, three code fixes (F-10/F-11/F-13), new defect F-26 - DEPLOYED · VERIFIED
 - **Why:** the session began by loading the mandated bootstrap
   (MEMORY → JOIN_HERE → FINDINGS) and every one of them disagreed with the

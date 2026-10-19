@@ -519,6 +519,43 @@ th.num,
   box-shadow: inset 0 0 0 1px var(--fx-hairline);
 }
 
+/* Phase 1: the top nav is exactly five destinations, so two views are
+   reached by a segmented control inside their parent — Trading methods
+   sits under Research, Paper league under Ledger. */
+.view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 0 14px;
+  padding: 4px;
+  border: 1px solid var(--fx-hairline);
+  border-radius: var(--fx-r-pill);
+  background: var(--fx-inset);
+}
+.view-tab {
+  height: var(--fx-h-sm);
+  padding: 0 15px;
+  border: 0;
+  border-radius: var(--fx-r-pill);
+  background: transparent;
+  color: var(--fx-zinc-400);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.view-tab:hover { color: var(--fx-zinc-100); background: rgba(255, 255, 255, 0.05); }
+.view-tab.active {
+  color: var(--fx-zinc-100);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 0 0 1px var(--fx-hairline);
+}
+.view-tab:focus-visible { outline: 2px solid var(--fx-info); outline-offset: 2px; }
+
 .fx-brandline {
   display: flex;
   align-items: center;
@@ -1379,4 +1416,60 @@ button[class*="btn"] {
      controls row can sit beside it instead of forcing a third row. */
   .fx-topbar.is-compact .fx-viewhead { flex: 1 1 auto; }
   .fx-topbar.is-compact .top-actions { flex: 0 1 auto; width: auto; }
+}
+
+/* =========================================================================
+   Motion layer — owner brief: clutter-free, minimal, dynamic, lively.
+   Only transform and opacity animate, so layout never moves and the ui-audit
+   geometry checks still hold. Every rule collapses to the finished state
+   when the visitor prefers reduced motion.
+   ========================================================================= */
+@keyframes fx-view-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fx-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.view.active-view { animation: fx-view-in .26s cubic-bezier(.22, .61, .36, 1) both; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Panels settle in behind their view, one breath apart. */
+  .view.active-view > .panel,
+  .view.active-view > .terminal-grid {
+    animation: fx-rise .3s cubic-bezier(.22, .61, .36, 1) both;
+  }
+  .view.active-view > .panel:nth-of-type(2) { animation-delay: .05s; }
+  .view.active-view > .panel:nth-of-type(3) { animation-delay: .09s; }
+
+  .nav-btn,
+  .view-tab,
+  .metric-card,
+  .panel { transition: background .16s ease, color .16s ease,
+    border-color .18s ease, transform .18s ease; }
+  .nav-btn:not(.active):hover { transform: translateX(2px); }
+  .view-tab:not(.active):hover { transform: translateY(-1px); }
+  .metric-card:hover { transform: translateY(-2px); }
+  .panel:hover { border-color: var(--fx-hairline-strong); }
+}
+
+/* Colour carries meaning (P3): the destination you are on is unmistakable. */
+.nav-btn.active {
+  background: linear-gradient(90deg, rgba(56, 189, 248, .18), rgba(56, 189, 248, .03));
+  box-shadow: inset 2px 0 0 var(--fx-info);
+  color: var(--fx-zinc-100);
+}
+.nav-btn.active .nav-hint { color: var(--fx-zinc-300); }
+/* The header pill rail keeps its own neutral treatment. */
+.fx-navrail .nav-btn.active {
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 0 0 1px var(--fx-hairline);
+}
+.view-tab.active { color: #7dd3fc; }
+.view-tab:focus-visible,
+.nav-btn:focus-visible,
+.metric-card:focus-visible {
+  outline: 2px solid var(--fx-info);
+  outline-offset: 2px;
 }

@@ -1,4 +1,8 @@
-"""Transparent fixed-risk research sizing with hard safety caps."""
+"""Position sizing bounded by hard safety caps; the owner picks the size.
+
+No Kelly, no win-probability inference and no suggested share count lives
+in this module - the numbers here are limits, not instructions.
+"""
 import math
 
 import db
@@ -91,7 +95,15 @@ def _quality_mult(shape_score):
 
 def suggest(symbol, trigger=None, stop=None, capital=None,
             shape_score=None, conn=None):
-    """Suggest a fixed-risk research size; never infer a win probability."""
+    """Report the owner's capital and the caps that bound any size.
+
+    How much to buy is the owner's decision, so this never proposes a share
+    count, a rupee amount or a win probability - no Kelly, ever. It returns
+    the capital, the two safety caps, the regime and shape adjustments
+    behind them, and (only when a trigger and a stop are supplied) how far
+    the stop sits below the entry, which is what the owner needs in order to
+    size the position for themselves.
+    """
     own = conn is None
     if own:
         conn = db.get_conn()
@@ -112,9 +124,8 @@ def suggest(symbol, trigger=None, stop=None, capital=None,
     alloc = min(MAX_ALLOC, MAX_ALLOC * combined_mult)
     risk_fraction = min(RISK_PER_TRADE, RISK_PER_TRADE * combined_mult)
 
-    out = {"symbol": symbol, "capital": cap, "p_win": None,
-           "basis": "fixed-risk research sizing; no calibrated trade win probability",
-           "payoff_b": None,
+    out = {"symbol": symbol, "capital": cap,
+           "basis": "owner-chosen size bounded by fixed safety caps",
            "regime_level": regime_level,
            "regime_mult": regime_mult,
            "shape_score": shape_score,
@@ -122,16 +133,14 @@ def suggest(symbol, trigger=None, stop=None, capital=None,
            "max_alloc_pct": MAX_ALLOC * 100,
            "risk_per_trade_pct": RISK_PER_TRADE * 100,
            "planned_risk_budget_pct": round(risk_fraction * 100, 2),
-           "kelly_pct": None,
-           "half_kelly_pct": None,
-                "alloc_pct": round(alloc * 100, 2),
-                "max_position_value": round(cap * alloc, 2),
-           "actionable": False,
+           "alloc_pct": round(alloc * 100, 2),
+           "max_position_value": round(cap * alloc, 2),
            "reason": reason,
-           "risk_note": "Planned stop risk only; gaps, slippage, fees and taxes can increase actual loss."}
+           "risk_note": "Caps only: the size is yours to pick. Planned stop "
+                        "risk only; gaps, slippage, fees and taxes can "
+                        "increase actual loss."}
 
     if trigger is None or stop is None:
-        out["reason"] = reason or "valid trigger and stop are required for a quantity"
         return out
     if not _positive_finite(trigger) or not _positive_finite(stop):
         out["reason"] = reason or "trigger and stop must be finite and > 0"
@@ -141,33 +150,9 @@ def suggest(symbol, trigger=None, stop=None, capital=None,
     if trigger <= stop:
         out["reason"] = reason or "trigger must be above stop"
         return out
-    if reason is not None or alloc <= 0.0 or risk_fraction <= 0.0:
-        return out
-
-    risk_pct = (trigger - stop) / trigger
-    risk_value = cap * risk_fraction
-    value_by_risk = risk_value / risk_pct
-    position_limit = cap * alloc
-    value_limit = min(position_limit, value_by_risk)
-    shares = int(value_limit // trigger)
-    invested_value = shares * trigger
-    planned_stop_risk = shares * (trigger - stop)
-    actual_alloc_pct = invested_value / cap * 100.0
-    actual_risk_pct = planned_stop_risk / cap * 100.0
-    actionable = shares > 0
-    out.update({"trigger": trigger, "stop": stop,
-                    "risk_pct": round(risk_pct * 100, 2),
-                    "value_by_risk_cap": round(value_by_risk, 2),
-                    "suggested_value": round(invested_value, 2),
-                    "shares": shares,
-                    "actual_alloc_pct": round(actual_alloc_pct, 2),
-                    "risk_amount": round(planned_stop_risk, 2),
-                    "actual_planned_risk_pct": round(actual_risk_pct, 2),
-                    "binding_cap": ("planned stop-risk cap"
-                                    if value_by_risk < position_limit
-                                    else f"allocation cap {round(alloc*100, 2)}%"),
-                    "actionable": actionable,
-                    "reason": None if actionable else "capital is insufficient for one share within the caps"})
+    # A property of the prices, not a size: how far the stop sits below the
+    # entry. The owner turns that into a quantity for themselves.
+    out["risk_pct"] = round((trigger - stop) / trigger * 100, 2)
     return out
 
 

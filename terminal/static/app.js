@@ -42,14 +42,23 @@ function moneyFmt(v) {
 }
 function outcomeBadge(v) { return `<span class="outcome ${v || "PENDING"}">${v || "PENDING"}</span>`; }
 
-/** Update a compact status row (the "Status" lines above lists) with a tone. */
+/** Update a compact status row above a list, with a tone.
+
+    Each row keeps the caption it was given in the HTML, so three rows that
+    check three different things no longer all read "Status" (clutter-audit
+    item 11). The caption is captured on the first update. */
 function setStatusRow(el, value, tone) {
   if (!el) return;
   const t = tone === "bull" || tone === "bear" || tone === "neut" ? tone : "info";
   const color = t === "bull" ? "var(--fx-bull)" : t === "bear" ? "var(--fx-bear)"
     : t === "neut" ? "var(--fx-neut)" : "var(--fx-info)";
+  if (!el.dataset.caption) {
+    const key = el.querySelector(".fx-k");
+    const text = key ? key.textContent.replace(/\s+/g, " ").trim() : "";
+    el.dataset.caption = text || "Status";
+  }
   el.innerHTML = `<span class="fx-k"><span class="fx-dot${t === "info" ? " pulse" : ""}"`
-    + ` style="background:${color}"></span>Status</span>`
+    + ` style="background:${color}"></span>${el.dataset.caption}</span>`
     + `<span class="fx-v ${t === "bull" ? "is-bull" : t === "bear" ? "is-bear" : t === "neut" ? "is-neut" : "is-mut"}">${value}</span>`;
 }
 window.setStatusRow = setStatusRow;
@@ -60,13 +69,25 @@ function _normalizeView(name) {
   return name;
 }
 
+// Two views are reached from inside their parent rather than from the top nav
+// (Trading methods lives under Research, Paper league under Ledger). Their
+// parent's nav button stays lit so the owner always knows where they are.
+const NAV_HOME = { traders: "research", league: "ledger" };
+
 function setView(name, options = {}) {
   name = _normalizeView(name);
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active-view"));
   const el = $("view-" + name);
   if (el) el.classList.add("active-view");
+  const home = NAV_HOME[name] || name;
   document.querySelectorAll(".nav-btn").forEach(b => {
-    const active = _normalizeView(b.dataset.view) === name;
+    const active = _normalizeView(b.dataset.view) === home;
+    b.classList.toggle("active", active);
+    if (active) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
+  document.querySelectorAll(".view-tab").forEach(b => {
+    const active = b.dataset.view === name;
     b.classList.toggle("active", active);
     if (active) b.setAttribute("aria-current", "page");
     else b.removeAttribute("aria-current");
@@ -399,6 +420,14 @@ async function loadPatterns() {
     if (!rows.length) {
       list.innerHTML = "<p>No stored patterns yet. Press Run Full Scan above (or wait for the 18:05 IST nightly job), then Refresh.</p>";
     } else {
+      // This panel used to print all 60 cards by default - measured at
+      // 17,366px, 78% of the research page. Show the strongest 10 and put
+      // the rest one tap away (PORTAL_REDESIGN P8: simple by default,
+      // deep on demand).
+      const LEAD_PATTERNS = 10;
+      const rest = document.createElement("div");
+      rest.id = "patternMore";
+      rest.className = "details-panel hidden";
       rows.forEach((p, idx) => {
         const div = document.createElement("div");
         div.className = "stock-card";
@@ -428,8 +457,20 @@ async function loadPatterns() {
             loadSymbol(p.symbol);
           }
         });
-        list.appendChild(div);
+        (idx < LEAD_PATTERNS ? list : rest).appendChild(div);
       });
+      if (rows.length > LEAD_PATTERNS) {
+        const wrap = document.createElement("div");
+        wrap.style.marginTop = "10px";
+        const more = document.createElement("button");
+        more.type = "button";
+        more.className = "toggle-btn";
+        more.dataset.target = "patternMore";
+        more.textContent = `Show all ${rows.length} patterns`;
+        wrap.appendChild(more);
+        list.appendChild(wrap);
+        list.appendChild(rest);
+      }
     }
     let tmatch = [];
     try { const td = await api("/api/templates/latest?limit=12"); tmatch = td.matches || []; } catch (e) {}
@@ -441,10 +482,13 @@ async function loadPatterns() {
       list.parentElement.appendChild(tbox);
     }
     if (tmatch.length) {
-      tbox.innerHTML = `<h3 style="margin:0 0 10px;font-size:15px;">🧬 DTW Shape Matches</h3>` +
+      // Twelve unlabelled rows from a second endpoint: folded behind a toggle
+      // so the patterns panel keeps one job (clutter-audit item 12).
+      tbox.innerHTML = `<div><button class="toggle-btn" data-target="dtwMatches">🧬 DTW Shape Matches (${tmatch.length})</button></div>` +
+        `<div id="dtwMatches" class="details-panel hidden">` +
         tmatch.map(m => `<div class="stock-card" role="button" tabindex="0"
           aria-label="Open research for ${m.symbol}" data-sym="${m.symbol}"
-          style="margin-bottom:8px;"><strong>${m.symbol} · ${(m.template || "").replace(/_/g, " ")}</strong><span>shape similarity ${m.similarity}% · ${m.date}</span></div>`).join("");
+          style="margin-bottom:8px;"><strong>${m.symbol} · ${(m.template || "").replace(/_/g, " ")}</strong><span>shape similarity ${m.similarity}% · ${m.date}</span></div>`).join("") + `</div>`;
       tbox.querySelectorAll(".stock-card").forEach(card => {
         const open = () => {
           setView("research");
@@ -462,7 +506,7 @@ async function loadPatterns() {
       tbox.innerHTML = `<h3 style="margin:0 0 10px;font-size:15px;">🧬 DTW Shape Matches</h3><p>No template matches stored yet.</p>`;
     }
   } catch (e) {
-    if (st) st.innerHTML = `<span>Status</span><strong>pattern endpoint unavailable</strong>`;
+    if (st) setStatusRow(st, "pattern endpoint unavailable", "bear");
     list.innerHTML = `<p>Pattern endpoint error: ${e.message}</p>`;
   }
 }
@@ -473,10 +517,10 @@ async function runPatternScan() {
   if (btn) btn.textContent = "Scan queued…";
   try {
     await api("/api/patterns/scan", { method: "POST" });
-    if (st) st.innerHTML = `<span>Status</span><strong>scan running in background — click Refresh afterwards</strong>`;
+    if (st) setStatusRow(st, "scan running in background — click Refresh afterwards", "neut");
     setTimeout(loadPatterns, 60000);
   } catch (e) {
-    if (st) st.innerHTML = `<span>Status</span><strong>scan start failed: ${e.message}</strong>`;
+    if (st) setStatusRow(st, `scan start failed: ${e.message}`, "bear");
   }
   if (btn) btn.textContent = "Run Full Scan";
 }
@@ -673,7 +717,8 @@ async function runScreener() {
 async function loadRadar() {
   try {
     const data = await api("/api/radar");
-    const mu = $("mUniverse"); if (mu) mu.textContent = data.total || "—";
+    // The header tile is filled by loadResearchUniverse() so the number always
+    // matches the panel it opens; radar no longer writes to it.
     const g = data.groups || {};
     const render = (items, box) => {
       if (!box) return;
@@ -1895,34 +1940,28 @@ function renderSizing(sz) {
   if (sz.error) {
     compact = `<div class="fx-row"><span>Sizing</span><strong>unavailable yet</strong></div>`;
     details = capitalEditor(sz.capital);
-  } else if (sz.shares !== undefined) {
-    const allocatedPct = sz.actual_alloc_pct ?? sz.alloc_pct;
-    const plannedRiskPct = sz.actual_planned_risk_pct ?? sz.risk_pct;
-    compact = `<div class="fx-row"><span>Research position size</span><strong>${moneyFmt(sz.suggested_value)} (${fmt(allocatedPct, "%")})</strong></div>
-      <div class="fx-row"><span>Quantity at trigger</span><strong>${sz.shares} shares${sz.actionable === false ? " (not actionable)" : ""}</strong></div>`;
-    details = `
-      <div class="fx-row"><span>Capital</span><strong>${moneyFmt(sz.capital)}</strong></div>
-      <div class="fx-row"><span>Planned stop-risk budget</span><strong>${fmt(sz.planned_risk_budget_pct ?? sz.risk_per_trade_pct, "%")}</strong></div>
-      <div class="fx-row"><span>Regime adjustment</span><strong>${sz.regime_level || "—"} · ×${fmt(sz.regime_mult)}</strong></div>
-      <div class="fx-row"><span>Shape adjustment</span><strong>${fmt(sz.shape_score)} / 100 · ×${fmt(sz.quality_mult)}</strong></div>
-      <div class="fx-row"><span>Planned loss at stop</span><strong>${moneyFmt(sz.risk_amount)} (${fmt(plannedRiskPct, "%")})</strong></div>
-      <div class="fx-row"><span>Limiting rule</span><strong>${sz.binding_cap || "—"}</strong></div>
-      <p class="method-note">${sz.risk_note || "Fixed-risk research sizing. No calibrated trade win probability or Kelly input is used. Quantity is limited by planned stop risk and maximum allocation; gaps, slippage, fees, and taxes can increase losses."}</p>
-      ${sz.reason ? `<p class="method-warning">${sz.reason}</p>` : ""}`;
   } else {
-    compact = `<div class="fx-row"><span>Suggested allocation</span><strong>${fmt(sz.alloc_pct, "%")} of capital</strong></div>`;
+    // Limits only. How many shares to buy is the owner's call, so this block
+    // never proposes a quantity or a rupee amount for them.
+    compact = `<div class="fx-row"><span>Your capital</span><strong>${moneyFmt(sz.capital)}</strong></div>
+      <div class="fx-row"><span>Risk cap on one idea</span><strong>${fmt(sz.planned_risk_budget_pct ?? sz.risk_per_trade_pct, "%")}</strong></div>`;
+    const stopDistance = Number.isFinite(Number(sz.risk_pct))
+      ? `<div class="fx-row"><span>Stop distance on this setup</span><strong>${fmt(sz.risk_pct, "%")}</strong></div>`
+      : "";
     details = `
-      <div class="fx-row"><span>Capital</span><strong>${moneyFmt(sz.capital)}</strong></div>
-      <div class="fx-row"><span>Planned stop-risk budget</span><strong>${fmt(sz.planned_risk_budget_pct ?? sz.risk_per_trade_pct, "%")}</strong></div>
+      <div class="fx-row"><span>Most one idea may take</span><strong>${moneyFmt(sz.max_position_value)} (${fmt(sz.alloc_pct, "%")})</strong></div>
+      <div class="fx-row"><span>Hard allocation cap</span><strong>${fmt(sz.max_alloc_pct, "%")}</strong></div>
+      <div class="fx-row"><span>Risk cap per trade</span><strong>${fmt(sz.risk_per_trade_pct, "%")}</strong></div>
+      ${stopDistance}
       <div class="fx-row"><span>Regime adjustment</span><strong>${sz.regime_level || "—"} · ×${fmt(sz.regime_mult)}</strong></div>
       <div class="fx-row"><span>Shape adjustment</span><strong>${fmt(sz.shape_score)} / 100 · ×${fmt(sz.quality_mult)}</strong></div>
-      <p class="method-note">${sz.risk_note || "Fixed-risk research sizing; no calibrated trade win probability or Kelly input is used. Planned stop risk can be exceeded by gaps, slippage, fees, and taxes."}</p>
+      <p class="method-note">${sz.risk_note || "Caps only: the size is yours to pick. Planned stop risk can be exceeded by gaps, slippage, fees, and taxes."}</p>
       ${sz.reason ? `<p class="method-warning">${sz.reason}</p>` : ""}`;
   }
   box.innerHTML = `
-    <h3 style="margin:0;font-size:15px;">Position sizing (research estimate)</h3>
+    <h3 style="margin:0;font-size:15px;">Position limits (you choose the size)</h3>
     ${compact}
-    <button class="toggle-btn" data-target="sizingDetails">Show sizing inputs and limits</button>
+    <button class="toggle-btn" data-target="sizingDetails">Show the limits that apply</button>
     <div id="sizingDetails" class="details-panel hidden">
       ${details}
       ${capitalEditor(sz.capital)}

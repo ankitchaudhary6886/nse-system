@@ -404,3 +404,53 @@ relevant decision"; `SKILL.md:20-22` — staleness/failure must stay visible.
 - **`app.js` was still being edited at the end of this audit** (1883 lines, hash `693D8C17F7`).
   Two findings (EMA-10 legend, chart legend naming) were fixed mid-audit and removed. Re-grep the
   anchors before acting on any `app.js` line.
+
+---
+
+## STATUS — applied 2026-10-19 (Phase 1, EXECUTION_LOG #106)
+
+Line numbers above have all drifted again (`app.js` is now past 2000 lines,
+`index.html` past 730). This section records what was actually **done**, so
+the table above can be read as the evidence trail rather than as a to-do list.
+
+**Applied — correctness first**
+
+| Item | Result |
+|---|---|
+| **5** — "Graded win rate" vs ledger "Win Rate" | **Fixed by rename + retarget.** The tile read `/api/swing/signals` (`100*WIN/(WIN+LOSS)` over `swing_signals`) while linking to the Ledger, whose `win_rate` comes from `ledger.compute_stats()` over trade R-multiples. Note: §2.5's "14.3% vs 40.0%" was **not reproducible** — pass 3 was right that they happened to read 14.3% on that day, but they are still two different denominators. Renamed the tile to **Swing win rate** / "Graded swing signals only" and pointed it at `data-view="swing"`. |
+| **6** — tile value ≠ what the click shows | **Fixed by single-sourcing.** `mUniverse` was written by `loadRadar()` from `len(universe_broad)` but opened `#researchUniverseBox`. Now written only by `_setUniverseTile()` inside `loadResearchUniverse()`, so the number is the panel. `loadRadar()` no longer touches it. |
+| **11** — three rows all labelled "Status" | **Fixed.** `setStatusRow()` captures a row's own caption into `dataset.caption` on first use and preserves it afterwards; captions are "Universe freshness" / "Sector freshness" / "Pattern freshness". The three pattern status branches that hand-built `<span>Status</span>` now go through the same renderer. |
+| **10** — research view prints its date 4× | **Not changed** (cosmetic, and the date comes from several distinct endpoints). |
+| **24** — silent 40-group / 200-symbol caps | **Not changed** — needs a backend `total` in the response before the UI can honestly say "of N". |
+
+**Applied — declutter (P8 progressive disclosure)**
+
+| Item | Result |
+|---|---|
+| **13** — Chart Patterns 60 cards / 17,366px | **Done.** Top 10 by default + `Show all 60`, in `#patternMore` behind the existing `toggle-btn` / `.details-panel.hidden` mechanism. |
+| **12** — 12 unlabelled DTW rows | **Done.** Folded behind `DTW Shape Matches (N)`. |
+| **9** — always-visible disclaimer in a subtitle | **Done** for the one that was always visible (What Is Moving Today) — moved to `data-tip`; the other copies were already `data-tip` or `data-tip`-only, so §2.2's count of "15 rendered" was wrong. |
+| **1.1** — 21 nav affordances for 8 destinations | **Done.** 5 destinations in each rail + brand + a Reference group; sidebar and pill rail now agree on order and labels. |
+| — — Phase 1 nav | **Done.** `Funda / Swing / Research / Ledger / System`; `Trading methods` and `Paper league` nested under Research and Ledger as segmented in-view tabs (`NAV_HOME` in `setView()`), so no loader or `league.js` poll had to change. |
+| **8 / 22** — duplicate disclaimers, collapsed Compare tables | **Left as-is** — they are already `data-tip` or already collapsed; §2.2 over-counted. |
+
+**Applied — understandability and liveliness**
+
+- Moved `?v=` bumped; motion layer added to `fintech.css` (transform/opacity
+  only, `prefers-reduced-motion` aware).
+
+**Deliberately REJECTED — do not "fix" these later without re-reading the reason**
+
+- **Item 7 (merge the Funda and Swing strategy panels): REJECTED.** The audit
+  says "same renderer, same route, same subtitle". The renderer and route are
+  shared, but `loadStrategyListFor("fundamental")` and `loadStrategyLists`'s
+  `loadStrategyListFor("swing")` filter **different sets**, and the owner
+  decided on **2026-09-26** that Funda and Swing keep separate universes
+  (restated in PORTAL_REDESIGN §6). Merging would break that decision. Both
+  panels were kept; Swing's byte-identical subtitle was replaced and its
+  missing `data-explain` affordance added — that was the real defect.
+- **Items 26, 27, 29 and §3.2 items 1, 3, 4, 5: still owner-gated.** They were
+  not touched.
+
+**Still open from §2/§3:** §3.1 items 2, 4, 6, 7, 8, 9, 10, 11 and §3.2's
+orphan-selector audit remain unstarted; `#screenerBadge` was not removed.

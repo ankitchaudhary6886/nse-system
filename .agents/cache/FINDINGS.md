@@ -353,15 +353,35 @@ DELETE (keep append-only, filter by `run_at` in the UI) or retain the last N run
 
 ---
 
-## F-12 · "half-Kelly" sizing does not exist — `OPEN` (doc vs code)
+## F-12 · "half-Kelly" sizing does not exist — `RESOLVED` by owner call (2026-10-19)
 
-`sizing.py:125-126` hardcodes `kelly_pct = None` and `half_kelly_pct = None`;
-`sizing.py:115` sets `p_win = None`. `strategy_config.SIZING.B_PAYOFF` (3.0) and
-`FALLBACK_WINRATE` (0.35) are referenced nowhere outside `strategy_config.py`.
-Only caps are implemented: `MAX_ALLOC 0.25`, `RISK_PER_TRADE 0.01`,
-`QUALITY_TIERS` scaling. PROJECT_HANDOFF §5 calls it "half-Kelly position
-sizing" — that is aspirational. Either implement Kelly from `p_win_daily` or
-rename/document the caps-only behaviour.
+**Was** a pure doc-vs-code split. `sizing.py` returned `kelly_pct`,
+`half_kelly_pct`, `p_win` and `payoff_b` as hard-coded `None`;
+`strategy_config.SIZING.B_PAYOFF` (3.0) and `FALLBACK_WINRATE` (0.35) were
+referenced nowhere outside `strategy_config.py`; PROJECT_HANDOFF §5 still
+called it "half-Kelly position sizing". The register asked whether to
+implement Kelly or rename it.
+
+**Owner decision: neither — delete the pretence.** Position size is the
+owner's decision, not the machine's (2026-10-19).
+
+- The four dead fields (`kelly_pct`, `half_kelly_pct`, `p_win`, `payoff_b`)
+  are **gone** from the `suggest()` response.
+- The machine no longer proposes a size at all: `shares`, `suggested_value`,
+  `risk_amount`, `actual_alloc_pct`, `actual_planned_risk_pct`,
+  `value_by_risk_cap`, `binding_cap` and `actionable` were removed with it.
+  `suggest()` now reports capital, the two caps, the regime/shape multipliers,
+  and `risk_pct` — the stop distance, which is a property of the prices and
+  not a size.
+- `app.js` no longer prints "Quantity at trigger" or "Research position size";
+  the panel is now **Position limits (you choose the size)**.
+- The research page's "Try your own numbers" calculator is **kept on
+  purpose** — it is the instrument the owner uses to pick a size, and it only
+  turns the owner's own price, stop and capital into consequences.
+- `test_sizing_safety.py` asserts none of those fields can ever come back.
+- `MARKET_WISDOM.md` §2.7 and `traders/wisdom.py` were left alone: they are
+  sourced market knowledge, not claims about this codebase, and editing
+  `traders/*.py` would change the League `code_hash` and force a replay.
 
 ---
 
@@ -618,7 +638,7 @@ working on this repo.
 | `EXIT_LOGIC.md:158-161, 237-238` — `value_investing_made_easy` and `apurva_parikh` "ship a full EXIT_RULES block" | `value_investing_made_easy.py` has **zero** exit code; `apurva_parikh` ships a shared `EXIT_RULES` dict on `raw`, not an R40 block |
 | `EXIT_LOGIC.md:87-89, 111-112` — `oshaughnessy` and `quantitative_value` attach informational `raw.exits` | Both have **zero** exit code (grep for `exit` returns nothing) |
 | `MARKET_WISDOM.md:1` — "Across 15 Books", lists Bruce Greenwald | `backlog.md:127` marks ID67 Greenwald **REJECTED** |
-| `PROJECT_HANDOFF.md:5`, §5 — module line counts and "half-Kelly" sizing | `terminal_api.py` is **1041** lines (not 885), `trader_league.py` is **3110** (not 2885); `sizing.py` has no Kelly maths (F-12) |
+| `PROJECT_HANDOFF.md:5`, §5 — module line counts and "half-Kelly" sizing | `terminal_api.py` is **1041** lines (not 885), `trader_league.py` is **3110** (not 2885); §5 corrected 2026-10-19 — sizing is caps-only with no Kelly and no suggested quantity (F-12 resolved) |
 | `PROJECT_HANDOFF.md:86` — pattern gate thresholds from 86,422 graded tags | Live `pattern_grades` = **0 rows** (F-04) |
 | `john_crane.py:20` cites a signal-shape docstring in `traders/__init__.py` | No such docstring exists |
 | `meta_model.py` docstring "v7" vs `MODEL_VERSION = 'v8-pit-safe'` | Version drift across modules (`setup.py` "OFFICIAL v3" vs "v3.5"; `patterns.py` v6; `pattern_grader.py` v5) |

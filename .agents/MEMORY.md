@@ -225,7 +225,7 @@ stale laptop DB were cleared by the 2026-10-18 rebuild.
 | HIGH | **No auth on any route** — the gate was removed wholesale 2026-10-07 (0× 401/403 over 67 probes) | **by owner decision**; never re-add a per-route gate. Secrets must never go in `terminal/static/` |
 | HIGH | Owner password + Telegram bot token remain readable in **git history** (bot token was untracked in `3fd912f`) | fixed only by rotation → **owner-gated**, report only (F-05) |
 | MED | The registers themselves went 14 days stale and contradicted the code (F-26) | **check `MANIFEST.json.generated_at` vs `git log -1` before trusting any severity row** |
-| — | `sizing.py` has no Kelly maths despite the name | caps only (F-12, needs an owner call: implement or rename) |
+| — | ~~`sizing.py` has no Kelly maths despite the name~~ **CLOSED 2026-10-19** | owner call: Kelly fields **and** the machine-chosen quantity were deleted — `suggest()` returns caps only (F-12) |
 | — | `.agents/` and friends are untracked in git | a `git clean -fdx` loses the agent layer (F-17, owner decision) |
 
 Full evidence: `.agents/cache/FINDINGS.md` (**26** entries).

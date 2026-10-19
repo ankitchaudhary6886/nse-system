@@ -116,6 +116,14 @@ function _renderUniverseTable() {
   return html;
 }
 
+/* The "Companies you can research" tile in the header must always show the
+   same number as the panel it opens, so it is written from here rather than
+   from any other endpoint. */
+function _setUniverseTile(value) {
+  const el = document.getElementById("mUniverse");
+  if (el) el.textContent = value;
+}
+
 async function loadResearchUniverse(computeMissing) {
   const box = document.getElementById("researchUniverseBox");
   const badge = document.getElementById("researchUniverseBadge");
@@ -147,12 +155,16 @@ async function loadResearchUniverse(computeMissing) {
         ? `<p>No setups were stored for the latest scan date (${data.date}). Price data: ${data.source_dates?.prices || "unavailable"}.</p>`
         : "<p>No trader scans are stored yet. Run the swing or trend scan, then refresh this view.</p>";
       if (badge) setStatusRow(badge, data.date ? `0 setups · ${data.date}` : "no scan data", "neut");
+      _setUniverseTile("0");
       return;
     }
     const stale = data.stale ? " · scan older than stored prices" : "";
     const missing = data.n_errors ? ` · ${data.n_errors} history unavailable` : "";
     if (badge) setStatusRow(badge,
       `${_universeRows.length} symbols · ${data.date || "date unavailable"}${stale}${missing}`, "bull");
+    // The header tile promises exactly what this panel shows, so it is filled
+    // from here and never from a different endpoint.
+    _setUniverseTile(String(_universeRows.length));
     box.innerHTML = (data.stale
       ? `<p class="method-warning">The latest scan is older than the newest stored price bar (${data.source_dates?.prices || "unknown"}). Refresh price data and rerun the scan before relying on this result.</p>`
       : "") + _renderUniverseTable();

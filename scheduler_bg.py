@@ -429,6 +429,25 @@ def _league_scorecard_job():
         log.exception(f"league scorecard failed: {e}")
 
 
+def _when(trigger):
+    """Render a cron trigger as a short IST string, e.g. 'mon-fri 19:30'.
+
+    Derived from the trigger APScheduler actually holds rather than a
+    hand-written schedule, so the startup banner cannot drift from the
+    add_job calls above.
+    """
+    fields = getattr(trigger, "fields", None)
+    if not fields:
+        return "once"
+    f = {fl.name: str(fl) for fl in fields}
+    clock = f"{f.get('hour', '*')}:{f.get('minute', '*')}"
+    if f.get("day_of_week", "*") != "*":
+        return f"{f['day_of_week']} {clock}"
+    if f.get("day", "*") != "*":
+        return f"day {f['day']} {clock}"
+    return clock
+
+
 def start():
     global _scheduler
     if _scheduler is not None:
@@ -524,13 +543,9 @@ def start():
                                    timezone=IST),
                        id="validate_wf", replace_existing=True)
     _scheduler.start()
-    log.info("scheduler started — dq@15:30, daily@15:45, trend@15:50, "
-             "delivery@16:00, swing@16:15, research@16:20, "
-             "inst@16:45, macro@17:30, patterns@18:05, templates@18:35, "
-             "league@Mon-Fri19:00, leagueCard@Sat11:00, "
-             "poolRebuild@Sun06:00, fund@Sat08:00, retrain@Sat09:00, "
-             "positional@Sat10:00, valueRadar@Sun09:00, "
-             "mc@Mon08:00, wf@1st10:00 IST")
+    registered = sorted(_scheduler.get_jobs(), key=lambda j: j.id)
+    banner = ", ".join(f"{j.id}@{_when(j.trigger)}" for j in registered)
+    log.info(f"scheduler started — {len(registered)} jobs IST: {banner}")
 
 
 def status():

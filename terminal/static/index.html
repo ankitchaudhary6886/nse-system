@@ -222,7 +222,7 @@
 <link rel="stylesheet" href="/static/style.css?v=22">
 <link rel="stylesheet" href="/static/polish.css?v=3">
 <link rel="stylesheet" href="/static/explain.css?v=3">
-<link rel="stylesheet" href="/static/fintech.css?v=4">
+<link rel="stylesheet" href="/static/fintech.css?v=5">
 <link rel="stylesheet" href="/static/tailwind.css?v=1">
 <link rel="stylesheet" href="/static/app.css?v=2">
 <link rel="stylesheet" href="/static/narrow.css?v=1">
@@ -245,42 +245,35 @@
         aria-label="Close navigation" title="Close navigation" data-close-nav>Close</button>
     </div>
     <nav class="nav" aria-label="Main navigation">
-      <div class="nav-group">Explore</div>
+      <div class="nav-group">Product lines</div>
       <button class="nav-btn" data-view="funda" data-explain="sector_rs"
         title="Long-term quality views. Click the label to learn what is checked">
-        <span class="nav-label">Fundamentals</span><span class="nav-hint">Long-term quality</span>
+        <span class="nav-label">Funda</span><span class="nav-hint">Long-term quality</span>
       </button>
       <button class="nav-btn" data-view="swing" data-explain="setup"
         title="Short-term setups. Click the label to learn the pattern we look for">
-        <span class="nav-label">Swing setups</span><span class="nav-hint">Days to weeks</span>
+        <span class="nav-label">Swing</span><span class="nav-hint">Days to weeks</span>
       </button>
-      <div class="nav-group">Research</div>
+      <div class="nav-group">Look closer</div>
       <button class="nav-btn active" data-view="research" data-explain="signal"
         title="One company in detail. Click the label to learn what a signal is">
-        <span class="nav-label">Company research</span><span class="nav-hint">Charts and evidence</span>
-      </button>
-      <button class="nav-btn" data-view="traders" data-explain="setup"
-        title="Ideas from published books. Click the label to learn the shared pattern">
-        <span class="nav-label">Trading methods</span><span class="nav-hint">Ideas from books</span>
+        <span class="nav-label">Research</span><span class="nav-hint">Charts and evidence</span>
       </button>
       <div class="nav-group">Review</div>
       <button class="nav-btn" data-view="ledger" data-explain="p_win"
         title="How the system has actually done. Click the label to learn the scoring">
-        <span class="nav-label">Performance</span><span class="nav-hint">Honest track record</span>
-      </button>
-      <button class="nav-btn" data-view="league" data-explain="target"
-        title="Pretend money, real prices. Click the label to learn how targets work">
-        <span class="nav-label">Paper league</span><span class="nav-hint">No real money</span>
+        <span class="nav-label">Ledger</span><span class="nav-hint">Honest track record</span>
       </button>
       <button class="nav-btn" data-view="system" data-explain="data_quality"
         title="Is everything working. Click the label to learn what is checked">
-        <span class="nav-label">System status</span><span class="nav-hint">Is it healthy</span>
+        <span class="nav-label">System</span><span class="nav-hint">Is it healthy</span>
       </button>
-      <a class="nav-btn" href="/glossary"
-        title="Every word and number, explained in plain English">
-        <span class="nav-label">What things mean</span><span class="nav-hint">Plain-English guide</span>
-      </a>
     </nav>
+    <div class="nav-group">Reference</div>
+    <a class="nav-btn" href="/glossary"
+      title="Every word and number, explained in plain English">
+      <span class="nav-label">What things mean</span><span class="nav-hint">Plain-English guide</span>
+    </a>
     <button class="sidebar-footer" type="button" data-detail-url="/api/health"
       data-detail-title="System health" aria-label="Open system health details">
       <span class="mini-label">Service status</span>
@@ -323,21 +316,16 @@
         <span id="refreshStatus" class="refresh-status" role="status" aria-live="polite"></span>
       </div>
       <nav class="fx-navrail" id="navRail" aria-label="Primary">
-        <button class="nav-btn active" data-view="research" data-explain="signal"
-          title="One company in detail. Click the label to learn what a signal is">Research</button>
         <button class="nav-btn" data-view="funda" data-explain="sector_rs"
-          title="Long-term quality views. Click the label to learn what is checked">Fundamentals</button>
+          title="Long-term quality views. Click the label to learn what is checked">Funda</button>
         <button class="nav-btn" data-view="swing" data-explain="setup"
           title="Short-term setups. Click the label to learn the pattern we look for">Swing</button>
-        <button class="nav-btn" data-view="traders" data-explain="setup"
-          title="Ideas from published books. Click the label to learn the shared pattern">Methods</button>
+        <button class="nav-btn active" data-view="research" data-explain="signal"
+          title="One company in detail. Click the label to learn what a signal is">Research</button>
         <button class="nav-btn" data-view="ledger" data-explain="p_win"
-          title="How the system has actually done. Click the label to learn the scoring">Performance</button>
-        <button class="nav-btn" data-view="league" data-explain="target"
-          title="Pretend money, real prices. Click the label to learn how targets work">League</button>
+          title="How the system has actually done. Click the label to learn the scoring">Ledger</button>
         <button class="nav-btn" data-view="system" data-explain="data_quality"
           title="Is everything working. Click the label to learn what is checked">System</button>
-        <a class="nav-btn" href="/glossary" title="Every word and number, explained in plain English">Glossary</a>
       </nav>
     </div>
 
@@ -354,10 +342,10 @@
         <span>Signals listed</span><strong id="mSignals">—</strong>
         <small>Ideas the scan is currently showing</small>
       </button>
-      <button class="metric-card" type="button" data-view="ledger" data-explain="signal"
-        aria-label="Open performance ledger. Click to learn how results are graded">
-        <span>Graded win rate</span><strong id="mWinRate">—</strong>
-        <small>Only ideas whose outcome is already known</small>
+      <button class="metric-card" type="button" data-view="swing" data-explain="signal"
+        aria-label="Open swing signals. Click to learn how results are graded">
+        <span>Swing win rate</span><strong id="mWinRate">—</strong>
+        <small>Graded swing signals only</small>
       </button>
       <button class="metric-card" type="button" data-view="ledger" data-explain="risk_pct"
         aria-label="Open trade details. Click to learn about risk and waiting ideas">
@@ -369,7 +357,7 @@
         data-explain="data_quality"
         aria-label="Open research universe. Click to learn about data freshness">
         <span>Companies you can research</span><strong id="mUniverse">—</strong>
-        <small>Names with enough history to analyse</small>
+        <small>From the latest stored scan</small>
       </button>
     </div>
     </section>
@@ -414,8 +402,11 @@
       <div class="panel">
         <div class="panel-header">
           <div>
-            <h2>Custom Strategies</h2>
-            <p>Owner-authored rules. Edit or Run directly here.</p>
+            <!-- Deliberately separate from Funda's "Rules You Have Written":
+                 the owner decided on 2026-09-26 that Funda and Swing keep
+                 their own universes, so each product line lists its own rules. -->
+            <h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Custom Strategies</h2>
+            <p>Your short-term rules. Edit or run them right here.</p>
           </div>
           <span class="badge muted" id="swingStrategyBadge">—</span>
         </div>
@@ -447,7 +438,7 @@
       </div>
 
       <div class="panel" style="margin-top:18px">
-        <div class="panel-header"><div><h2 data-explain="volume" class="panel-title" title="Click to learn what this means">What Is Moving Today</h2><p>Momentum, volume, and turnaround clusters. Model scores describe an uncalibrated +10% high / 20-session event, not trade win odds.</p></div></div>
+        <div class="panel-header"><div><h2 data-explain="volume" class="panel-title" title="Click to learn what this means">What Is Moving Today</h2><p data-tip="Model scores describe an uncalibrated +10% high / 20-session event, not trade win odds.">Momentum, volume, and turnaround clusters.</p></div></div>
         <div class="radar-layout">
           <div>
             <h3 style="font-size:13px; color:#9fb0cc; margin:0 0 8px;">Momentum</h3>
@@ -467,6 +458,12 @@
 
     <!-- ================= RESEARCH ================= -->
     <section id="view-research" class="view active-view">
+      <nav class="view-tabs" aria-label="Research sections">
+        <button class="view-tab active" data-view="research" aria-current="page"
+          title="Charts, evidence, and one company in detail">Companies</button>
+        <button class="view-tab" data-view="traders" data-explain="setup"
+          title="Ideas from published books. Click the label to learn the shared pattern">Trading methods</button>
+      </nav>
       <div class="terminal-grid">
         <div class="panel large" style="grid-column:1/-1">
           <div class="panel-header">
@@ -538,7 +535,7 @@
             <button class="fx-btn" id="computeMissingBtn" data-icon="check">Compute Missing</button>
           </div>
         </div>
-        <div class="fx-row" id="researchUniverseBadge"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Status</span><span class="fx-v is-mut">loading…</span></div>
+        <div class="fx-row" id="researchUniverseBadge"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Universe freshness</span><span class="fx-v is-mut">loading…</span></div>
         <div id="researchUniverseBox" style="overflow-x:auto;"><p>Loading universe...</p></div>
       </div>
 
@@ -547,7 +544,7 @@
           <div><h2 data-explain="sector_rs" class="panel-title" title="Click to learn what this means">Industry Groups</h2><p>Pooled by sector. Real pooling.</p></div>
           <button class="fx-btn" id="refreshResearchSector" data-icon="refresh-cw">Refresh</button>
         </div>
-        <div class="fx-row" id="researchSectorBadge"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Status</span><span class="fx-v is-mut">loading…</span></div>
+        <div class="fx-row" id="researchSectorBadge"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Sector freshness</span><span class="fx-v is-mut">loading…</span></div>
         <div id="researchSectorBox" style="overflow-x:auto;"><p>Loading sectors...</p></div>
       </div>
 
@@ -556,7 +553,7 @@
           <div><h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Chart Patterns Found Today</h2><p>HTF · Asc Triangle · Double Bottom · Inv H&S · H&S Top warning</p></div>
           <button class="fx-btn" id="runPatternScan" data-icon="layers">Run Full Scan</button>
         </div>
-        <div class="fx-row" id="patternStatus"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Status</span><span class="fx-v is-mut">loading…</span></div>
+        <div class="fx-row" id="patternStatus"><span class="fx-k"><span class="fx-dot pulse" style="background:var(--fx-info)"></span>Pattern freshness</span><span class="fx-v is-mut">loading…</span></div>
         <div class="card-list" id="patternList" style="margin-top:14px"></div>
       </div>
 
@@ -577,13 +574,19 @@
       </div>
     </section>
 
-    <!-- ================= TRADERS ================= -->
+    <!-- ================= TRADERS (sits under Research) ================= -->
     <section id="view-traders" class="view">
+      <nav class="view-tabs" aria-label="Research sections">
+        <button class="view-tab" data-view="research" data-explain="signal"
+          title="Charts, evidence, and one company in detail">Companies</button>
+        <button class="view-tab active" data-view="traders" aria-current="page"
+          title="Ideas from published books">Trading methods</button>
+      </nav>
       <div class="panel">
         <div class="panel-header">
           <div>
             <h2 data-explain="setup" class="panel-title" title="Click to learn what this means">Trading Methods</h2>
-            <p data-tip="Every book keeps its own methods, listed separately and never merged into one list.">Methods from 14 published books, kept separate.</p>
+            <p>Methods from 14 published books, kept separate.</p>
           </div>
         </div>
         <div id="tradersIntroTotal" class="tm-intro"></div>
@@ -591,8 +594,14 @@
       </div>
     </section>
 
-    <!-- ================= LEAGUE ================= -->
+    <!-- ================= LEAGUE (sits under Ledger) ================= -->
     <section id="view-league" class="view">
+      <nav class="view-tabs" aria-label="Review sections">
+        <button class="view-tab" data-view="ledger" data-explain="p_win"
+          title="How the system has actually done">Track record</button>
+        <button class="view-tab active" data-view="league" aria-current="page"
+          title="Pretend money, real prices">Paper league</button>
+      </nav>
       <div class="panel">
         <div class="panel-header">
           <div>
@@ -606,6 +615,12 @@
 
     <!-- ================= LEDGER ================= -->
     <section id="view-ledger" class="view">
+      <nav class="view-tabs" aria-label="Review sections">
+        <button class="view-tab active" data-view="ledger" aria-current="page"
+          title="How the system has actually done">Track record</button>
+        <button class="view-tab" data-view="league" data-explain="target"
+          title="Pretend money, real prices. Click to learn how targets work">Paper league</button>
+      </nav>
       <div class="terminal-grid">
         <div class="panel">
           <div class="panel-header"><div><h2 data-explain="p_win" class="panel-title" title="Click to learn what this means">How The System Has Done</h2><p>Graded swing signals</p></div></div>
@@ -714,11 +729,11 @@
 <script src="/static/sliders.js?v=1"></script>
 <script src="/static/explainer.js?v=2"></script>
 <script src="/static/ideals.js?v=1"></script>
-<script src="/static/app.js?v=21"></script>
+<script src="/static/app.js?v=22"></script>
 <script src="/static/scanners.js?v=17"></script>
 <script src="/static/strategy_runs.js?v=18"></script>
-<script src="/static/research.js?v=18"></script>
-<script src="/static/research_universe.js?v=18"></script>
+<script src="/static/research.js?v=19"></script>
+<script src="/static/research_universe.js?v=19"></script>
 <script src="/static/research_sector.js?v=18"></script>
 <script src="/static/strategies.js?v=18"></script>
 <script src="/static/strategy_editor.js?v=16"></script>

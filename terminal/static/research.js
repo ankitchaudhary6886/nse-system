@@ -256,10 +256,13 @@ function _getResearchState(data) {
   return _initResearchState(data);
 }
 
-/* Mirror of sizing.suggest: the same caps, so the on-screen number matches the
-   server's rule instead of inventing a friendlier one. Capital and risk come
-   from the sliders themselves; the trigger/stop pair is passed in because the
-   server ask depends on exactly those two numbers. */
+/* The caps come from sizing.suggest (max_alloc_pct / alloc_pct /
+   risk_per_trade_pct), so the on-screen number matches the server's rule
+   instead of inventing a friendlier one. sizing.suggest deliberately never
+   proposes a quantity or a rupee amount — this panel only turns the owner's
+   own buying price, safety line, capital and risk into what those choices
+   mean. Capital and risk come from the sliders; the trigger/stop pair is
+   whatever has been typed above. */
 function _scenarioNumbers(st, trigger, stop) {
   const data = st.data;
   const srv = data.sizing_response || {};

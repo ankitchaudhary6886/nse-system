@@ -111,7 +111,7 @@ backtest result in-browser. No VM, no git, no code.
 
 ### Idea 8 — Progressive disclosure everywhere
 Default view = the answer. Click reveals derivation.
-- Sizing shows "₹40,000 (4%)" — click reveals Kelly, regime, quality
+- Sizing shows "your capital + the risk cap" — click reveals the allocation cap, regime, quality
 - P(WIN) shows "49%" — click reveals SHAP features
 - Pattern tag shows "HTF ✓" — click reveals checklist
 
@@ -266,3 +266,27 @@ Each phase is independently useful. No phase blocks a later one.
   Telegram bot token tracked at HEAD** in `data/tg_secret.txt` - the file is now
   untracked and gitignored, but the token must still be revoked and the password
   rotated. See `.agents/{auth,clutter,popup}-*report.md`.
+
+- 2026-10-19 — **Phase 1 shipped: five destinations.** The top nav is now
+  **Funda / Swing / Research / Ledger / System** in both the sidebar and the
+  header pill rail. `Trading methods` and `Paper league` were not deleted —
+  they are reached through segmented in-view tabs nested under Research and
+  Ledger, so every loader and `league.js`'s replay poll still work unchanged,
+  and `NAV_HOME` in `setView()` keeps the parent nav lit while inside them;
+  the glossary moved to a labelled Reference group outside `<nav>`. Noise
+  removed: the Chart Patterns panel now shows the strongest 10 of 60 behind
+  **Show all 60** (it was 17,366px — 78% of the research page), DTW Shape
+  Matches is behind a toggle, and the one always-visible disclaimer subtitle
+  became a tooltip (still one tap away, still permanent in methodology).
+  Three rows all captioned "Status" became "Universe freshness" /
+  "Sector freshness" / "Pattern freshness" — `setStatusRow` now preserves a
+  row's own caption. Two correctness fixes: the win-rate tile showed
+  `swing_signals` data while linking to the Ledger (now titled **Swing win
+  rate** and links to Swing), and the research-universe tile showed
+  `universe_broad`'s row count while opening a different panel (now written
+  by that panel itself). Rejected one audit item with cause: the Funda and
+  Swing strategy panels were **not** merged, because merging them would break
+  the owner's 2026-09-26 decision that the two product lines keep separate
+  universes. Added a motion layer (transform/opacity only, disabled under
+  `prefers-reduced-motion`). Sizing changed in the same batch: see
+  EXECUTION_LOG #106.

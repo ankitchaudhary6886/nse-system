@@ -4951,15 +4951,14 @@
    ]
   },
   "positional_scanner.py": {
-   "lines": 289,
-   "bytes": 9488,
+   "lines": 278,
+   "bytes": 9185,
    "doc": "Positional Scanner \u2014 long-term holds (months to years). v3 (2026-09-12): uses canonical universe_helper (ID7). Score = 0.4*quality + 0.3*trend + 0.3*valuation Tiers: S (>=80 all pillars), A (>=65), B (>=50), C (ranked below). Runs weekly Sat 10:00 IST.",
    "functions": [
     "_ensure",
     "_quality_score",
     "_trend_score",
     "_value_score",
-    "_sector_pe_medians",
     "compute",
     "top",
     "_fmt_tg",
@@ -4971,6 +4970,7 @@
     "alerts",
     "db",
     "log_utils",
+    "scoring",
     "universe_helper"
    ],
    "imports_third_party": [],
@@ -5386,8 +5386,8 @@
    "imported_by": []
   },
   "scheduler_bg.py": {
-   "lines": 554,
-   "bytes": 21187,
+   "lines": 569,
+   "bytes": 21615,
    "doc": "Background scheduler \u2014 daily chain + swing + research cache + pool rebuild + patterns + fundamentals + value radar + positional + trend + validation.",
    "functions": [
     "_data_quality_job",
@@ -5415,6 +5415,7 @@
     "_drift_check",
     "_league_job",
     "_league_scorecard_job",
+    "_when",
     "start",
     "status",
     "stop"
@@ -5486,6 +5487,7 @@
     "check_stock.py",
     "deepdive.py",
     "diag.py",
+    "positional_scanner.py",
     "scan.py"
    ]
   },
@@ -5709,9 +5711,9 @@
    ]
   },
   "sizing.py": {
-   "lines": 179,
-   "bytes": 6622,
-   "doc": "Transparent fixed-risk research sizing with hard safety caps.",
+   "lines": 164,
+   "bytes": 5825,
+   "doc": "Position sizing bounded by hard safety caps; the owner picks the size. No Kelly, no win-probability inference and no suggested share count lives in this module - the numbers here are limits, not instructions.",
    "functions": [
     "get_capital",
     "set_capital",
@@ -6726,8 +6728,8 @@
    "imported_by": []
   },
   "test_sizing_safety.py": {
-   "lines": 37,
-   "bytes": 1490,
+   "lines": 75,
+   "bytes": 2984,
    "doc": "",
    "functions": [],
    "classes": [

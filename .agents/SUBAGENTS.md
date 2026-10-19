@@ -137,8 +137,9 @@ silently score with a stale model.
 overstates.
 
 - Gate/veto/staleness order is load-bearing; see `JOIN_HERE.md` §2.3.
-- `sizing.py` is caps-only today, not half-Kelly (F-12). If you implement Kelly,
-  source `p_win` from `pwin_daily` and keep the caps as the upper bound.
+- `sizing.py` is caps-only and deliberately stays that way (F-12, owner call
+  2026-10-19): no Kelly, no `p_win`, and no suggested share count. Never add a
+  machine-chosen position size back — the owner picks it.
 - `validate.monte_carlo` needs ≥15 graded trades; with 9 rows live, any verdict
   is noise. Say so rather than reporting a number.
 
