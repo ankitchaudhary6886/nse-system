@@ -76,11 +76,14 @@ run, the change exists only on the laptop. Keep it on the pending list and say s
 at the end of every turn. A refactor that is never pushed is a refactor that
 gets lost.
 
-**PENDING: nothing.** As of 2026-10-05 the B2/B3/B4/B5 batches and the
-`EXECUTION_LOG.md` compaction are **pushed to GitHub and pulled on the VM**, and
-`nse-terminal.service` was restarted and verified `active (running)` with
-`trader_league.py selftest` at 28/28. The next substantial change starts a new
-pending item here.
+**PENDING: nothing.** As of **2026-10-19** the register-truth pass (F-10, F-11,
+F-13 code fixes + F-26 register corrections, commits `8eae8f8` and `52fa5ce`)
+is **pushed to GitHub and pulled on the VM**; `nse-terminal.service` was
+restarted and verified `Active: active (running)` with `journalctl` showing
+**0 tracebacks** and `GET /api/health` → `200 {"ok":true}`; the suite is
+**363 tests OK**. `.agents/cache/*.json` were rebuilt the same day
+(`generated_at 2026-10-19T07:50:23Z`, 23 jobs / 12 daily stages).
+The next substantial change starts a new pending item here.
 
 **Note on the VM pull:** the VM is reachable with the key alone (no passphrase)
 via `ssh -i C:\Users\Ankit\.ssh\nse.pem ubuntu@140.238.226.249`, so an agent can
