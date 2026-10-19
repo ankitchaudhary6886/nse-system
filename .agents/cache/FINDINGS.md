@@ -456,7 +456,16 @@ stored anywhere in the script.
 
 ---
 
-## F-17 · The entire agent/tooling layer is untracked in git — `OPEN` (data-loss risk)
+## F-17 · The entire agent/tooling layer is untracked in git — `RESOLVED` (re-checked 2026-10-19)
+
+> **Cleared.** `git status --porcelain --untracked-files=all` now returns
+> **0 untracked files** — every path is either tracked or deliberately ignored:
+> `.agents/` 32 tracked, `.context-ops/` 6, `.vscode/` 2, `CLAUDE.md` 1, and
+> `trading-agents-swarm/` **ignored**. The ambiguous "neither tracked nor
+> deliberately ignored" state no longer exists, so the decision the entry asked
+> for has been made in practice. Re-run that one command if it ever reappears.
+
+**Original 2026-10-05 evidence (for history):**
 
 **Evidence**
 ```powershell
@@ -564,7 +573,15 @@ Do not mistake `.context-ops/memory/*` for real project knowledge. Use
 
 ---
 
-## F-23 · `trading-agents-swarm/` is an unrelated third-party clone — `OPEN` (clarity)
+## F-23 · `trading-agents-swarm/` is an unrelated third-party clone — `RESOLVED` (ignored, 2026-10-19)
+
+> **Cleared.** `git check-ignore trading-agents-swarm` → **ignored**, and it
+> shows 0 tracked files, so the nested foreign repo can no longer be swept into
+> a commit or mistaken for part of this system. It still sits on disk unused
+> (not imported by any `nse_system` code) — deleting it remains an owner call
+> but there is no longer any data-loss or provenance risk.
+
+**Original 2026-10-05 evidence (for history):**
 
 A nested **separate git repo** (remote
 `github.com/visionKinger/trading-agents-swarm`, 14 commits, last author
