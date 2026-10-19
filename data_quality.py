@@ -12,6 +12,11 @@ WARN_STALE_DAYS = 3
 RECENT_SYMBOL_DAYS = 10
 MAX_MISSING_SYMBOLS_SHOWN = 20
 SUSPICIOUS_JUMP_PCT = 0.35
+# F-11: data_quality_log used to be DELETEd on every run, so only the newest
+# run ever survived and the trend (is staleness getting better or worse?) was
+# unrecoverable. Keep an append-only trail bounded to this many runs instead.
+# The job runs daily, so 60 runs ~= two months at ~6 rows each.
+HISTORY_RUNS = 60
 
 def _today():
     return dt.date.today()
@@ -206,11 +211,18 @@ def run(send_alert=True):
     check_missing_recent_symbols(conn, logs, latest_date)
     check_suspicious_jumps(conn, logs)
 
-    conn.execute("DELETE FROM data_quality_log")
+    # F-11: append first, then prune to the newest HISTORY_RUNS runs. The old
+    # code ran DELETE on the whole table before writing, which threw away every
+    # previous run each day and left no way to see whether checks are improving.
     for r in logs:
         conn.execute("INSERT INTO data_quality_log VALUES (?,?,?,?,?)",
                      (r["run_at"], r["status"], r["severity"],
                       r["check_name"], r["message"]))
+    conn.execute(
+        "DELETE FROM data_quality_log WHERE run_at NOT IN ("
+        "  SELECT run_at FROM data_quality_log"
+        "  GROUP BY run_at ORDER BY run_at DESC LIMIT ?)",
+        (HISTORY_RUNS,))
     conn.commit()
     conn.close()
 

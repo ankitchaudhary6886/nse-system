@@ -110,19 +110,29 @@ def report():
         conn.close()
 
 
-def notify_setup(st):
+def notify_setup(st, veto=None):
     """Swing setup alert. `st` is a Setup object from setup.SetupDetector."""
-    try:
-        import fund_veto
-        bad, why = fund_veto.vetoed(st.symbol)
-        if bad:
-            send(f"🚫 FUND VETO {st.symbol} — setup suppressed\n"
-                 f"reason: {why}\n"
-                 f"(not tradeable under fundamental gate)")
-            print(f"[ALERTS] {st.symbol} vetoed: {why}")
-            return False
-    except Exception as e:
-        print(f"[ALERTS] veto check skipped: {e}")
+
+    # F-13: swing_live.run() applies fund_veto *before* it INSERTs, so by the
+    # time we get here the row is already in swing_signals. Re-reading the veto
+    # here cost a second DB round-trip and could disagree with that committed
+    # row, producing a "setup suppressed" Telegram for a signal that is live.
+    # The caller therefore passes its own verdict through; `veto=None` keeps
+    # the old self-serve check for any direct caller that has not run one.
+    if veto is None:
+        try:
+            import fund_veto
+            veto = fund_veto.vetoed(st.symbol)
+        except Exception as e:
+            print(f"[ALERTS] veto check skipped: {e}")
+            veto = (False, None)
+    bad, why = veto
+    if bad:
+        send(f"🚫 FUND VETO {st.symbol} — setup suppressed\n"
+             f"reason: {why}\n"
+             f"(not tradeable under fundamental gate)")
+        print(f"[ALERTS] {st.symbol} vetoed: {why}")
+        return False
 
     risk = ((st.entry_price - st.stop_loss) / st.entry_price) * 100 \
         if st.entry_price else 0
@@ -147,16 +157,21 @@ def notify_setup(st):
     return ok
 
 
-def notify_all_weather(sym, st):
+def notify_all_weather(sym, st, veto=None):
     """All-weather setup alert (DEFENSIVE regime, half size)."""
-    try:
-        import fund_veto
-        bad, why = fund_veto.vetoed(sym)
-        if bad:
-            send(f"🚫 AW VETO {sym} — {why}")
-            return False
-    except Exception:
-        pass
+
+    # F-13: same contract as notify_setup — the caller vetoes before INSERT and
+    # passes its verdict in, so the alert can never contradict the stored row.
+    if veto is None:
+        try:
+            import fund_veto
+            veto = fund_veto.vetoed(sym)
+        except Exception:
+            veto = (False, None)
+    bad, why = veto
+    if bad:
+        send(f"🚫 AW VETO {sym} — {why}")
+        return False
 
     risk = st["risk_pct"] * 100
     text = (f"🌧️ ALL-WEATHER SETUP {sym}\n"

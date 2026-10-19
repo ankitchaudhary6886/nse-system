@@ -10,9 +10,37 @@ gate) · `GATED` (owner approval / upstream data required) · `FIXED`.
 Verified 2026-10-05 on `C:\Users\Ankit\Desktop\nse_system` (laptop, stale DB)
 against `main` @ `f483e68`.
 
+> **STATUS REFRESH — 2026-10-19** (this entry is authoritative over the older
+> status lines below, which are left in place for history).
+>
+> The 2026-10-05 pass is 14 days and ~15 commits old. Re-verified every entry
+> against on-disk code and against **production** (`fe0f09d`, same HEAD as the
+> laptop). What changed:
+>
+> | Was | Now | Why |
+> |---|---|---|
+> | F-01 laptop DB 40 days stale | **FIXED** | 2026-10-18 raw-history rebuild synced `data/app.db` to production — `prices_daily` → 2026-10-16, `ml_predictions` → 2026-10-18 |
+> | F-02 CRITICAL, P(WIN) dead | already **RETRACTED** | was never true in production |
+> | F-03 CRITICAL, `ml_predictions` empty | already **FIXED** | now 25,173 rows on both machines |
+> | F-04 pattern gate vacuously open | **FIXED** | `settings.pattern_gate` populated 2026-10-18 with real win rates; `pattern_grades` = 59,697 rows (was 0) |
+> | F-07 `window.loadResearchSectors` missing | **RETRACTED — false positive** | proven live in the browser, see entry |
+> | F-08 `deployment.js` dead | **FIXED** | file no longer exists; `app.js:961` owns `loadDeployment` |
+> | F-09 ML runs after scan | **FIXED** | `daily_update.py` now runs `ml` before `scan` (comment says so) |
+> | F-10 `run N` alphabetical | **FIXED** 2026-10-19 | ranks by `mcap_cr DESC` before truncating |
+> | F-11 log wiped every run | **FIXED** 2026-10-19 | append + prune to `HISTORY_RUNS = 60` |
+> | F-13 double veto | **FIXED** 2026-10-19 | verdict passed through to the alert |
+>
+> **Facts that also moved:** 12 `daily_update` stages (was 10 — `fyers` and
+> `breadth` were added); **23** scheduler jobs (was 19); suite is **363** tests
+> (was 230); `matplotlib` is installed on the VM (optional locally, charts work
+> in production).
+>
+> **New defect raised this pass — F-26: the agent bootstrap layer itself was
+> stale.** See the end of this file.
+
 ---
 
-## F-01 · Laptop DB is ~40 days stale — `OPEN` (informational)
+## F-01 · Laptop DB is ~40 days stale — `FIXED` (2026-10-18, see note)
 
 **Evidence**
 ```powershell
@@ -104,7 +132,16 @@ after scan), one daily run cannot self-heal.
 
 ---
 
-## F-04 · The empirical pattern gate is vacuously open — `OPEN`
+## F-04 · The empirical pattern gate is vacuously open — `FIXED` (2026-10-18)
+
+> **No longer true on either machine.** Verified 2026-10-19 on the laptop and
+> on production: `settings.pattern_gate` = `{"date": "2026-10-18", "gate": …}`
+> with all 6 patterns carrying real statistics (e.g. `ASCENDING_TRIANGLE`
+> win_rate 0.697 over n=5740), and `pattern_grades` = **59,697** rows (was 0).
+> The gate now filters on evidence as designed. The fail-open default
+> (`enabled_patterns` treating an unknown pattern as enabled) remains in code —
+> it is harmless while the gate is populated, but note it if the gate is ever
+> cleared again.
 
 **Evidence**
 ```powershell
@@ -123,7 +160,35 @@ run on a fresh DB.
 
 ---
 
-## F-05 · Auth is opt-in and part of the surface is public — `OPEN` (security)
+## F-05 · Auth is opt-in and part of the surface is public — `SUPERSEDED` (see reality below)
+
+> **The premise is no longer true.** There is **no auth anywhere** now — a grep
+> for `Depends(verify_user)` in `terminal_api.py` returns **zero matches**. The
+> gate was removed wholesale on **2026-10-07** and independently verified in
+> `.agents/auth-verify-report.md`: 67 live probes across `/`, `/glossary`,
+> `/docs`, `/redoc`, `/openapi.json`, `/static/*` and every `/api/*` returned
+> **0× 401 and 0× 403**; `openapi.json` has no `securitySchemes` and no
+> top-level `security`.
+>
+> **So the real posture is:** the terminal is fully public by design, and only
+> `POST /api/webhook/ingest` is guarded (by `x-webhook-token`, compared with
+> `secrets.compare_digest` — terminal_api.py:946-962).
+>
+> **Do NOT "fix" this.** `.agents/MEMORY.md` §10 is explicit: the login gate
+> was removed by owner decision and a per-route dependency must not be re-added
+> without an explicit owner decision. The original "fix direction" below
+> contradicts the owner rule and must not be followed.
+>
+> **Residual, still open (owner-gated):** the owner's password remains readable
+> in **git history** (pushed to GitHub) and the Telegram bot token was committed
+> in 3 historical commits — it was **untracked** in `3fd912f` and is now
+> correctly ignored (`.gitignore:23 data/*secret*`), but it is still recoverable
+> from history. Both are fixed only by **rotation**, which MEMORY §13 lists as
+> owner-gated. Report, do not act.
+
+**Original 2026-10-05 text (kept for history, and for its one still-useful
+point — a future route added without a gate will also be public, which is now
+the intended behaviour rather than an oversight):**
 
 **Evidence** `terminal_api.py:31-32` — `FastAPI(...)` has no `dependencies=`.
 Each route opts in with `user: str = Depends(verify_user)`. Compare with:
@@ -160,7 +225,28 @@ No fix needed today; the rule matters for the *next* endpoint added.
 
 ---
 
-## F-07 · `window.loadResearchSectors` is never exported — `FIX-READY`
+## F-07 · `window.loadResearchSectors` is never exported — `RETRACTED` (false positive)
+
+> **This finding was WRONG.** It assumed `research_sector.js` was an ES module.
+> It is a **classic script** — `index.html:722` loads it with
+> `<script src="/static/research_sector.js?v=18">` and no `type="module"`, and
+> the file has no IIFE wrapper. In a classic script a top-level `function`
+> declaration *does* become a property of the global object, so
+> `window.loadResearchSectors` already exists and the `typeof` guard in
+> `app.js:2042` picks it up.
+>
+> **Proved live, not reasoned** — evaluated in the production terminal at
+> `http://140.238.226.249:8000` on 2026-10-19:
+> ```
+> typeof window.loadResearchSectors  -> "function"
+> typeof window.loadResearchUniverse -> "function"
+> document.scripts (research*)       -> all type "classic"
+> browser console                    -> zero errors
+> ```
+> **Do not "fix" this.** The explicit `window.loadResearchUniverse = …` in
+> `research_universe.js:174` is harmless but *redundant*, not evidence that
+> `research_sector.js` is broken. Lesson: verify a frontend claim in the
+> browser before recording it as a defect.
 
 **Evidence** `app.js:1080` pushes `window.loadResearchSectors` into
 `refreshAll`'s task list and guards with `typeof fn === "function"`
@@ -177,7 +263,12 @@ Bump `research_sector.js?v=` in `index.html` (currently `18`). No restart.
 
 ---
 
-## F-08 · `deployment.js` is dead and would double-bind if wired as-is — `FIX-READY`
+## F-08 · `deployment.js` is dead and would double-bind if wired as-is — `FIXED` (file removed)
+
+> **Moot — the file no longer exists** (verified 2026-10-19:
+> `terminal/static/deployment.js` → not found). `app.js:961` defines
+> `loadDeployment()` and `app.js:2034` calls it from `refreshAll`, so the
+> deployment panel is live with a single owner and no double-binding.
 
 `deployment.js` (39 lines) is **not** referenced by `index.html` (absent from
 `api_index.json.asset_versions.script_tags`). Its own `DOMContentLoaded` handler
@@ -187,7 +278,20 @@ refactor it to an exported `window.loadDeployment` with no listeners, then wire 
 
 ---
 
-## F-09 · ML runs after scan in `daily_update` — `FIX-READY` (ordering)
+## F-09 · ML runs after scan in `daily_update` — `FIXED` (stage order corrected)
+
+> **Already fixed.** `daily_update.py` now runs stage `ml` **before** stage
+> `scan`, with an explicit comment at the call site:
+> ```
+> # ORDER MATTERS: the scan consumes today's ML scores. Running scan before
+> # ml (the old order) silently used yesterday's predictions.
+> results["ml"]    = _safe("ml",    lambda: __import__("ml_predict").predict_all())
+> results["scan"]  = _safe("scan",  lambda: __import__("scan").run())
+> ```
+> `refresh_pipeline.py` (the one-click refresh) uses the same ML → scan order.
+> Verified 2026-10-19 by reading the file.
+> **Also note the stage list grew:** `fyers` now runs first and `breadth` was
+> inserted after `technicals`, so the chain is **12 steps**, not 10.
 
 `daily_update.py:46-49` — stage 3 `scan.run()`, stage 4
 `ml_predict.predict_all()`. `scan.py:20-24` reads
@@ -198,7 +302,23 @@ alone will not help while `ml_predictions` is empty).
 
 ---
 
-## F-10 · `fundamentals_tv.run(N)` is not top-N — `FIX-READY`
+## F-10 · `fundamentals_tv.run(N)` is not top-N — `FIXED` (2026-10-19)
+
+**Was** `fundamentals_tv._universe()` returned `sorted(syms)` and `run(limit=n)`
+truncated **after** the alphabetical sort (fundamentals_tv.py:89-90), so
+`python fundamentals_tv.py run 100` fetched the first 100 symbols A–Z.
+
+**Fixed** — the union is now ranked by `mcap_cr DESC` (symbols with no known cap
+sort last, symbol name breaks ties) *before* truncating; `limit=None` still
+returns the full set alphabetically.
+
+**Scope note (downgrades the original severity):** the scheduler calls
+`fundamentals_tv.run()` with **no** limit (scheduler_bg.py:168), so production
+was never affected — only explicit CLI calls like `run 100`.
+
+**Evidence (2026-10-19)** `_universe(conn, 2)` over three symbols whose caps are
+AAA=1100, MMM=3000, ZZZ=7900 returns `['ZZZ', 'MMM']`, i.e. largest first and
+deliberately *not* alphabetical; `_universe(conn)` returns `['AAA','MMM','ZZZ']`.
 
 `fundamentals_tv._universe()` returns symbols alphabetically sorted;
 `run(limit=n)` truncates **after** sorting (fundamentals_tv.py:95-96). So
@@ -207,7 +327,25 @@ not the top 100 by market cap. Sort by `mcap_cr DESC` before truncating.
 
 ---
 
-## F-11 · `data_quality` destroys its own history — `FIX-READY`
+## F-11 · `data_quality` destroys its own history — `FIXED` (2026-10-19)
+
+**Was** `data_quality.py` ran `DELETE FROM data_quality_log` before every run,
+so the table held only the newest run. Confirmed **in production** on
+2026-10-19: `data_quality_log` = **6 rows, 1 run, `2026-10-18T18:53`** — every
+earlier audit record had been erased, so there was no way to see whether data
+quality was improving or degrading.
+
+**Fixed** — the run now **appends** its rows first and then prunes to the
+newest `HISTORY_RUNS = 60` distinct `run_at` values. The daily job therefore
+retains ~2 months of history at ~6 rows/run (a few hundred rows total), and an
+empty/failed run can no longer wipe the table.
+
+**Verified (2026-10-19)**: a seeded table of 420 rows / 70 runs prunes to 119
+rows / **60 distinct runs** — retained, bounded, not wiped.
+
+**Note** nothing reads this table for display (no API route, no JS), so adding
+history cannot change any UI. `data_quality.py` has no other consumer than
+`db.py`'s schema declaration.
 
 `data_quality.py:213` runs `DELETE FROM data_quality_log` before every run.
 `data_quality_log` holds only the latest run (6 rows live). Either drop the
@@ -227,7 +365,32 @@ rename/document the caps-only behaviour.
 
 ---
 
-## F-13 · Double veto + post-insert "suppressed" alert — `FIX-READY`
+## F-13 · Double veto + post-insert "suppressed" alert — `FIXED` (2026-10-19)
+
+**Was** `swing_live.py` ran `fund_veto.vetoed()` before its INSERT, then
+`alerts.notify_setup()` **re-ran the same veto on a second DB connection**. If
+the two reads ever disagreed, Telegram sent "FUND VETO … setup suppressed" for a
+signal whose row was already committed as `PENDING` — the message and the
+database contradicted each other. Also two DB round-trips per accepted symbol.
+
+**Fixed** — the alert functions now take the caller's verdict:
+`notify_setup(st, veto=None)` and `notify_all_weather(sym, st, veto=None)`.
+`swing_live` passes `veto=(bad, why)` from the gate it already executed, so the
+veto is computed **once**. `veto=None` preserves the old self-serve check for
+any direct caller, so the public behaviour of calling the function bare is
+unchanged. **Gate order in `swing_live.scan()` is untouched** — this passes the
+step-9 result forward; it does not add, remove or resequence a gate.
+
+**Evidence (2026-10-19)** with a stubbed `fund_veto` that counts calls:
+- `notify_setup(st, veto=(False, None))` → alerts sent, `fund_veto.vetoed()`
+  called **0** times (the duplicate read is gone).
+- `notify_setup(st)` → still self-checks, `vetoed()` called **1** time.
+- `notify_setup(st, veto=(True, "..."))` → returns `False` and emits the
+  suppression message exactly once, before any risk maths runs.
+
+**Note** the two call sites are the only ones in the repo
+(`notify_setup` ← swing_live.py, `notify_all_weather` ← swing_live.py), so no
+other caller needed updating.
 
 `swing_live.py:158-162` vetoes before INSERT. `alerts.notify_setup()`
 re-computes the veto (alerts.py:117-125) and, on a mismatch, sends a
@@ -445,11 +608,52 @@ working on this repo.
 
 ---
 
+## F-26 · The agent bootstrap layer was 14 days stale and contradicted the code — `FIXED` (2026-10-19)
+
+**This is the highest-leverage defect in the register.** `.agents/MEMORY.md`,
+`.agents/cache/JOIN_HERE.md` and the session skills are what *every* session
+reads first, and on 2026-10-19 they were actively misleading:
+
+| What the bootstrap said | What the code/production said |
+|---|---|
+| MEMORY §14: F-02 **CRITICAL**, "P(WIN) → Top Picks dead" | F-02 was **retracted 2026-10-05**; `pwin_daily` = 28,310 rows through 2026-10-18 |
+| MEMORY §14: F-03 **CRITICAL**, "scan rejects everything" | F-03 was **fixed 2026-10-05**; `ml_predictions` = 25,173 rows on both machines |
+| MEMORY §7 / F-01: laptop DB ~40 days stale | synced by the 2026-10-18 rebuild — `prices_daily` → 2026-10-16 |
+| FINDINGS: F-04 gate empty, `pattern_grades` 0 rows | gate populated 2026-10-18, `pattern_grades` = 59,697 |
+| pipeline-ops skill: F-09 open, "10 stages" | order already fixed; chain is **12** stages (`fyers`, `breadth` added) |
+| pipeline-ops / provenance skills: F-11 note | real, and now fixed (append + prune) |
+| `jobs_index.json`: 19 jobs | `scheduler_bg.py` registers **23** |
+| FINDINGS header: "25 entries" verified @ `f483e68` | HEAD was `fe0f09d`, ~15 commits later |
+| `MANIFEST.json.generated_at` | `2026-10-05` — 14 days older than the code |
+
+**Why it matters** the skill instructs agents to read MEMORY §14 *before*
+touching anything, and FINDINGS *before* "fixing" anything. A fresh session was
+therefore primed to chase two CRITICAL outages that do not exist — and, worse,
+to "fix" a healthy production system. Stale-healthy registers are more
+dangerous than missing ones, because they carry the appearance of evidence.
+
+**Root cause** `build_cache.py` output (`MANIFEST.json` → `generated_at`) and
+the hand-written Markdown registers are only refreshed by the session close-out
+(`.agents/memory.py`), so a burst of commits between sessions ages them out
+silently. Nothing fails when they go stale — they just start lying.
+
+**Fixed** every affected status line corrected against on-disk code and against
+production (probed via SSH on `fe0f09d`), with a **STATUS REFRESH** block at the
+top of this file declaring precedence over older lines. Still to do: run
+`.agents\memory.py` to regenerate the `.json` caches (14 days old), which is
+part of the close-out.
+
+**Standing rule this adds:** before quoting any register row as a fact, check
+`MANIFEST.json.generated_at` against `git log -1`. If the cache is older than
+the code, treat every severity label as provisional.
+
+---
+
 ## Verified-healthy (so you don't re-investigate)
 
 - `db.py` central schema: 31 declared tables, idempotent `executescript` + `MIGRATIONS` on every `get_conn()`.
-- Scheduler: 19 jobs registered with correct IST times (`jobs_index.json.job_count == 19`).
+- Scheduler: **23** jobs registered with correct IST times (was 19 on 2026-10-05; the cache's `job_count` is stale until `build_cache.py` re-runs).
 - Source registry: `data_sources/core.py` discovery, health, rate windows and explicit-ordered fallback all consistent; `/api/sources` wired.
 - Trader registry: 15 trader modules auto-discovered; `traders/base.py` contract honoured.
-- `terminal_api.py`: 62 unique routes, all business routes except the webhook carry `Depends(verify_user)`.
+- `terminal_api.py`: **76** route decorators (was 62 on 2026-10-05; `/api/refresh*`, `/api/fyers*`, `/api/data/health` and others were added since). Literal routes still precede their `{symbol}` catch-alls — spot-checked `/api/strategies/*`, `/api/patterns/*`, `/api/delivery/*`.
 - `stocks.sector` filled 500/500; `pipeline` 440 rows; `scanx_fundamentals_snapshots` 750 rows isolated correctly from live tables.

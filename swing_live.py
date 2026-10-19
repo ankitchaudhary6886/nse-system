@@ -101,7 +101,7 @@ def _scan_all_weather(conn, today):
               f"tier {tier} fund {fs} roce {roce}")
         try:
             from alerts import notify_all_weather
-            notify_all_weather(sym, st)
+            notify_all_weather(sym, st, veto=(bad, why))
         except Exception as e:
             print(f"  [AW] alert skipped: {e}")
     print(f"[AW] all-weather signals stored: {n}")
@@ -190,7 +190,10 @@ def scan():
               f"risk {risk_pct:.1%}  zone {st.ema_proximity}")
         try:
             from alerts import notify_setup
-            notify_setup(st)
+            # F-13: hand over the verdict step 9 already produced instead of
+            # making alerts re-open the DB and re-derive it (gate order
+            # unchanged — this is the same result, not a second gate).
+            notify_setup(st, veto=(bad, why))
         except Exception as e:
             print(f"  alert skipped: {e}")
     conn.commit()

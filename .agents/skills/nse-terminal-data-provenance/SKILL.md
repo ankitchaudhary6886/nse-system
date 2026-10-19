@@ -35,7 +35,7 @@ Corollaries already learned in this repo:
 | Live | `prices_daily`, `price_meta`, `technicals_daily`, `fundamentals`, `universe_broad`, `stocks`, `delivery_daily`, `institutional`, `macro_flow`, `breadth_daily` | Promotion only via an explicit per-field rule with before/after evidence |
 | Research snapshots | `scanx_fundamentals_snapshots`, `kite_market_snapshots` | Keep the raw row (`raw_json`) forever; withhold suspect values with a visible flag; **never** touch live tables |
 | Attestation | `market_data_attestations` | The ledger of what a snapshot claimed, whether it was applied, and why not |
-| Quality | `data_quality_log` | Note F-11: the script deletes it each run — only the latest survives |
+| Quality | `data_quality_log` | F-11 **FIXED** 2026-10-19 — append + prune to `HISTORY_RUNS = 60`; history is no longer wiped each run |
 
 ## 3. The importer workflow (dry-run is the default)
 

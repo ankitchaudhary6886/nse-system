@@ -5,7 +5,7 @@
 > and `.agents/cache/FINDINGS.md` (what is broken). This file is the durable
 > memory: it survives chat resets.
 
-Last updated: **2026-10-05**
+Last updated: **2026-10-19**
 
 ---
 
@@ -208,17 +208,24 @@ a partial patch, never "replace lines 40-55".
 
 ## 14. Currently broken — check before assuming
 
+**Refreshed 2026-10-19.** The two CRITICAL rows this table used to carry
+(meta_model / ml_models) were **retracted and fixed on 2026-10-05**; they are
+kept below as *cleared* so nobody re-diagnoses them. The pattern gate and the
+stale laptop DB were cleared by the 2026-10-18 rebuild.
+
 | | Issue | Consequence |
 |---|---|---|
-| CRITICAL | `data/meta_model.pkl` is a bare estimator, not a versioned bundle | P(WIN) → Top Picks dead |
-| CRITICAL | `data/ml_models.pkl` is `v0.1`, loader wants `v0.2-pit-safe` | `ml_predictions` empty → `scan` rejects everything |
-| HIGH | `pattern_grades` = 0 rows, pattern gate = `{}` | the 60% pattern gate is vacuously open |
-| HIGH | Laptop DB ~40 days stale | local numbers are not production |
-| HIGH | `/static`, `/docs`, `/redoc` unauthenticated | secrets must never go in `terminal/static/` |
-| — | `sizing.py` has no Kelly maths despite the name | caps only |
-| — | `verify_deployment.py` hardcoded a credential (FIXED) | login gate removed; no password stored |
+| ~~CRITICAL~~ | ~~`data/meta_model.pkl` is a bare estimator~~ **CLEARED** — production bundle is `v8-pit-safe`; `pwin_daily` 28,310 rows thru 2026-10-18 | was never broken in production (F-02 retracted) |
+| ~~CRITICAL~~ | ~~`data/ml_models.pkl` is `v0.1`~~ **CLEARED** — now `v0.2-pit-safe`; `ml_predictions` 25,173 rows | `scan` no longer rejects everything (F-03 fixed) |
+| ~~HIGH~~ | ~~`pattern_grades` = 0 rows, gate = `{}`~~ **CLEARED** — gate populated 2026-10-18, 59,697 grades | the 60% gate now filters on evidence (F-04 fixed) |
+| ~~HIGH~~ | ~~Laptop DB ~40 days stale~~ **CLEARED** — synced 2026-10-18; `prices_daily` → 2026-10-16 | still never quote a laptop row count as a *production* fact |
+| HIGH | **No auth on any route** — the gate was removed wholesale 2026-10-07 (0× 401/403 over 67 probes) | **by owner decision**; never re-add a per-route gate. Secrets must never go in `terminal/static/` |
+| HIGH | Owner password + Telegram bot token remain readable in **git history** (bot token was untracked in `3fd912f`) | fixed only by rotation → **owner-gated**, report only (F-05) |
+| MED | The registers themselves went 14 days stale and contradicted the code (F-26) | **check `MANIFEST.json.generated_at` vs `git log -1` before trusting any severity row** |
+| — | `sizing.py` has no Kelly maths despite the name | caps only (F-12, needs an owner call: implement or rename) |
+| — | `.agents/` and friends are untracked in git | a `git clean -fdx` loses the agent layer (F-17, owner decision) |
 
-Full evidence: `.agents/cache/FINDINGS.md` (25 entries).
+Full evidence: `.agents/cache/FINDINGS.md` (**26** entries).
 
 ## 15. Writing style (the owner works from a phone)
 

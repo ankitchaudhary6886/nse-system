@@ -86,8 +86,20 @@ def _universe(conn, limit=None):
     syms = set(r[0] for r in conn.execute(
         "SELECT symbol FROM stocks WHERE active=1"))
     syms |= set(U.band_universe(conn, 1500))
-    out = sorted(syms)
-    return out[:limit] if limit else out
+    if not limit:
+        return sorted(syms)
+    # F-10: `run N` means the N largest by market cap, not the first N in
+    # alphabetical order. Rank the whole union by mcap_cr descending; symbols
+    # with no known cap sort last, and the symbol name breaks ties so the
+    # order stays stable across runs. (The scheduler calls run() with no
+    # limit, so this only shapes explicit CLI calls like `run 100`.)
+    mcap = {}
+    for sym, cap in conn.execute(
+            "SELECT symbol, mcap_cr FROM universe_broad"):
+        if cap is not None:
+            mcap[sym] = cap
+    out = sorted(syms, key=lambda s: (-mcap.get(s, float("-inf")), s))
+    return out[:limit]
 
 
 def _fundamentals_values(sym, metrics, sectors, retrieved_at):

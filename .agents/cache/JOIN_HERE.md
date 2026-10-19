@@ -5,9 +5,10 @@
 > map, what is verified broken right now, and where the traps are.
 > Regenerate the `.json` facts with `.agents\build_cache.py`; edit this file by hand.
 
-Last verified: **2026-10-05**, against `data/app.db` on the laptop and a full
-read of the repo. Numbers cited as "live" come from `db_index.json` /
-`FINDINGS.md` evidence blocks.
+Last verified: **2026-10-19**, against `data/app.db` on the laptop, against
+**production** (`fe0f09d`, SSH probe), and against on-disk code. Numbers cited
+as "live" come from `db_index.json` / `FINDINGS.md` evidence blocks — note
+`MANIFEST.json.generated_at` may be older than the code (see F-26).
 
 ---
 
@@ -53,24 +54,28 @@ sources ──► adapters/ingest ──► data/app.db ──► analytics ─�
 
 ### 2.2 DB → analytics (the daily chain)
 
-`daily_update.py` runs 10 stages in this exact order, each isolated in `_safe()`
-so one failure never stops the rest (`jobs_index.json.daily_update_trace`):
+`daily_update.py` runs **12** stages in this exact order (was 10 on
+2026-10-05 — `fyers` and `breadth` were added), each isolated in `_safe()` so
+one failure never stops the rest (`jobs_index.json.daily_update_trace`):
 
 | # | Stage | Module | Entry |
 |---|---|---|---|
-| 1 | prices | `ingest_prices` | `run` |
-| 2 | technicals | `technicals` | `compute_all` |
-| 3 | scan | `scan` | `run` |
-| 4 | ml | `ml_predict` | `predict_all` |
-| 5 | pwin | `pwin_cache` | `refresh_all` |
-| 6 | toppicks | `top_picks` | `compute(force=True)` |
-| 7 | events | `events` | `detect` |
-| 8 | swing | `swing_live` | `update_outcomes` + `scan` |
-| 9 | telegram | `telegram_alerts` | `report` |
-| 10 | sheets | `sheets_sync` | `sync` |
+| 1 | fyers | `ingest_fyers` | `sync_recent(days=15)` — authenticated feed **first**, missing token is not an outage |
+| 2 | prices | `ingest_prices` | `run` |
+| 3 | technicals | `technicals` | `compute_all` |
+| 4 | breadth | `breadth` | `compute(force=True)` — second half of the regime gate |
+| 5 | ml | `ml_predict` | `predict_all` |
+| 6 | scan | `scan` | `run` |
+| 7 | pwin | `pwin_cache` | `refresh_all` |
+| 8 | toppicks | `top_picks` | `compute(force=True)` |
+| 9 | events | `events` | `detect` |
+| 10 | swing | `swing_live` | `update_outcomes` + `scan` |
+| 11 | telegram | `telegram_alerts` | `report` |
+| 12 | sheets | `sheets_sync` | `sync` |
 
-**Ordering defect (F-09):** `scan` (3) reads `ml_predictions` but `ml_predict`
-(4) writes it — today's ML score is invisible to today's scan.
+**Ordering defect (F-09) — FIXED.** `ml` (5) now runs **before** `scan` (6),
+with a comment at the call site saying why. `refresh_pipeline.py` (the one-click
+⚡ Data button) uses the same ML → scan order. Verified 2026-10-19.
 
 ### 2.3 Gates a new swing signal must survive
 
@@ -86,7 +91,9 @@ so one failure never stops the rest (`jobs_index.json.daily_update_trace`):
 8. **staleness guard** — `signal_date == last bar date` (no pattern more than `MAX_SHIFT=2` sessions old)
 9. `fund_veto.vetoed()` — `debt_eq > 3` OR `roce < 8` OR `promoter < 20`
 10. INSERT `swing_signals` (PENDING)
-11. `alerts.notify_setup()` — **re-runs the veto** (F-13)
+11. `alerts.notify_setup()` — **uses the verdict from step 9** (F-13 fixed
+    2026-10-19: `veto=(bad, why)` is passed in, so the veto runs once and the
+    alert can never contradict the committed row)
 
 `top_picks` and `patterns` apply the veto too, with their own orderings.
 
@@ -144,8 +151,11 @@ scorer), `broad_scan`/`quick_*`/`tv_probe*` diagnostics, `bullflag_rescue.py`
 6. **Every optional integration stays in `try/except`.** The UI must never blank.
 7. **Scheduler times are IST; journal timestamps are UTC** (IST = UTC + 5:30).
    This is the single most common mis-read during incident triage.
-8. **Auth is opt-in per route.** `terminal_api.py` has no global dependency; a
-   new route without `Depends(verify_user)` is silently public (`F-05`).
+8. **There is no auth at all.** The gate was removed wholesale on 2026-10-07
+   (owner decision, `.agents/auth-verify-report.md`); `verify_user` no longer
+   exists. Every route — and `/static`, `/docs`, `/redoc` — is public by
+   design. Never put a secret in `terminal/static/`, and never re-add a
+   per-route gate without an explicit owner decision (`F-05`).
 9. **Route order matters.** Literal paths must be registered *before* the
    `{symbol}`/`{name}` catch-all on the same prefix (`F-06`).
 10. **`/static` and `/docs` are unauthenticated** (`F-05`). No secrets there.
@@ -169,24 +179,25 @@ registry + `/api/sources` health, `db.py`'s central schema + migrations.
 
 | ID | Sev | One-line |
 |---|---|---|
-| F-01 | HIGH | Laptop `data/app.db` is ~40 days stale (prices end 2026-08-26) |
-| F-02 | CRITICAL | `data/meta_model.pkl` is a bare estimator → `get_model()` returns None → P(WIN), Top Picks, meta features all dead |
-| F-03 | CRITICAL | `data/ml_models.pkl` is `v0.1` but `ml_predict` demands `v0.2-pit-safe` → `ml_predictions` empty → `scan.py` rejects every symbol |
-| F-04 | HIGH | `pattern_grades` = 0 rows and `settings.pattern_gate` is `{}` → the empirical 60 % pattern gate is vacuously open (all 6 patterns enabled) |
-| F-05 | HIGH | `/static/*`, `/docs`, `/redoc`, `/openapi.json` unauthenticated; auth is opt-in per route |
-| F-06 | MED | `{symbol}` catch-all route shadowing risk on 7 prefixes |
-| F-07 | MED | `window.loadResearchSectors` is never exported → Research Sectors never refreshes on global Refresh |
-| F-08 | MED | `deployment.js` is not loaded; wiring it as-is double-binds `#refreshBtn` |
-| F-09 | MED | `daily_update` runs `ml_predict` *after* `scan` → today's ML never used today |
-| F-10 | MED | `fundamentals_tv.run(N)` truncates an alphabetically-sorted list → not top-N by market cap |
-| F-11 | MED | `data_quality.py` does `DELETE FROM data_quality_log` each run → no history |
-| F-12 | LOW | `sizing.py` has no Kelly maths despite the "half-Kelly" name; `SIZING.B_PAYOFF`/`FALLBACK_WINRATE` are referenced nowhere |
-| F-13 | LOW | A swing symbol is veto-checked twice and can emit a "suppressed" Telegram *after* the row was inserted |
-| F-14 | LOW | `BULL_FLAG` is a zombie: killed as a detector but still in `pattern_grader.ALL_PATTERNS`, `template_match.TEMPLATES`, `PAT_MAP`, meta features (+161 orphan tags) |
-| F-15 | LOW | Duplicated universe SQL in 12+ modules; duplicated Stage-2 logic in `screener_engine.py`; duplicated forward simulation in `build_setup_pool` vs `research_cockpit` |
-| F-16 | FIXED | `verify_deployment.py` hardcoded a credential (scrubbed; login gate removed) |
+| F-01 | ~~HIGH~~ **FIXED** | laptop DB was stale — synced by the 2026-10-18 rebuild (`prices_daily` → 2026-10-16) |
+| F-02 | ~~CRITICAL~~ **RETRACTED** | P(WIN) chain was healthy in production all along (`pwin_daily` 28,310 rows thru 2026-10-18) |
+| F-03 | ~~CRITICAL~~ **FIXED** | `ml_models.pkl` is `v0.2-pit-safe`; `ml_predictions` 25,173 rows on both machines |
+| F-04 | ~~HIGH~~ **FIXED** | `pattern_gate` populated 2026-10-18 with real win rates; `pattern_grades` = 59,697 |
+| F-05 | HIGH | **No auth on any route** (gate removed 2026-10-07, owner decision). Password + Telegram token still live in *git history* → rotation is owner-gated |
+| F-06 | MED | `{symbol}` catch-all route shadowing risk — advisory; spot-checked OK as of 2026-10-19 |
+| F-07 | ~~MED~~ **RETRACTED** | false positive — classic script, `window.loadResearchSectors` proved `"function"` live |
+| F-08 | ~~MED~~ **FIXED** | `deployment.js` no longer exists; `app.js:961` owns `loadDeployment` |
+| F-09 | ~~MED~~ **FIXED** | `ml` now runs before `scan`; chain is 12 stages |
+| F-10 | ~~MED~~ **FIXED** | `run N` now ranks by `mcap_cr DESC` before truncating (CLI-only impact) |
+| F-11 | ~~MED~~ **FIXED** | log is append + prune to `HISTORY_RUNS = 60`; no longer wiped each run |
+| F-12 | LOW | `sizing.py` has no Kelly maths — **needs an owner call**: implement or rename |
+| F-13 | ~~LOW~~ **FIXED** | veto computed once in `swing_live` and passed into the alert; gate order unchanged |
+| F-14 | LOW | `BULL_FLAG` still in `pattern_grader`/`template_match`/`PAT_MAP` (historical tags kept on purpose) |
+| F-15 | LOW | duplication: Yahoo direct call sites, Stage-2 logic, forward-sim, sector PE (behaviour-changing — owner sign-off) |
+| F-16 | FIXED | `verify_deployment.py` credential scrubbed |
+| **F-26** | **MED** | **the registers themselves were 14 days stale and contradicted the code — always check `MANIFEST.json.generated_at` vs `git log -1`** |
 
 **Gated, do NOT act on without explicit owner approval:**
 ID71 legacy proxy cleanup (blocked on DR-01 v2), real-money trading (verdict
 NOT READY — PF 0.93 vs 1.3 bar, 0/30 live paper trades), Streamlit retirement,
-credential rotation, HTTPS/domain.
+**credential rotation** (password + Telegram token in git history), HTTPS/domain.
