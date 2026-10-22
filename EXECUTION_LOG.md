@@ -10,7 +10,71 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
-### #106 - Kelly and machine-chosen sizing removed, scheduler banner derived, Phase 1 portal reorg - READY · AWAITING DEPLOY
+### #107 - F-15 duplication closed where provable; screener VCP blocked on evidence - DEPLOYED · VERIFIED
+
+- **Why:** F-15 was the last duplication item left from the 2026-10-19 survey,
+  and the owner signed off ("do the needful"). It changes numeric behaviour,
+  so every item needed before/after evidence before it could ship.
+
+- **1. Yahoo direct call sites → one chain (FIXED, 14 files).** Every
+  `yf.Ticker` / `yf.download` in the app now goes through `data_sources`:
+  `fetch_price_history()` (daily OHLCV via `PRICE_HISTORY_PROVIDERS`) and
+  `fetch_yahoo_field()` (one non-price `Ticker` field per call, preserving the
+  old per-attribute failure isolation). New shared plumbing: `yahoo_ticker()`
+  (adds `.NS` unless `^`-prefixed or already `.NS`), `_period_to_start()`
+  (turns `5y` / `2y` / `1mo` into a concrete start date for the non-Yahoo
+  providers), `YahooFieldAdapter`, and `end=` on the price adapter. A
+  repo-wide grep now finds **zero** `yf.Ticker` / `yf.download` /
+  `import yfinance` outside `data_sources/`. `auto_adjust=True` is preserved
+  inside the adapter, so call sites that dropped the explicit kwarg
+  (`traders/larry_spears.py`) keep adjusted prices — this was the one change
+  in the batch that could have silently altered League benchmark returns, and
+  it was checked directly rather than assumed.
+  **Evidence:** 15 of 19 spot pairs **byte-identical**. The 4 diffs are fully
+  characterised: `period=5y` DIXON/HDFCBANK (same 1237 rows, identical index
+  and Volume) differ on ≤496 rows by Yahoo's float32 dividend-adjust factor —
+  max relative error **2.3e-7 / 3.5e-7**, max Close deviation **0.0005 INR**,
+  constant per-segment ratio ≈1 ± 4e-7, deterministic on re-run; and
+  `_from_yahoo` DIXON.NS plus `fetch_index_data` ^NSEI differ only by tz-naive
+  vs `Asia/Kolkata` and extra `Dividends` / `Stock Splits` columns, with
+  **0 differing value cells**. The screener is tz-safe because each frame
+  comes from exactly one source and `evaluate_stock` only uses `idxmax` /
+  `get_loc` / label-slicing / `index[-1].date()`.
+
+- **2. Stage-2/VCP — BLOCKED, deliberately not applied.** Over 745
+  mutually-evaluated symbols the old `evaluate_stock` and the canonical
+  `scanner.Screener.evaluate` + `setup.SetupDetector.detect` disagree on
+  **VCP in 50 cases (old 13 pass vs canonical 41)**, `overall_signal` in 33
+  (7 vs 28), `impulse%` on all 41 comparable pairs, `pullback%` on 41,
+  `days_since_high` on 19, `momentum` on 5 (272-bar vs 240-bar gate), plus one
+  baseline vol-window difference (INDOTECH `vol_sma50[i-1]` vs `vol_sma[i]`).
+  Equivalent behaviour is unachievable without changing what the screener
+  flags by ~3×, so `evaluate_stock` was left **completely untouched** — there
+  is no partial edit to restore. Choosing which definition is authoritative is
+  now an **owner decision, not a bug**.
+
+- **3. Forward simulation — already consolidated, verified.** The pre-B5
+  bodies recovered from `git show 3057927~1` were run against the surviving
+  wrappers: **17,124 cases, 0 diffs** (HOLD_BARS=30, TRIGGER_WINDOW=3
+  throughout). No edits were needed.
+
+- **4. Sector PE medians — de-duplicated.** `positional_scanner._sector_pe_medians`
+  deleted (along with the then-unused `import statistics`); the module imports
+  `scoring.sector_pe_medians`. **11 sectors, 0 differing medians.**
+
+- **Verification:** `unittest discover` → **365 tests, OK, exit 0** (confirmed
+  by an independent run, not just the implementation run); `py_compile` clean
+  and import clean on all 18 touched modules.
+- **Deploy:** the VM pulled `f71234d`; `Active: active (running)`,
+  `/api/health` **200**, and the scheduler banner reports **23 jobs** including
+  all four that the old hand-written line omitted. This push also shipped
+  #106. Because `traders/larry_spears.py` changed (import swap only), the
+  League `code_hash` moved and `trader_league.py replay --changed` was run:
+  `selftest` **28/28**, then 11 books replaying in the background.
+- **Deliberately left:** the two thin `simulate_forward` wrappers — verified
+  byte-equivalent, and they are call-site shims rather than duplication.
+
+### #106 - Kelly and machine-chosen sizing removed, scheduler banner derived, Phase 1 portal reorg - DEPLOYED · VERIFIED
 
 - **Why:** the 2026-10-19 survey left three items owner-gated (F-12 sizing,
   F-15 duplication, scheduler banner) and the owner approved them together

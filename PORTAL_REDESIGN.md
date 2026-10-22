@@ -152,7 +152,10 @@ Each phase is independently useful. No phase blocks a later one.
 - `data_sources/` with standard interface
 - Registry, health and rate-limit reporting, explicit fallback order,
   first TradingView/Yahoo/NSE/Chartink adapters and System-page display
-  are implemented; continue migration across remaining consumers.
+  are implemented. **Migration across remaining consumers is complete as of
+  2026-10-23** — every Yahoo call site now routes through `data_sources`
+  (zero direct `yfinance` outside it), so a Yahoo outage degrades to the
+  NSE-backed providers instead of failing. See EXECUTION_LOG #107.
 - Official NSE/BSE filings are the selected authority for point-in-time
   fundamentals. Add this ingestion path only with financial period,
   public filing timestamp, source provenance and symbol/ISIN mapping.
