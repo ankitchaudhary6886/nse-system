@@ -10,7 +10,7 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
-### #111 - F-28 fixed: a fresh replay can no longer erase a book before it can build - READY · AWAITING DEPLOY
+### #111 - F-28 fixed: a fresh replay can no longer erase a book before it can build - DEPLOYED · VERIFIED
 
 - **The bug.** `replay(fresh=True)` deleted every `league_signals` row and
   every `league_progress` row for the selected books at the very top of the
@@ -40,6 +40,11 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
   the test that fails on the old code and passes on the new one.
 - **Verification:** `py_compile` clean; `test_replay_safety` 2/2 OK;
   **367 tests OK, exit 0**.
+- **Deploy:** VM pulled `007b3b4`; `Active: active (running)`, `/api/health`
+  **200**, no traceback, `trader_league.py selftest` **28/28**. The regression
+  test was then run *on the VM against the deployed code*: `test_replay_safety`
+  **2 tests, OK**. The long `--fresh` rebuild (pid 772256) was unaffected by the
+  restart, as expected - it had already imported its modules.
 
 ### #110 - Screener tab adopted the official strategy; the VCP duplicate is gone - DEPLOYED · VERIFIED
 
