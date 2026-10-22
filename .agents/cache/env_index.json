@@ -276,7 +276,7 @@
   },
   {
    "file": "terminal_api.py",
-   "line": 947,
+   "line": 938,
    "code": "token = os.getenv(\"WEBHOOK_TOKEN\")"
   },
   {

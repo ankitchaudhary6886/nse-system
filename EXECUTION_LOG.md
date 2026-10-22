@@ -10,7 +10,7 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
-### #110 - Screener tab adopted the official strategy; the VCP duplicate is gone - READY · AWAITING DEPLOY
+### #110 - Screener tab adopted the official strategy; the VCP duplicate is gone - DEPLOYED · VERIFIED
 
 - **Decision (owner, 2026-10-23).** Asked which of the two VCP definitions was
   authoritative, the owner said: use the updated one, the one more likely to
@@ -59,6 +59,19 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
   - `py_compile` and `node --check` clean; **365 tests, OK, exit 0**.
   - Cost: 69 ms/symbol, so a full-band scan is ~59 s (was ~30 s). It runs in a
     background job with progress and is not on any request path.
+
+- **Deploy:** the VM pulled `2f5e187`; `Active: active (running)`,
+  `/api/health` **200**, no traceback, `trader_league.py selftest` **28/28**.
+  The live endpoint on the VM returns the new payload for APCOTEXIND:
+  `overall_signal: true`, all six checks true, and
+  `setup_reason: "triggered on today's bar"`.
+- **Open follow-up (expected, not a failure):** `_code_hash(HOME)` hashes
+  `setup.py` **and** `scanner.py` bytes, so adding the three dataclass fields
+  changed home's hash. The rebuild currently running loaded the *old* scanner,
+  so when it finishes `home` will correctly show "code changed" and
+  `replay --changed` will redo **home only** (the other 10 books hash just their
+  own trader module). The added fields do not change results, but the guard is
+  byte-based and is deliberately not being bypassed.
 
 - **Not claimed:** this is not "equivalent" behaviour, and should not be. The
   tab now matches the official strategy, which is stricter about staleness and
