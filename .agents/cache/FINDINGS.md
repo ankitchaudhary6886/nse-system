@@ -686,6 +686,48 @@ the code, treat every severity label as provisional.
 
 ---
 
+## F-27 · League replay could not complete since 2026-10-05 — `FIXED` (2026-10-23)
+
+`trader_league.build_context()` line 674 called `U.band_universe(conn, sample_n)`,
+but `trader_league.py` never imported `universe_helper` as `U` — its other call
+sites use a local `from universe_helper import band_universe` (lines 504 and
+980). Introduced by `3057927` ("B3/B4/B5 - unify screener thresholds, remove
+sector_rs lookahead, share forward sim", **2026-10-05**), so every `replay`
+that needed market gates or sector ranks died with
+`NameError: name 'U' is not defined` for **18 days**.
+
+**Why nothing caught it.** The module imports cleanly — `NameError` is raised at
+call time. The line only executes when `need_gates or need_sec` is true, i.e.
+when `home` or `singhal` is in the slug list. `selftest` passes without touching
+it, and live runs never call it. It surfaced only when the 2026-10-23 F-15
+deploy legitimately forced `replay --changed`, which is the first replay in
+weeks.
+
+**Fixed** at the call site, in the file's own style:
+
+```python
+from universe_helper import band_universe
+sample = band_universe(conn, sample_n)
+```
+
+**This is a standalone defect, not part of F-15.** The F-15 diff for this file
+changed only the benchmark fetch (`yf.Ticker(...) -> fetch_price_history`), so
+the crash was pre-existing and F-15 merely exposed it. Recorded separately so
+it is never mistaken for a de-duplication side effect.
+
+**Same-class audit:** every other `U.` reference in the files touched by F-15
+(`ingest_prices.py`, `meta_model.py`, `screener_engine.py`,
+`sectors_refresh.py`) imports `universe_helper as U`. The other
+single-capital aliases in `trader_league.py` are a local assignment (`O` at
+line 626), a function parameter (`m` in `_load_limit`), and local imports
+(`C`, `S`) — all defined.
+
+**Lesson for the register:** a green `unittest` run and a green `selftest` do
+not cover every executable line. Any change that touches a scheduler/CLI path
+must be exercised through that path, not just imported.
+
+---
+
 ## Verified-healthy (so you don't re-investigate)
 
 - `db.py` central schema: 31 declared tables, idempotent `executescript` + `MIGRATIONS` on every `get_conn()`.

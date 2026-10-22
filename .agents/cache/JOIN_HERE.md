@@ -196,6 +196,7 @@ registry + `/api/sources` health, `db.py`'s central schema + migrations.
 | F-15 | LOW | **3 of 4 duplication items fixed 2026-10-23** (Yahoo call sites, forward-sim, sector PE — all equivalence-proven). **1 remains and needs the owner**: Stage-2/VCP is *not* equivalent (old 13 pass vs canonical 41 over 745 symbols), so consolidating would change what the screener flags |
 | F-16 | FIXED | `verify_deployment.py` credential scrubbed |
 | **F-26** | **MED** | **the registers themselves were 14 days stale and contradicted the code — always check `MANIFEST.json.generated_at` vs `git log -1`** |
+| **F-27** | ~~HIGH~~ **FIXED** | **League replay could not complete since 2026-10-05** — `build_context` called `U.band_universe` with no `U` import (`3057927`). Green tests *and* green `selftest` both missed it; only `replay --changed` executes that line. Fixed 2026-10-23 |
 
 **Gated, do NOT act on without explicit owner approval:**
 ID71 legacy proxy cleanup (blocked on DR-01 v2), real-money trading (verdict

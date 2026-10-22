@@ -70,7 +70,12 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
   all four that the old hand-written line omitted. This push also shipped
   #106. Because `traders/larry_spears.py` changed (import swap only), the
   League `code_hash` moved and `trader_league.py replay --changed` was run:
-  `selftest` **28/28**, then 11 books replaying in the background.
+  `selftest` **28/28**, and then the replay **crashed immediately** on a latent
+  `NameError` — `build_context` called `U.band_universe` with no `U` import,
+  broken since `3057927` on 2026-10-05 and unrelated to this batch. Found,
+  fixed and re-run the same day; see **F-27**. This is the concrete reason the
+  "verify through the real path" rule exists: 365 green tests and a green
+  `selftest` both missed a line that only the replay executes.
 - **Deliberately left:** the two thin `simulate_forward` wrappers — verified
   byte-equivalent, and they are call-site shims rather than duplication.
 

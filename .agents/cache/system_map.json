@@ -6822,8 +6822,8 @@
    ]
   },
   "trader_league.py": {
-   "lines": 3109,
-   "bytes": 135660,
+   "lines": 3110,
+   "bytes": 135709,
    "doc": "Trader League \u2014 14 famous-trader books + OUR system compete with Rs 10,00,000 of play money each, on real NSE data. WHY THIS EXISTS \"We have to make something to backtest our system before deploying real money.\" This module is that something. For every player it answers: - What would Rs 10 lakh have",
    "functions": [
     "config",

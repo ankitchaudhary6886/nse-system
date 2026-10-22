@@ -671,7 +671,8 @@ def build_context(conn, start, end, slugs, book_syms, home_syms):
             sample_n = getattr(breadth, "SAMPLE", 400)
         except Exception:
             sample_n = 400
-        sample = U.band_universe(conn, sample_n)
+        from universe_helper import band_universe
+        sample = band_universe(conn, sample_n)
         sec_syms = [r[0] for r in conn.execute(
             "SELECT s.symbol FROM stocks s JOIN universe_broad u "
             "ON u.symbol=s.symbol WHERE s.sector IS NOT NULL "
