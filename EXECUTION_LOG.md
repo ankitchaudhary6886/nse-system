@@ -10,6 +10,61 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #110 - Screener tab adopted the official strategy; the VCP duplicate is gone - READY · AWAITING DEPLOY
+
+- **Decision (owner, 2026-10-23).** Asked which of the two VCP definitions was
+  authoritative, the owner said: use the updated one, the one more likely to
+  work. The evidence was one-sided, so the question answered itself.
+  `scanner.Screener` + `setup.SetupDetector` carry **23 call sites** -
+  `swing_live` (the code that actually emits the swing signals), `backtest`,
+  `trader_league`, `research_cockpit`, `top_picks`, `build_setup_pool` - while
+  `screener_engine.evaluate_stock` had **3**, one of them its own module and one
+  a verification script. It served only the Screener tab. The 2026-10-05 commit
+  (`3057927`) had also corrected `screener_engine`'s thresholds *toward* the
+  canonical config. The canonical path is the strategy; the tab was the
+  duplicate.
+
+- **Change.** `evaluate_stock` no longer computes Stage-2/VCP itself. It calls
+  `Screener.evaluate` and `SetupDetector.detect` and composes them **exactly as
+  `swing_live` does**:
+
+      sc = Screener.evaluate(df, sym);    if not sc.passed:      no signal
+      st = SetupDetector.detect(df, sym); if not st.triggered:   no signal
+      if st.signal_date != last_bar:                             no signal
+
+  The third rule is new to the tab and is a real correction: the old tab
+  ignored staleness, so a setup from three sessions ago read as actionable.
+  `overall_signal` is now `sc.passed and st.triggered and st.signal_date ==
+  as_of`. `ScreenerResult` gained `mandatory`, `liquid` and `momentum_hit`
+  (with defaults, so its early positional returns still construct) so the tab
+  shows the real gate verdicts instead of re-deriving them from thresholds.
+  `checks` went from 11 hand-built entries to the 6 the engine actually
+  decides. 148 lines of duplicated logic deleted; the function is now 81 lines.
+
+- **UI.** The tab renders a `Setup:` line explaining why a name is or is not
+  actionable - "triggered on today's bar", "last setup on 2026-10-14, not
+  today's bar", or the engine's own reason. `app.js?v=23`.
+
+- **Evidence.**
+  - Baseline verdicts **agreed on all 10** snapshot symbols before/after, so
+    the delegation preserves the baseline exactly.
+  - Trigger hunt over 260 symbols: **APCOTEXIND** passes both gates
+    (overall=True, impulse 45.00%, pullback 6.70%, 19 sessions); BIL, BOROLTD
+    and GARFIBRES have a setup but fail the baseline (correctly False);
+    BLISSGVS and GANDHITUBE are stale and are correctly excluded with an
+    explicit reason. This is precisely the composition `swing_live` enforces.
+  - Live endpoint: `/api/screener/APCOTEXIND` -> overall True, all six checks
+    True; `/api/screener/BLISSGVS` -> baseline True, setup False with the
+    staleness reason; `/api/screener/63MOONS` -> baseline True, no setup.
+  - `py_compile` and `node --check` clean; **365 tests, OK, exit 0**.
+  - Cost: 69 ms/symbol, so a full-band scan is ~59 s (was ~30 s). It runs in a
+    background job with progress and is not on any request path.
+
+- **Not claimed:** this is not "equivalent" behaviour, and should not be. The
+  tab now matches the official strategy, which is stricter about staleness and
+  uses the canonical setup definition. The measured 13-vs-41 difference **is**
+  the correction.
+
 ### #109 - Phase 1 close-out: delete the write-only weight from radar and the universe payload - DEPLOYED · VERIFIED
 
 - **Why:** Phase 1's own deliverable is "a portal that is fast to use". The nav

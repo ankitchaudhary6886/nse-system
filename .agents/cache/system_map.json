@@ -5192,8 +5192,8 @@
    ]
   },
   "research_cockpit.py": {
-   "lines": 925,
-   "bytes": 33542,
+   "lines": 919,
+   "bytes": 33221,
    "doc": "Research Cockpit \u2014 historical behaviour of setups similar to today's. Entry points: analyze_symbol(sym) \u2014 full per-symbol analysis (cached 7d) analyze_universe(limit) \u2014 today's setups + their cached stats warm_cache() \u2014 compute + cache stats for today's symbols sector_aggregate() \u2014 pool setups acros",
    "functions": [
     "_ensure_cache",
@@ -5310,8 +5310,8 @@
    ]
   },
   "scanner.py": {
-   "lines": 96,
-   "bytes": 3378,
+   "lines": 106,
+   "bytes": 3960,
    "doc": "Screener v2 \u2014 Stage-2 baseline + liquidity + momentum + impulse volume. Reads thresholds from strategy_config.SCREENER.",
    "functions": [],
    "classes": [
@@ -5331,6 +5331,7 @@
     "main.py",
     "quick_funnel.py",
     "quick_setup_diag.py",
+    "screener_engine.py",
     "swing_live.py"
    ]
   },
@@ -5484,8 +5485,8 @@
    ]
   },
   "screener_engine.py": {
-   "lines": 323,
-   "bytes": 13715,
+   "lines": 257,
+   "bytes": 10167,
    "doc": "On-Demand Screener \u2014 baseline (Stage-2 + momentum + volume) + VCP/pullback checks. DB-first (prices_daily), Yahoo fallback for unknown symbols (single-symbol mode only). Usage: python screener_engine.py RELIANCE -> full check breakdown for one stock python screener_engine.py scan -> run over top sma",
    "functions": [
     "_from_db",
@@ -5500,6 +5501,8 @@
    "has_cli": true,
    "imports_local": [
     "db",
+    "scanner",
+    "setup",
     "strategy_config",
     "universe_helper"
    ],
@@ -5627,6 +5630,7 @@
     "quick_funnel.py",
     "quick_setup_diag.py",
     "research_cockpit.py",
+    "screener_engine.py",
     "swing_live.py",
     "terminal_api.py",
     "test_swing_exits.py",
@@ -5946,8 +5950,8 @@
    ]
   },
   "terminal_api.py": {
-   "lines": 1255,
-   "bytes": 43068,
+   "lines": 1246,
+   "bytes": 42712,
    "doc": "",
    "functions": [
     "lifespan",

@@ -22,6 +22,14 @@ class ScreenerResult:
     volume_explosive: bool
     ipo_watch: bool = False
     reason: str = ""
+    # The individual gates, exposed so a caller can show WHICH rule failed
+    # without re-deriving the thresholds. The Screener tab used to keep its own
+    # copy of this logic and drifted from this engine; these three fields are
+    # what let it delegate instead. Additive with defaults, so the positional
+    # constructions above (the IPO / short-history returns) stay valid.
+    mandatory: bool = False
+    liquid: bool = False
+    momentum_hit: bool = False
 
 
 class Screener:
@@ -93,4 +101,6 @@ class Screener:
             mom_3m=round(float(mom_3m), 3),
             near_52wk_high=bool(near),
             volume_explosive=bool(vol_ok),
-            ipo_watch=False, reason=reason)
+            ipo_watch=False, reason=reason,
+            mandatory=bool(mandatory), liquid=bool(liquid),
+            momentum_hit=bool(momentum_hit))

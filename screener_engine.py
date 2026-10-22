@@ -10,19 +10,12 @@ Usage:
 import sys
 import json
 import datetime as dt
-import numpy as np
 import pandas as pd
 from data_sources import fetch_price_history
 import db
 import universe_helper as U
-
-# Canonical thresholds (rule R22). Guarded so a config problem can never blank
-# the screener -- the .get() fallbacks below carry the previous hardcoded values.
-try:
-    from strategy_config import SETUP as _SETUP, SCREENER as _SCREENER
-    _SC = {"SETUP": _SETUP, "SCREENER": _SCREENER}
-except Exception:
-    _SC = {}
+from scanner import Screener
+from setup import SetupDetector
 
 
 # ==========================================
@@ -117,7 +110,23 @@ def check_global_regime():
 # 3. MAIN SCREENER ENGINE (baseline + VCP)
 # ==========================================
 def evaluate_stock(ticker, allow_yahoo=True):
-    """Evaluate one stock; returns metrics, pass/fail checks, UI strings."""
+    """Evaluate one stock with the SAME rules the live strategy trades on.
+
+    Until 2026-10-23 this function carried its own copy of the Stage-2/VCP
+    logic. It drifted from the official engine: measured over 745 symbols the
+    two disagreed on the baseline for 33 names and on the VCP setup for 50
+    (this copy passed 13, the official engine 41). The tab could therefore
+    contradict the scan that actually generates the signals.
+
+    It now delegates to the two modules swing_live composes:
+
+        Screener.evaluate    -> Stage-2 + liquidity + momentum + volume
+        SetupDetector.detect -> VCP / pullback setup
+
+    so there is exactly one definition of "a setup". Display metrics that
+    neither engine returns (52-week proximity, recent range) are measured from
+    the same frame and are presentation only - they never decide pass/fail.
+    """
     df = _from_db(ticker)
     source = "prices_daily"
     if df is None and allow_yahoo:
@@ -127,143 +136,59 @@ def evaluate_stock(ticker, allow_yahoo=True):
         return {"error": "Insufficient data or invalid ticker."}
 
     df = df.copy()
-    df["EMA_10"] = df["Close"].ewm(span=10, adjust=False).mean()
-    df["EMA_20"] = df["Close"].ewm(span=20, adjust=False).mean()
-    df["EMA_200"] = df["Close"].ewm(span=200, adjust=False).mean()
-    df["SMA_Vol_50"] = df["Volume"].rolling(window=50).mean()
-    df["SMA_Vol_20"] = df["Volume"].rolling(window=20).mean()
-    df["52W_High"] = df["High"].rolling(window=252).max()
-    df["EMA_200_Shifted"] = df["EMA_200"].shift(20)
+    as_of = str(df.index[-1].date())
 
-    latest = df.iloc[-1]
-    fmt = lambda x: f"{x:.2f}" if pd.notnull(x) else "N/A"
+    base = Screener.evaluate(df, ticker)
+    if base.close is None:
+        return {"error": "Insufficient history for the official screener "
+                         "(needs about 272 sessions)."}
+    st = SetupDetector.detect(df, ticker)
 
-    # --- A. BASELINE FILTERS ---
-    # Thresholds come from strategy_config.SCREENER (the single source of truth,
-    # rule R22). strategy_config stores FRACTIONS (0.20); this module's UI strings
-    # are percentages, so *100 for display only.
-    # Before 2026-10-05 this block hardcoded its own copy with different numbers
-    # (impulse 25-50 vs 18-75, pullback 12-20 over 6-15d vs 6-25 over 6-20d,
-    # volume one-branch vs two-branch) and omitted the liquidity gate entirely,
-    # so the Screener tab could surface names the official strategy rejects.
-    SC_ = _SC.get("SCREENER", {})
-    MOM_1M_MIN = SC_.get("MOM_1M_MIN", 0.20) * 100
-    MOM_3M_MIN = SC_.get("MOM_3M_MIN", 0.30) * 100
-    PROX_MIN = SC_.get("HIGH_52WK_MIN_RATIO", 0.75) * 100
-    VOL_MULT = SC_.get("VOL_EXPLOSION_MULT", 2.5)
-    VOL_LOOKBACK = int(SC_.get("VOL_LOOKBACK", 60))
-    LIQ_DAYS = int(SC_.get("LIQ_DAYS", 20))
-    MIN_TURNOVER = float(SC_.get("MIN_AVG_TURNOVER", 2e7))
+    close = float(df["Close"].iloc[-1])
+    high_52w = float(df["High"].tail(252).max())
+    prox_52w = (close / high_52w * 100) if high_52w else 0.0
+    recent = df.tail(3)
+    range_pct = (float((recent["High"] - recent["Low"]).max()) / close * 100
+                 if close else 0.0)
 
-    baseline_1 = latest["Close"] > latest["EMA_200"]
-    baseline_2 = latest["EMA_200"] > latest["EMA_200_Shifted"]
-    mom_1m = ((latest["Close"] - df["Close"].iloc[-22])
-              / df["Close"].iloc[-22]) * 100 if len(df) >= 22 else 0
-    mom_3m = ((latest["Close"] - df["Close"].iloc[-64])
-              / df["Close"].iloc[-64]) * 100 if len(df) >= 64 else 0
-    prox_52w = ((latest["Close"] / latest["52W_High"]) * 100
-                if latest["52W_High"] > 0 else 0)
-    baseline_3 = (mom_1m >= MOM_1M_MIN) or (mom_3m >= MOM_3M_MIN) \
-        or (prox_52w >= PROX_MIN)
-    # Live voice. The old copy compared one value (period max > 2.5x SMA50);
-    # the canonical rule looks for ANY 2.5x spike inside the last VOL_LOOKBACK
-    # bars against the 50-bar average. Both are kept so the stricter official
-    # sense governs, while the display flag stays honest about the raw spike.
-    baseline_4 = bool(df["Volume"].tail(20).max()
-                      > (VOL_MULT * latest["SMA_Vol_50"]))
-    vol_sma50 = df["Volume"].rolling(window=50).mean()
-    vol_ok = any(
-        pd.notnull(vol_sma50.iloc[i - 1])
-        and df["Volume"].iloc[i] > VOL_MULT * vol_sma50.iloc[i - 1]
-        for i in range(max(1, len(df) - VOL_LOOKBACK), len(df)))
-    # Liquidity gate was previously MISSING from this path (rule R22 / SCREENER).
-    avg_vol = float(df["Volume"].tail(LIQ_DAYS).mean())
-    turnover_ok = (avg_vol * float(latest["Close"])) >= MIN_TURNOVER
-    baseline_pass = all([baseline_1, baseline_2, baseline_3, vol_ok,
-                         turnover_ok])
+    # swing_live also requires the setup to be on the latest bar, so a stale
+    # pattern must not count as actionable here either.
+    setup_today = bool(st.triggered and st.signal_date == as_of)
+    if st.triggered and not setup_today:
+        setup_reason = f"last setup on {st.signal_date}, not today's bar"
+    elif st.triggered:
+        setup_reason = "triggered on today's bar"
+    else:
+        setup_reason = " · ".join(st.reasons) if st.reasons else "no setup"
 
-    # --- B. VCP / PULLBACK SETUP FILTERS ---
-    SET_ = _SC.get("SETUP", {})
-    IMP_MIN = SET_.get("IMPULSE_MIN_PCT", 0.18) * 100
-    IMP_MAX = SET_.get("IMPULSE_MAX_PCT", 0.75) * 100
-    PB_MIN = SET_.get("PB_MIN_PCT", 0.06) * 100
-    PB_MAX = SET_.get("PB_MAX_PCT", 0.25) * 100
-    PB_MIN_D = int(SET_.get("PB_MIN_DAYS", 6))
-    PB_MAX_D = int(SET_.get("PB_MAX_DAYS", 20))
-    PB_LOOKBACK = int(SET_.get("PB_LOOKBACK", 25))
-    EMA_TOUCH = SET_.get("EMA_TOUCH_MULT", 0.03) * 100
-    TIGHT_ATR = SET_.get("TIGHT_ATR_MULT", 0.9)
-
-    lookback = df.tail(PB_LOOKBACK)
-    swing_high_idx = lookback["High"].idxmax()
-    swing_high_val = lookback.loc[swing_high_idx, "High"]
-    current_price = latest["Close"]
-
-    pre_swing_data = df.loc[:swing_high_idx].tail(30)
-    impulse_low = pre_swing_data["Low"].min()
-    impulse_gain = ((swing_high_val - impulse_low)
-                    / impulse_low) * 100 if impulse_low else 0
-    vcp_1 = IMP_MIN <= impulse_gain <= IMP_MAX
-
-    pullback_depth = ((swing_high_val - current_price)
-                      / swing_high_val) * 100 if swing_high_val else 0
-    vcp_2 = PB_MIN <= pullback_depth <= PB_MAX
-
-    days_since_high = len(df) - df.index.get_loc(swing_high_idx) - 1
-    vcp_3 = PB_MIN_D <= days_since_high <= PB_MAX_D
-
-    recent_lows = df["Low"].tail(max(1, days_since_high)).min()
-    dist_to_ema = min(abs(recent_lows - latest["EMA_10"]),
-                      abs(recent_lows - latest["EMA_20"]))
-    vcp_4 = (dist_to_ema / current_price) * 100 <= EMA_TOUCH
-
-    vcp_5 = bool(latest["Volume"] < (0.70 * latest["SMA_Vol_20"]))
-
-    # Tightness now uses the canonical ATR rule: the last-3-bar range must be
-    # within TIGHT_ATR x ATR14, instead of an ad-hoc 3%-of-price band.
-    tr = pd.concat([
-        df["High"] - df["Low"],
-        (df["High"] - df["Close"].shift()).abs(),
-        (df["Low"] - df["Close"].shift()).abs(),
-    ], axis=1).max(axis=1)
-    atr14 = float(tr.rolling(14).mean().iloc[-1]) if len(df) >= 15 else 0.0
-    last_3_days = df.tail(3)
-    max_range = (last_3_days["High"] - last_3_days["Low"]).max()
-    tightness_pct = (max_range / current_price) * 100 if current_price else 0
-    vcp_6 = bool(atr14 > 0 and max_range <= TIGHT_ATR * atr14)
-
-    vcp_pass = all([vcp_1, vcp_2, vcp_3, vcp_4, vcp_5, vcp_6])
-    overall_signal = bool(baseline_pass and vcp_pass)
+    def _pct(value):
+        return f"{value * 100:.2f}%" if value is not None else "—"
 
     return {
         "ticker": ticker,
-        "as_of": str(df.index[-1].date()),
+        "as_of": as_of,
         "source": source,
-        "overall_signal": overall_signal,
-        "current_price": fmt(current_price),
-        "ema_200": fmt(latest["EMA_200"]),
-        "momentum_1m": f"{fmt(mom_1m)}%",
-        "momentum_3m": f"{fmt(mom_3m)}%",
-        "proximity_52w": f"{fmt(prox_52w)}%",
-        "impulse_gain": f"{fmt(impulse_gain)}%",
-        "pullback_depth": f"{fmt(pullback_depth)}%",
-        "days_since_high": int(days_since_high),
-        "tightness_pct": f"{fmt(tightness_pct)}%",
+        "overall_signal": bool(base.passed and setup_today),
+        "current_price": f"{close:.2f}",
+        "ema_200": (f"{base.ema200:.2f}" if base.ema200 is not None
+                    else "N/A"),
+        "momentum_1m": _pct(base.mom_1m),
+        "momentum_3m": _pct(base.mom_3m),
+        "proximity_52w": f"{prox_52w:.2f}%",
+        "impulse_gain": _pct(st.impulse_pct) if st.triggered else "—",
+        "pullback_depth": _pct(st.pullback_depth) if st.triggered else "—",
+        "days_since_high": int(st.pullback_days) if st.triggered else "—",
+        "tightness_pct": f"{range_pct:.2f}%",
+        "setup_reason": setup_reason,
         "checks": {
-            "Baseline": bool(baseline_pass),
-            "VCP Setup": bool(vcp_pass),
-            "Stage 2 Trend": bool(baseline_1 and baseline_2),
-            "Momentum": bool(baseline_3),
-            "Volume Spike": bool(baseline_4),
-            "Impulse (%d-%d%%)" % (IMP_MIN, IMP_MAX): bool(vcp_1),
-            "Pullback (%d-%d%%)" % (PB_MIN, PB_MAX): bool(vcp_2),
-            "Duration (%d-%dd)" % (PB_MIN_D, PB_MAX_D): bool(vcp_3),
-            "EMA Support": bool(vcp_4),
-            "Vol Contraction": bool(vcp_5),
-            "Candle Tightness": bool(vcp_6),
+            "Baseline (official strategy)": bool(base.passed),
+            "Stage 2 trend": bool(base.mandatory),
+            "Liquidity": bool(base.liquid),
+            "Momentum trigger": bool(base.momentum_hit),
+            "Volume spike": bool(base.volume_explosive),
+            "VCP / pullback setup": setup_today,
         },
     }
-
 
 def screen_universe(limit=60, show=True, allow_yahoo=False, progress=None):
     """Run the screener over the smallcap/midcap band (DB-only = fast).

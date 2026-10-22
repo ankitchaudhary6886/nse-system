@@ -699,6 +699,12 @@ async function runScreener() {
       row.append(left, right);
       checks.appendChild(row);
     });
+    if (data.setup_reason) {
+      const setupNote = document.createElement("p");
+      setupNote.className = "method-note";
+      setupNote.textContent = `Setup: ${data.setup_reason}`;
+      checks.appendChild(setupNote);
+    }
     const note = document.createElement("p");
     note.className = "method-note";
     note.textContent = "Screening result only; not a forecast or trade instruction.";

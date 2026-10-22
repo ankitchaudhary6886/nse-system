@@ -11,13 +11,13 @@
    "method": "GET",
    "path": "/api/cockpit/{symbol}/chart",
    "file": "terminal_api.py",
-   "line": 987
+   "line": 978
   },
   {
    "method": "GET",
    "path": "/api/cockpit/{symbol}/summary",
    "file": "terminal_api.py",
-   "line": 1044
+   "line": 1035
   },
   {
    "method": "GET",
@@ -35,19 +35,19 @@
    "method": "GET",
    "path": "/api/delivery/accum",
    "file": "terminal_api.py",
-   "line": 894
+   "line": 885
   },
   {
    "method": "GET",
    "path": "/api/delivery/top",
    "file": "terminal_api.py",
-   "line": 888
+   "line": 879
   },
   {
    "method": "GET",
    "path": "/api/delivery/{symbol}",
    "file": "terminal_api.py",
-   "line": 900
+   "line": 891
   },
   {
    "method": "GET",
@@ -137,19 +137,19 @@
    "method": "GET",
    "path": "/api/ledger/monthly",
    "file": "terminal_api.py",
-   "line": 1108
+   "line": 1099
   },
   {
    "method": "GET",
    "path": "/api/ledger/stats",
    "file": "terminal_api.py",
-   "line": 1096
+   "line": 1087
   },
   {
    "method": "GET",
    "path": "/api/ledger/trades",
    "file": "terminal_api.py",
-   "line": 1102
+   "line": 1093
   },
   {
    "method": "GET",
@@ -161,13 +161,13 @@
    "method": "GET",
    "path": "/api/meta/{symbol}",
    "file": "terminal_api.py",
-   "line": 1080
+   "line": 1071
   },
   {
    "method": "GET",
    "path": "/api/model/runs",
    "file": "terminal_api.py",
-   "line": 1090
+   "line": 1081
   },
   {
    "method": "GET",
@@ -203,7 +203,7 @@
    "method": "GET",
    "path": "/api/positional",
    "file": "terminal_api.py",
-   "line": 917
+   "line": 908
   },
   {
    "method": "POST",
@@ -263,37 +263,37 @@
    "method": "GET",
    "path": "/api/screener/scan",
    "file": "terminal_api.py",
-   "line": 1162
+   "line": 1153
   },
   {
    "method": "POST",
    "path": "/api/screener/scan-universe",
    "file": "terminal_api.py",
-   "line": 1182
+   "line": 1173
   },
   {
    "method": "GET",
    "path": "/api/screener/scan-universe/status",
    "file": "terminal_api.py",
-   "line": 1245
+   "line": 1236
   },
   {
    "method": "GET",
    "path": "/api/screener/{symbol}",
    "file": "terminal_api.py",
-   "line": 1173
+   "line": 1164
   },
   {
    "method": "POST",
    "path": "/api/sizing/capital",
    "file": "terminal_api.py",
-   "line": 1150
+   "line": 1141
   },
   {
    "method": "GET",
    "path": "/api/sizing/{symbol}",
    "file": "terminal_api.py",
-   "line": 1139
+   "line": 1130
   },
   {
    "method": "GET",
@@ -359,13 +359,13 @@
    "method": "GET",
    "path": "/api/strategy-runs",
    "file": "terminal_api.py",
-   "line": 926
+   "line": 917
   },
   {
    "method": "GET",
    "path": "/api/strategy-summary",
    "file": "terminal_api.py",
-   "line": 935
+   "line": 926
   },
   {
    "method": "POST",
@@ -389,7 +389,7 @@
    "method": "GET",
    "path": "/api/templates/latest",
    "file": "terminal_api.py",
-   "line": 871
+   "line": 862
   },
   {
    "method": "GET",
@@ -425,31 +425,31 @@
    "method": "GET",
    "path": "/api/trend",
    "file": "terminal_api.py",
-   "line": 855
+   "line": 846
   },
   {
    "method": "POST",
    "path": "/api/trend/scan",
    "file": "terminal_api.py",
-   "line": 864
+   "line": 855
   },
   {
    "method": "GET",
    "path": "/api/validate/latest",
    "file": "terminal_api.py",
-   "line": 1119
+   "line": 1110
   },
   {
    "method": "GET",
    "path": "/api/value-radar",
    "file": "terminal_api.py",
-   "line": 908
+   "line": 899
   },
   {
    "method": "POST",
    "path": "/api/webhook/ingest",
    "file": "terminal_api.py",
-   "line": 944
+   "line": 935
   },
   {
    "method": "GET",
@@ -562,7 +562,7 @@
    "/static/sliders.js?v=1",
    "/static/explainer.js?v=2",
    "/static/ideals.js?v=1",
-   "/static/app.js?v=22",
+   "/static/app.js?v=23",
    "/static/scanners.js?v=17",
    "/static/strategy_runs.js?v=18",
    "/static/research.js?v=19",
