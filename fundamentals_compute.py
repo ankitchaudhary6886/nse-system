@@ -1,7 +1,7 @@
 import sys
 import time
 import datetime as dt
-import yfinance as yf
+from data_sources import fetch_yahoo_field
 import db
 from fundamentals_store import merge
 
@@ -25,11 +25,10 @@ def cagr(s, max_years=3):
     return ((last / first) ** (1.0 / years) - 1.0) * 100.0
 
 def fetch_one(conn, sym, name, sector):
-    tk = yf.Ticker(sym + ".NS")
-    info = tk.info or {}
-    fin = tk.financials
-    bs = tk.balance_sheet
-    cf = tk.cashflow
+    info = fetch_yahoo_field(sym, "info") or {}
+    fin = fetch_yahoo_field(sym, "financials")
+    bs = fetch_yahoo_field(sym, "balance_sheet")
+    cf = fetch_yahoo_field(sym, "cashflow")
 
     op = series(fin, "Operating Income")
     ni = series(fin, "Net Income")

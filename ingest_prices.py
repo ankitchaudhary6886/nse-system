@@ -3,7 +3,7 @@ import time
 import datetime as dt
 import db
 import universe_helper as U
-from data_sources import get_registry
+from data_sources import PRICE_HISTORY_PROVIDERS, get_registry
 from config import HISTORY_YEARS, SLEEP_SECONDS
 
 
@@ -21,9 +21,7 @@ def _fetch_frame(symbol, start):
     for candidate in candidates:
         try:
             return get_registry().fetch(
-                "prices.daily_history",
-                ("yahoo_finance", "nse_india_api", "jugaad_data",
-                 "nsemine_history", "pnsea"),
+                "prices.daily_history", PRICE_HISTORY_PROVIDERS,
                 symbol=candidate, start=start)
         except Exception as exc:
             last_error = exc

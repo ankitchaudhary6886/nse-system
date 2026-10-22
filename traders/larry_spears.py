@@ -17,6 +17,7 @@ stops, trailing, 5-day invalidation roll-forward, target tranches.
 import numpy as np
 import pandas as pd
 import db
+from data_sources import fetch_price_history
 from traders import base as B
 from log_utils import get_logger
 from universe_helper import band_universe
@@ -73,9 +74,7 @@ def _fetch_benchmark_returns(years=2):
     if _BENCH_CACHE is not None:
         return _BENCH_CACHE
     try:
-        import yfinance as yf
-        df = yf.Ticker("^NSEI").history(period=f"{years}y",
-                                         auto_adjust=True)
+        df = fetch_price_history("^NSEI", period=f"{years}y")
         if df is None or len(df) < 200:
             _BENCH_CACHE = pd.Series(dtype=float)
             return _BENCH_CACHE

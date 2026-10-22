@@ -25,6 +25,8 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
+from data_sources import fetch_yahoo_field
+
 KINDS = ("split", "bonus", "dividend", "rights", "demerger")
 RATIO_KINDS = ("split", "bonus", "rights")   # history prices *= ratio
 COMMON_RATIOS = (1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 20.0)
@@ -188,18 +190,11 @@ def fetch_yfinance_actions(symbols, sleep_seconds=0.4) -> List[dict]:
     for its 5:1 split (2011-07-14) and WIPRO.NS 2.0 for a 1:1 bonus
     (2024-12-03); Yahoo divides pre-event prices by that value. So
     ``ratio = float(value)`` -- storing its reciprocal would invent reverse
-    splits. yfinance is imported lazily: importing this module never touches
-    the network, and one bad symbol is skipped rather than fatal.
+    splits. The fetch goes through data_sources (F-15/ID52), which imports
+    yfinance lazily and repairs its tz cache first: importing this module
+    never touches the network, one bad attribute is skipped rather than fatal,
+    and a symbol with no events is still a valid empty result.
     """
-    try:
-        from data_sources.yf_cache import ensure_yf_cache
-        ensure_yf_cache()    # best-effort: the tz-cache bug silently yields 0 rows
-    except Exception:
-        pass
-    try:
-        import yfinance as yf
-    except Exception:
-        return []
     wanted: List[str] = []
     for raw in ([symbols] if isinstance(symbols, str) else (symbols or [])):
         symbol = _clean_symbol(raw)
@@ -208,15 +203,11 @@ def fetch_yfinance_actions(symbols, sleep_seconds=0.4) -> List[dict]:
     out: List[dict] = []
     for position, symbol in enumerate(wanted):
         ticker = symbol if symbol.endswith(".NS") else symbol + ".NS"
-        try:
-            quoted = yf.Ticker(ticker)
-        except Exception:
-            quoted = None
         for kind, attribute in (("split", "splits"), ("dividend", "dividends")):
             try:
-                series = getattr(quoted, attribute) if quoted else None
+                series = fetch_yahoo_field(symbol, attribute)
             except Exception:
-                continue
+                series = None
             for index, value in _series_items(series):
                 ex_date, number = _index_date(index), _to_float(value)
                 if not ex_date or number is None or number <= 0:

@@ -1,6 +1,6 @@
 import sys
 import datetime as dt
-import yfinance as yf
+from data_sources import fetch_yahoo_field
 import db
 
 BANK_KEYS = ["BANK", "FINANC", "NBFC"]
@@ -32,10 +32,9 @@ def fetch_calendar(symbol):
     conn = db.get_conn()
     ensure(conn)
     conn.execute("DELETE FROM corp_calendar WHERE symbol=?", (symbol,))
-    tk = yf.Ticker(symbol + ".NS")
     n = 0
     try:
-        ed = tk.earnings_dates
+        ed = fetch_yahoo_field(symbol, "earnings_dates")
         if ed is not None and len(ed) > 0:
             for idx in ed.index:
                 d = str(idx)[:10]
@@ -46,7 +45,7 @@ def fetch_calendar(symbol):
     except Exception as e:
         print("earnings dates failed:", e)
     try:
-        act = tk.actions
+        act = fetch_yahoo_field(symbol, "actions")
         if act is not None and len(act) > 0:
             for idx, r in act.iterrows():
                 d = str(idx)[:10]

@@ -8,7 +8,7 @@ from typing import List
 import time
 import numpy as np
 import pandas as pd
-import yfinance as yf
+from data_sources import fetch_price_history
 
 import db
 from regime import MarketRegime
@@ -157,8 +157,7 @@ class Backtester:
             return df.dropna(subset=["Open", "High", "Low", "Close"])
         try:
             time.sleep(0.25)
-            d = yf.Ticker(sym).history(start=start, end=end,
-                                       auto_adjust=True)
+            d = fetch_price_history(sym, start=start, end=end)
             return _naive_index(d) if d is not None and len(d) > 260 \
                 else None
         except Exception:

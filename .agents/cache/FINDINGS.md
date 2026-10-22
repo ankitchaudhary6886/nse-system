@@ -434,15 +434,15 @@ retained them for audit. Remove only the live-path references.
 
 ---
 
-## F-15 · Duplication hotspots — `PARTIALLY FIXED` (2026-10-05)
+## F-15 · Duplication hotspots — `1 OF 5 REMAINS` (2026-10-23)
 
 | Duplicated thing | Copies | Status |
 |---|---|---|
 | Band universe SQL (`mcap_cr BETWEEN 1000 AND 8000 …`) | was **17** inline copies | **FIXED** — all now call `universe_helper.band_universe(conn, limit)`. Equivalence proven at all 15 refactored sites. `limit=None` added for the unbounded callers |
-| Yahoo direct call sites | ~14 files bypass `data_sources` | **OPEN** (ID52) |
-| Stage-2/VCP logic | `screener_engine.py` (hardcoded :138-173) vs `strategy_config.SCREENER` + `setup.py` | **OPEN** — changes numeric behaviour |
-| Forward simulation (3-bar trigger, 30-bar hold, stop-first) | `build_setup_pool._simulate` :146-185 vs `research_cockpit._simulate_forward` :322-378 | **OPEN** |
-| Sector PE medians | `scoring.sector_pe_medians` :41-53 vs `positional_scanner._sector_pe_medians` :119-128 | **OPEN** |
+| Yahoo direct call sites | ~14 files bypass `data_sources` | **FIXED (2026-10-23)** — every call site now goes through `data_sources.fetch_price_history` / `fetch_yahoo_field`; repo-wide grep finds zero `yf.Ticker` / `yf.download` / `import yfinance` outside `data_sources/`. 15 of 19 spot pairs byte-identical; the 4 diffs are float32 dividend-adjustment rounding between the `period=` and `start=` request paths (max relative error 3.5e-7, max Close deviation 0.0005 INR) plus tz / extra-column shape deltas — equivalent at any meaningful precision. `auto_adjust=True` is preserved in the adapter, so `traders/larry_spears.py` dropping its explicit kwarg is safe |
+| Stage-2/VCP logic | `screener_engine.py` (hardcoded :138-173) vs `strategy_config.SCREENER` + `setup.py` | **BLOCKED — not equivalent; needs an owner decision.** Measured over 745 mutually-evaluated symbols: VCP **50 disagreements (old 13 pass vs canonical 41)**, `overall_signal` 33 (7 vs 28), `impulse%` differs on all 41 comparable pairs, `pullback%` 41, `days_since_high` 19, `momentum` 5 (272-bar vs 240-bar gate), and one baseline vol-window difference (INDOTECH `vol_sma50[i-1]` vs `vol_sma[i]`). Consolidating would change what the screener flags by ~3×, so `evaluate_stock` was left **completely untouched** — nothing to restore |
+| Forward simulation (3-bar trigger, 30-bar hold, stop-first) | `build_setup_pool._simulate` :146-185 vs `research_cockpit._simulate_forward` :322-378 | **FIXED (2026-10-23)** — already consolidated before this pass; the pre-B5 bodies recovered from `git show 3057927~1` were run against the surviving wrappers: **17,124 cases, 0 diffs** (HOLD_BARS=30, TRIGGER_WINDOW=3 throughout) |
+| Sector PE medians | `scoring.sector_pe_medians` :41-53 vs `positional_scanner._sector_pe_medians` :119-128 | **FIXED (2026-10-23)** — `positional_scanner` imports the `scoring` copy and its own was deleted (along with the now-unused `import statistics`); **11 sectors, 0 differing medians** |
 
 **B2 consolidation detail.** 16 files changed: `universe_helper.py` (helper
 hardened with `limit=None`), `all_weather.py`, `breadth.py`, `data_quality.py`,

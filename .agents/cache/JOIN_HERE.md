@@ -193,7 +193,7 @@ registry + `/api/sources` health, `db.py`'s central schema + migrations.
 | F-12 | ~~LOW~~ **RESOLVED** | owner call made 2026-10-19: no Kelly and no machine-chosen quantity — `suggest()` returns caps only |
 | F-13 | ~~LOW~~ **FIXED** | veto computed once in `swing_live` and passed into the alert; gate order unchanged |
 | F-14 | LOW | `BULL_FLAG` still in `pattern_grader`/`template_match`/`PAT_MAP` (historical tags kept on purpose) |
-| F-15 | LOW | duplication: Yahoo direct call sites, Stage-2 logic, forward-sim, sector PE (behaviour-changing — owner sign-off) |
+| F-15 | LOW | **3 of 4 duplication items fixed 2026-10-23** (Yahoo call sites, forward-sim, sector PE — all equivalence-proven). **1 remains and needs the owner**: Stage-2/VCP is *not* equivalent (old 13 pass vs canonical 41 over 745 symbols), so consolidating would change what the screener flags |
 | F-16 | FIXED | `verify_deployment.py` credential scrubbed |
 | **F-26** | **MED** | **the registers themselves were 14 days stale and contradicted the code — always check `MANIFEST.json.generated_at` vs `git log -1`** |
 

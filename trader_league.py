@@ -71,6 +71,7 @@ import numpy as np
 import pandas as pd
 
 import db
+from data_sources import fetch_price_history
 from log_utils import get_logger
 
 log = get_logger("league")
@@ -460,9 +461,8 @@ def _fetch_benchmark(conn, sym, start):
     try:
         import logging
         logging.getLogger("yfinance").setLevel(logging.CRITICAL)
-        import yfinance as yf
         end = (dt.date.today() + dt.timedelta(days=1)).isoformat()
-        d = yf.Ticker(sym).history(start=start, end=end, auto_adjust=True)
+        d = fetch_price_history(sym, start=start, end=end)
         if d is None or len(d) < 30:
             return 0
         rows = [(sym, idx.strftime("%Y-%m-%d"), float(c))

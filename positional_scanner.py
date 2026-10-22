@@ -7,9 +7,9 @@ Runs weekly Sat 10:00 IST.
 """
 import sys
 import datetime as dt
-import statistics
 import db
 from log_utils import get_logger
+from scoring import sector_pe_medians
 from universe_helper import band_universe
 
 log = get_logger("positional")
@@ -116,25 +116,14 @@ def _value_score(pe, sector_pe, peg):
     return min(100, score), notes
 
 
-def _sector_pe_medians(conn):
-    rows = conn.execute(
-        "SELECT s.sector, f.pe FROM fundamentals f "
-        "JOIN stocks s ON s.symbol=f.symbol "
-        "WHERE f.pe IS NOT NULL AND f.pe>0 AND s.sector IS NOT NULL"
-    ).fetchall()
-    by = {}
-    for sec, pe in rows:
-        by.setdefault(sec, []).append(pe)
-    return {sec: statistics.median(v) for sec, v in by.items()}
-
-
 def compute(conn=None, limit=1500):
     own = conn is None
     if own:
         conn = db.get_conn()
     _ensure(conn)
     today = dt.date.today().isoformat()
-    sector_med = _sector_pe_medians(conn)
+    # F-15: one copy of the sector-PE median (scoring.sector_pe_medians).
+    sector_med = sector_pe_medians(conn)
 
     fund_cols = [r[1] for r in conn.execute(
         "PRAGMA table_info(fundamentals)")]

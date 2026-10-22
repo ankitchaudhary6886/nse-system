@@ -236,8 +236,8 @@
    ]
   },
   "backtest.py": {
-   "lines": 403,
-   "bytes": 16167,
+   "lines": 402,
+   "bytes": 16134,
    "doc": "Optimized backtester. All parameters in strategy_config.BACKTEST. v5 (2026-09-12): migrated to central config.",
    "functions": [
     "_naive_index"
@@ -256,8 +256,7 @@
    ],
    "imports_third_party": [
     "numpy",
-    "pandas",
-    "yfinance"
+    "pandas"
    ],
    "imported_by": [
     "fast_wf.py",
@@ -441,8 +440,8 @@
    ]
   },
   "corporate.py": {
-   "lines": 155,
-   "bytes": 5641,
+   "lines": 154,
+   "bytes": 5678,
    "doc": "",
    "functions": [
     "ensure",
@@ -457,16 +456,14 @@
    "imports_local": [
     "db"
    ],
-   "imports_third_party": [
-    "yfinance"
-   ],
+   "imports_third_party": [],
    "imported_by": [
     "app.py"
    ]
   },
   "corporate_actions.py": {
-   "lines": 576,
-   "bytes": 25751,
+   "lines": 567,
+   "bytes": 25569,
    "doc": "Corporate actions: the free book behind every adjusted-vs-raw price seam. WHY: stored history is yfinance ``auto_adjust=True`` (split/dividend adjusted) while the Fyers feed is raw. The ingest guards can only block or flag a seam; with a corporate-action record they can name the event and repair the",
    "functions": [
     "now_ist",
@@ -497,9 +494,7 @@
    "imports_local": [
     "db"
    ],
-   "imports_third_party": [
-    "yfinance"
-   ],
+   "imports_third_party": [],
    "imported_by": [
     "ingest_fyers.py",
     "test_ca_chunking.py",
@@ -627,10 +622,14 @@
    ]
   },
   "data_sources/__init__.py": {
-   "lines": 20,
-   "bytes": 363,
+   "lines": 73,
+   "bytes": 2547,
    "doc": "Shared data-source adapters and fallback orchestration.",
-   "functions": [],
+   "functions": [
+    "_period_to_start",
+    "fetch_price_history",
+    "fetch_yahoo_field"
+   ],
    "classes": [],
    "has_cli": false,
    "imports_local": [],
@@ -849,14 +848,17 @@
    "imported_by": []
   },
   "data_sources/adapters/yahoo.py": {
-   "lines": 31,
-   "bytes": 1026,
-   "doc": "Yahoo Finance adapter for incremental NSE price-history ingestion.",
+   "lines": 80,
+   "bytes": 2782,
+   "doc": "Yahoo Finance adapters for NSE price history and non-price ticker fields. Every direct ``yfinance`` call in the app routes through this module (F-15 / ID52), so the ``.NS`` suffix rule, the tz-cache repair, the call budget and the health record live in exactly ONE place.",
    "functions": [
+    "yahoo_ticker",
+    "_ensure_cache",
     "register_adapters"
    ],
    "classes": [
-    "YahooPriceHistoryAdapter"
+    "YahooPriceHistoryAdapter",
+    "YahooFieldAdapter"
    ],
    "has_cli": false,
    "imports_local": [],
@@ -1065,8 +1067,8 @@
    "imported_by": []
   },
   "deepdive.py": {
-   "lines": 140,
-   "bytes": 5072,
+   "lines": 139,
+   "bytes": 5058,
    "doc": "",
    "functions": [
     "download_prices",
@@ -1083,8 +1085,7 @@
    ],
    "imports_third_party": [
     "joblib",
-    "numpy",
-    "yfinance"
+    "numpy"
    ],
    "imported_by": [
     "app.py"
@@ -1322,8 +1323,8 @@
    ]
   },
   "fundamentals_compute.py": {
-   "lines": 128,
-   "bytes": 4688,
+   "lines": 127,
+   "bytes": 4768,
    "doc": "",
    "functions": [
     "series",
@@ -1338,9 +1339,7 @@
     "db",
     "fundamentals_store"
    ],
-   "imports_third_party": [
-    "yfinance"
-   ],
+   "imports_third_party": [],
    "imported_by": [
     "deepdive.py"
    ]
@@ -1396,7 +1395,7 @@
   },
   "fundamentals_refresh.py": {
    "lines": 163,
-   "bytes": 5222,
+   "bytes": 5242,
    "doc": "A1 \u2014 Fundamentals refresh (weekly / on-call). Modes: csv -> ingest data/fundamentals.csv (screener export), flexible headers yahoo -> best-effort yfinance refresh for top-N symbols auto -> csv if present, then yahoo",
    "functions": [
     "_norm",
@@ -1415,8 +1414,7 @@
     "fundamentals_store"
    ],
    "imports_third_party": [
-    "pandas",
-    "yfinance"
+    "pandas"
    ],
    "imported_by": [
     "test_fundamentals_integrity.py"
@@ -4241,8 +4239,8 @@
    ]
   },
   "ingest_missing.py": {
-   "lines": 50,
-   "bytes": 1731,
+   "lines": 49,
+   "bytes": 1682,
    "doc": "One-time: download history for tracked symbols missing recent data.",
    "functions": [
     "main"
@@ -4253,14 +4251,12 @@
     "data_quality",
     "db"
    ],
-   "imports_third_party": [
-    "yfinance"
-   ],
+   "imports_third_party": [],
    "imported_by": []
   },
   "ingest_prices.py": {
-   "lines": 113,
-   "bytes": 4381,
+   "lines": 111,
+   "bytes": 4317,
    "doc": "",
    "functions": [
     "_fetch_frame",
@@ -4282,8 +4278,8 @@
    ]
   },
   "ingest_smallcaps.py": {
-   "lines": 51,
-   "bytes": 1673,
+   "lines": 50,
+   "bytes": 1651,
    "doc": "One-time: download 5y daily history for smallcap band (1000-8000 cr).",
    "functions": [
     "run"
@@ -4293,9 +4289,7 @@
    "imports_local": [
     "db"
    ],
-   "imports_third_party": [
-    "yfinance"
-   ],
+   "imports_third_party": [],
    "imported_by": []
   },
   "institutional.py": {
@@ -4572,8 +4566,8 @@
    ]
   },
   "meta_model.py": {
-   "lines": 625,
-   "bytes": 22277,
+   "lines": 624,
+   "bytes": 22216,
    "doc": "Setup Meta-Model v7 \u2014 C3 + Secret Sauce + Pattern flags + DTW + Delivery + trend-persistence features. Features: price/derived history only. Current fundamentals, sentiment and sector context are intentionally excluded until point-in-time history exists. + vcr/ret_std20/below52 + 7 pattern flags + d",
    "functions": [
     "get_model",
@@ -4612,8 +4606,7 @@
     "lightgbm",
     "numpy",
     "pandas",
-    "sklearn",
-    "yfinance"
+    "sklearn"
    ],
    "imported_by": [
     "model_report.py",
@@ -5154,8 +5147,8 @@
    ]
   },
   "regime.py": {
-   "lines": 99,
-   "bytes": 3649,
+   "lines": 93,
+   "bytes": 3529,
    "doc": "Market Regime Filter \u2014 Top-down gatekeeper. v2 (2026-09-12): 5-level spectrum via regime_spectrum.py. RegimeState remains backwards-compatible \u2014 is_bullish still present.",
    "functions": [],
    "classes": [
@@ -5167,8 +5160,7 @@
     "regime_spectrum"
    ],
    "imports_third_party": [
-    "pandas",
-    "yfinance"
+    "pandas"
    ],
    "imported_by": [
     "app.py",
@@ -5492,8 +5484,8 @@
    ]
   },
   "screener_engine.py": {
-   "lines": 334,
-   "bytes": 14035,
+   "lines": 323,
+   "bytes": 13715,
    "doc": "On-Demand Screener \u2014 baseline (Stage-2 + momentum + volume) + VCP/pullback checks. DB-first (prices_daily), Yahoo fallback for unknown symbols (single-symbol mode only). Usage: python screener_engine.py RELIANCE -> full check breakdown for one stock python screener_engine.py scan -> run over top sma",
    "functions": [
     "_from_db",
@@ -5513,8 +5505,7 @@
    ],
    "imports_third_party": [
     "numpy",
-    "pandas",
-    "yfinance"
+    "pandas"
    ],
    "imported_by": [
     "terminal_api.py",
@@ -5571,7 +5562,7 @@
   },
   "sectors_refresh.py": {
    "lines": 51,
-   "bytes": 1537,
+   "bytes": 1557,
    "doc": "Fill stocks.sector for the tracked universe (best-effort via Yahoo). Activates sector gate (B1) + sector layer in Top Picks / meta model.",
    "functions": [
     "_upsert",
@@ -5583,9 +5574,7 @@
     "db",
     "universe_helper"
    ],
-   "imports_third_party": [
-    "yfinance"
-   ],
+   "imports_third_party": [],
    "imported_by": []
   },
   "sentiment.py": {
@@ -6834,7 +6823,7 @@
   },
   "trader_league.py": {
    "lines": 3109,
-   "bytes": 135661,
+   "bytes": 135660,
    "doc": "Trader League \u2014 14 famous-trader books + OUR system compete with Rs 10,00,000 of play money each, on real NSE data. WHY THIS EXISTS \"We have to make something to backtest our system before deploying real money.\" This module is that something. For every player it answers: - What would Rs 10 lakh have",
    "functions": [
     "config",
@@ -6936,8 +6925,7 @@
    ],
    "imports_third_party": [
     "numpy",
-    "pandas",
-    "yfinance"
+    "pandas"
    ],
    "imported_by": [
     "scheduler_bg.py",
@@ -7131,8 +7119,8 @@
    "imported_by": []
   },
   "traders/larry_spears.py": {
-   "lines": 430,
-   "bytes": 15709,
+   "lines": 429,
+   "bytes": 15666,
    "doc": "Larry Spears \u2014 swing-trading setup identification. Classified: SWING. Setup filter set: beta_filter \u2014 symbol beta \u2265 1.30 vs ^NSEI amplitude_filter \u2014 5-day high-low range \u2265 5% of price gap_classification \u2014 open \u2265 0.5% from prior close ma_trend \u2014 SMA10/20/50 stacking with slopes counter_trend \u2014 2-3 co",
    "functions": [
     "_fetch_benchmark_returns",
@@ -7159,8 +7147,7 @@
    ],
    "imports_third_party": [
     "numpy",
-    "pandas",
-    "yfinance"
+    "pandas"
    ],
    "imported_by": []
   },

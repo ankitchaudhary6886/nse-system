@@ -4,6 +4,7 @@ Activates sector gate (B1) + sector layer in Top Picks / meta model.
 """
 import time
 import db
+from data_sources import fetch_yahoo_field
 import universe_helper as U
 
 def _upsert(conn, sym, sec, name):
@@ -22,7 +23,6 @@ def _upsert(conn, sym, sec, name):
                  [vals[k] for k in keys])
 
 def refresh(limit=900):
-    import yfinance as yf
     conn = db.get_conn()
     syms = U.band_universe(conn, limit)
     n = 0
@@ -32,7 +32,7 @@ def refresh(limit=900):
         if row and row[0]:
             continue
         try:
-            info = yf.Ticker(sym + ".NS").info or {}
+            info = fetch_yahoo_field(sym, "info") or {}
         except Exception:
             continue
         sec = info.get("sector")

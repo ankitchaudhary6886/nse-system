@@ -1,7 +1,7 @@
 """One-time: download history for tracked symbols missing recent data."""
 import datetime as dt
 import time
-import yfinance as yf
+from data_sources import fetch_price_history
 import db
 import data_quality
 
@@ -22,8 +22,7 @@ def main():
     done = 0
     for sym in missing:
         try:
-            d = yf.Ticker(sym + ".NS").history(period="5y",
-                                               auto_adjust=True)
+            d = fetch_price_history(sym, period="5y")
         except Exception:
             continue
         if d is None or len(d) < 200:

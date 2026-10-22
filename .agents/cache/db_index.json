@@ -2,7 +2,7 @@
  "db_path": "data/app.db",
  "exists": true,
  "size_mb": 418.9,
- "mtime": "2026-10-19T01:17:46",
+ "mtime": "2026-10-19T14:44:48",
  "table_count": 59,
  "tables": {
   "breadth_daily": {
@@ -302,7 +302,7 @@
    }
   },
   "freshness_gate_log": {
-   "rows": 34,
+   "rows": 54,
    "columns": [
     {
      "name": "run_at",
@@ -347,7 +347,7 @@
    ],
    "latest": {
     "column": "run_at",
-    "value": "2026-10-19T01:17:43+05:30"
+    "value": "2026-10-19T14:44:48+05:30"
    }
   },
   "fundamentals": {

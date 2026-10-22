@@ -12,6 +12,7 @@ import datetime as dt
 import hashlib
 import pandas as pd
 import db
+from data_sources import fetch_yahoo_field
 from fundamentals_store import merge
 
 CSV_PATH = "data/fundamentals.csv"
@@ -107,7 +108,6 @@ def ingest_csv(path=CSV_PATH):
     return n
 
 def refresh_yahoo(limit=100):
-    import yfinance as yf
     conn = db.get_conn()
     table_cols = set(_table_cols(conn))
     syms = [r[0] for r in conn.execute(
@@ -116,7 +116,7 @@ def refresh_yahoo(limit=100):
     n = 0
     for sym in syms:
         try:
-            info = yf.Ticker(sym + ".NS").info or {}
+            info = fetch_yahoo_field(sym, "info") or {}
         except Exception:
             continue
         vals = {"symbol": sym}

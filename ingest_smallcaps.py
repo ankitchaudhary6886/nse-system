@@ -1,7 +1,7 @@
 """One-time: download 5y daily history for smallcap band (1000-8000 cr)."""
 import math
 import time
-import yfinance as yf
+from data_sources import fetch_price_history
 import db
 
 def run(limit=600, min_mcap=1000, max_mcap=8000):
@@ -21,8 +21,7 @@ def run(limit=600, min_mcap=1000, max_mcap=8000):
             done += 1
             continue
         try:
-            tk = yf.Ticker(sym + ".NS")
-            df = tk.history(period="5y", auto_adjust=True)
+            df = fetch_price_history(sym, period="5y")
         except Exception:
             continue
         if df is None or df.empty:

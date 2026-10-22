@@ -5,7 +5,7 @@ RegimeState remains backwards-compatible — is_bullish still present.
 """
 from dataclasses import dataclass
 import datetime as dt
-import yfinance as yf
+from data_sources import fetch_price_history
 import pandas as pd
 from regime_spectrum import (classify, SIZE_MULT,
                              ALLOWS_NORMAL_SWING, ALLOWS_AW)
@@ -38,21 +38,15 @@ class MarketRegime:
     def _fetch(cls, days_back):
         end = dt.date.today()
         start = end - dt.timedelta(days=days_back)
-        # yfinance silently returns zero rows (not an exception) when its cache
-        # folder cannot host SQLite, which would look like "Index Data
-        # Unavailable" here. Repair the cache location first; it is guarded and
-        # a no-op on a healthy machine.
-        try:
-            from data_sources.yf_cache import ensure_yf_cache
-            ensure_yf_cache()
-        except Exception:
-            pass
+        # The shared provider chain repairs the yfinance tz cache before every
+        # fetch (a broken cache silently yields zero rows, which would look
+        # like "Index Data Unavailable" here), and falls through to the other
+        # price providers when Yahoo fails.
         for sym in cls.INDEX_CANDIDATES:
             try:
-                df = yf.Ticker(sym).history(
-                    start=start.isoformat(),
-                    end=end.isoformat(),
-                    auto_adjust=True)
+                df = fetch_price_history(sym,
+                                         start=start.isoformat(),
+                                         end=end.isoformat())
                 if df is not None and len(df) > 30:
                     return df, sym
             except Exception:

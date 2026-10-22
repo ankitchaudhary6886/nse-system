@@ -1,15 +1,14 @@
 import math
 import datetime as dt
 import numpy as np
-import yfinance as yf
+from data_sources import fetch_price_history
 import joblib
 import db
 import scoring
 
 
 def download_prices(conn, symbol):
-    tk = yf.Ticker(symbol + ".NS")
-    df = tk.history(period="5y", auto_adjust=True)
+    df = fetch_price_history(symbol, period="5y")
     if df is None or df.empty:
         return 0
     rows = []

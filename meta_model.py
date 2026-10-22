@@ -16,6 +16,7 @@ import lightgbm as lgb
 import joblib
 import db
 import universe_helper as U
+from data_sources import fetch_price_history
 
 MODEL_PATH = "data/meta_model.pkl"
 _MODEL = None
@@ -539,9 +540,7 @@ def score_symbol(sym, use_yahoo=True):
                                    "low", "volume"])
     elif use_yahoo:
         try:
-            import yfinance as yf
-            d = yf.Ticker(sym + ".NS").history(period="5y",
-                                               auto_adjust=True)
+            d = fetch_price_history(sym, period="5y")
         except Exception:
             return None
         if d is None or len(d) < 300:

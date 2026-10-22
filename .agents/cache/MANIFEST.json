@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-10-19T09:01:32+00:00",
+ "generated_at": "2026-10-22T18:36:09+00:00",
  "generator": ".agents/build_cache.py",
  "root": "C:\\Users\\Ankit\\Desktop\\nse_system",
  "artifacts": {
-  "system_map.json": "1abd844eeeecb3d641d820e81779f563cbb8f55ec3fa942bd822e5e26b65f621",
-  "db_index.json": "665dbce02f5872537fcc0e1ba7b75f428c97b9750779f67f27cba9a1cfc2970e",
+  "system_map.json": "33de6279fbb1aca42bb141b4ea2f7d26a31af2c8e54fc772fc0aeba00820798d",
+  "db_index.json": "49b5bb02d89a55f661e25bec88985fe4caef7b0066d12df4ead07721361c0a11",
   "api_index.json": "f3624105b97a12d48bc96519cfc617c6cca3801d102cacddb39e928f5a9c576b",
   "jobs_index.json": "c8aa5e0d950d290b937315e1b6199ee95c3d44ea3c90a4d865db9c2724b22fd5",
   "env_index.json": "2f47d70d6f98de8b92c2ea9b60e02fd027274ca8889b3426e1176ceb246a725a"

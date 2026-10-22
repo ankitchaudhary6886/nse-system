@@ -12,7 +12,7 @@ import json
 import datetime as dt
 import numpy as np
 import pandas as pd
-import yfinance as yf
+from data_sources import fetch_price_history
 import db
 import universe_helper as U
 
@@ -52,20 +52,15 @@ def _from_db(ticker):
 
 def _from_yahoo(ticker, period_days=550):
     try:
-        # yfinance returns an EMPTY frame (no exception) when its cache folder
-        # cannot host SQLite, which is indistinguishable from "no such symbol".
-        # Repair the location first; guarded, and a no-op on a healthy machine.
-        try:
-            from data_sources.yf_cache import ensure_yf_cache
-            ensure_yf_cache()
-        except Exception:
-            pass
+        # One shared chain (data_sources, F-15/ID52): it repairs the yfinance
+        # tz cache before fetching (a broken cache returns an EMPTY frame,
+        # indistinguishable from "no such symbol") and falls back to the
+        # NSE-backed providers when Yahoo fails.
         end = dt.date.today()
         start = end - dt.timedelta(days=period_days)
-        df = yf.download(f"{ticker}.NS",
-                         start=start.isoformat(),
-                         end=end.isoformat(),
-                         interval="1d", progress=False)
+        df = fetch_price_history(ticker,
+                                 start=start.isoformat(),
+                                 end=end.isoformat())
         if df is None or df.empty or len(df) < 240:
             return None
         if isinstance(df.columns, pd.MultiIndex):
@@ -90,15 +85,9 @@ def fetch_index_data(index_ticker=None):
     candidates = ([index_ticker] if index_ticker else
                   ["^CNXSMALLCAP", "^CNXSC",
                    "NIFTY_SMALLCAP_100.NS", "^NSEI"])
-    try:
-        from data_sources.yf_cache import ensure_yf_cache
-        ensure_yf_cache()
-    except Exception:
-        pass
     for sym in candidates:
         try:
-            df = yf.download(sym, period="1mo",
-                             interval="1d", progress=False)
+            df = fetch_price_history(sym, period="1mo")
             if df is not None and not df.empty:
                 if isinstance(df.columns, pd.MultiIndex):
                     df.columns = df.columns.get_level_values(0)
