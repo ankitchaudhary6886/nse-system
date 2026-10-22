@@ -1473,3 +1473,103 @@ button[class*="btn"] {
   outline: 2px solid var(--fx-info);
   outline-offset: 2px;
 }
+
+/* ============================================================================
+   VISUAL PASS — 2026-10-23
+   ----------------------------------------------------------------------------
+   Scope: the shell and four specific surfaces. No view is restyled wholesale,
+   no content is hidden, and every rule is reversible on its own.
+
+   1. The pill rail is the phone's navigation (the sidebar is a drawer there).
+      On desktop the sidebar already lists the same destinations, so the rail
+      was a second, identical menu eating a full row of every page.
+   2. The ledger's two cards were the wrong way round: the short stat list took
+      1.7fr while the seven-column table got .85fr, so the table clipped. Only
+      the ledger swaps; the research grids keep their proportions.
+   3. In the deployment checks the icon span was a growing flex item, which
+      pushed every label into the middle of the row. The icon is now fixed and
+      the label owns the free space.
+   4. An empty chart was a 420px black void. When no series is mounted, the
+      pane shrinks and explains what to do; mounting a chart restores it.
+   5. "Backtest" (history) was the loudest button on every strategy card while
+      "Run" (today's work) was neutral. Hierarchy now follows intent.
+   ========================================================================== */
+
+/* 1 — one navigation on desktop ------------------------------------------- */
+@media (min-width: 951px) {
+  .fx-navrail { display: none; }
+}
+
+/* 2 — ledger: give the table the room ------------------------------------- */
+#view-ledger > .terminal-grid {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.7fr);
+  align-items: start;
+}
+
+/* 3 — deployment checks: icon, label, value on one line ------------------- */
+#deploymentBox .fx-row {
+  gap: 10px;
+  padding: 9px 0 !important;
+}
+#deploymentBox .fx-row > span:first-child {
+  flex: 0 0 20px;
+  text-align: center;
+}
+#deploymentBox .fx-row > span:nth-child(2) {
+  flex: 1 1 auto;
+  margin-left: 0 !important;
+}
+#deploymentBox .fx-row > strong {
+  flex: 0 0 auto;
+  color: var(--fx-zinc-400);
+}
+
+/* 3b — the two widest tables. Twelve pixels of cell air on each side pushed
+   the final column past the card at desktop width; nine keeps every column
+   visible without changing the type or the row height. */
+#view-swing .table-wrap th,
+#view-swing .table-wrap td,
+#view-ledger .table-wrap th,
+#view-ledger .table-wrap td {
+  padding-left: 9px;
+  padding-right: 9px;
+}
+
+/* 4 — empty chart: a useful 240px state instead of a 420px void ----------- */
+#chart:has(> #chartPrice:empty) {
+  height: 240px;
+}
+#chart:has(> #chartPrice:empty)::after {
+  content: "Pick a stock from the shortlist, radar, or search above to load its chart.";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 24px;
+  text-align: center;
+  color: var(--fx-zinc-500);
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+/* 5 — strategy actions: run is primary, history is secondary -------------- */
+.strategy-bt-btn {
+  background: transparent !important;
+  border-color: var(--fx-hairline) !important;
+  color: var(--fx-zinc-400) !important;
+}
+.strategy-bt-btn:hover {
+  background: var(--fx-inset) !important;
+  border-color: var(--fx-hairline-strong) !important;
+  color: var(--fx-zinc-100) !important;
+}
+.strategy-run-btn {
+  background: rgba(96, 165, 250, 0.14) !important;
+  border-color: rgba(96, 165, 250, 0.34) !important;
+  color: #cfe2ff !important;
+}
+.strategy-run-btn:hover {
+  background: rgba(96, 165, 250, 0.24) !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+}

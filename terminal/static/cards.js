@@ -40,6 +40,14 @@ function ucMetricCells(text) {
   String(text).split("·").forEach((part) => {
     const raw = part.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
     if (!raw) return;
+    /* "48% off 52w high" is a bare figure with no label. The generic splitter
+       below would read the leading "4" as the key and "8% off..." as the
+       value, so name this one before it runs. */
+    const offHigh = raw.match(/^(\d+(?:\.\d+)?)%\s*(off|below)\s+(?:the\s+)?52[-\s]?w(?:eek)?\s*high/i);
+    if (offHigh) {
+      cells.push({ key: "52W High", value: `${offHigh[1]}% ${offHigh[2].toLowerCase()}`, tone: "" });
+      return;
+    }
     const m = raw.match(/^([A-Za-z0-9][^0-9+\-₹]{0,22}?)\s*[:]?\s*([+\-]?[₹$]?[\d][\d.,]*(?:\s?(?:%|x|cr|shares|R))?.*)$/);
     let label = raw;
     let value = "";

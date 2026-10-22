@@ -17,7 +17,7 @@ async function loadStrategyListFor(kind) {
       if (badge) badge.textContent = "empty";
       return;
     }
-    if (badge) badge.textContent = `${matching.length} strategies`;
+    if (badge) badge.textContent = `${matching.length} ${matching.length === 1 ? "strategy" : "strategies"}`;
     container.innerHTML = "";
     for (const { key, s } of matching) {
       container.appendChild(_buildStrategyCard(key, s, kind));
