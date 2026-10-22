@@ -10,7 +10,7 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
-### #112 - Honest caps: the three panels that hid rows now say how many - READY · AWAITING DEPLOY
+### #112 - Honest caps: the three panels that hid rows now say how many - DEPLOYED · VERIFIED
 
 - **The problem.** Three endpoints truncated silently, so a bounded list looked
   like a complete one:
@@ -48,6 +48,13 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 - **Not claimed:** the caps themselves are unchanged (radar 40/18, swing 80,
   universe 200). This makes them honest, not wider. Whether 18 radar cards is
   enough is an owner decision, not a defect.
+- **Deploy:** VM pulled `4d80b85`; `Active: active (running)`, `/api/health`
+  **200**, no traceback. Field check against the deployed API:
+  `SWING returned=80 total=155 limit=80`; `RADAR total=1535 group_limit=40`
+  with Momentum `40/312`, Volume Spike `0/0`, Turnaround `28/28`;
+  `UNIVERSE returned=52 universe_total=52 max_symbols=200`. The VM's scan holds
+  52 names, so the universe cap does not bite in production either - the field
+  is correct but the "of N" will not show until that scan grows past 200.
 
 ### #111 - F-28 fixed: a fresh replay can no longer erase a book before it can build - DEPLOYED · VERIFIED
 
