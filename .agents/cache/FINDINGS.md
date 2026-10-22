@@ -728,6 +728,48 @@ must be exercised through that path, not just imported.
 
 ---
 
+## F-28 · A crashed `--fresh` replay destroys the book's history, then hides it from `--changed` — `OPEN` (2026-10-23)
+
+`trader_league.replay()` deletes the player's stored signals **and** its
+`league_progress` rows at lines 985–990 **before** calling `build_context()` at
+line 1010. On 2026-10-23 `build_context` raised `NameError` (F-27), so all 11
+changed books lost their replay signals and ended at `0 signals / 0 stocks / —`.
+
+It could not heal itself, which is the dangerous part. `status()` derives
+`code_changed` from `league_progress.code_hash` (line 2313), and `--fresh` had
+just **deleted those rows**. With no row, `bool(pr and …)` is `False`, so every
+affected book reported "not changed" and `--changed` printed:
+
+> `No player's code or settings changed since its replay — nothing to redo.`
+
+The emptied books were therefore invisible to the one command designed to repair
+them. This is a "silent data loss + silent all-clear" combination, and it is
+strictly worse than the crash that triggered it.
+
+**Recovery applied (2026-10-23):** an explicit
+`replay --fresh --players home,john_crane,larry_spears,way_of_the_turtle,seven_simple_strategies,ishaan_agnihotri,nison,chande,oneil,mcallen,singhal`
+replayed all 11. `build_context` logged `context ready in 5.5s` — F-27 confirmed
+fixed in production.
+
+**Recommended fix (not yet applied).** Make the destructive step the last thing
+rather than the first:
+
+1. when `fresh`, compute `prog = {}` instead of deleting the table;
+2. build `tasks` from that;
+3. call `build_context()` **before** any `DELETE`;
+4. delete only once `todo` is known to be non-empty.
+
+That removes the window entirely: a failure before work starts leaves the
+previous replay intact and keeps the hash rows `--changed` depends on.
+
+**Residual risk, deliberately not guessed at:** a crash *partway through* a
+replay still leaves `league_progress` rows carrying the new hash for the symbols
+already finished, and `code_changed` treats the presence of the current hash
+anywhere in that column as "not stale". Closing that needs a coverage check
+(every symbol present), which is a larger change than this one.
+
+---
+
 ## Verified-healthy (so you don't re-investigate)
 
 - `db.py` central schema: 31 declared tables, idempotent `executescript` + `MIGRATIONS` on every `get_conn()`.

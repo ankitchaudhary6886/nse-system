@@ -10,6 +10,43 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #108 - The F-15 deploy exposed two League defects: F-27 fixed, F-28 recorded - DEPLOYED · VERIFIED
+
+- **What happened.** The #107 deploy itself was healthy — service active,
+  health 200, 23-job banner — but the League replay it correctly triggered died
+  instantly with `NameError: name 'U' is not defined` at `trader_league.py:674`.
+  The failure was **not** caused by #107: that line arrived with `3057927`
+  (2026-10-05) and nothing had executed it since, because no replay had run.
+
+- **F-27 (fixed).** `build_context` called `U.band_universe` while the module
+  imports `universe_helper` only locally (`from universe_helper import
+  band_universe`, lines 504 and 980) — there is no `U` anywhere in the file. So
+  every replay needing market gates or sector ranks (`home` / `singhal` in the
+  slug list) had been impossible for **18 days**. Fixed at the call site in the
+  file's own style. Verified live: the re-run logged
+  `context ready in 5.5s (benchmark ^NSEI, 774 dates)` — the exact statement
+  that previously raised.
+  Why it hid: `NameError` is a call-time error, so import checks pass;
+  `selftest` never enters that branch; live runs never call it. 365 green tests
+  and a green `selftest` both missed it.
+
+- **F-28 (found, recorded, deliberately not fixed yet).** Worse than the crash:
+  `--fresh` deletes the player's signals **and** `league_progress` rows at lines
+  985–990, *before* `build_context` at line 1010. `status()` reads `code_hash`
+  back out of `league_progress` (line 2313), so with those rows deleted
+  `code_changed` became `False` and `--changed` announced *"No player's code or
+  settings changed since its replay — nothing to redo."* — while all 11 books
+  sat at 0 signals. The repair command had been blinded by the damage it exists
+  to repair. Recovery was an explicit `--fresh --players` list for all 11; the
+  documented fix (delete last, not first) is in F-28 and is **not** applied.
+
+- **Verification:** `unittest discover` → **365 tests, OK, exit 0** after the
+  fix; the VM pulled `a186dc9`, `Active: active (running)`, `/api/health`
+  **200**; the replay is running at 865 stocks × 3 years and writing signals.
+- **Register lesson recorded:** green tests plus a green `selftest` do not cover
+  every executable line. A change that touches a scheduler or CLI path must be
+  *run* through that path, not merely imported.
+
 ### #107 - F-15 duplication closed where provable; screener VCP blocked on evidence - DEPLOYED · VERIFIED
 
 - **Why:** F-15 was the last duplication item left from the 2026-10-19 survey,
