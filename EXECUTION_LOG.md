@@ -10,6 +10,69 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #113 - Visual pass: one desktop nav, readable tables, a real empty state - DEPLOYED · VERIFIED
+
+- **Why:** the owner asked for a visual improvement of the portal. An audit at
+  1440x1000 (headless Edge, real screenshots) found eight concrete defects;
+  each was fixed at its cause instead of restyling a whole view.
+- **Duplicate navigation.** The header pill rail is the phone's navigation - it
+  is ordered as a full-width row inside the <=950px media block - but it was
+  never hidden on desktop, so every page listed the same six destinations
+  twice and the sticky header was two rows tall. `.fx-navrail` is now
+  `display:none` at >=951px. The sidebar remains the desktop nav; the rail
+  remains the phone nav.
+- **Ledger columns were inverted.** The shared `.terminal-grid` is
+  `1.7fr .85fr` for the research grids, so the ledger's short stat card took
+  two thirds and the seven-column table one third and clipped. Only
+  `#view-ledger > .terminal-grid` is swapped to `.85fr 1.7fr`, with
+  `align-items:start`.
+- **Deployment check rows.** The icon span was a growing flex item
+  (`flex:1 1 auto`), which pushed every label into the middle of the row. The
+  icon is fixed at 20px, the label owns the free space, and the value stays
+  right-aligned. Scoped to `#deploymentBox`.
+- **Table clipping.** The two widest tables (swing 10 columns, ledger 7) lose
+  3px of horizontal cell padding per side - enough for every column to fit at
+  1440 without changing type or row height. Scoped to those two views.
+- **Empty chart.** The Research landing page showed a 420px black void before a
+  symbol was chosen. `#chart:has(> #chartPrice:empty)` shrinks it to 240px and
+  adds one line telling the user what to do; when the chart library mounts a
+  series the selector stops matching and the full height returns. Measured at
+  1440: `#chart` rect height 240px.
+- **Button hierarchy.** Backtest (history) was a filled purple button on every
+  strategy card while Run (today's scan) was neutral. Backtest is now a ghost
+  and Run uses the same blue tint as `.fx-btn-primary`.
+- **Data cell bug (cards.js).** A value-radar card ended with the bare phrase
+  `48% off 52w high`; `ucMetricCells` read the leading `4` as the key and
+  `8% off 52w high` as the value, so the card showed a label of "4". The
+  52-week phrase is now named before the generic splitter: key `52W High`,
+  value `48% off`. Unit-checked against the old inputs (1M/3M/Vol,
+  rank/accumulation, close/composite) with no change to their output.
+- **Pluralisation.** "1 strategies" -> "1 strategy" in the strategy badge.
+- **Verification:**
+  - `tools/ui-audit/audit.mjs` over research/funda/swing/ledger/system at
+    375x812, 390x844, 768x1024, 1440x900: 20/20 clean, mobile overflow
+    failures 0, worst page overflow 0px. The flagged boxes are inside the
+    table scroll containers, as designed.
+  - Real headless screenshots before/after at 1440 for funda, swing, ledger,
+    system, research, playbook and traders. Confirmed: one nav; the ledger
+    table ends at PROFIT/LOSS; swing OUTCOME badges are fully visible; check
+    rows are left-aligned; the 52W HIGH cell reads correctly; Run/Backtest
+    hierarchy; the owner's Playbook view is unaffected.
+  - `#chart` probe at 1440: rect height 240, selector matches, ::after content
+    present.
+- **Deploy:** `90fa649`, static-only (no restart, per the deploy skill).
+  `fintech.css?v=6`, `cards.js?v=20`, `strategies.js?v=19`. The commit's
+  `index.html` is HEAD plus those three version lines only; the owner's
+  uncommitted Playbook work in `index.html`, `app.js`, `terminal_api.py` and
+  `db.py` was not staged, committed or touched. VM pulled `90fa649`; service
+  active, `/api/health` 200; the served page contains `fintech.css?v=6`, the
+  served CSS contains `chartPrice:empty`, `cards.js` contains `52W High`, and
+  `strategies.js` contains the singular branch.
+- **Not changed deliberately:** the yellow "Data" FAB is not decoration - it
+  turns amber when `/api/data/health` reports stale data, so recolouring it
+  would remove a warning. The phone header (192px at 800px) was left alone; it
+  already collapses on scroll, and shortening it is a product decision.
+
 ### #112 - Honest caps: the three panels that hid rows now say how many - DEPLOYED · VERIFIED
 
 - **The problem.** Three endpoints truncated silently, so a bounded list looked
@@ -241,6 +304,10 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 - **Register lesson recorded:** green tests plus a green `selftest` do not cover
   every executable line. A change that touches a scheduler or CLI path must be
   *run* through that path, not merely imported.
+
+---
+
+## EARLIER BATCHES
 
 ### #107 - F-15 duplication closed where provable; screener VCP blocked on evidence - DEPLOYED · VERIFIED
 
