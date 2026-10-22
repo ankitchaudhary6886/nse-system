@@ -329,7 +329,9 @@ async function loadSwing() {
     tbody.replaceChildren();
     const signals = data.signals || [];
     const score = data.scorecard || {};
-    const ms = $("mSignals"); if (ms) ms.textContent = signals.length;
+    const ms = $("mSignals");
+    if (ms) ms.textContent = data.total != null && data.total > signals.length
+      ? `${signals.length} of ${data.total}` : signals.length;
     const mw = $("mWinRate"); if (mw) mw.textContent = data.win_rate == null ? "—" : `${data.win_rate}%`;
     const mo = $("mOpen"); if (mo) mo.textContent = `${score.OPEN || 0} / ${score.PENDING || 0}`;
     for (const s of signals) {
@@ -726,10 +728,19 @@ async function loadRadar() {
     // The header tile is filled by loadResearchUniverse() so the number always
     // matches the panel it opens; radar no longer writes to it.
     const g = data.groups || {};
-    const render = (items, box) => {
+    const totals = data.group_totals || {};
+    const render = (items, box, total) => {
       if (!box) return;
       box.innerHTML = "";
-      (items || []).slice(0, 18).forEach(x => {
+      const shown = (items || []).slice(0, 18);
+      if (total > shown.length) {
+        const note = document.createElement("p");
+        note.className = "method-note";
+        note.style.margin = "0 0 6px";
+        note.textContent = `Showing ${shown.length} of ${total}`;
+        box.appendChild(note);
+      }
+      shown.forEach(x => {
         const subtitle = x.sector || "";
         const primary = `Mcap ₹${fmt(x.mcap_cr)}cr`
           + (x.p_win != null ? ` · Event ${scorePct(x.p_win)}` : "");
@@ -740,9 +751,9 @@ async function loadRadar() {
         }));
       });
     };
-    render(g["Momentum"], $("radarMomentum"));
-    render(g["Volume Spike"], $("radarVolume"));
-    render(g["Turnaround"], $("radarTurn"));
+    render(g["Momentum"], $("radarMomentum"), totals["Momentum"]);
+    render(g["Volume Spike"], $("radarVolume"), totals["Volume Spike"]);
+    render(g["Turnaround"], $("radarTurn"), totals["Turnaround"]);
   } catch (e) {
     ["radarMomentum", "radarVolume", "radarTurn"].forEach(id => {
       const box = $(id);

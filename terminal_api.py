@@ -746,6 +746,10 @@ def swing_signals(limit: int = 80):
         "risk_pct, pullback, impulse, ema_zone, outcome, mode "
         "FROM swing_signals ORDER BY signal_date DESC LIMIT ?",
         (limit,)).fetchall()
+    # The default limit is 80; without this the panel could not tell a quiet
+    # book from a truncated one.
+    total = conn.execute(
+        "SELECT COUNT(*) FROM swing_signals").fetchone()[0]
     signals = [{"date": r[0], "symbol": r[1],
                 "trigger": safe_float(r[2]), "stop": safe_float(r[3]),
                 "target": safe_float(r[4]),
@@ -765,7 +769,8 @@ def swing_signals(limit: int = 80):
     signals.sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
     wins = score.get("WIN", 0)
     graded = wins + score.get("LOSS", 0)
-    return {"signals": signals, "scorecard": score,
+    return {"signals": signals, "total": total, "limit": limit,
+            "scorecard": score,
             "win_rate": round(100 * wins / graded, 1) if graded else None}
 
 
@@ -832,6 +837,10 @@ def radar():
             groups["Momentum"].append(item)
         elif p1v >= 7 and p3v <= 0:
             groups["Turnaround"].append(item)
+    # Honest caps: this endpoint truncates each group to 40 and the UI renders
+    # 18, with no way for the caller to know how much was hidden. Report the
+    # full count per group so the panel can say "Showing 18 of N".
+    group_totals = {k: len(v) for k, v in groups.items()}
     for k in groups:
         groups[k] = groups[k][:40]
     pw = pwin_cache.get_map(conn)
@@ -840,7 +849,8 @@ def radar():
         for item in groups[k]:
             item["p_win"] = pw.get(item["symbol"])
         groups[k].sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
-    return {"groups": groups, "total": len(rows)}
+    return {"groups": groups, "total": len(rows),
+            "group_totals": group_totals, "group_limit": 40}
 
 
 @app.get("/api/trend")

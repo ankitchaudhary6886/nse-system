@@ -328,9 +328,9 @@ relevant decision"; `SKILL.md:20-22` — staleness/failure must stay visible.
 | Deployment check rows that are counts, not verdicts | 14 rows, ≥8 non-actionable | `terminal_api.py:179-180` renders `"latest 2026-09-30 (7d), 12,345 rows"` per table, plus `setup_pool` ("N setups", `:191-192`) and `swing signals today` / `trend candidates today` (`:196-205`) which are always reported as **pass** (`add(True, …)`). The pass/fail is actionable; the row counts are not. |
 | Universe table column that is an internal code | 1 of 12 | `Src` (`research_universe.js:11`) prints the raw source tag from `research_cockpit.py:669-677` — `SWING` or `TREND`. |
 | Compare table rows that are derivation, not decision | 5 of 20 | `Best candle (n)` (`cards.js:213-216`), `k / pool size` (`:222-224`), and the two overlapping P(+2R) estimates (`:206-208`, `:220-221`), plus `Fund score` (`:177-178`) with no band shown. |
-| Radar rows computed then discarded | 66 of 198 | Server caps 40/group (`terminal_api.py:767`), client renders 18/group (`app.js:595`) → 22 discarded per group. |
-| Swing table rows | capped at 80 silently | `terminal_api.py:670` `limit: int = 80`; the table (`index.html:423-437`) has no total or "of N" marker, while the tile (`index.html:352`) labels the same figure "Signals listed". |
-| Research universe rows | capped at 200 silently | `research_cockpit.py:702` `max_symbols=200`; the badge (`research_universe.js:154-155`) reports the *returned* count as if complete. |
+| Radar rows computed then discarded | ~~66 of 198~~ **now reported** | The server still caps 40/group and the client renders 18, but the payload now carries `group_totals` (the full count before the cap) and each panel prints "Showing 18 of N" whenever it hides rows (2026-10-23, #112). |
+| Swing table rows | ~~capped at 80 silently~~ **now reported** | `/api/swing/signals` returns `total` and `limit`; the tile reads "80 of 155" when truncated (measured locally 2026-10-23, #112). |
+| Research universe rows | ~~capped at 200 silently~~ **now reported** | `analyze_universe` returns `returned`, `universe_total` and `max_symbols`; the badge reads "200 of 1,234 symbols" when truncated (2026-10-23, #112). |
 
 ---
 
@@ -466,6 +466,6 @@ re-verified against the tree first, because several audit lines had drifted:
 | **7** duplicate globals | **`loadDeployment` resolved** by `deployment.js` being gone. `_safeId` and `_num` deliberately left: deleting the shadowed copy would make one script depend on another's load order — trading one latent hazard for a different one. |
 | **8** 14 uncalled routes | **Still owner-gated** (§3.2 #3). Not touched. |
 
-**Still open:** §3.1 item 8 (owner-gated with §3.2 #3), the §4 silent caps
-(`total`/coverage fields — the next workstream), and §3.2's orphan-selector
-audit.
+**Still open:** §3.1 item 8 (owner-gated with §3.2 #3) and §3.2's
+orphan-selector audit. The §4 silent caps were closed on 2026-10-23
+(#112) - see the three rows in §4.

@@ -160,8 +160,12 @@ async function loadResearchUniverse(computeMissing) {
     }
     const stale = data.stale ? " · scan older than stored prices" : "";
     const missing = data.n_errors ? ` · ${data.n_errors} history unavailable` : "";
+    const universeTotal = data.universe_total || _universeRows.length;
+    const shownOf = universeTotal > _universeRows.length
+      ? `${_universeRows.length} of ${universeTotal}`
+      : `${_universeRows.length}`;
     if (badge) setStatusRow(badge,
-      `${_universeRows.length} symbols · ${data.date || "date unavailable"}${stale}${missing}`, "bull");
+      `${shownOf} symbols · ${data.date || "date unavailable"}${stale}${missing}`, "bull");
     // The header tile promises exactly what this panel shows, so it is filled
     // from here and never from a different endpoint.
     _setUniverseTile(String(_universeRows.length));

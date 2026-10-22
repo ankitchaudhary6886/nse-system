@@ -10,6 +10,45 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #112 - Honest caps: the three panels that hid rows now say how many - READY · AWAITING DEPLOY
+
+- **The problem.** Three endpoints truncated silently, so a bounded list looked
+  like a complete one:
+  - `/api/radar` capped each group at 40 and the UI rendered only 18 - 22
+    computed rows per group were discarded with no trace.
+  - `/api/swing/signals` defaulted to `limit=80` and returned no total, so a
+    155-row book looked like an 80-row book.
+  - `research_cockpit.analyze_universe` sliced the universe at 200 and reported
+    `n_setups = len(rows)`, i.e. the returned count as if it were the universe.
+- **The change (API).** All additive; no existing key changed shape.
+  - `/api/radar` returns `group_totals` (full count per group, measured before
+    the 40 cap) and `group_limit`.
+  - `/api/swing/signals` returns `total` (`COUNT(*)` of `swing_signals`) and
+    `limit`.
+  - `analyze_universe` returns `returned`, `universe_total` and `max_symbols`
+    alongside the existing `n_setups`.
+- **The change (UI).**
+  - Radar: each column prints `Showing 18 of N` only when it is hiding rows.
+  - Swing: the header tile reads `80 of 155` when truncated, plain `N` when not.
+  - Research universe: the status badge reads `200 of 1,234 symbols` when
+    truncated, plain `N symbols` when not. The tile still reports exactly what
+    the panel shows (its #106 promise), so it was left alone.
+- **Measured locally (2026-10-23, live server on 8023):**
+  - swing: `returned=80 total=155 limit=80`
+  - radar: `total=1535 group_limit=40`; Momentum `shown=40 total=312`,
+    Volume Spike `0/0`, Turnaround `28/28`
+  - universe: `returned=52 universe_total=52 max_symbols=200` (the laptop's
+    scan holds 52 names, so it is not truncated here; the VM's 200-name slice
+    will show the "of N")
+- **Verification:** `node --check` clean on `app.js` and
+  `research_universe.js`; `py_compile` clean; **389 tests OK** in discovery -
+  367 from the tracked tree plus 22 from the owner's untracked
+  `test_playbook.py`, which also passes. `app.js?v=24`,
+  `research_universe.js?v=20`.
+- **Not claimed:** the caps themselves are unchanged (radar 40/18, swing 80,
+  universe 200). This makes them honest, not wider. Whether 18 radar cards is
+  enough is an owner decision, not a defect.
+
 ### #111 - F-28 fixed: a fresh replay can no longer erase a book before it can build - DEPLOYED · VERIFIED
 
 - **The bug.** `replay(fresh=True)` deleted every `league_signals` row and

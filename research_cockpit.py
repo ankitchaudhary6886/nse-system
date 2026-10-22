@@ -728,8 +728,12 @@ def analyze_universe(today_only=True, max_symbols=200,
         })
     conn.close()
     errors = sum(1 for row in out if row["analysis_error"])
+    # `n_setups` counts the rows returned, not the size of the scan universe.
+    # Report both so the panel can say "showing 200 of N" instead of implying
+    # the universe is only 200 names.
     return {**status, "n_setups": len(out), "n_errors": errors,
-            "rows": out}
+            "returned": len(out), "universe_total": len(symbols),
+            "max_symbols": max_symbols, "rows": out}
 
 
 def sector_aggregate(max_symbols=200):
