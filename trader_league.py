@@ -982,14 +982,18 @@ def replay(years=None, n_symbols=None, slugs=None, workers=1, fresh=False,
     book_syms = band_universe(conn, limit=n_symbols)
     home_syms = (combined_universe(conn, band_limit=int(C["HOME_BAND_LIMIT"]))
                  if HOME in slugs else [])
+    # F-28: nothing is deleted yet. A crash between a delete here and the work
+    # below (build_context is the known crash point - F-27) used to empty the
+    # book *and* erase the code_hash that `--changed` reads, so the command
+    # meant to repair the book could not see it. The delete now happens after
+    # build_context() succeeds and only when there is work to do. With `fresh`,
+    # an empty prog means every symbol is scheduled over the full window.
     if fresh:
-        for s in slugs:
-            conn.execute("DELETE FROM league_signals WHERE source='replay' "
-                         "AND player=?", (s,))
-            conn.execute("DELETE FROM league_progress WHERE player=?", (s,))
-        conn.commit()
-    prog = {(p, s): (f, l) for p, s, f, l in conn.execute(
-        "SELECT player, symbol, first_date, last_date FROM league_progress")}
+        prog = {}
+    else:
+        prog = {(p, s): (f, l) for p, s, f, l in conn.execute(
+            "SELECT player, symbol, first_date, last_date "
+            "FROM league_progress")}
     tasks = {}
     for p in slugs:
         univ = home_syms if p == HOME else book_syms
@@ -1009,6 +1013,16 @@ def replay(years=None, n_symbols=None, slugs=None, workers=1, fresh=False,
     if todo:
         ctx = build_context(conn, start, end, slugs, book_syms, home_syms)
         say(f"  benchmark : {ctx['bench_label']}")
+        if fresh:
+            # Safe point: the context is built, the work list is known, and the
+            # process is about to write. Only now is clearing the old rows the
+            # right thing to do (F-28).
+            for s in slugs:
+                conn.execute("DELETE FROM league_signals "
+                             "WHERE source='replay' AND player=?", (s,))
+                conn.execute("DELETE FROM league_progress WHERE player=?",
+                             (s,))
+            conn.commit()
         hashes = {p: _code_hash(p) for p in slugs}
         t0 = time.time()
         n_rows = n_err = n_calls = 0

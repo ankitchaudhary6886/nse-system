@@ -1,6 +1,6 @@
 {
  "root": "C:\\Users\\Ankit\\Desktop\\nse_system",
- "module_count": 314,
+ "module_count": 317,
  "modules": {
   ".agents/build_cache.py": {
    "lines": 450,
@@ -922,8 +922,8 @@
    "imported_by": []
   },
   "db.py": {
-   "lines": 363,
-   "bytes": 13787,
+   "lines": 394,
+   "bytes": 15187,
    "doc": "",
    "functions": [
     "_migrate",
@@ -983,6 +983,7 @@
     "nse_eod_ingest.py",
     "pattern_grader.py",
     "patterns.py",
+    "playbook_engine.py",
     "pledge_ingest.py",
     "positional_scanner.py",
     "purge_stale_artifacts.py",
@@ -4876,6 +4877,92 @@
     "terminal_api.py"
    ]
   },
+  "playbook.py": {
+   "lines": 1038,
+   "bytes": 38913,
+   "doc": "Playbook \u2014 exact, book-sourced swing setups as machine-checkable rules. WHY THIS FILE EXISTS -------------------- The Trader League answers \"which book made money\". It cannot answer \"which stocks satisfy a specific rule today, and why\". This module is the rule layer: one pure function per setup, eve",
+   "functions": [
+    "tick_size",
+    "_sma",
+    "_atr_wilder",
+    "build_indicators",
+    "_exit_block",
+    "_signal",
+    "_vol_ok",
+    "_near_high",
+    "_trend_template",
+    "detect_donchian_20",
+    "detect_high_52w",
+    "detect_cup_handle",
+    "_pivots",
+    "detect_vcp",
+    "detect_high_tight_flag",
+    "detect_flat_base",
+    "detect_ascending_base",
+    "detect_ma_50_200",
+    "detect_death_cross",
+    "detect_momentum_12_1",
+    "detect_low_vol_momentum",
+    "i_bars",
+    "detect_all",
+    "detect_warnings",
+    "strategy_meta"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [],
+   "imports_third_party": [
+    "numpy",
+    "pandas"
+   ],
+   "imported_by": [
+    "playbook_engine.py"
+   ]
+  },
+  "playbook_engine.py": {
+   "lines": 641,
+   "bytes": 23143,
+   "doc": "Playbook engine \u2014 scan, tag, search, and walk-forward backtest. This is the C10/C11 bridge between ``playbook.py`` (pure rules) and the terminal. It owns every database read/write and the two long-running jobs: scan \u2014 evaluate every live rule on the current universe, persist one row per (as_of, symb",
+   "functions": [
+    "_now",
+    "scan_status",
+    "backtest_status",
+    "_set_scan",
+    "_set_bt",
+    "_safe_float",
+    "load_arrays",
+    "_universe",
+    "_pct_rank",
+    "_momentum",
+    "_volatility",
+    "scan",
+    "_row_from_signal",
+    "persist",
+    "latest_as_of",
+    "signals",
+    "_json",
+    "symbol_tags",
+    "_latest_backtests",
+    "strategies_with_stats",
+    "start_backtest",
+    "_candidates",
+    "_run_backtest",
+    "_simulate",
+    "_stats_row",
+    "backtests"
+   ],
+   "classes": [],
+   "has_cli": false,
+   "imports_local": [
+    "db",
+    "playbook",
+    "universe_helper"
+   ],
+   "imports_third_party": [
+    "numpy"
+   ],
+   "imported_by": []
+  },
   "pledge_ingest.py": {
    "lines": 996,
    "bytes": 49415,
@@ -5485,8 +5572,8 @@
    ]
   },
   "screener_engine.py": {
-   "lines": 257,
-   "bytes": 10167,
+   "lines": 248,
+   "bytes": 9819,
    "doc": "On-Demand Screener \u2014 baseline (Stage-2 + momentum + volume) + VCP/pullback checks. DB-first (prices_daily), Yahoo fallback for unknown symbols (single-symbol mode only). Usage: python screener_engine.py RELIANCE -> full check breakdown for one stock python screener_engine.py scan -> run over top sma",
    "functions": [
     "_from_db",
@@ -5503,11 +5590,9 @@
     "db",
     "scanner",
     "setup",
-    "strategy_config",
     "universe_helper"
    ],
    "imports_third_party": [
-    "numpy",
     "pandas"
    ],
    "imported_by": [
@@ -5778,7 +5863,6 @@
     "backtest.py",
     "exit_policy.py",
     "scanner.py",
-    "screener_engine.py",
     "setup.py",
     "sizing.py",
     "test_swing_exits.py",
@@ -6672,6 +6756,22 @@
    "imports_third_party": [],
    "imported_by": []
   },
+  "test_replay_safety.py": {
+   "lines": 123,
+   "bytes": 4711,
+   "doc": "F-28 - a replay that dies before doing work must not delete anything. 2026-10-23: replay(fresh=True) deleted every stored signal and every league_progress row BEFORE build_context() ran, and build_context then raised NameError (F-27). The books were emptied, and because status() derives ``code_chang",
+   "functions": [],
+   "classes": [
+    "_KeepOpen",
+    "ReplayFreshSafetyTest"
+   ],
+   "has_cli": true,
+   "imports_local": [
+    "trader_league"
+   ],
+   "imports_third_party": [],
+   "imported_by": []
+  },
   "test_research_cockpit.py": {
    "lines": 111,
    "bytes": 4374,
@@ -6826,8 +6926,8 @@
    ]
   },
   "trader_league.py": {
-   "lines": 3110,
-   "bytes": 135709,
+   "lines": 3124,
+   "bytes": 136505,
    "doc": "Trader League \u2014 14 famous-trader books + OUR system compete with Rs 10,00,000 of play money each, on real NSE data. WHY THIS EXISTS \"We have to make something to backtest our system before deploying real money.\" This module is that something. For every player it answers: - What would Rs 10 lakh have",
    "functions": [
     "config",
@@ -6933,7 +7033,8 @@
    ],
    "imported_by": [
     "scheduler_bg.py",
-    "terminal_api.py"
+    "terminal_api.py",
+    "test_replay_safety.py"
    ]
   },
   "traders/__init__.py": {
@@ -7688,6 +7789,7 @@
     "meta_model.py",
     "nse_eod_ingest.py",
     "patterns.py",
+    "playbook_engine.py",
     "pledge_ingest.py",
     "positional_scanner.py",
     "pwin_cache.py",

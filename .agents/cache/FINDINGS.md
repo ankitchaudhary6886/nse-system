@@ -728,7 +728,7 @@ must be exercised through that path, not just imported.
 
 ---
 
-## F-28 · A crashed `--fresh` replay destroys the book's history, then hides it from `--changed` — `OPEN` (2026-10-23)
+## F-28 · A crashed `--fresh` replay destroys the book's history, then hides it from `--changed` — `FIXED` (2026-10-23)
 
 `trader_league.replay()` deletes the player's stored signals **and** its
 `league_progress` rows at lines 985–990 **before** calling `build_context()` at
@@ -751,22 +751,30 @@ strictly worse than the crash that triggered it.
 replayed all 11. `build_context` logged `context ready in 5.5s` — F-27 confirmed
 fixed in production.
 
-**Recommended fix (not yet applied).** Make the destructive step the last thing
-rather than the first:
+**Fix applied (2026-10-23, EXECUTION_LOG #111).** The destructive step is now
+the last thing rather than the first:
 
-1. when `fresh`, compute `prog = {}` instead of deleting the table;
-2. build `tasks` from that;
-3. call `build_context()` **before** any `DELETE`;
-4. delete only once `todo` is known to be non-empty.
+1. `fresh` computes `prog = {}` instead of deleting the table;
+2. `tasks` is built from that (full window for every symbol);
+3. `build_context()` runs **before** any `DELETE`;
+4. the `DELETE` runs only after the context is built and `todo` is non-empty.
 
-That removes the window entirely: a failure before work starts leaves the
-previous replay intact and keeps the hash rows `--changed` depends on.
+If anything fails before the delete - `build_context` included - the previous
+replay is untouched and the hash rows `--changed` depends on are still there.
+
+**Regression test:** `test_replay_safety.py` (2 cases, in-memory DB using the
+real `TABLES` schema). Case 1 makes `build_context` raise and asserts the
+signals and progress rows survive; **against the old code it fails with
+`0 != 1`, reproducing the incident**, and passes after the fix. Case 2 asserts
+a successful fresh replay still clears the old rows, so `fresh` did not become
+a no-op. Suite: 367 tests OK.
 
 **Residual risk, deliberately not guessed at:** a crash *partway through* a
 replay still leaves `league_progress` rows carrying the new hash for the symbols
 already finished, and `code_changed` treats the presence of the current hash
-anywhere in that column as "not stale". Closing that needs a coverage check
-(every symbol present), which is a larger change than this one.
+anywhere in that column as "not stale". A plain `replay` (no `--changed`) fills
+the gaps; `--changed` may under-report. Closing that needs a completed-run
+marker or a coverage check, which is a larger change than this one.
 
 ---
 

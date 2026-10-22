@@ -10,6 +10,37 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #111 - F-28 fixed: a fresh replay can no longer erase a book before it can build - READY · AWAITING DEPLOY
+
+- **The bug.** `replay(fresh=True)` deleted every `league_signals` row and
+  every `league_progress` row for the selected books at the very top of the
+  function, **before** `build_context()`. When `build_context` raised the F-27
+  `NameError`, the books were already empty. Worse, `status()` derives
+  `code_changed` from `league_progress.code_hash`, so the emptied books also
+  became invisible to `replay --changed` - the command that exists to repair
+  them. That is how 11 books sat empty for 18 days.
+- **The fix.** `fresh` now means "schedule every symbol over the full window"
+  (`prog = {}`) instead of "delete now". The `DELETE` moved to the first safe
+  point: after `build_context()` has returned and the work list is non-empty.
+  If anything fails before that point, the stored history is untouched and the
+  hash rows `--changed` depends on survive.
+- **Regression test.** `test_replay_safety.py`, two cases against the real
+  `TABLES` schema in an in-memory DB:
+  1. `build_context` raises -> signals and progress rows must still be there.
+     **Run against the old code it fails with `0 != 1`, i.e. it reproduces the
+     incident**; against the new code it passes.
+  2. a successful fresh replay still clears the old rows - the fix must not
+     turn `fresh` into a no-op.
+- **Residual, documented:** a crash *during* the loop still leaves partial
+  progress rows carrying the new hash, so `--changed` can under-report that
+  book. A plain `replay` (no `--changed`) fills the gaps. Closing that needs a
+  completed-run marker, which was not worth a schema change here.
+- **Not claimed:** no live destructive experiment was run to "prove" the fix -
+  deliberately, because the proof would be another emptied book. The proof is
+  the test that fails on the old code and passes on the new one.
+- **Verification:** `py_compile` clean; `test_replay_safety` 2/2 OK;
+  **367 tests OK, exit 0**.
+
 ### #110 - Screener tab adopted the official strategy; the VCP duplicate is gone - DEPLOYED · VERIFIED
 
 - **Decision (owner, 2026-10-23).** Asked which of the two VCP definitions was
