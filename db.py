@@ -302,6 +302,37 @@ CREATE INDEX IF NOT EXISTS idx_corporate_actions_symbol
 CREATE TABLE IF NOT EXISTS stale_artifact_quarantine (
   artifact TEXT, run_at TEXT, payload TEXT, reason TEXT
 );
+
+-- ============================================================
+-- Playbook (strategy lab): per-day tags + backtest scoreboard
+-- ============================================================
+-- One row = "on this date, this symbol satisfied this rule". These rows are
+-- the strategy tags the search engine reads; they are not trade instructions.
+CREATE TABLE IF NOT EXISTS strategy_signals (
+  as_of TEXT, symbol TEXT, strategy TEXT,
+  direction TEXT, status TEXT, confidence TEXT,
+  entry REAL, stop REAL, target REAL, rr REAL, risk_pct REAL,
+  hold INTEGER, tags TEXT, notes TEXT, params TEXT, indicators TEXT,
+  exits TEXT, overlaps TEXT, created_at TEXT,
+  PRIMARY KEY(as_of, symbol, strategy)
+);
+
+CREATE INDEX IF NOT EXISTS idx_strategy_signals_asof
+  ON strategy_signals(as_of, strategy);
+
+CREATE INDEX IF NOT EXISTS idx_strategy_signals_symbol
+  ON strategy_signals(symbol, as_of);
+
+-- One row per strategy per backtest run. Net of COST_BPS, next-open entries.
+CREATE TABLE IF NOT EXISTS strategy_backtests (
+  run_at TEXT, strategy TEXT, years REAL, universe_n INTEGER,
+  signals INTEGER, wins INTEGER, losses INTEGER,
+  win_rate REAL, avg_win_r REAL, avg_loss_r REAL,
+  expectancy_r REAL, profit_factor REAL, max_dd_r REAL,
+  median_hold INTEGER, best_r REAL, worst_r REAL,
+  cost_bps REAL, step_bars INTEGER, params TEXT, created_at TEXT,
+  PRIMARY KEY(run_at, strategy)
+);
 """
 
 
@@ -334,6 +365,9 @@ MIGRATIONS = [
     # was crossed and the series now mixes bases (must be rebuilt eventually).
     ("price_meta", "basis", "TEXT"),
     ("pwin_daily", "model_version", "TEXT"),
+    # Playbook scan: measured evidence per signal (contractions, pole size,
+    # handle depth, ATR used, etc.), kept separate from the rule parameters.
+    ("strategy_signals", "indicators", "TEXT"),
 ]
 
 

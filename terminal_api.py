@@ -1251,6 +1251,107 @@ def screener_scan_universe_status():
     return state
 
 
+# ============================================================
+# Playbook — rule catalogue, per-stock tags, one-click search, backtest
+# ============================================================
+@app.get("/api/playbook/strategies")
+def playbook_strategies():
+    """Every rule with its book, exact formula, params, live tags and the
+    latest backtest row. This is the one call the Playbook tab renders."""
+    import playbook_engine as pe
+    conn = get_conn()
+    try:
+        return pe.strategies_with_stats(conn)
+    finally:
+        conn.close()
+
+
+@app.get("/api/playbook/signals")
+def playbook_signals(strategy: str | None = None,
+                     symbol: str | None = None,
+                     direction: str | None = None,
+                     as_of: str | None = None,
+                     limit: int = 500):
+    """Tags for the latest scan (or a named date), filtered server-side so a
+    phone never has to download the whole book to answer one click."""
+    import playbook_engine as pe
+    conn = get_conn()
+    try:
+        rows = pe.signals(conn, strategy=strategy, symbol=symbol,
+                          direction=direction, as_of=as_of,
+                          limit=min(max(int(limit), 1), 2000))
+        return {"as_of": as_of or pe.latest_as_of(conn),
+                "count": len(rows), "signals": rows}
+    finally:
+        conn.close()
+
+
+@app.get("/api/playbook/symbol/{symbol}")
+def playbook_symbol(symbol: str):
+    """All strategy tags carried by one stock on the latest scan date."""
+    import playbook_engine as pe
+    conn = get_conn()
+    try:
+        return pe.symbol_tags(conn, symbol)
+    finally:
+        conn.close()
+
+
+@app.post("/api/playbook/scan")
+def playbook_scan(limit: int = Query(900, ge=10, le=2000)):
+    """Start a whole-universe scan in a daemon thread; poll the status route."""
+    import playbook_engine as pe
+    return pe.start_scan(limit=limit)
+
+
+@app.get("/api/playbook/scan/status")
+def playbook_scan_status():
+    import playbook_engine as pe
+    return pe.scan_status()
+
+
+@app.post("/api/playbook/backtest")
+def playbook_backtest(payload: dict = Body(None)):
+    """Walk the selected rules forward. Body: {limit, years, step, strategies}."""
+    import playbook_engine as pe
+    payload = payload or {}
+    try:
+        limit = int(payload.get("limit") or pe.DEFAULT_BACKTEST_LIMIT)
+        years = float(payload.get("years") or pe.DEFAULT_BACKTEST_YEARS)
+        step = int(payload.get("step") or pe.DEFAULT_STEP)
+        strategies = payload.get("strategies") or None
+        if isinstance(strategies, str):
+            strategies = [s.strip() for s in strategies.split(",") if s.strip()]
+        return pe.start_backtest(limit=limit, years=years,
+                                 strategies=strategies, step=step)
+    except (TypeError, ValueError) as exc:
+        return {"started": False,
+                "error": f"bad backtest parameters: {exc}"}
+
+
+@app.get("/api/playbook/backtest/status")
+def playbook_backtest_status():
+    import playbook_engine as pe
+    return pe.backtest_status()
+
+
+@app.get("/api/playbook/backtests")
+def playbook_backtests(strategy: str | None = None, limit: int = 100):
+    """Latest row per strategy plus the raw run history."""
+    import playbook_engine as pe
+    conn = get_conn()
+    try:
+        latest = [x for x in pe._latest_backtests(conn).values()
+                  if pe.is_backtestable(x["strategy"])
+                  and (not strategy or x["strategy"] == strategy)]
+        rows = [r for r in pe.backtests(conn, strategy=strategy,
+                                        limit=min(max(int(limit), 1), 500))
+                if pe.is_backtestable(r["strategy"])]
+        return {"latest": latest, "rows": rows}
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("terminal_api:app", host=API_HOST, port=8000, reload=True)

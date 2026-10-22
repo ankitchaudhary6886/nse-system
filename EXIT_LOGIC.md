@@ -428,3 +428,37 @@ prevent catastrophic loss.
 
 Rule R44 makes this file mandatory. Every new trader adds a
 section before shipping.
+
+---
+
+## Strategy Playbook exit modes (module, not a trader)
+
+The Strategy Playbook is not a League trader and does not register in
+`traders/__init__.py`. It is documented here because its tags carry the same
+R40 `raw.exits` block and the backtest must use the book's exit, not a generic
+3R target. Full rule specs and data caveats: `docs/STRATEGY_PLAYBOOK.md`.
+
+| Rule | Simulated exit | Stop | Time cap |
+|---|---|---|---|
+| Donchian 20 | Close below the prior 10-day low (`ll10`) | Entry − 2×ATR20 | 120 bars |
+| 52-week high | First touch of stop or +22.5% target | Tighter of −7.5% and the 10-day low | 40 bars |
+| Cup with handle | First touch of stop or +22.5% target | Tighter of −7.5% and the handle low | 60 bars |
+| VCP | First touch of stop or 2.5R target | Tighter of 0.5% below the final low and −7% | 40 bars |
+| High tight flag | First touch of stop or the pole-height measured move | Tighter of −6% and the flag low | 30 bars |
+| Flat base | First touch of stop or 2R target | Tighter of the base low and −5% | 45 bars |
+| Ascending base | First touch of stop or 2.25R target | Tighter of the third low and −5% | 50 bars |
+| 50/200 golden cross | Reverse cross: close of the first bar with SMA50 < SMA200 (`reverse_cross`) | Tighter of 3% below SMA200 and −8% | 250 bars |
+| 12-1 momentum | Scan only (cross-sectional) | Entry − 2×ATR20 | 60 bars (research) |
+| Low-vol momentum | Scan only (cross-sectional) | Entry − 2×ATR20 | 60 bars (research) |
+| PEAD | Data pending | — | — |
+| Promoter buying | Data pending | — | — |
+
+**Simulation rules shared by the backtest:** next-bar open entry; skip if the
+open is more than 5% above the signal close, at/below the stop, or (fixed-target
+rules only) at/above the target; stop is assumed hit first when one bar touches
+both levels; a gap through a level fills at the open; 30 bps round-trip cost;
+one open trade per symbol per rule. The target on `ll10` and `reverse_cross`
+signals is a research level only and is not simulated.
+
+**Warnings:** a 50/200 death cross emits a `TOP_WARNING`, not a short. Its
+`rr` and `risk_pct` are null by design (R43).

@@ -95,6 +95,7 @@ function setView(name, options = {}) {
   const titles = {
     funda: "Fundamentals",
     swing: "Swing setups",
+    playbook: "Strategy playbook",
     research: "Company research",
     traders: "Trading methods",
     ledger: "Performance",
@@ -108,6 +109,7 @@ function setView(name, options = {}) {
     const subs = {
       funda: "Long-horizon company quality and valuation research.",
       swing: "Momentum setups and their forward-validation history.",
+      playbook: "Book-exact rules, per-stock tags, and one-click matches.",
       research: "Inspect a symbol's chart, setup, model context, and related evidence.",
       traders: "Browse documented methods and their research scans.",
       ledger: "Review graded signals and strategy-run history.",
@@ -128,6 +130,9 @@ function setView(name, options = {}) {
     }
     if (name === "traders" && typeof window.loadTradersIndex === "function") {
       window.loadTradersIndex();
+    }
+    if (name === "playbook" && typeof window.loadPlaybook === "function") {
+      window.loadPlaybook();
     }
     if (name === "league" && typeof window.loadLeague === "function") {
       window.loadLeague();
@@ -2102,6 +2107,9 @@ async function refreshAll(initialLoad = false) {
     if (view === "ledger") tasks.push(loadLedger);
     if (view === "traders" && window.loadTradersIndex) {
       tasks.push(window.loadTradersIndex);
+    }
+    if (view === "playbook" && window.loadPlaybook) {
+      tasks.push(window.loadPlaybook);
     }
     if (view === "league" && window.loadLeague) {
       tasks.push(window.loadLeague);
