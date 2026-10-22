@@ -10,7 +10,7 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
-### #109 - Phase 1 close-out: delete the write-only weight from radar and the universe payload - READY · AWAITING DEPLOY
+### #109 - Phase 1 close-out: delete the write-only weight from radar and the universe payload - DEPLOYED · VERIFIED
 
 - **Why:** Phase 1's own deliverable is "a portal that is fast to use". The nav
   and noise work (#106) is done; what remained from the clutter audit was
@@ -48,6 +48,12 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
   and `/api/research-universe` 52 rows × 13 keys; full suite **365 tests, OK,
   exit 0**. No `?v=` bump — no static JS or CSS changed, and `index.html` is not
   cache-busted.
+- **Deploy:** the VM pulled `e5b3556`; `Active: active (running)` and
+  `/api/health` **200**. Confirmed **in production**, not merely locally:
+  `/api/radar` now contains `groups` and `total` and **zero** `events` keys;
+  `/api/research-universe` contains 52 × `pct_from_52w_high` and **zero**
+  `current_setup`. The restart did not disturb the running League replay (a
+  separate detached process), which kept advancing through the deploy.
 
 ### #108 - The F-15 deploy exposed two League defects: F-27 fixed, F-28 recorded - DEPLOYED · VERIFIED
 
