@@ -452,5 +452,20 @@ the table above can be read as the evidence trail rather than as a to-do list.
 - **Items 26, 27, 29 and §3.2 items 1, 3, 4, 5: still owner-gated.** They were
   not touched.
 
-**Still open from §2/§3:** §3.1 items 2, 4, 6, 7, 8, 9, 10, 11 and §3.2's
-orphan-selector audit remain unstarted; `#screenerBadge` was not removed.
+**§3.1 applied 2026-10-23 (EXECUTION_LOG #109)** — every claim below was
+re-verified against the tree first, because several audit lines had drifted:
+
+| §3.1 # | Result |
+|---|---|
+| **1** `#screenerBadge` | **Deleted.** Confirmed it had exactly one reference (index.html) before removing it. |
+| **2** `deployment.js` | **Already gone** (F-08). The file does not exist and nothing references it — nothing to delete. |
+| **3** `/api/radar` → `events` | **Deleted, including its per-request DB query.** Verified live: `/api/radar` now returns only `groups, total` (1,535 symbols, groups intact). |
+| **4** radar `x.sector` read | **Left alone.** `app.js` reads it in two renderers and `renderUnifiedCard` is shared; removing one dead `|| ""` is not worth the blast radius. |
+| **5** six universe fields | **Deleted** `latest_close`, `pct_from_52w_low`, `p_4r`, `p95_mfe_r`, `p5_mae_r`, `current_setup` from `analyze_universe`. Verified live: 52 rows and 13 row keys, with `pct_from_52w_high` kept because the table *does* render it. Note the audit's count was right for the **universe** payload only — `research.js` genuinely uses these fields on the symbol-detail endpoint, so a blind repo-wide grep would have been misleading. |
+| **6** `#methodologyBlock` id | **Dropped the id, kept the `<details>`** as documented. |
+| **7** duplicate globals | **`loadDeployment` resolved** by `deployment.js` being gone. `_safeId` and `_num` deliberately left: deleting the shadowed copy would make one script depend on another's load order — trading one latent hazard for a different one. |
+| **8** 14 uncalled routes | **Still owner-gated** (§3.2 #3). Not touched. |
+
+**Still open:** §3.1 item 8 (owner-gated with §3.2 #3), the §4 silent caps
+(`total`/coverage fields — the next workstream), and §3.2's orphan-selector
+audit.

@@ -834,22 +834,13 @@ def radar():
             groups["Turnaround"].append(item)
     for k in groups:
         groups[k] = groups[k][:40]
-    events = []
-    try:
-        erows = conn.execute(
-            "SELECT kind, symbol, text FROM events "
-            "WHERE date=(SELECT MAX(date) FROM events) LIMIT 30").fetchall()
-        for kind, sym, text in erows:
-            events.append({"kind": kind, "symbol": sym, "text": text})
-    except Exception:
-        pass
     pw = pwin_cache.get_map(conn)
     conn.close()
     for k in groups:
         for item in groups[k]:
             item["p_win"] = pw.get(item["symbol"])
         groups[k].sort(key=lambda x: -(x["p_win"] if x["p_win"] is not None else -1))
-    return {"groups": groups, "events": events, "total": len(rows)}
+    return {"groups": groups, "total": len(rows)}
 
 
 @app.get("/api/trend")

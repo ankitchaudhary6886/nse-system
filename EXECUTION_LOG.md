@@ -10,6 +10,45 @@ Status legend: DEPLOYED · VERIFIED · PARTIAL · REJECTED · AWAITING
 
 ## RECENT - last 6 entries (full text)
 
+### #109 - Phase 1 close-out: delete the write-only weight from radar and the universe payload - READY · AWAITING DEPLOY
+
+- **Why:** Phase 1's own deliverable is "a portal that is fast to use". The nav
+  and noise work (#106) is done; what remained from the clutter audit was
+  weight that is **paid for on every request** and never read.
+
+- **Deleted** — each re-verified against the tree first, because several audit
+  lines had drifted:
+  - **`/api/radar` → `events`.** A `SELECT … FROM events` ran on *every* radar
+    call, built a list, and shipped it in the JSON. No frontend file reads
+    `.events`. Query and key both removed. Live check: the endpoint now returns
+    exactly `groups, total` (1,535 symbols, all three groups intact).
+  - **Six fields from `/api/research-universe`** — `latest_close`,
+    `pct_from_52w_low`, `p_4r`, `p95_mfe_r`, `p5_mae_r`, `current_setup`. The
+    universe table's `_COLUMNS` renders none of them; it *does* render
+    `pct_from_52w_high`, which was kept. Live check: 52 rows × 13 row keys.
+    **Nuance worth keeping:** `research.js` genuinely uses all six on the
+    **symbol-detail** endpoint, which is a different builder (`analyze_symbol`,
+    not `analyze_universe`). The audit was right only for the universe payload,
+    so a blind repo-wide "unused field" grep would have been wrong in both
+    directions.
+  - **`#screenerBadge`** — a stray "—" badge nothing ever wrote to and the
+    first screener run destroyed. Exactly one reference, confirmed before
+    removal.
+  - **`#methodologyBlock` id** — an unused id only; the `<details>` block stays.
+
+- **Deliberately not changed, with the reason recorded in the audit:**
+  `deployment.js` was **already gone** (F-08), so that item needed nothing.
+  The radar `x.sector` read was left — `renderUnifiedCard` is shared and one
+  dead `|| ""` is not worth the blast radius. The `_safeId` / `_num` duplicate
+  globals were left because deleting the shadowed copy only trades a duplicate
+  for a load-order dependency. The 14 uncalled routes remain owner-gated.
+
+- **Verification:** `py_compile` clean on both touched modules; a live uvicorn
+  smoke test returned `/api/health` **200**, `/api/radar` keys `groups,total`,
+  and `/api/research-universe` 52 rows × 13 keys; full suite **365 tests, OK,
+  exit 0**. No `?v=` bump — no static JS or CSS changed, and `index.html` is not
+  cache-busted.
+
 ### #108 - The F-15 deploy exposed two League defects: F-27 fixed, F-28 recorded - DEPLOYED · VERIFIED
 
 - **What happened.** The #107 deploy itself was healthy — service active,
