@@ -614,7 +614,9 @@ def detect_high_52w(ctx):
     """52-week (or all-time) high with trend template and volume."""
     h, l, c, v, ind, i = (ctx["h"], ctx["l"], ctx["c"], ctx["v"],
                           ctx["ind"], ctx["i"])
-    if i < 253:
+    # hh252 at i is the high of the 252 PRIOR bars (shifted), so index 252 is
+    # the first bar that has a complete window. 253 skipped one valid session.
+    if i < 252:
         return None
     hh = ind["hh252"][i]
     if not np.isfinite(hh):
@@ -778,7 +780,8 @@ def detect_vcp(ctx):
     ok, why = _trend_template(c, l, h, ind, i, ctx.get("rs_pct"))
     if not ok:
         return None
-    start = max(0, i - 120)
+    # 120 bars including the decision bar. ``i - 120`` would use 121.
+    start = max(0, i - 119)
     piv = _zigzag(h, l, start, i, pct=0.04)
     piv_h = [(j, p) for j, t, p in piv if t == "H"]
     piv_l = [(j, p) for j, t, p in piv if t == "L"]
@@ -810,7 +813,10 @@ def detect_vcp(ctx):
         low_px.append(q)
     if len(depths) < 2:
         return None
-    depths = depths[-6:]
+    # Minervini's VCP has 2-6 contractions. Taking the last six out of eight
+    # would silently change the pattern instead of rejecting it.
+    if len(depths) > 6:
+        return None
     lows = lows[-6:]
     low_px = low_px[-6:]
     # VCP lows must rise (a 2% undercut is tolerated as noise).
@@ -868,7 +874,9 @@ def detect_high_tight_flag(ctx):
     pole_lo = None
     pole_idx = None
     best_gain = 0.0
-    for j in range(max(0, i - 42), i - 14):
+    # flag_len = i - (pole_idx + 1) must be 15..25, so the pole high can only
+    # be 16..26 bars back. Scanning older bars could never pass the length gate.
+    for j in range(max(0, i - 26), i - 15):
         lo_j = max(0, j - 40)
         base = float(np.min(l[lo_j:j + 1]))
         if base <= 0:
@@ -892,7 +900,10 @@ def detect_high_tight_flag(ctx):
     if depth > 0.25:
         return None
     pole_vol = float(np.mean(v[max(0, pole_idx - 20):pole_idx + 1]))
-    flag_vol = float(np.mean(v[flag_start:i + 1]))
+    # Flag volume must exclude today's breakout bar. Including it lets the
+    # breakout's own expansion masquerade as flag supply and reject a valid
+    # flag; it also makes the ratio depend on the confirmation bar.
+    flag_vol = float(np.mean(v[flag_start:i]))
     if pole_vol <= 0 or flag_vol > 0.70 * pole_vol:
         return None
     pivot = float(np.max(h[flag_start:i]))

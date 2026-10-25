@@ -279,7 +279,7 @@ function pbRenderSignals(rows, title, note) {
   }).join("");
 }
 
-function pbShowDetail(row) {
+function pbShowDetail(row, opts = {}) {
   const panel = document.getElementById("pbDetailPanel");
   if (!panel) return;
   PB.selected = row;
@@ -340,7 +340,9 @@ function pbShowDetail(row) {
     ${indicators}
     ${params}`;
   panel.hidden = false;
-  panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (opts.scroll !== false) {
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 // ------------------------------------------------------------------- load ---
@@ -353,10 +355,11 @@ async function pbLoadSignals(strategy, title, note) {
   return data;
 }
 
-async function loadPlaybook() {
+async function loadPlaybook(opts = {}) {
   if (PB.loading) return;
   PB.loading = true;
   const grid = document.getElementById("pbStrategyGrid");
+  const keepKey = PB.selected ? pbKey(PB.selected) : null;
   try {
     if (grid && !PB.data) grid.innerHTML = `<p class="pb-empty">Loading the rule catalogue…</p>`;
     const data = await api("/api/playbook/strategies");
@@ -364,11 +367,25 @@ async function loadPlaybook() {
     pbRenderCatalogue(data.strategies || []);
     pbRenderBacktests(data.strategies || []);
     pbRenderJobStatus(data);
-    if (!PB.selected) {
+    // A finished scan/backtest must replace the table even when a row is
+    // selected; otherwise the old tags stay on screen under the new date.
+    if (opts.reloadSignals || !PB.selected) {
       const title = PB.filter
         ? `Matches: ${pbMeta(PB.filter).name}`
         : "Latest tags";
       await pbLoadSignals(PB.filter, title);
+    }
+    if (keepKey && opts.reloadSignals) {
+      const row = PB.signals.find((x) => pbKey(x) === keepKey);
+      if (row) {
+        pbShowDetail(row, { scroll: false });
+      } else {
+        // The selected tag no longer exists in the new snapshot. Clear the
+        // detail panel instead of showing a ghost from the previous scan.
+        PB.selected = null;
+        const panel = document.getElementById("pbDetailPanel");
+        if (panel) panel.hidden = true;
+      }
     }
   } catch (err) {
     if (grid) grid.innerHTML = `<p class="pb-empty">Could not load the playbook: ${pbEsc(err.message)}</p>`;
@@ -392,7 +409,7 @@ function pbPollScan() {
         clearInterval(PB.scanTimer);
         PB.scanTimer = null;
         if (btn) btn.disabled = false;
-        await loadPlaybook();
+        await loadPlaybook({ reloadSignals: true });
       }
     } catch (err) {
       clearInterval(PB.scanTimer);
@@ -415,7 +432,7 @@ function pbPollBacktest() {
         clearInterval(PB.btTimer);
         PB.btTimer = null;
         if (btn) btn.disabled = false;
-        await loadPlaybook();
+        await loadPlaybook({ reloadSignals: true });
       }
     } catch (err) {
       clearInterval(PB.btTimer);

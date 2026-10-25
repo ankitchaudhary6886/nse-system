@@ -40,6 +40,18 @@ DEFAULT_BACKTEST_LIMIT = 150
 DEFAULT_BACKTEST_YEARS = 3
 DEFAULT_STEP = 1
 
+# The backtest's cheap shape prefilter must never delete a valid setup. A cup
+# breakout clears the handle, not the old cup rim; an HTF flag can sit 25%
+# under the pole high; a VCP's final pivot can be below an earlier contraction
+# high. These are the lowest plausible close/high ratios for each rule.
+_SHAPE_PREFILTER = {
+    "cup_handle": 0.65,
+    "high_tight_flag": 0.70,
+    "vcp": 0.75,
+    "flat_base": 0.95,
+    "ascending_base": 0.95,
+}
+
 
 # ============================================================
 # Job state (one scan + one backtest at a time)
@@ -213,6 +225,36 @@ def _volatility(bars, window=60):
     return float(np.std(ret))
 
 
+def _cross_sectional_rs(loaded):
+    """Attach a per-date 12-1 momentum percentile to every loaded symbol.
+
+    The live scan ranks the universe on one date. A walk-forward backtest must
+    do the same on EVERY candidate date, otherwise the 52-week and VCP rules
+    silently drop the RS >= 70th percentile gate. Returns nothing; each bars
+    dict gets ``_rs`` (a float array aligned to its dates, NaN when the symbol
+    has no 12-month window on that date).
+    """
+    by_date = {}
+    for bars in loaded:
+        c = bars["c"]
+        n = bars["n"]
+        # i needs 252 prior bars and skips the latest 21: c[i-21]/c[i-252]-1.
+        for i in range(252, n):
+            base = float(c[i - 252])
+            prior = float(c[i - 21])
+            if base > 0 and prior > 0:
+                by_date.setdefault(bars["date"][i], {})[
+                    bars["symbol"]] = prior / base - 1.0
+    ranks = {d: _pct_rank(v) for d, v in by_date.items()}
+    for bars in loaded:
+        arr = np.full(bars["n"], np.nan, dtype=float)
+        for i in range(252, bars["n"]):
+            r = ranks.get(bars["date"][i], {}).get(bars["symbol"])
+            if r is not None:
+                arr[i] = r
+        bars["_rs"] = arr
+
+
 # ============================================================
 # Scan
 # ============================================================
@@ -223,9 +265,9 @@ def scan(conn=None, limit=800, symbols=None, as_of=None):
     same ``as_of`` rows rather than duplicating them.
     """
     own = conn is None
-    if own:
-        conn = db.get_conn()
     try:
+        if own:
+            conn = db.get_conn()
         syms = (list(symbols) if isinstance(symbols, (list, tuple, set))
                 else [symbols]) if symbols else _universe(conn, limit)
         _set_scan(running=True, status="running", total=len(syms),
@@ -291,6 +333,10 @@ def scan(conn=None, limit=800, symbols=None, as_of=None):
                 n_sig += 1
 
         if not rows:
+            # A re-scan that now finds nothing must delete the old tags for this
+            # date. Returning without persisting left yesterday's snapshot in
+            # the search screen labelled as today's.
+            persist(conn, day, [])
             _set_scan(running=False, status="empty", scanned=len(loaded),
                       signals=0, as_of=day, finished_at=_now(),
                       message="No strategy matched on the latest bar.")
@@ -314,7 +360,7 @@ def scan(conn=None, limit=800, symbols=None, as_of=None):
                   finished_at=_now())
         raise
     finally:
-        if own:
+        if own and conn is not None:
             conn.close()
 
 
@@ -529,11 +575,11 @@ def _candidates(bars, sid, step):
     if sid == "high_52w":
         hh = bars["ind"]["hh252"]
         idx = np.where(c[:last + 1] > hh[:last + 1])[0]
-        return [int(i) for i in idx if i >= 253]
+        return [int(i) for i in idx if i >= 252]
     if sid == "ma_50_200":
         s50, s200 = bars["ind"]["sma50"], bars["ind"]["sma200"]
         out = []
-        for i in range(202, last + 1):
+        for i in range(225, last + 1):
             if (np.isfinite(s50[i]) and np.isfinite(s200[i])
                     and s50[i - 1] <= s200[i - 1] and s50[i] > s200[i]):
                 # The rule confirms up to 20 bars AFTER the cross, so those
@@ -541,11 +587,14 @@ def _candidates(bars, sid, step):
                 # pass the 1% buffer.
                 out.extend(range(i, min(i + 21, last + 1)))
         return sorted(set(out))
-    # Shape rules are sampled every `step` bars (default 1 = every bar).
+    # Shape rules are sampled every `step` bars (default 1 = every bar). The
+    # floor is rule-specific: a single 97% cut silently removed valid cup,
+    # VCP and HTF breakouts, which are exactly the rare book setups.
     out = []
+    floor = _SHAPE_PREFILTER.get(sid, 0.90)
     for i in range(260, last + 1, max(1, int(step))):
         lo = max(0, i - 60)
-        if c[i] >= 0.97 * float(np.max(h[lo:i + 1])):
+        if c[i] >= floor * float(np.max(h[lo:i + 1])):
             out.append(i)
     return out
 
@@ -571,6 +620,11 @@ def _run_backtest(limit, years, strategies, step):
                 loaded.append(bars)
             if n % 25 == 0:
                 _set_bt(done=n, message=f"Loaded {n}/{len(syms)}.")
+        # The 52-week and VCP trend templates include an RS gate. Compute the
+        # per-date cross-sectional percentile once, before simulating, so the
+        # walk-forward is the same rule the live scan runs.
+        _set_bt(message="Ranking relative strength by date.")
+        _cross_sectional_rs(loaded)
         trades = {sid: [] for sid in ids}
         total_work = max(1, len(loaded) * len(ids))
         done = 0
@@ -588,6 +642,9 @@ def _run_backtest(limit, years, strategies, step):
                            "o": bars["o"], "h": bars["h"], "l": bars["l"],
                            "c": bars["c"], "v": bars["v"],
                            "ind": bars["ind"], "i": i}
+                    rs = bars.get("_rs")
+                    if rs is not None and np.isfinite(rs[i]):
+                        ctx["rs_pct"] = float(rs[i])
                     try:
                         sig = fn(ctx)
                     except Exception:
@@ -651,28 +708,38 @@ def _simulate(bars, i, sig):
     risk = entry - stop
     hold = int(sig.get("hold") or 40)
     last = min(n - 1, j + hold - 1)
+    # If the holding window runs past the last bar, a close at the data edge is
+    # a censored observation, not a time exit. Counting it as a completed trade
+    # gives recent entries a free mark and biases the newest backtest.
+    completed = j + hold - 1 <= n - 1
     exit_px = float(bars["c"][last])
     exit_j = last
+    exited = False
     ind = bars.get("ind") or {}
     for k in range(j, last + 1):
         # A gap through either level fills at the open, not at the level.
         if float(bars["o"][k]) <= stop:
             exit_px, exit_j = float(bars["o"][k]), k
+            exited = True
             break
         if mode is None and float(bars["o"][k]) >= target:
             exit_px, exit_j = float(bars["o"][k]), k
+            exited = True
             break
         if float(bars["l"][k]) <= stop:
             exit_px, exit_j = stop, k
+            exited = True
             break
         if mode is None and float(bars["h"][k]) >= target:
             exit_px, exit_j = target, k
+            exited = True
             break
         if mode == "ll10":
             lo = max(0, k - 10)
             channel = float(np.min(bars["l"][lo:k]))
             if k > lo and float(bars["c"][k]) < channel:
                 exit_px, exit_j = float(bars["c"][k]), k
+                exited = True
                 break
         elif mode == "reverse_cross":
             s50 = ind.get("sma50", [None])[k]
@@ -681,7 +748,10 @@ def _simulate(bars, i, sig):
                     and np.isfinite(s50) and np.isfinite(s200)
                     and s50 < s200):
                 exit_px, exit_j = float(bars["c"][k]), k
+                exited = True
                 break
+    if not exited and not completed:
+        return None
     r = (exit_px - entry) / risk - (COST_BPS / 10000.0) * entry / risk
     return {"r": float(r), "hold": int(exit_j - j + 1),
             "entry": entry, "exit": exit_px,

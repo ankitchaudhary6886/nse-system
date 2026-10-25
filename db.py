@@ -314,7 +314,9 @@ CREATE TABLE IF NOT EXISTS strategy_signals (
   entry REAL, stop REAL, target REAL, rr REAL, risk_pct REAL,
   hold INTEGER, tags TEXT, notes TEXT, params TEXT, indicators TEXT,
   exits TEXT, overlaps TEXT, created_at TEXT,
-  PRIMARY KEY(as_of, symbol, strategy)
+  -- direction is part of the key: a death-cross warning and a golden-cross
+  -- entry are different facts and must not overwrite each other.
+  PRIMARY KEY(as_of, symbol, strategy, direction)
 );
 
 CREATE INDEX IF NOT EXISTS idx_strategy_signals_asof
@@ -371,6 +373,68 @@ MIGRATIONS = [
 ]
 
 
+def _strategy_signal_columns(conn, table="strategy_signals"):
+    return [r[1] for r in conn.execute(f"PRAGMA table_info({table})")]
+
+
+def _migrate_signal_pk(conn):
+    """Put ``direction`` in the strategy_signals primary key.
+
+    Old databases were keyed on (as_of, symbol, strategy). A warning and an
+    entry for the same rule could not coexist, and INSERT OR REPLACE silently
+    removed one. SQLite cannot alter a primary key, so the table is rebuilt
+    once; the old copy is kept as ``strategy_signals_pk_backup`` rather than
+    dropped. Idempotent and safe to call on every connection.
+    """
+    info = conn.execute("PRAGMA table_info(strategy_signals)").fetchall()
+    if not info:
+        return
+    pk = [r[1] for r in sorted(info, key=lambda r: r[5]) if r[5]]
+    if "direction" in pk:
+        return
+    cols = _strategy_signal_columns(conn)
+    legacy = "strategy_signals_pk_backup"
+    existing = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'")}
+    if legacy in existing:
+        # A previous attempt left the backup in place. Do not overwrite it.
+        return
+    old_count = conn.execute(
+        "SELECT COUNT(*) FROM strategy_signals").fetchone()[0]
+    try:
+        conn.execute(f"ALTER TABLE strategy_signals RENAME TO {legacy}")
+        conn.execute("DROP INDEX IF EXISTS idx_strategy_signals_asof")
+        conn.execute("DROP INDEX IF EXISTS idx_strategy_signals_symbol")
+        conn.execute("""
+            CREATE TABLE strategy_signals (
+              as_of TEXT, symbol TEXT, strategy TEXT, direction TEXT,
+              status TEXT, confidence TEXT,
+              entry REAL, stop REAL, target REAL, rr REAL, risk_pct REAL,
+              hold INTEGER, tags TEXT, notes TEXT, params TEXT,
+              indicators TEXT, exits TEXT, overlaps TEXT, created_at TEXT,
+              PRIMARY KEY(as_of, symbol, strategy, direction)
+            )""")
+        collist = ",".join(cols)
+        conn.execute(
+            f"INSERT OR REPLACE INTO strategy_signals({collist}) "
+            f"SELECT {collist} FROM {legacy}")
+        new_count = conn.execute(
+            "SELECT COUNT(*) FROM strategy_signals").fetchone()[0]
+        if new_count != old_count:
+            raise RuntimeError(
+                f"strategy_signals migration kept {new_count}/{old_count} rows")
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_strategy_signals_asof "
+            "ON strategy_signals(as_of, strategy)")
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_strategy_signals_symbol "
+            "ON strategy_signals(symbol, as_of)")
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
 def _migrate(conn):
     """Apply column additions idempotently. Safe on every connection."""
     try:
@@ -384,6 +448,7 @@ def _migrate(conn):
             except Exception:
                 # Table may not exist yet on first run; SCHEMA just made it.
                 pass
+        _migrate_signal_pk(conn)
         conn.commit()
     except Exception:
         pass

@@ -31,7 +31,7 @@ identification-only. Rule R43 still applies: no shorting; a death cross is a
 | `terminal/static/playbook.css` | Scoped Playbook layout; no global selectors. |
 | `terminal/static/index.html` | Playbook top-level tab, nav entry, section markup, asset tags. |
 | `terminal/static/app.js` | View switching, title hooks, Playbook refresh on tab entry. |
-| `test_playbook.py` | 30 synthetic unit tests (rules, exits, data integrity, rank direction). |
+| `test_playbook.py` | 40 synthetic unit tests (rules, exits, data integrity, rank direction, backtest edge cases). |
 | `docs/STRATEGY_PLAYBOOK.md` | This document. |
 
 The module is intentionally **not** a `traders/` package: it has no
@@ -446,11 +446,15 @@ For a signal evaluated on bar `i` (using only data through `i`):
 - **Survivorship bias:** the universe is today's listed companies. Delisted,
   merged, and suspended names are absent, so long-run returns are optimistic.
 - **RS gate:** the scan passes a cross-sectional relative-strength percentile
-  to the 52-week and VCP trend templates. The backtest is per-symbol and does
-  **not** compute that percentile, so the RS gate is absent in the walk-forward.
-  The backtest still applies the price/MA/30%-above-low/within-25%-of-high
-  parts of the template. Do not treat the backtest trade count as the same rule
-  the live scan runs.
+  to the 52-week and VCP trend templates. The walk-forward now builds the same
+  12-1 momentum percentile on **every candidate date** across the loaded
+  universe before simulating. The gate is therefore present, but its sample is
+  the backtest's 150-name universe, not the full live universe; treat the
+  percentile as an approximation of the scan.
+- **Shape prefilter:** the backtest skips bars that are far below their recent
+  high. The floor is rule-specific (cup 65%, HTF 70%, VCP 75%, flat/ascending
+  95%), so the cheap filter does not delete a valid breakout. It is still a
+  prefilter, not the rule.
 - **Stale data:** the local snapshot ends 2026-10-16. The terminal's own
   top-picks gate reports four missing weekdays after that date. Fix the price
   ingest before drawing any live conclusion.
@@ -492,8 +496,10 @@ Reading the table honestly:
 - The golden cross has a low win rate and a positive expectancy because the
   winners are large; the sample is 1,036 trades, but the rule is slow and the
   closed-trade drawdown is 594.3R.
-- The 52-week breakout is negative on this sample after 30 bps and without the
-  scan's RS gate. That is a warning, not a verdict on O'Neil.
+- The 52-week breakout is negative on this sample after 30 bps. The
+  per-date RS gate is now applied, but the 150-name universe makes the
+  percentile coarser than the live scan. That is a warning, not a verdict on
+  O'Neil.
 - Cup, flat base, HTF, ascending, and VCP are too rare on 591 current names
   over 3 years to rank. Their counts are consistent with the detectors working;
   they are not a basis for capital allocation.
@@ -580,7 +586,7 @@ CREATE TABLE strategy_signals (
   entry REAL, stop REAL, target REAL, rr REAL, risk_pct REAL,
   hold INTEGER, tags TEXT, notes TEXT, params TEXT, indicators TEXT,
   exits TEXT, overlaps TEXT, created_at TEXT,
-  PRIMARY KEY(as_of, symbol, strategy)
+  PRIMARY KEY(as_of, symbol, strategy, direction)
 );
 
 CREATE TABLE strategy_backtests (
@@ -596,7 +602,9 @@ CREATE TABLE strategy_backtests (
 
 Indexes: `(as_of, strategy)` and `(symbol, as_of)` on `strategy_signals`.
 The `indicators` column is created by an idempotent migration for existing
-databases; new databases get it from `SCHEMA`.
+databases; new databases get it from `SCHEMA`. Databases created before
+2026-10-26 were keyed without `direction`; `db._migrate_signal_pk` rebuilds
+the table once and keeps the old copy as `strategy_signals_pk_backup`.
 
 `params`, `indicators`, `exits`, `tags`, and `overlaps` are JSON text. The API
 parses them before returning; the raw columns are useful for audit.

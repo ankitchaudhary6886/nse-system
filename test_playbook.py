@@ -15,9 +15,11 @@ import datetime as dt
 import inspect
 import sqlite3
 import unittest
+from unittest import mock
 
 import numpy as np
 
+import db
 import playbook
 import playbook_engine
 
@@ -502,6 +504,162 @@ class ZigzagTests(unittest.TestCase):
         self.assertEqual(types, ["H", "L", "H"])
         for a, b in zip(types, types[1:]):
             self.assertNotEqual(a, b)
+
+
+class BacktestSelectionTests(unittest.TestCase):
+    def test_shape_prefilter_keeps_an_htf_breakout_below_the_pole_high(self):
+        n = 300
+        c = np.full(n, 100.0)
+        h = np.full(n, 101.0)
+        # Pole high 150, flag retraces to 120, breakout at 120. That is 80% of
+        # the 60-bar high: a valid HTF, but a 97% prefilter would delete it.
+        h[250] = 150.0
+        c[-2] = 120.0
+        bars = {"c": c, "h": h, "n": n}
+        idx = playbook_engine._candidates(bars, "high_tight_flag", 1)
+        self.assertIn(n - 2, idx)
+
+    def test_52w_candidate_window_starts_at_bar_252(self):
+        n = 300
+        c = np.full(n, 100.0)
+        c[252] = 120.0
+        bars = {"c": c, "h": np.full(n, 101.0), "n": n,
+                "ind": {"hh252": np.full(n, 100.0)}}
+        idx = playbook_engine._candidates(bars, "high_52w", 1)
+        self.assertIn(252, idx)
+
+    def test_cross_sectional_rs_ranks_each_date(self):
+        dates = [f"2024-{1 + (i // 28):02d}-{1 + (i % 28):02d}"
+                 for i in range(260)]
+        c1 = np.linspace(100, 200, 260)
+        c2 = np.full(260, 100.0)
+        b1 = {"symbol": "AAA", "date": dates, "c": c1, "n": 260}
+        b2 = {"symbol": "BBB", "date": dates, "c": c2, "n": 260}
+        playbook_engine._cross_sectional_rs([b1, b2])
+        self.assertAlmostEqual(float(b1["_rs"][259]), 1.0, places=6)
+        self.assertAlmostEqual(float(b2["_rs"][259]), 0.0, places=6)
+        self.assertTrue(np.isnan(b1["_rs"][251]))
+
+    def test_vcp_rejects_more_than_six_contractions(self):
+        bars = make_bars(np.linspace(100, 120, 130))
+        ctx = ctx_at(bars, 129)
+        piv = []
+        for k in range(7):
+            piv.append((10 + k * 10, "H", 100.0 + k))
+            piv.append((15 + k * 10, "L", 90.0 + k))
+        piv.append((90, "H", 106.0))
+        with mock.patch.object(playbook, "_zigzag", return_value=piv), \
+             mock.patch.object(playbook, "_trend_template",
+                               return_value=(True, "ok")):
+            self.assertIsNone(playbook.detect_vcp(ctx))
+
+
+class ScanPersistenceTests(unittest.TestCase):
+    DDL = """CREATE TABLE strategy_signals (
+        as_of TEXT, symbol TEXT, strategy TEXT, direction TEXT,
+        status TEXT, confidence TEXT, entry REAL, stop REAL, target REAL,
+        rr REAL, risk_pct REAL, hold INTEGER, tags TEXT, notes TEXT,
+        params TEXT, indicators TEXT, exits TEXT, overlaps TEXT,
+        created_at TEXT,
+        PRIMARY KEY(as_of, symbol, strategy, direction))"""
+
+    def _conn(self):
+        conn = sqlite3.connect(":memory:")
+        conn.execute(self.DDL)
+        return conn
+
+    def _bars(self, day):
+        n = 260
+        c = np.linspace(100, 120, n)
+        return {"symbol": "AAA", "date": [day] * n,
+                "o": c, "h": c * 1.01, "l": c * 0.99, "c": c,
+                "v": np.full(n, 1e6), "n": n,
+                "ind": playbook.build_indicators(c, c * 1.01, c * 0.99, c,
+                                                 np.full(n, 1e6))}
+
+    def test_empty_rescan_deletes_the_same_days_old_tags(self):
+        conn = self._conn()
+        conn.execute(
+            "INSERT INTO strategy_signals(as_of, symbol, strategy, direction) "
+            "VALUES('2026-10-23','AAA','donchian_20','LONG_ENTRY')")
+        conn.commit()
+        with mock.patch.object(playbook_engine, "load_arrays",
+                               return_value=self._bars("2026-10-23")), \
+             mock.patch.object(playbook, "detect_all", return_value=[]), \
+             mock.patch.object(playbook, "detect_warnings", return_value=[]):
+            result = playbook_engine.scan(conn, symbols=["AAA"])
+        self.assertEqual(result["signals"], 0)
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM strategy_signals").fetchone()[0], 0)
+
+    def test_unexpected_load_failure_clears_running_state(self):
+        playbook_engine._set_scan(running=False, status="idle")
+        with mock.patch.object(playbook_engine.db, "get_conn",
+                               side_effect=RuntimeError("db unavailable")):
+            with self.assertRaises(RuntimeError):
+                playbook_engine.scan()
+        status = playbook_engine.scan_status()
+        self.assertFalse(status["running"])
+        self.assertEqual(status["status"], "error")
+
+
+class SignalKeyMigrationTests(unittest.TestCase):
+    OLD = """CREATE TABLE strategy_signals (
+        as_of TEXT, symbol TEXT, strategy TEXT, direction TEXT,
+        status TEXT, confidence TEXT, entry REAL, stop REAL, target REAL,
+        rr REAL, risk_pct REAL, hold INTEGER, tags TEXT, notes TEXT,
+        params TEXT, indicators TEXT, exits TEXT, overlaps TEXT,
+        created_at TEXT,
+        PRIMARY KEY(as_of, symbol, strategy))"""
+
+    def test_direction_becomes_part_of_the_key(self):
+        conn = sqlite3.connect(":memory:")
+        conn.execute(self.OLD)
+        conn.execute(
+            "INSERT INTO strategy_signals(as_of, symbol, strategy, direction) "
+            "VALUES('2026-10-23','AAA','ma_50_200','LONG_ENTRY')")
+        conn.commit()
+        db._migrate_signal_pk(conn)
+        pk = [r[1] for r in sorted(
+            conn.execute("PRAGMA table_info(strategy_signals)").fetchall(),
+            key=lambda r: r[5]) if r[5]]
+        self.assertIn("direction", pk)
+        conn.execute(
+            "INSERT INTO strategy_signals(as_of, symbol, strategy, direction) "
+            "VALUES('2026-10-23','AAA','ma_50_200','TOP_WARNING')")
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM strategy_signals").fetchone()[0], 2)
+
+
+class EdgeSimulationTests(unittest.TestCase):
+    def _bars(self, n):
+        c = np.full(n, 100.0)
+        return {"o": c.copy(), "h": c + 1, "l": c - 1, "c": c,
+                "v": np.full(n, 1e6), "n": n,
+                "date": [f"2024-03-{i + 1:02d}" for i in range(n)]}
+
+    def test_open_trade_is_not_force_closed_at_the_data_edge(self):
+        sig = {"entry": 100.0, "stop": 90.0, "target": 110.0, "hold": 10}
+        self.assertIsNone(playbook_engine._simulate(self._bars(4), 0, sig))
+
+    def test_time_exit_is_used_when_the_window_is_complete(self):
+        sig = {"entry": 100.0, "stop": 90.0, "target": 110.0, "hold": 3}
+        trade = playbook_engine._simulate(self._bars(4), 0, sig)
+        self.assertIsNotNone(trade)
+        self.assertEqual(trade["hold"], 3)
+
+
+class FlagVolumeTests(unittest.TestCase):
+    def test_breakout_bar_volume_is_not_part_of_flag_supply(self):
+        bars = htf_bars()
+        o, h, l, c, v = bars
+        v = v.copy()
+        # A huge breakout bar must pass the 1.4x gate, not poison the flag
+        # average (which is measured before the breakout).
+        v[-1] = 1e9
+        sig = playbook.detect_high_tight_flag(
+            ctx_at((o, h, l, c, v), len(c) - 1))
+        self.assertIsNotNone(sig)
 
 
 if __name__ == "__main__":
