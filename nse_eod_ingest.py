@@ -427,6 +427,19 @@ def ingest_date(conn, date: str, session: Optional[requests.Session] = None,
         _sync(conn, date, "error", error=str(exc))
         return result
     prices = parse_sec_bhav(text)
+    # The archive occasionally serves the previous session's CSV for a date on
+    # which the exchange did not trade (a holiday), returning HTTP 200 with the
+    # wrong DATE1. Writing those rows would mark the date synced while leaving a
+    # hole in prices_daily. Validate the file's own date before writing anything.
+    wrong_dates = sorted({str(r.get("date")) for r in prices
+                          if r.get("date") != date})
+    if prices and wrong_dates:
+        detail = (f"archive returned bars dated {','.join(wrong_dates[:3])} "
+                  f"for requested {date}")
+        result.update({"status": "missing", "reason": detail,
+                       "wrong_dates": wrong_dates[:10]})
+        _sync(conn, date, "missing", rows=0, delivery=0, error=detail)
+        return result
     written = ingest_prices(conn, prices)
     if not prices or int(written.get("rows") or 0) <= 0:
         # A file with no rows for our universe is not a successful sync. If it

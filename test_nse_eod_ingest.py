@@ -154,6 +154,23 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(conn.execute(
             "SELECT COUNT(*) FROM prices_daily").fetchone()[0], 0)
 
+    def test_archive_serving_wrong_date_is_not_marked_ok(self):
+        # On a holiday the archive can return HTTP 200 with the previous
+        # session's CSV. It must not be written or marked as synced.
+        conn = memory_db()
+        session = FakeSession({"sec_bhavdata_full": SEC_BHAV_CSV,
+                               "ind_close_all": INDEX_CSV})
+        result = ne.ingest_date(conn, "2026-10-20", session=session)
+        self.assertEqual(result["status"], "missing")
+        self.assertIn("2026-10-16", result["reason"])
+        sync = conn.execute(
+            "SELECT status, rows FROM nse_eod_sync WHERE date='2026-10-20'"
+        ).fetchone()
+        self.assertEqual(sync[0], "missing")
+        self.assertEqual(sync[1], 0)
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM prices_daily").fetchone()[0], 0)
+
     def test_ingest_skips_foreign_symbols(self):
         conn = memory_db()
         text = SEC_BHAV_CSV.replace("SBIN", "FOREIGN").replace("TCS", "OTHER")
@@ -195,10 +212,18 @@ class IngestTests(unittest.TestCase):
             "VALUES (?,?,0)",
             [("2026-10-15", "missing"), ("2026-10-16", "error")])
         conn.commit()
-        session = FakeSession({"sec_bhavdata_full": SEC_BHAV_CSV,
-                               "ind_close_all": INDEX_CSV})
+        session = FakeSession({})
+
+        def fake_text(_session, url, timeout=30):
+            if "sec_bhavdata_full_" in url:
+                stamp = url.split("sec_bhavdata_full_")[1][:8]
+                day = dt.datetime.strptime(stamp, "%d%m%Y").strftime("%d-%b-%Y")
+                return SEC_BHAV_CSV.replace("16-Oct-2026", day)
+            return INDEX_CSV
+
         with mock.patch.object(ne, "today_ist",
-                               return_value=dt.date(2026, 10, 16)):
+                               return_value=dt.date(2026, 10, 16)), \
+             mock.patch.object(ne, "_text", side_effect=fake_text):
             first = ne.catch_up(conn, days_back=1, session=session,
                                 include_today=True)
             second = ne.catch_up(conn, days_back=1, session=session,
