@@ -60,13 +60,41 @@ def _fyers():
     return result
 
 
+def _prices():
+    """Run the price ingest and refuse to log a misleading OK when stale.
+
+    ``_safe`` only sees exceptions. The old chain therefore printed
+    ``OK prices`` even when the whole market spine had not advanced. This
+    wrapper checks the external session clock after the fetch and raises if the
+    expected bar is still missing, so the daily summary reports a failure and
+    the operator sees the real state.
+    """
+    import db
+    import ingest_prices
+    import data_freshness
+    failed = ingest_prices.run(show_every=0)
+    conn = db.get_conn()
+    try:
+        assessment = data_freshness.assess(conn)
+    finally:
+        conn.close()
+    if not assessment.get("fresh"):
+        raise RuntimeError(
+            f"price spine stale after ingest: {assessment.get('message')}")
+    if failed:
+        log.warning(f"PRICES PARTIAL: {len(failed)} symbols still failed; "
+                    f"market spine is current through "
+                    f"{assessment.get('latest')}")
+    return {"failed": len(failed or []),
+            "latest": assessment.get("latest")}
+
+
 def run():
     log.info("=" * 50)
     log.info("DAILY UPDATE START")
     results = {}
     results["fyers"] = _safe("fyers", _fyers)
-    results["prices"] = _safe(
-        "prices", lambda: __import__("ingest_prices").run(show_every=0))
+    results["prices"] = _safe("prices", _prices)
     results["technicals"] = _safe(
         "technicals", lambda: __import__("technicals").compute_all())
     # Breadth must be computed after bars exist: it is the second half of the

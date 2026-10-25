@@ -21,8 +21,9 @@ sectors) — everything the daily-bar swing system needs — with zero credentia
 churn. Fyers remains an optional upgrade, not a dependency.
 
 HYGIENE
-- One file per trading day, so a missing file is simply a holiday: recorded as
-  status 'holiday', never treated as stale data.
+- One file per trading day. A 404 is recorded as 'missing', never as a holiday:
+  the archive can lag, and a transient 404 must be retried. Real exchange
+  holidays simply stay 'missing' after retry; they are harmless.
 - Only symbols in our own universe are written; foreign rows are counted and
   dropped, so the price store cannot silently grow a second universe.
 - Official prices are RAW (unadjusted). Each adopted symbol gets
@@ -72,6 +73,26 @@ INDEX_NAME_MAP = {
     "NIFTY NEXT 50": "NIFTYNEXT50",
 }
 WEEKDAYS = (0, 1, 2, 3, 4)
+IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
+# NSE publishes the full bhavcopy in the evening. Before this time a 404 for
+# today is expected, not a failure, so catch-up must not probe today.
+PUBLISH_AFTER = dt.time(18, 0)
+
+
+def today_ist() -> dt.date:
+    """Today in exchange time, independent of the server's UTC clock."""
+    return dt.datetime.now(IST).date()
+
+
+def official_ready_today(now: Optional[dt.datetime] = None) -> bool:
+    """True once today's official files should have been published."""
+    moment = now or dt.datetime.now(IST)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=IST)
+    else:
+        moment = moment.astimezone(IST)
+    return (moment.weekday() in WEEKDAYS
+            and moment.time() >= PUBLISH_AFTER)
 
 
 class OfficialDataError(RuntimeError):
@@ -95,8 +116,8 @@ def _get(session: requests.Session, url: str, timeout: int = 30) -> bytes:
     return response.content
 
 
-def _text(session: requests.Session, url: str) -> str:
-    data = _get(session, url)
+def _text(session: requests.Session, url: str, timeout: int = 30) -> str:
+    data = _get(session, url, timeout=timeout)
     for encoding in ("utf-8", "latin-1"):
         try:
             return data.decode(encoding)
@@ -284,7 +305,7 @@ def _sync(conn, date: str, status: str, rows: int = 0, delivery: int = 0,
         "(date,status,rows,delivery_rows,source,fetched_at,error) "
         "VALUES (?,?,?,?,?,?,?)",
         (date, status, rows, delivery, source,
-         dt.datetime.now().isoformat(timespec="seconds"), error))
+         dt.datetime.now(IST).isoformat(timespec="seconds"), error))
     conn.commit()
 
 
@@ -333,7 +354,7 @@ def ingest_prices(conn, rows: List[dict], replace: bool = False) -> dict:
             "INSERT OR REPLACE INTO price_meta "
             "(symbol,last_date,rows,updated_at,basis) VALUES (?,?,?,?,?)",
             (project, agg[0], agg[1],
-             dt.datetime.now().isoformat(timespec="seconds"), basis))
+             dt.datetime.now(IST).isoformat(timespec="seconds"), basis))
     delivery_rows = 0
     for date in dates:
         for project, row in adopted:
@@ -345,7 +366,7 @@ def ingest_prices(conn, rows: List[dict], replace: bool = False) -> dict:
                 "created_at) VALUES (?,?,?,?,?,?,?)",
                 (date, project, row.get("volume"), row.get("delivery_qty"),
                  row.get("delivery_pct"), row.get("close"),
-                 dt.datetime.now().isoformat(timespec="seconds")))
+                 dt.datetime.now(IST).isoformat(timespec="seconds")))
             delivery_rows += 1
     conn.commit()
     return {"rows": len(adopted), "skipped": skipped,
@@ -370,7 +391,7 @@ def ingest_indices(conn, rows: List[dict]) -> dict:
 def ingest_master(conn, rows: List[dict]) -> dict:
     if not rows:
         return {"rows": 0}
-    now = dt.datetime.now().isoformat(timespec="seconds")
+    now = dt.datetime.now(IST).isoformat(timespec="seconds")
     conn.executemany(
         "INSERT OR REPLACE INTO nse_security_master "
         "(symbol,name,series,listing_date,isin,market_lot,face_value,"
@@ -386,16 +407,20 @@ def ingest_master(conn, rows: List[dict]) -> dict:
 # orchestration
 # ---------------------------------------------------------------------------
 def ingest_date(conn, date: str, session: Optional[requests.Session] = None,
-                include_indices: bool = True) -> dict:
+                include_indices: bool = True,
+                timeout: int = 30) -> dict:
     day = dt.date.fromisoformat(date)
     stamp = day.strftime("%d%m%Y")
     session = session or _session()
     result: Dict[str, Any] = {"date": date}
     try:
-        text = _text(session, SEC_BHAV % stamp)
+        text = _text(session, SEC_BHAV % stamp, timeout=timeout)
     except FileNotFoundError:
-        result.update({"status": "holiday", "reason": "no bhavcopy file"})
-        _sync(conn, date, "holiday")
+        # A 404 is NOT proof of a holiday. The archive can lag, the VM can be
+        # throttled, or the file can be temporarily absent. Record a retryable
+        # state so catch_up tries again instead of freezing the whole market.
+        result.update({"status": "missing", "reason": "no bhavcopy file (404)"})
+        _sync(conn, date, "missing", error="HTTP 404: no bhavcopy file")
         return result
     except Exception as exc:
         result.update({"status": "error", "error": f"bhavcopy: {exc}"})
@@ -403,10 +428,22 @@ def ingest_date(conn, date: str, session: Optional[requests.Session] = None,
         return result
     prices = parse_sec_bhav(text)
     written = ingest_prices(conn, prices)
+    if not prices or int(written.get("rows") or 0) <= 0:
+        # A file with no rows for our universe is not a successful sync. If it
+        # is marked ok it becomes permanently skipped and creates a silent gap.
+        result.update({
+            "status": "missing",
+            "reason": "file parsed but no universe rows",
+            "prices": written,
+        })
+        _sync(conn, date, "missing", rows=0, delivery=0,
+              error="file parsed but no universe rows")
+        return result
     result.update({"status": "ok", "prices": written})
     if include_indices:
         try:
-            index_rows = parse_index_close(_text(session, INDEX_CLOSE % stamp))
+            index_rows = parse_index_close(
+                _text(session, INDEX_CLOSE % stamp, timeout=timeout))
             result["indices"] = ingest_indices(conn, index_rows)
         except Exception as exc:
             result["indices"] = {"error": str(exc)}
@@ -416,24 +453,50 @@ def ingest_date(conn, date: str, session: Optional[requests.Session] = None,
 
 
 def catch_up(conn, days_back: int = 15, sleep: float = 0.25,
-             session: Optional[requests.Session] = None) -> dict:
-    """Ingest every weekday in the window that is not already recorded ok."""
-    today = dt.date.today()
+             session: Optional[requests.Session] = None,
+             include_today: Optional[bool] = None,
+             timeout: int = 30,
+             max_seconds: Optional[float] = None) -> dict:
+    """Ingest every weekday in the window that is not already recorded ok.
+
+    ``include_today`` defaults to whether the evening archive should exist
+    (18:00 IST on a weekday). The 08:15 retry passes False explicitly so it
+    never probes today's not-yet-published file. ``missing`` and ``error``
+    rows are retried; only ``ok`` with rows > 0 is treated as done.
+
+    ``max_seconds`` bounds an on-demand portal repair so a slow NSE response
+    cannot hold the page open indefinitely. Unattempted dates stay pending.
+    """
+    today = today_ist()
+    if include_today is None:
+        include_today = official_ready_today()
+    end = today if include_today else today - dt.timedelta(days=1)
     start = today - dt.timedelta(days=max(1, int(days_back)))
+    if end < start:
+        return {"attempted": 0, "pending_remaining": [], "ok": 0,
+                "missing": [], "errors": [], "details": []}
     done = {row[0] for row in conn.execute(
-        "SELECT date FROM nse_eod_sync WHERE status IN ('ok','holiday')")}
-    pending = [d for d in trading_days(start, today) if d not in done]
+        "SELECT date FROM nse_eod_sync "
+        "WHERE status='ok' AND COALESCE(rows, 0) > 0")}
+    pending = [d for d in trading_days(start, end) if d not in done]
     session = session or _session()
     results = []
-    for date in pending:
-        result = ingest_date(conn, date, session=session)
+    deadline = (time.monotonic() + float(max_seconds)
+                if max_seconds and float(max_seconds) > 0 else None)
+    remaining = []
+    for index, date in enumerate(pending):
+        if deadline is not None and time.monotonic() >= deadline:
+            remaining = pending[index:]
+            break
+        result = ingest_date(conn, date, session=session, timeout=timeout)
         results.append(result)
         if sleep:
             time.sleep(float(sleep))
-    return {"attempted": len(pending),
+    return {"attempted": len(results),
+            "pending_remaining": remaining,
             "ok": sum(1 for r in results if r.get("status") == "ok"),
-            "holidays": [r["date"] for r in results
-                         if r.get("status") == "holiday"],
+            "missing": [r["date"] for r in results
+                        if r.get("status") in ("missing", "holiday")],
             "errors": [r["date"] for r in results
                        if r.get("status") == "error"],
             "details": results}
@@ -537,7 +600,7 @@ def fetch_history(conn, start: str, end: str, apply: bool = False,
                             (date, project, row.get("volume"),
                              row.get("delivery_qty"), row.get("delivery_pct"),
                              row.get("close"),
-                             dt.datetime.now().isoformat(timespec="seconds")))
+                             dt.datetime.now(IST).isoformat(timespec="seconds")))
                         result["delivery_rows"] += 1
             conn.commit()
         result["rows"] += len(rows_for_day)
@@ -563,7 +626,7 @@ def fetch_history(conn, start: str, end: str, apply: bool = False,
                 "INSERT OR REPLACE INTO price_meta "
                 "(symbol,last_date,rows,updated_at,basis) VALUES (?,?,?,?,?)",
                 (project, agg[0], agg[1],
-                 dt.datetime.now().isoformat(timespec="seconds"), basis))
+                 dt.datetime.now(IST).isoformat(timespec="seconds"), basis))
         conn.commit()
     return result
 
@@ -635,6 +698,8 @@ def main(argv=None) -> int:
     child = sub.add_parser("catchup")
     child.add_argument("--days", type=int, default=15)
     child.add_argument("--sleep", type=float, default=0.25)
+    child.add_argument("--no-today", action="store_true",
+                       help="do not probe today's archive (morning retry)")
     child = sub.add_parser("history")
     child.add_argument("--from", dest="start", required=True)
     child.add_argument("--to", dest="end", required=True)
@@ -668,7 +733,8 @@ def main(argv=None) -> int:
                              default=str))
             return 0
         if args.cmd == "catchup":
-            print(json.dumps(catch_up(conn, args.days, args.sleep),
+            print(json.dumps(catch_up(conn, args.days, args.sleep,
+                                      include_today=not args.no_today),
                              indent=2, default=str))
             return 0
         if args.cmd == "history":

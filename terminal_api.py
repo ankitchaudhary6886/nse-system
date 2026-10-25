@@ -18,6 +18,25 @@ load_dotenv()
 API_HOST = os.getenv("API_HOST", "127.0.0.1")
 
 
+def _startup_freshness():
+    """Repair a gap left by a missed cron or a service restart.
+
+    Delayed two seconds so the web server starts accepting requests first. The
+    function is idempotent and lock-guarded, so a portal-open check racing with
+    it simply joins the same result instead of fetching twice.
+    """
+    import time
+    import logging
+    time.sleep(2)
+    try:
+        import data_freshness
+        result = data_freshness.ensure_fresh(start_background=True)
+        logging.getLogger(__name__).info(
+            "startup freshness: %s", result.get("message"))
+    except Exception:
+        logging.getLogger(__name__).exception("startup freshness failed")
+
+
 @asynccontextmanager
 async def lifespan(app):
     # One scheduler per system, not per machine: the VM owns the scheduled
@@ -25,6 +44,8 @@ async def lifespan(app):
     # duplicate every job (and every Telegram alert).
     if os.getenv("DISABLE_SCHEDULER", "").strip() not in ("1", "true", "yes"):
         scheduler_bg.start()
+        threading.Thread(target=_startup_freshness, daemon=True,
+                         name="startup-freshness").start()
     yield
     scheduler_bg.stop()
 
@@ -90,6 +111,27 @@ def data_health():
     token, today's artifact counts, scheduler and the last refresh run."""
     import refresh_pipeline
     return refresh_pipeline.health()
+
+
+@app.get("/api/data/freshness")
+def data_freshness_status():
+    """Read-only freshness assessment plus the guard's current state."""
+    import data_freshness
+    return data_freshness.status()
+
+
+@app.get("/api/data/ensure")
+def data_ensure(days_back: int = 15, background: bool = True):
+    """Self-heal before a portal load.
+
+    The official archive retry is synchronous and fast; if it cannot close the
+    gap, the existing full refresh chain is started in the background and the
+    caller can poll ``/api/refresh/status``. This is the endpoint the UI calls
+    on every page open.
+    """
+    import data_freshness
+    return data_freshness.ensure_fresh(days_back=days_back,
+                                       start_background=background)
 
 
 @app.get("/api/refresh/status")

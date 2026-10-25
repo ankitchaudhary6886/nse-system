@@ -2,9 +2,12 @@ import sys
 import time
 import datetime as dt
 import db
+import freshness_gate
 import universe_helper as U
 from data_sources import PRICE_HISTORY_PROVIDERS, get_registry
 from config import HISTORY_YEARS, SLEEP_SECONDS
+
+IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
 
 
 def _fetch_frame(symbol, start):
@@ -32,11 +35,12 @@ def fetch_one(conn, symbol):
     meta = conn.execute(
         "SELECT last_date FROM price_meta WHERE symbol=?", (symbol,)).fetchone()
     last = meta[0] if meta else None
+    today = dt.datetime.now(IST).date()
     if last:
         start = (dt.date.fromisoformat(last) + dt.timedelta(days=1)).isoformat()
     else:
-        start = (dt.date.today() - dt.timedelta(days=365 * HISTORY_YEARS)).isoformat()
-    if start > dt.date.today().isoformat():
+        start = (today - dt.timedelta(days=365 * HISTORY_YEARS)).isoformat()
+    if start > today.isoformat():
         return 0
 
     result = _fetch_frame(symbol, start)
@@ -59,30 +63,45 @@ def fetch_one(conn, symbol):
     conn.commit()
     return len(rows)
 
-def _stale_symbols(conn, universe):
-    """Symbols whose last stored bar is behind the market's latest bar.
+def _stale_symbols(conn, universe, expected=None):
+    """Symbols whose last stored bar is behind the market's expected session.
 
-    Re-running the ingest used to walk all ~865 symbols even when everything was
-    already current (one network-free call + a sleep each = minutes wasted).
+    The old implementation compared every symbol with ``MAX(date)`` in the same
+    table. If the whole table stopped advancing, ``MAX(date)`` also stopped, so
+    it returned only a handful of laggards and the frozen market looked current
+    forever. The reference is now an external trading-session clock.
     """
     market_last = conn.execute("SELECT MAX(date) FROM prices_daily").fetchone()[0]
+    expected = expected or freshness_gate.expected_session().isoformat()
     last = {row[0]: row[1] for row in conn.execute(
         "SELECT symbol, last_date FROM price_meta")}
+    if not market_last or market_last < expected:
+        # The whole market is behind, not just a few symbols. Returning the
+        # full universe is the only way to fetch the missing sessions.
+        return list(universe)
     return [s for s in universe if (last.get(s) or "") < (market_last or "")]
 
 
-def run(show_every=1):
+def run(show_every=1, force=False):
     conn = db.get_conn()
     # The tradable universe is band + core, NOT the 825-row stocks table: using
     # only stocks.active silently skipped ~40 band symbols every night (the VM's
     # 60-session coverage gap). universe_helper is the single source of truth.
     universe = U.combined_universe(conn)
-    symbols = _stale_symbols(conn, universe)
+    expected = freshness_gate.expected_session().isoformat()
+    symbols = list(universe) if force else _stale_symbols(conn, universe,
+                                                          expected=expected)
     if not symbols:
-        print(f"[PRICES] all {len(universe)} universe symbols already current")
+        print(f"[PRICES] all {len(universe)} universe symbols current "
+              f"(expected session {expected})")
         conn.close()
         return []
-    print(f"[PRICES] {len(symbols)} of {len(universe)} symbols need bars")
+    market_last = conn.execute("SELECT MAX(date) FROM prices_daily").fetchone()[0]
+    if force or not market_last or market_last < expected:
+        print(f"[PRICES] market spine {market_last or 'empty'} is behind "
+              f"expected {expected}; fetching all {len(symbols)} symbols")
+    else:
+        print(f"[PRICES] {len(symbols)} of {len(universe)} symbols need bars")
     total = len(symbols)
     failed = []
     for i, sym in enumerate(symbols, 1):
@@ -108,4 +127,4 @@ def run(show_every=1):
     return failed
 
 if len(sys.argv) > 1 and sys.argv[1] == "run":
-    run()
+    run(force="--force" in sys.argv[2:])

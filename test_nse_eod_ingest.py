@@ -1,4 +1,5 @@
 """Offline tests for the free official NSE EOD ingestion (18 Oct 2026)."""
+import datetime as dt
 import io
 import sqlite3
 import unittest
@@ -131,14 +132,27 @@ class IngestTests(unittest.TestCase):
             "SELECT basis FROM price_meta WHERE symbol='SBIN'").fetchone()[0]
         self.assertEqual(basis, "mixed_adjusted_then_raw")
 
-    def test_ingest_date_records_holiday_on_404(self):
+    def test_ingest_date_records_retryable_missing_on_404(self):
         conn = memory_db()
         session = FakeSession({})  # everything 404s
         result = ne.ingest_date(conn, "2026-10-15", session=session)
-        self.assertEqual(result["status"], "holiday")
+        self.assertEqual(result["status"], "missing")
         sync = conn.execute(
             "SELECT status FROM nse_eod_sync WHERE date='2026-10-15'").fetchone()
-        self.assertEqual(sync[0], "holiday")
+        self.assertEqual(sync[0], "missing")
+
+    def test_ingest_date_records_missing_when_file_has_no_universe_rows(self):
+        conn = memory_db()
+        session = FakeSession({"sec_bhavdata_full": "SYMBOL,SERIES,DATE1,CLOSE_PRICE\n"})
+        result = ne.ingest_date(conn, "2026-10-15", session=session)
+        self.assertEqual(result["status"], "missing")
+        sync = conn.execute(
+            "SELECT status, rows FROM nse_eod_sync WHERE date='2026-10-15'"
+        ).fetchone()
+        self.assertEqual(sync[0], "missing")
+        self.assertEqual(sync[1], 0)
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM prices_daily").fetchone()[0], 0)
 
     def test_ingest_skips_foreign_symbols(self):
         conn = memory_db()
@@ -161,18 +175,53 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(conn.execute(
             "SELECT COUNT(*) FROM index_daily").fetchone()[0], 3)
 
-    def test_catch_up_skips_recorded_dates(self):
+    def test_catch_up_skips_recorded_ok_dates(self):
         conn = memory_db()
-        conn.execute("INSERT OR REPLACE INTO nse_eod_sync (date,status) "
-                     "VALUES ('2026-10-16','ok')")
+        conn.execute("INSERT OR REPLACE INTO nse_eod_sync (date,status,rows) "
+                     "VALUES ('2026-10-16','ok',2)")
         conn.commit()
         session = FakeSession({"sec_bhavdata_full": SEC_BHAV_CSV,
                                "ind_close_all": INDEX_CSV})
-        with mock.patch.object(ne.dt, "date", wraps=ne.dt.date) as _:
-            result = ne.catch_up(conn, days_back=2, session=session)
-        # the already-ok date must not be fetched again
+        with mock.patch.object(ne, "today_ist",
+                               return_value=dt.date(2026, 10, 16)):
+            result = ne.catch_up(conn, days_back=4, session=session)
         attempted = [r["date"] for r in result["details"]]
         self.assertNotIn("2026-10-16", attempted)
+
+    def test_catch_up_retries_missing_and_error_dates(self):
+        conn = memory_db()
+        conn.executemany(
+            "INSERT OR REPLACE INTO nse_eod_sync (date,status,rows) "
+            "VALUES (?,?,0)",
+            [("2026-10-15", "missing"), ("2026-10-16", "error")])
+        conn.commit()
+        session = FakeSession({"sec_bhavdata_full": SEC_BHAV_CSV,
+                               "ind_close_all": INDEX_CSV})
+        with mock.patch.object(ne, "today_ist",
+                               return_value=dt.date(2026, 10, 16)):
+            first = ne.catch_up(conn, days_back=1, session=session,
+                                include_today=True)
+            second = ne.catch_up(conn, days_back=1, session=session,
+                                 include_today=True)
+        attempted = [r["date"] for r in first["details"]]
+        self.assertIn("2026-10-15", attempted)
+        self.assertIn("2026-10-16", attempted)
+        # after the rewrite they are ok, so a second pass must not fetch them.
+        self.assertEqual(second["attempted"], 0)
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM nse_eod_sync WHERE status='ok'"
+        ).fetchone()[0], 2)
+
+    def test_catch_up_can_exclude_today_for_morning_retry(self):
+        conn = memory_db()
+        session = FakeSession({})  # every date 404s
+        with mock.patch.object(ne, "today_ist",
+                               return_value=dt.date(2026, 10, 19)):
+            result = ne.catch_up(conn, days_back=3, session=session,
+                                 include_today=False)
+        attempted = [r["date"] for r in result["details"]]
+        self.assertNotIn("2026-10-19", attempted)
+        self.assertIn("2026-10-16", attempted)
 
 
 class HistoryTests(unittest.TestCase):

@@ -2083,13 +2083,78 @@ document.addEventListener("click", (e) => {
 // ============================================================
 // Init
 // ============================================================
+
+/** Ask the server to repair a stale price spine before this page reads it.
+ * The official NSE retry is synchronous and fast; if it cannot close the gap,
+ * the backend starts its full refresh chain and we poll/reload automatically. */
+async function ensureFreshData() {
+  const status = $("refreshStatus");
+  const autoKey = "nseFreshnessAutoTried";
+  let alreadyTried = false;
+  try { alreadyTried = !!sessionStorage.getItem(autoKey); } catch (e) {}
+  if (status) status.textContent = "Checking price freshness…";
+  try {
+    const url = "/api/data/ensure?days_back=15" +
+      (alreadyTried ? "&background=false" : "");
+    const result = await api(url);
+    if (status && result && result.message) status.textContent = result.message;
+    if (result && result.fresh) {
+      try { sessionStorage.removeItem(autoKey); } catch (e) {}
+    } else if (result && result.refresh &&
+               (result.refresh.started || result.refresh.already_running)) {
+      // One automatic repair per tab. If it still cannot get fresh (NSE down),
+      // the next load must not auto-reload in a loop; the owner can press
+      // Refresh or wait for the scheduled retry.
+      try { sessionStorage.setItem(autoKey, "1"); } catch (e) {}
+    }
+    return result;
+  } catch (e) {
+    if (status) status.textContent = "Freshness check unavailable; loading saved data.";
+    return null;
+  }
+}
+
+/** Wait for the server-side refresh started by the freshness guard, then
+ * reload once so every panel reads the newly computed rows. */
+function waitForBackgroundRefresh() {
+  const status = $("refreshStatus");
+  const tick = async () => {
+    try {
+      const state = await api("/api/refresh/status");
+      if (state && state.running) {
+        if (status) status.textContent = state.message || "Refreshing data…";
+        setTimeout(tick, 2000);
+        return;
+      }
+      const latest = (state && state.latest_run) || {};
+      if (latest.status === "ok" || latest.status === "partial") {
+        if (status) status.textContent = "Data updated. Reloading…";
+        setTimeout(() => window.location.reload(), 1200);
+      } else if (status) {
+        status.textContent = "Data refresh failed; showing the last saved data.";
+      }
+    } catch (e) {
+      setTimeout(tick, 5000);
+    }
+  };
+  setTimeout(tick, 1500);
+}
+
 async function refreshAll(initialLoad = false) {
   const button = $("refreshBtn");
   const status = $("refreshStatus");
   const btnLabel = button ? button.querySelector(".fx-open-label") : null;
   if (button) button.disabled = true;
   if (btnLabel) btnLabel.textContent = "Refreshing…";
-  if (status) status.textContent = "Reloading latest saved data…";
+  let freshness = null;
+  if (initialLoad) {
+    freshness = await ensureFreshData();
+  }
+  const backgroundRefresh = !!(freshness && freshness.refresh &&
+    (freshness.refresh.started || freshness.refresh.already_running));
+  if (status && !backgroundRefresh) {
+    status.textContent = "Reloading latest saved data…";
+  }
   const tasks = [
     loadHealth, loadRegime, loadTopPicks, loadSwing,
     loadPatterns, loadRadar, loadDeployment, loadSourceHealth,
@@ -2126,10 +2191,16 @@ async function refreshAll(initialLoad = false) {
       tasks.map(task => Promise.resolve().then(task)));
     const failures = results.filter(result => result.status === "rejected");
     if (status) {
-      status.textContent = failures.length
-        ? `Reload completed with ${failures.length} request errors. See affected panels.`
-        : "Latest saved data reloaded. Use scan buttons to compute new results.";
+      if (backgroundRefresh) {
+        status.textContent = (freshness && freshness.message) ||
+          "Updating data in the background; the page will reload when it finishes.";
+      } else {
+        status.textContent = failures.length
+          ? `Reload completed with ${failures.length} request errors. See affected panels.`
+          : "Latest saved data reloaded. Use scan buttons to compute new results.";
+      }
     }
+    if (backgroundRefresh) waitForBackgroundRefresh();
   } finally {
     if (button) button.disabled = false;
     if (btnLabel) btnLabel.textContent = "Refresh";

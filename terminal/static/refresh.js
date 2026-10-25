@@ -123,16 +123,24 @@
       : "no data";
     rows.price.className = "";
     rows.price.textContent = fmtDate(health.max_price_date) + " · " + price;
-    var fresh = health.freshness || {};
-    if (fresh.blocked) {
-      rows.gate.className = "dsh-bad";
-      rows.gate.textContent = "STALE — signals paused";
+    var fresh = health.data_freshness || {};
+    var gate = health.freshness || {};
+    if (fresh.fresh === true ||
+        (fresh.fresh === undefined && gate.blocked === false)) {
+      rows.gate.className = "dsh-ok";
+      rows.gate.textContent = "fresh through " +
+        fmtDate(fresh.latest || health.max_price_date);
+      toggle.classList.remove("dsh-stale");
+    } else if (fresh.status === "awaiting_yahoo") {
+      rows.gate.className = "dsh-warn";
+      rows.gate.textContent = "today's bar pending";
       toggle.classList.add("dsh-stale");
     } else {
-      rows.gate.className = "dsh-ok";
-      rows.gate.textContent = "fresh (0 missing sessions)";
-      toggle.classList.remove("dsh-stale");
+      rows.gate.className = "dsh-bad";
+      rows.gate.textContent = "STALE — auto-repairing";
+      toggle.classList.add("dsh-stale");
     }
+    if (fresh.message) rows.gate.title = fresh.message;
     var fyers = health.fyers || {};
     var token = fyers.token || {};
     if (token.present && token.expired === false) {

@@ -16,8 +16,8 @@ GUARANTEES
 - Every step is independent and failure-isolated: one broken stage does not
   stop the rest, and the run is recorded as ok / partial / error.
 - The chain runs in dependency order: prices -> technicals -> breadth -> ML ->
-  scan -> PWin -> events -> institutional -> Top Picks -> patterns -> templates.
-  (ML before scan matters: scan consumes same-day ML scores.)
+  scan -> Playbook -> PWin -> events -> institutional -> Top Picks -> patterns
+  -> templates. (ML before scan matters: scan consumes same-day ML scores.)
 - Writers still pass the freshness gate themselves; if the price spine is stale
   the derived stages refuse to write and say so in the run result.
 """
@@ -80,13 +80,14 @@ def _step_official() -> dict:
 
     Runs before the per-symbol free providers: one archive file is faster and
     more authoritative than ~865 provider calls, and it carries delivery% and
-    every index close as a bonus. Missing files are holidays, not failures.
+    every index close as a bonus. A 404 is retried as missing, never frozen as a
+    holiday; 15 days covers a long weekend plus a missed retry.
     """
     import nse_eod_ingest
     import db as _db
     conn = _db.get_conn()
     try:
-        return nse_eod_ingest.catch_up(conn, days_back=5)
+        return nse_eod_ingest.catch_up(conn, days_back=15)
     finally:
         conn.close()
 
@@ -127,6 +128,12 @@ def _step_scan() -> dict:
     import scan
     scan.run()
     return {"ok": True}
+
+
+def _step_playbook() -> dict:
+    """Refresh the Strategy Playbook tags after prices/technicals move."""
+    import playbook_engine
+    return playbook_engine.scan()
 
 
 def _step_pwin() -> dict:
@@ -170,6 +177,7 @@ def default_steps(include_detectors: bool = True) -> List[Tuple[str, Callable[[]
         ("breadth", _step_breadth),
         ("ml", _step_ml),
         ("scan", _step_scan),
+        ("playbook", _step_playbook),
         ("pwin", _step_pwin),
         ("events", _step_events),
         ("institutional", _step_institutional),
@@ -337,6 +345,12 @@ def health(conn=None) -> dict:
             out["gated"] = bool(gate.get("blocked"))
         except Exception as exc:
             out["freshness"] = {"error": f"{type(exc).__name__}: {exc}"}
+        try:
+            import data_freshness
+            out["data_freshness"] = data_freshness.assess(conn)
+        except Exception as exc:
+            out["data_freshness"] = {
+                "error": f"{type(exc).__name__}: {exc}"}
         try:
             import fyers_client
             store = fyers_client.TokenStore()

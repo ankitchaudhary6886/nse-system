@@ -234,11 +234,12 @@ def _official_eod_job():
         import nse_eod_ingest
         conn = db.get_conn()
         try:
-            result = nse_eod_ingest.catch_up(conn, days_back=7)
+            result = nse_eod_ingest.catch_up(conn, days_back=15,
+                                             include_today=True)
         finally:
             conn.close()
         log.info(f"official NSE EOD complete: attempted={result.get('attempted')} "
-                 f"ok={result.get('ok')} holidays={len(result.get('holidays') or [])} "
+                 f"ok={result.get('ok')} missing={len(result.get('missing') or [])} "
                  f"errors={len(result.get('errors') or [])}")
         # Optional Fyers gap-fill for holes the official files could not cover.
         try:
@@ -257,19 +258,76 @@ def _official_eod_job():
 
 
 def _official_retry_job():
-    """Morning retry/catch-up in case the evening archive fetch was delayed."""
+    """Morning retry/catch-up in case the evening archive fetch was delayed.
+
+    Today's file does not exist at 08:15; ``include_today=False`` stops the
+    retry from writing a 404 over today and keeps yesterday's missing rows hot.
+    """
     try:
         import db
         import nse_eod_ingest
         conn = db.get_conn()
         try:
-            result = nse_eod_ingest.catch_up(conn, days_back=7)
+            result = nse_eod_ingest.catch_up(conn, days_back=15,
+                                             include_today=False)
         finally:
             conn.close()
         log.info(f"official NSE EOD morning retry: ok={result.get('ok')} "
-                 f"attempted={result.get('attempted')}")
+                 f"attempted={result.get('attempted')} "
+                 f"missing={len(result.get('missing') or [])}")
     except Exception as e:
         log.warning(f"official NSE EOD morning retry failed: {e}")
+
+
+def _freshness_guard_job():
+    """Recover a missed archive/retry without waiting for the owner.
+
+    Runs outside the 15:40-18:00 window where today's official file is expected
+    to be absent. If prices were repaired, the normal refresh pipeline rebuilds
+    every derived layer; if they are still stale, the warning is explicit.
+    """
+    try:
+        import data_freshness
+        result = data_freshness.ensure_fresh(days_back=15,
+                                             start_background=False)
+        if result.get("repaired"):
+            log.warning(f"freshness guard repaired prices: {result.get('message')}")
+            import refresh_pipeline
+            refresh_pipeline.start_background(trigger="freshness-guard")
+        elif result.get("fresh"):
+            log.info(f"freshness guard: current through {result.get('latest')}")
+        else:
+            log.warning(f"freshness guard: still stale: {result.get('message')}")
+    except Exception as e:
+        log.warning(f"freshness guard failed: {e}")
+
+
+def _playbook_job():
+    """Refresh Strategy Playbook tags after the official close is in.
+
+    A stale price spine would stamp old bars with a new ``as_of``, so the scan
+    is deliberately skipped unless the freshness guard says the spine is
+    current. The next run picks it up after a successful catch-up.
+    """
+    log.info("strategy playbook scan started")
+    try:
+        import data_freshness
+        import db
+        import playbook_engine
+        fresh = data_freshness.ensure_fresh(days_back=15,
+                                            start_background=False)
+        if not fresh.get("fresh"):
+            log.warning("strategy playbook scan skipped: "
+                        f"{fresh.get('message')}")
+            return
+        conn = db.get_conn()
+        try:
+            result = playbook_engine.scan(conn)
+        finally:
+            conn.close()
+        log.info(f"strategy playbook scan complete: {result}")
+    except Exception as e:
+        log.exception(f"strategy playbook scan failed: {e}")
 
 
 def _governance_job():
@@ -492,6 +550,18 @@ def start():
     _scheduler.add_job(_official_retry_job,
                        CronTrigger(hour=8, minute=15, timezone=IST),
                        id="official_eod_retry", replace_existing=True)
+    _scheduler.add_job(_freshness_guard_job,
+                       CronTrigger(day_of_week="mon-fri", hour=8, minute=30,
+                                   timezone=IST),
+                       id="freshness_guard_morning", replace_existing=True)
+    _scheduler.add_job(_freshness_guard_job,
+                       CronTrigger(day_of_week="mon-fri", hour=22, minute=30,
+                                   timezone=IST),
+                       id="freshness_guard_night", replace_existing=True)
+    _scheduler.add_job(_playbook_job,
+                       CronTrigger(day_of_week="mon-fri", hour=19, minute=45,
+                                   timezone=IST),
+                       id="playbook_scan", replace_existing=True)
     _scheduler.add_job(_league_job,
                        CronTrigger(day_of_week="mon-fri", hour=19,
                                    minute=0, timezone=IST),
