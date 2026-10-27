@@ -585,10 +585,6 @@ def start():
                        CronTrigger(day_of_week="sun", hour=6, minute=0,
                                    timezone=IST),
                        id="pool_rebuild", replace_existing=True)
-    _scheduler.add_job(_fundamentals_job,
-                       CronTrigger(day_of_week="sat", hour=8, minute=0,
-                                   timezone=IST),
-                       id="fundamentals_refresh", replace_existing=True)
     # Free governance feed (vendor-free): NSE corporate announcements + dated
     # shareholding/pledge. Runs after the fundamentals refresh so the merged
     # ownership/pledge values are present for the week's veto checks.
@@ -605,18 +601,22 @@ def start():
                        CronTrigger(day_of_week="sat", hour=9, minute=0,
                                    timezone=IST),
                        id="meta_retrain", replace_existing=True)
-    _scheduler.add_job(_positional_job,
-                       CronTrigger(day_of_week="sat", hour=10, minute=0,
-                                   timezone=IST),
-                       id="positional_scan", replace_existing=True)
     _scheduler.add_job(_broad_job,
-                       CronTrigger(day_of_week="mon-fri", hour=16, minute=30,
+                       CronTrigger(day_of_week="mon-fri", hour=19, minute=50,
                                    timezone=IST),
                        id="broad_scan", replace_existing=True)
+    _scheduler.add_job(_fundamentals_job,
+                       CronTrigger(day_of_week="mon-fri", hour=19, minute=55,
+                                   timezone=IST),
+                       id="fundamentals_refresh", replace_existing=True)
     _scheduler.add_job(_value_radar_job,
-                       CronTrigger(day_of_week="sun", hour=9, minute=0,
+                       CronTrigger(day_of_week="mon-fri", hour=20, minute=5,
                                    timezone=IST),
                        id="value_radar", replace_existing=True)
+    _scheduler.add_job(_positional_job,
+                       CronTrigger(day_of_week="mon-fri", hour=20, minute=10,
+                                   timezone=IST),
+                       id="positional_scan", replace_existing=True)
     _scheduler.add_job(_league_scorecard_job,
                        CronTrigger(day_of_week="sat", hour=11, minute=0,
                                    timezone=IST),

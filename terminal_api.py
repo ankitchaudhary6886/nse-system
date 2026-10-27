@@ -305,9 +305,11 @@ def deployment_check():
             if table == "swing_signals" and age > max_days:
                 hb = heartbeat("swing_live")
                 if hb:
+                    n_today = conn.execute(
+                        "SELECT COUNT(*) FROM swing_signals WHERE signal_date=?",
+                        (today.isoformat(),)).fetchone()[0]
                     add(True, table,
-                        f"scanner ran {hb}; last signal {str(cleaned)[:10]} "
-                        f"({age}d), {n} rows")
+                        f"scanner ran {hb}; {n_today} new signals today")
                     continue
             add(age <= max_days, table,
                 f"latest {str(cleaned)[:10]} ({age}d), {n} rows")
@@ -826,6 +828,27 @@ def swing_signals(limit: int = 80):
     score = {r[0]: r[1] for r in conn.execute(
         "SELECT outcome, COUNT(*) FROM swing_signals "
         "GROUP BY outcome").fetchall()}
+    # IST date: the VM runs UTC and at 00:30 IST it is still "yesterday" in
+    # UTC, which would make today's scan look stale in the panel.
+    ist = dt.timezone(dt.timedelta(hours=5, minutes=30))
+    today = dt.datetime.now(ist).date().isoformat()
+    today_n = conn.execute(
+        "SELECT COUNT(*) FROM swing_signals WHERE signal_date=?",
+        (today,)).fetchone()[0]
+    last_run = conn.execute(
+        "SELECT MAX(run_at) FROM freshness_gate_log "
+        "WHERE artifact='swing_live'").fetchone()[0]
+    b = conn.execute(
+        "SELECT above50, adv, dec FROM breadth_daily WHERE date=?",
+        (today,)).fetchone()
+    breadth = ({"above50": b[0], "adv": b[1], "dec": b[2]} if b else None)
+    scan = {
+        "last_run": last_run,
+        "today": today_n,
+        "breadth": breadth,
+        "breadth_ok": bool(b and b[0] is not None and b[0] >= 0.5
+                           and b[1] >= b[2]),
+    }
     pw = pwin_cache.get_map(conn)
     conn.close()
     for s in signals:
@@ -834,7 +857,7 @@ def swing_signals(limit: int = 80):
     wins = score.get("WIN", 0)
     graded = wins + score.get("LOSS", 0)
     return {"signals": signals, "total": total, "limit": limit,
-            "scorecard": score,
+            "scorecard": score, "scan": scan,
             "win_rate": round(100 * wins / graded, 1) if graded else None}
 
 

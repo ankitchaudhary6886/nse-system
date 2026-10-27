@@ -339,6 +339,21 @@ async function loadSwing() {
       ? `${signals.length} of ${data.total}` : signals.length;
     const mw = $("mWinRate"); if (mw) mw.textContent = data.win_rate == null ? "—" : `${data.win_rate}%`;
     const mo = $("mOpen"); if (mo) mo.textContent = `${score.OPEN || 0} / ${score.PENDING || 0}`;
+    const st = $("swingScanStatus");
+    const scan = data.scan || {};
+    if (st && scan.last_run) {
+      const when = String(scan.last_run).slice(0, 16).replace("T", " ");
+      if (scan.today > 0) {
+        st.textContent = `Scan ran ${when} · ${scan.today} new setup${scan.today === 1 ? "" : "s"} today.`;
+      } else if (scan.breadth) {
+        const pct = Math.round((scan.breadth.above50 || 0) * 100);
+        st.textContent = `Scan ran ${when} · 0 new setups — breadth gate `
+          + `${scan.breadth_ok ? "open" : "closed"} (${pct}% above 50-EMA, `
+          + `${scan.breadth.adv} up / ${scan.breadth.dec} down).`;
+      } else {
+        st.textContent = `Scan ran ${when} · 0 new setups today.`;
+      }
+    }
     for (const s of signals) {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${s.date}</td>

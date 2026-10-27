@@ -98,7 +98,10 @@ def run_checks():
         if table == "swing_signals" and not ok:
             hb = _scan_heartbeat(conn)
             if hb:
-                ok, detail = True, f"scanner ran {hb}; {detail}"
+                n_today = conn.execute(
+                    "SELECT COUNT(*) FROM swing_signals WHERE signal_date=?",
+                    (dt.date.today().isoformat(),)).fetchone()[0]
+                ok, detail = True, f"scanner ran {hb}; {n_today} new signals today"
         if not ok:
             fails += 1
         _check(ok, table, detail)
