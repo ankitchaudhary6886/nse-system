@@ -52,6 +52,10 @@ def run():
         print("No data — paste me everything above this line")
         return
     now = dt.datetime.now().isoformat()
+    # This is a full snapshot, not an append. Without the delete, symbols that
+    # fell out of the market-cap band or were delisted stay in band_universe
+    # forever and keep feeding breadth/value screens.
+    conn.execute("DELETE FROM universe_broad")
     n = 0
     pings = []
     for item in data:

@@ -260,6 +260,21 @@ def deployment_check():
         if not ok:
             out["fails"] += 1
 
+    def heartbeat(artifact, max_days=3):
+        """Last successful writer run, even when it correctly wrote 0 signals."""
+        try:
+            r = conn.execute(
+                "SELECT MAX(run_at) FROM freshness_gate_log WHERE artifact=?",
+                (artifact,)).fetchone()
+            if not r or not r[0]:
+                return None
+            d = dt.date.fromisoformat(str(r[0])[:10])
+            if (today - d).days <= max_days:
+                return str(r[0])[:19]
+        except Exception:
+            return None
+        return None
+
     def _clean(val):
         s = str(val)
         if ":" in s and s.split(":", 1)[0] in ("tv", "csv", "calc"):
@@ -287,6 +302,13 @@ def deployment_check():
             d = dt.date.fromisoformat(str(cleaned)[:10])
             age = (today - d).days
             n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            if table == "swing_signals" and age > max_days:
+                hb = heartbeat("swing_live")
+                if hb:
+                    add(True, table,
+                        f"scanner ran {hb}; last signal {str(cleaned)[:10]} "
+                        f"({age}d), {n} rows")
+                    continue
             add(age <= max_days, table,
                 f"latest {str(cleaned)[:10]} ({age}d), {n} rows")
         except Exception as e:

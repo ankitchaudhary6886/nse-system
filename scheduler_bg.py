@@ -398,10 +398,24 @@ def _value_radar_job():
     log.info("value radar started")
     try:
         import value_radar
+        # report() only reads the saved table. The weekly job must recompute
+        # first or it republishes last month's rows forever.
+        value_radar.compute()
         value_radar.report()
         log.info("value radar complete")
     except Exception as e:
         log.exception(f"value radar failed: {e}")
+
+
+def _broad_job():
+    """Refresh the TradingView market-cap snapshot used by band_universe."""
+    log.info("broad universe refresh started")
+    try:
+        import broad_scan
+        broad_scan.run()
+        log.info("broad universe refresh complete")
+    except Exception as e:
+        log.exception(f"broad universe refresh failed: {e}")
 
 
 def _positional_job():
@@ -595,6 +609,10 @@ def start():
                        CronTrigger(day_of_week="sat", hour=10, minute=0,
                                    timezone=IST),
                        id="positional_scan", replace_existing=True)
+    _scheduler.add_job(_broad_job,
+                       CronTrigger(day_of_week="mon-fri", hour=16, minute=30,
+                                   timezone=IST),
+                       id="broad_scan", replace_existing=True)
     _scheduler.add_job(_value_radar_job,
                        CronTrigger(day_of_week="sun", hour=9, minute=0,
                                    timezone=IST),

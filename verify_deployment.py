@@ -56,6 +56,22 @@ def _table_fresh(conn, table, col="date", max_days=5):
         return False, f"err: {e}"
 
 
+def _scan_heartbeat(conn, artifact="swing_live", max_days=3):
+    """Last successful writer run, even when it correctly wrote 0 signals."""
+    try:
+        r = conn.execute(
+            "SELECT MAX(run_at) FROM freshness_gate_log WHERE artifact=?",
+            (artifact,)).fetchone()
+        if not r or not r[0]:
+            return None
+        d = dt.date.fromisoformat(str(r[0])[:10])
+        if (dt.date.today() - d).days <= max_days:
+            return str(r[0])[:19]
+    except Exception:
+        return None
+    return None
+
+
 def run_checks():
     print("=" * 70)
     print("DEPLOYMENT VERIFICATION")
@@ -79,6 +95,10 @@ def run_checks():
         ("pwin_daily", "date", 14),
     ]:
         ok, detail = _table_fresh(conn, table, col, days)
+        if table == "swing_signals" and not ok:
+            hb = _scan_heartbeat(conn)
+            if hb:
+                ok, detail = True, f"scanner ran {hb}; {detail}"
         if not ok:
             fails += 1
         _check(ok, table, detail)
