@@ -828,10 +828,9 @@ def swing_signals(limit: int = 80):
     score = {r[0]: r[1] for r in conn.execute(
         "SELECT outcome, COUNT(*) FROM swing_signals "
         "GROUP BY outcome").fetchall()}
-    # IST date: the VM runs UTC and at 00:30 IST it is still "yesterday" in
-    # UTC, which would make today's scan look stale in the panel.
-    ist = dt.timezone(dt.timedelta(hours=5, minutes=30))
-    today = dt.datetime.now(ist).date().isoformat()
+    # Keep the system's trading date (UTC) so this block agrees with every
+    # other health check. At 00:30 IST the UTC date is still the prior session.
+    today = dt.date.today().isoformat()
     today_n = conn.execute(
         "SELECT COUNT(*) FROM swing_signals WHERE signal_date=?",
         (today,)).fetchone()[0]
@@ -839,8 +838,8 @@ def swing_signals(limit: int = 80):
         "SELECT MAX(run_at) FROM freshness_gate_log "
         "WHERE artifact='swing_live'").fetchone()[0]
     b = conn.execute(
-        "SELECT above50, adv, dec FROM breadth_daily WHERE date=?",
-        (today,)).fetchone()
+        "SELECT above50, adv, dec FROM breadth_daily "
+        "ORDER BY date DESC LIMIT 1").fetchone()
     breadth = ({"above50": b[0], "adv": b[1], "dec": b[2]} if b else None)
     scan = {
         "last_run": last_run,
